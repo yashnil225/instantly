@@ -1167,7 +1167,7 @@ export default function CRMPage() {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-56 bg-[#111116] border-white/10 rounded-xl shadow-2xl p-2 z-[60]">
-                                                <DropdownMenuItem className="px-3 py-2 cursor-pointer focus:bg-[#1a1a1f] rounded-lg text-[13px] font-bold text-gray-400 focus:text-white">
+                                                <DropdownMenuItem onClick={() => router.push('/settings?tab=team')} className="px-3 py-2 cursor-pointer focus:bg-[#1a1a1f] rounded-lg text-[13px] font-bold text-gray-400 focus:text-white">
                                                     <Users className="h-4 w-4 mr-2 opacity-50" />
                                                     Manage Users
                                                 </DropdownMenuItem>
@@ -1175,12 +1175,12 @@ export default function CRMPage() {
                                                     <Briefcase className="h-4 w-4 mr-2 opacity-50" />
                                                     Workspace Settings
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem className="px-3 py-2 cursor-pointer focus:bg-[#1a1a1f] rounded-lg text-[13px] font-bold text-gray-400 focus:text-white">
+                                                <DropdownMenuItem onClick={() => router.push('/settings?tab=leads')} className="px-3 py-2 cursor-pointer focus:bg-[#1a1a1f] rounded-lg text-[13px] font-bold text-gray-400 focus:text-white">
                                                     <LayoutDashboard className="h-4 w-4 mr-2 opacity-50" />
                                                     Customize View
                                                 </DropdownMenuItem>
                                                 <div className="h-px bg-white/5 my-1" />
-                                                <DropdownMenuItem className="px-3 py-2 cursor-pointer focus:bg-[#1a1a1f] rounded-lg text-[13px] font-bold text-gray-400 focus:text-white">
+                                                <DropdownMenuItem onClick={() => router.push('/settings?tab=preferences')} className="px-3 py-2 cursor-pointer focus:bg-[#1a1a1f] rounded-lg text-[13px] font-bold text-gray-400 focus:text-white">
                                                     <Settings className="h-4 w-4 mr-2 opacity-50" />
                                                     Preferences
                                                 </DropdownMenuItem>
@@ -1440,19 +1440,34 @@ export default function CRMPage() {
                                                 <td className="px-6 py-4.5 text-gray-400 font-medium">{l.email}</td>
                                                 <td className="px-6 py-4.5 text-gray-700">-</td>
                                                 <td className="px-6 py-4.5">
-                                                    <div className="flex items-center gap-2">
-                                                        {i % 2 === 0 ? (
-                                                            <>
-                                                                <div className="h-4 w-4 bg-orange-600 rounded-sm flex items-center justify-center text-[10px] font-black text-white">O</div>
-                                                                <span className="text-gray-400 font-bold">Microsoft</span>
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <div className="h-4 w-4 bg-blue-600 rounded-sm flex items-center justify-center text-[10px] font-black text-white">G</div>
-                                                                <span className="text-gray-400 font-bold">Google</span>
-                                                            </>
-                                                        )}
-                                                    </div>
+                                                    {(() => {
+                                                        const domain = l.email?.split('@')[1]?.toLowerCase() || ''
+                                                        const isGoogle = domain.includes('gmail') || domain.includes('google')
+                                                        const isMicrosoft = domain.includes('outlook') || domain.includes('hotmail') || domain.includes('live') || domain.includes('msn')
+
+                                                        if (isGoogle) {
+                                                            return (
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="h-4 w-4 bg-blue-600 rounded-sm flex items-center justify-center text-[10px] font-black text-white">G</div>
+                                                                    <span className="text-gray-400 font-bold">Google</span>
+                                                                </div>
+                                                            )
+                                                        } else if (isMicrosoft) {
+                                                            return (
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="h-4 w-4 bg-orange-600 rounded-sm flex items-center justify-center text-[10px] font-black text-white">O</div>
+                                                                    <span className="text-gray-400 font-bold">Microsoft</span>
+                                                                </div>
+                                                            )
+                                                        } else {
+                                                            return (
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="h-4 w-4 bg-gray-600 rounded-sm flex items-center justify-center text-[10px] font-black text-white">@</div>
+                                                                    <span className="text-gray-400 font-bold">{domain || 'Unknown'}</span>
+                                                                </div>
+                                                            )
+                                                        }
+                                                    })()}
                                                 </td>
                                                 <td className="px-6 py-4.5 text-center">
                                                     <DropdownMenu>
@@ -2702,17 +2717,188 @@ export default function CRMPage() {
                                         <div className="text-gray-600 text-[10px] font-black uppercase tracking-widest bg-white/5 px-2 py-1 rounded-lg">{new Date(selectedEmail.timestamp).toLocaleString()}</div>
                                     </div>
                                     <div className="prose prose-invert max-w-none text-sm text-gray-300 leading-relaxed">
-                                        <p>Hi {selectedEmail.title.split(' ')[0]},</p>
-                                        <p className="opacity-80">This is a preview of the email content. In the full production environment, this would fetch the actual email body from the database.</p>
-                                        <p className="opacity-80">We are happy to confirm your interest in our services. Let&apos;s schedule a call.</p>
-                                        <br />
-                                        <p className="font-bold">Best regards,<br />The Team</p>
+                                        {selectedEmail.lead ? (
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div><span className="text-gray-500">Email:</span> <span className="text-white">{selectedEmail.lead.email}</span></div>
+                                                    <div><span className="text-gray-500">Company:</span> <span className="text-white">{selectedEmail.lead.company || '-'}</span></div>
+                                                    <div><span className="text-gray-500">Status:</span> <span className="text-white">{selectedEmail.lead.status || '-'}</span></div>
+                                                    <div><span className="text-gray-500">Label:</span> <span className="text-white">{selectedEmail.lead.aiLabel || '-'}</span></div>
+                                                </div>
+                                                {selectedEmail.lead.personalNote && (
+                                                    <div className="border-t border-white/5 pt-4">
+                                                        <p className="text-gray-500 mb-1">Notes:</p>
+                                                        <p className="text-white">{selectedEmail.lead.personalNote}</p>
+                                                    </div>
+                                                )}
+                                                <p className="text-gray-500 italic text-[11px] mt-4">View full conversation in Unibox →</p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-gray-500">No lead details available.</p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
                             <div className="p-4 border-t border-white/5 bg-[#111116] flex justify-end gap-3">
                                 <Button variant="ghost" onClick={() => setShowEmailPreviewModal(false)} className="font-bold text-gray-500 hover:text-white">Close</Button>
                                 <Button className="bg-blue-600 text-white font-bold rounded-xl px-6" onClick={() => { router.push(`/app/unibox?leadId=${selectedEmail.id}`); setShowEmailPreviewModal(false); }}>Reply in Unibox</Button>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+            {/* Custom Date Range Modal */}
+            {
+                showCustomDateModal && (
+                    <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                        <div className="w-full max-w-md bg-[#0c0c10] border border-white/10 rounded-3xl shadow-2xl p-8 space-y-6">
+                            <div className="space-y-1">
+                                <h3 className="text-xl font-bold text-white">Custom Date Range</h3>
+                                <p className="text-xs text-gray-500 font-medium">Select a start and end date for filtering.</p>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">Start Date</label>
+                                    <Input
+                                        type="date"
+                                        value={customDateStart}
+                                        onChange={(e) => setCustomDateStart(e.target.value)}
+                                        className="bg-white/5 border-white/10 h-11 rounded-xl text-white font-bold"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">End Date</label>
+                                    <Input
+                                        type="date"
+                                        value={customDateEnd}
+                                        onChange={(e) => setCustomDateEnd(e.target.value)}
+                                        className="bg-white/5 border-white/10 h-11 rounded-xl text-white font-bold"
+                                    />
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setShowCustomDateModal(false)
+                                            setCustomDateStart("")
+                                            setCustomDateEnd("")
+                                        }}
+                                        className="flex-1 h-11 rounded-xl font-bold text-gray-500 hover:text-white"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={() => {
+                                            if (customDateStart && customDateEnd) {
+                                                setDateRange("Custom Range")
+                                                setShowCustomDateModal(false)
+                                                // Data will be refetched automatically via useEffect
+                                            }
+                                        }}
+                                        disabled={!customDateStart || !customDateEnd}
+                                        className="flex-1 h-11 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl disabled:opacity-50"
+                                    >
+                                        Apply Range
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+            {/* Bulk Edit Modal */}
+            {
+                showBulkEditModal && selectedLeads.length > 0 && (
+                    <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                        <div className="w-full max-w-md bg-[#0c0c10] border border-white/10 rounded-3xl shadow-2xl p-8 space-y-6">
+                            <div className="space-y-1">
+                                <h3 className="text-xl font-bold text-white">Bulk Edit {selectedLeads.length} Leads</h3>
+                                <p className="text-xs text-gray-500 font-medium">Update status or label for all selected leads.</p>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">New Status</label>
+                                    <select
+                                        value={bulkEditStatus}
+                                        onChange={(e) => setBulkEditStatus(e.target.value)}
+                                        className="w-full bg-white/5 border border-white/10 h-11 rounded-xl text-white font-bold px-3"
+                                    >
+                                        <option value="">Keep current status</option>
+                                        <option value="new">New</option>
+                                        <option value="contacted">Contacted</option>
+                                        <option value="replied">Replied</option>
+                                        <option value="bounced">Bounced</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest pl-1">New Label</label>
+                                    <select
+                                        value={bulkEditLabel}
+                                        onChange={(e) => setBulkEditLabel(e.target.value)}
+                                        className="w-full bg-white/5 border border-white/10 h-11 rounded-xl text-white font-bold px-3"
+                                    >
+                                        <option value="">Keep current label</option>
+                                        {availableLabels.map(label => (
+                                            <option key={label} value={label.toLowerCase().replace(/ /g, '_')}>{label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="flex gap-3 pt-2">
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setShowBulkEditModal(false)
+                                            setBulkEditStatus("")
+                                            setBulkEditLabel("")
+                                        }}
+                                        className="flex-1 h-11 rounded-xl font-bold text-gray-500 hover:text-white"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={async () => {
+                                            if (!bulkEditStatus && !bulkEditLabel) {
+                                                alert("Please select at least one field to update")
+                                                return
+                                            }
+                                            try {
+                                                const updates: any = {}
+                                                if (bulkEditStatus) updates.status = bulkEditStatus
+                                                if (bulkEditLabel) updates.aiLabel = bulkEditLabel
+
+                                                // Update each lead
+                                                await Promise.all(selectedLeads.map(leadId =>
+                                                    fetch(`/api/leads/${leadId}`, {
+                                                        method: 'PATCH',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify(updates)
+                                                    })
+                                                ))
+
+                                                // Update local state
+                                                setLeads(prev => prev.map(lead =>
+                                                    selectedLeads.includes(lead.id)
+                                                        ? { ...lead, ...updates }
+                                                        : lead
+                                                ))
+
+                                                setShowBulkEditModal(false)
+                                                setSelectedLeads([])
+                                                setBulkEditStatus("")
+                                                setBulkEditLabel("")
+                                                setShowSuccessToast(true)
+                                                setSuccessMessage(`Updated ${selectedLeads.length} leads!`)
+                                                setTimeout(() => setShowSuccessToast(false), 3000)
+                                            } catch (e) {
+                                                console.error(e)
+                                                alert("Failed to update leads")
+                                            }
+                                        }}
+                                        className="flex-1 h-11 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl"
+                                    >
+                                        Update All
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>

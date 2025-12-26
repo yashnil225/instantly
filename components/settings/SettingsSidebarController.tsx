@@ -1,0 +1,20 @@
+"use client"
+
+import { usePathname } from "next/navigation"
+import { SettingsSidebar } from "./SettingsSidebar"
+
+export function SettingsSidebarController() {
+    const pathname = usePathname()
+
+    // Only show sidebar on the main settings page (Account & Settings)
+    // or if the path is explicitly /settings
+    const showSidebar = pathname === "/settings" || pathname === "/settings/"
+
+    if (!showSidebar) return null
+
+    return (
+        <div className="w-64 border-r border-[#1a1a1a] py-6 overflow-y-auto hidden md:block">
+            <SettingsSidebar />
+        </div>
+    )
+}

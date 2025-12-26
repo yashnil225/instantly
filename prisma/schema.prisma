@@ -1,0 +1,527 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?
+  
+  // Two-Factor Authentication
+  twoFactorEnabled     Boolean  @default(false)
+  twoFactorSecret      String?
+  twoFactorBackupCodes String?  // JSON array of hashed codes
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  workspaces       Workspace[]
+  workspaceMembers WorkspaceMember[]
+  invitations      Invitation[]
+  auditLogs        AuditLog[]
+}
+
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isDefault   Boolean  @default(false) // "My Organization" workspace
+  userId      String?
+  opportunityValue Float @default(1000)
+  
+  user              User?               @relation(fields: [userId], references: [id])
+  campaignWorkspaces CampaignWorkspace[]
+  members            WorkspaceMember[]
+  invitations        Invitation[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EmailAccount {
+  id        String  @id @default(cuid())
+  email     String  @unique
+  firstName String?
+  lastName  String?
+  provider  String // "google", "outlook", "custom"
+
+  // SMTP/IMAP Credentials (encrypted in real app)
+  smtpHost String?
+  smtpPort Int?
+  smtpUser String?
+  smtpPass String?
+  imapHost String?
+  imapPort Int?
+  imapUser String?
+  imapPass String?
+
+  // Settings
+  dailyLimit  Int     @default(50)
+  minWaitTime Int     @default(1) // minutes
+  slowRamp    Boolean @default(true)
+  signature   String?
+
+  // Warmup
+  warmupTag        String?
+  warmupDailyLimit Int     @default(50)
+  warmupReplyRate  Int     @default(30)
+
+  // Stats
+  sentToday   Int     @default(0)
+  
+  // Warmup Mode
+  warmupEnabled       Boolean @default(false)
+  warmupCurrentDay    Int     @default(1)
+  warmupDailyIncrease Int     @default(5)  // Increase by 5 emails per day
+  warmupMaxPerDay     Int     @default(50) // Max emails during warmup
+  warmupSentToday     Int     @default(0)  // Emails sent today via warmup
+  warmupRepliedToday  Int     @default(0)  // Auto-replies sent today
+  warmupPoolOptIn     Boolean @default(false) // Opted into warmup pool
+  warmupScore         Int     @default(100)   // Reputation score in pool (0-100)
+  lastActive          DateTime? // Last warmup activity
+  healthScore     Int      @default(100)
+  status          String   @default("active") // active, paused, error
+  lastSyncedAt    DateTime?
+  bounceCount     Int      @default(0) // For warmup score calculation
+  errorDetail     String?  // JSON or text for error context
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  campaignAccounts CampaignEmailAccount[]
+  sendingEvents    SendingEvent[]
+  warmupLogs       WarmupLog[]
+}
+
+model Campaign {
+  id     String  @id @default(cuid())
+  name   String
+  status String  @default("draft") // draft, active, paused, completed
+  userId String? // For multi-user support later
+
+  // Analytics (Aggregated)
+  sentCount   Int @default(0)
+  openCount   Int @default(0)
+  clickCount  Int @default(0)
+  replyCount  Int @default(0)
+  bounceCount Int @default(0)
+
+  // Settings
+  dailyLimit  Int?
+  stopOnReply Boolean @default(true)
+  trackOpens  Boolean @default(true)
+  trackLinks  Boolean @default(true)
+  settings    String? // JSON string for extended settings
+  
+  // Round-Robin Distribution
+  lastAccountIndex Int @default(0)
+
+  // Schedule
+  scheduleName String?
+  startTime    String? // "09:00"
+  endTime      String? // "17:00"
+  timezone     String?
+  days         String? // "Mon,Tue,Wed,Thu,Fri"
+  startDate    DateTime?
+  endDate      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  campaignAccounts   CampaignEmailAccount[]
+  campaignWorkspaces CampaignWorkspace[]
+  leads              Lead[]
+  sequences          Sequence[]
+  events             SendingEvent[]
+  stats              CampaignStat[]
+}
+
+// Junction table for many-to-many Campaign <-> Workspace
+model CampaignWorkspace {
+  id          String    @id @default(cuid())
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId  String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  
+  createdAt   DateTime  @default(now())
+  
+  @@unique([campaignId, workspaceId])
+}
+
+// Join table for many-to-many Campaign <-> EmailAccount
+model CampaignEmailAccount {
+  id             String       @id @default(cuid())
+  campaign       Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId     String
+  emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id])
+  emailAccountId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([campaignId, emailAccountId])
+}
+
+model Lead {
+  id               String   @id @default(cuid())
+  email            String
+  firstName        String?
+  lastName         String?
+  company          String?
+  status           String   @default("new") // new, contacted, replied, bounced, unsubscribed, sequence_complete
+  
+  // Scheduling
+  nextSendAt DateTime? // Exact time for next email send
+  
+  // Unibox
+  aiLabel    String?  // "out_of_office", "wrong_person", "not_interested", "lost", or custom
+  isRead     Boolean  @default(false)
+  
+  unsubscribeToken String?  @unique
+  
+  // Custom fields from CSV imports (stored as JSON)
+  customFields     String?  // JSON object with dynamic fields like website, phone, location, etc.
+  
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+
+  events SendingEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model Sequence {
+  id         String  @id @default(cuid())
+  stepNumber Int     @default(1)
+  
+  // Deprecated single fields, moving to variants
+  subject    String?
+  body       String? // Made optional
+
+  dayGap     Int     @default(1)
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+
+  variants   SequenceVariant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SequenceVariant {
+  id String @id @default(cuid())
+  
+  sequence   Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  sequenceId String
+
+  subject String?
+  body    String
+  
+  // Weight for distribution (e.g. 50/50)
+  weight  Int @default(50) 
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SendingEvent {
+  id   String @id @default(cuid())
+  type String // "sent", "open", "click", "reply", "bounce"
+
+  lead   Lead   @relation(fields: [leadId], references: [id])
+  leadId String
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+
+  messageId      String? // Provider's message-id for threading
+  emailAccountId String? // Which account sent this?
+
+  emailAccount   EmailAccount? @relation(fields: [emailAccountId], references: [id])
+
+  metadata  String? // JSON for IP, User Agent, Link URL
+  createdAt DateTime @default(now())
+}
+
+model CampaignStat {
+  id String @id @default(cuid())
+
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignId String
+
+  date DateTime // YYYY-MM-DD 00:00:00
+
+  sent    Int @default(0)
+  opened  Int @default(0)
+  replied Int @default(0)
+  bounced Int @default(0)
+  clicked Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([campaignId, date])
+}
+
+model WorkspaceMember {
+  id          String    @id @default(cuid())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  role        String    @default("member") // "owner", "admin", "member"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, userId])
+}
+
+model Invitation {
+  id          String    @id @default(cuid())
+  email       String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String
+  role        String    @default("member")
+  token       String    @unique
+  status      String    @default("pending") // "pending", "accepted", "expired"
+  
+  inviter     User      @relation(fields: [inviterId], references: [id])
+  inviterId   String
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, email])
+}
+
+model WarmupLog {
+  id        String   @id @default(cuid())
+  accountId String
+  account   EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  action    String   // "send", "receive", "auto_reply", "spam_rescue", "pool_send", "pool_receive"
+  warmupId  String   // Unique ID of the warmup email
+  fromEmail String?
+  toEmail   String?
+  details   String?  // Additional context
+  
+  createdAt DateTime @default(now())
+  
+  @@index([accountId])
+  @@index([warmupId])
+  @@index([createdAt])
+}
+
+model ScheduledEmail {
+  id              String   @id @default(cuid())
+  campaignId      String
+  leadId          String
+  sequenceStepId  String
+  scheduledAt     DateTime
+  timezone        String   @default("UTC")
+  status          String   @default("pending") // pending, sent, failed, cancelled
+  sentAt          DateTime?
+  error           String?
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([campaignId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // reply_received, campaign_completed, account_error, etc.
+  title     String
+  message   String
+  link      String?
+  metadata  String?  // JSON string
+  read      Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  action      String   // login, account_created, campaign_launched, etc.
+  resource    String   // accounts, campaigns, leads, etc.
+  resourceId  String?
+  details     String?  // JSON string
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model TrustedDevice {
+  id        String   @id @default(cuid())
+  userId    String
+  deviceId  String
+  expiresAt DateTime
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, deviceId])
+  @@index([userId])
+}
+
+// User Preferences for Settings page
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  
+  // Default Opportunity Value
+  opportunityValue     Int     @default(1000)
+  
+  // Lead Preferences
+  disableLeadSync      Boolean @default(false)
+  
+  // AI Automations
+  autoTagReplies       Boolean @default(true)
+  aiInboxManager       Boolean @default(false)
+  autoSuggestReplies   Boolean @default(true)
+  autoTagOoo          Boolean @default(true)
+  
+  // Unibox
+  showAutoReplies      Boolean @default(true)
+  saveExternalEmails   Boolean @default(true)
+  saveUndelivered      Boolean @default(false)
+  crmNotifyOnly        Boolean @default(false)
+  
+  // Outreach Preferences
+  autoPauseBounce      Boolean @default(true)
+  singleAccountGap     Boolean @default(false)
+  sequentialSend       Boolean @default(false)
+  resetAzDaily         Boolean @default(false)
+  resetTimezone        String  @default("UTC")
+  
+  // Notifications
+  disconnectNotify     Boolean @default(false)
+  positiveReplyNotify  Boolean @default(true)
+  notifyRecipients     String  @default("[]") // JSON array
+  audioNotify          Boolean @default(true)
+  
+  // Language
+  language             String  @default("en")
+  
+  // Deliverability
+  unlikelyReplyAction  String  @default("usual") // usual, skip
+  hostileAction        String  @default("usual") // usual, skip
+  disableOpenTracking  Boolean @default(false)
+  espMatching          Boolean @default(false)
+  firstEmailText       Boolean @default(false)
+  sisrMode             String  @default("basic") // basic, pro
+  limitPerCompany      Boolean @default(false)
+  
+  hasSeenWelcomeModal  Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Lead Labels for Settings
+model LeadLabel {
+  id          String   @id @default(cuid())
+  name        String
+  color       String   @default("#3b82f6")
+  description String?
+  userId      String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// Custom Tags for Settings
+model CustomTag {
+  id          String   @id @default(cuid())
+  label       String
+  description String?
+  userId      String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// Agency Settings (Pro feature)
+model AgencySettings {
+  id             String   @id @default(cuid())
+  workspaceId    String   @unique
+  
+  customDomain   String?
+  logoUrl        String?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// Agency Client Accounts (Pro feature)
+model AgencyClient {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  email          String
+  permissions    String   @default("view") // view, edit, admin
+  status         String   @default("pending") // pending, active
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@index([workspaceId])
+}
+
+// Blocklist for blocked emails
+model Blocklist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  reason    String?
+  userId    String?  // Optional: Scope to user
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([email])
+}
+
+model Reminder {
+  id        String   @id @default(cuid())
+  userId    String
+  leadId    String?
+  message   String?
+  scheduledAt DateTime
+  
+  status    String   @default("pending") // pending, sent, cancelled
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([scheduledAt])
+}

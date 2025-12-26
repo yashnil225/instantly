@@ -1,0 +1,50 @@
+
+> instantly-personal@0.1.0 build
+> next build
+
+ ⚠ `eslint` configuration in next.config.ts is no longer supported. See more info here: https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+ ⚠ Invalid next.config.ts options detected: 
+ ⚠     Unrecognized key(s) in object: 'eslint'
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\Yash\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\Yash\.gemini\antigravity\scratch\instantly\package-lock.json
+
+   ▲ Next.js 16.0.6 (Turbopack)
+   - Environments: .env
+
+ ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+   Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 1 errors:
+./.gemini/antigravity/scratch/instantly/app/settings/billing/page.tsx:8:1
+Module not found: Can't resolve '@/components/ui/progress'
+[0m [90m  6 |[39m [36mimport[39m { [33mButton[39m } [36mfrom[39m [32m"@/components/ui/button"[39m
+ [90m  7 |[39m [36mimport[39m { [33mCard[39m[33m,[39m [33mCardContent[39m[33m,[39m [33mCardDescription[39m[33m,[39m [33mCardHeader[39m[33m,[39m [33mCardTitle[39m } [36mfrom[39m [32m"@/components/ui/card"[39m
+[31m[1m>[22m[39m[90m  8 |[39m [36mimport[39m { [33mProgress[39m } [36mfrom[39m [32m"@/components/ui/progress"[39m
+ [90m    |[39m [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m  9 |[39m [36mimport[39m { [33mCheck[39m[33m,[39m [33mCreditCard[39m[33m,[39m [33mDownload[39m[33m,[39m [33mFileText[39m } [36mfrom[39m [32m"lucide-react"[39m
+ [90m 10 |[39m [36mimport[39m { useToast } [36mfrom[39m [32m"@/components/ui/use-toast"[39m
+ [90m 11 |[39m[0m
+
+Import map: aliased to relative './components/ui/progress' inside of [project]/.gemini/antigravity/scratch/instantly
+
+
+Import traces:
+  Client Component Browser:
+    ./.gemini/antigravity/scratch/instantly/app/settings/billing/page.tsx [Client Component Browser]
+    ./.gemini/antigravity/scratch/instantly/app/settings/billing/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./.gemini/antigravity/scratch/instantly/app/settings/billing/page.tsx [Client Component SSR]
+    ./.gemini/antigravity/scratch/instantly/app/settings/billing/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+    at <unknown> (./.gemini/antigravity/scratch/instantly/app/settings/billing/page.tsx:8:1)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

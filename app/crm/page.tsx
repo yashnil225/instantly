@@ -109,6 +109,9 @@ export default function CRMPage() {
         { id: "meeting_booked", title: "Meeting booked", color: "text-emerald-400", bgColor: "bg-emerald-400/10", barColor: "bg-emerald-400" },
         { id: "meeting_completed", title: "Meeting completed", color: "text-cyan-400", bgColor: "bg-cyan-400/10", barColor: "bg-cyan-400" },
         { id: "won", title: "Won", color: "text-green-500", bgColor: "bg-green-500/10", barColor: "bg-green-500" },
+        { id: "wrong_person", title: "Wrong person", color: "text-orange-400", bgColor: "bg-orange-400/10", barColor: "bg-orange-400" },
+        { id: "not_interested", title: "Not interested", color: "text-red-400", bgColor: "bg-red-400/10", barColor: "bg-red-400" },
+        { id: "lost", title: "Lost", color: "text-gray-400", bgColor: "bg-gray-400/10", barColor: "bg-gray-400" },
         ...availableLabels
             .filter(label => !["Interested", "Meeting booked", "Meeting completed", "Won", "Wrong person", "Not interested", "Lost"].map(l => l.toLowerCase()).includes(label.toLowerCase()))
             .map(label => ({

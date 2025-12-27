@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
@@ -81,7 +81,16 @@ interface Email {
     recipientEmail?: string
 }
 
-export default function UniboxPage() {
+// Wrapper component with Suspense for useSearchParams
+export default function UniboxPageWithSuspense() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+            <UniboxPage />
+        </Suspense>
+    )
+}
+
+function UniboxPage() {
     const searchParams = useSearchParams()
     const { data: session } = useSession()
     const { toast } = useToast()

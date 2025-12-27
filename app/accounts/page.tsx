@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useCallback } from "react"
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -77,7 +77,16 @@ interface EmailAccount {
     tags: string[]
 }
 
-export default function AccountsPage() {
+// Wrapper component with Suspense for useSearchParams
+export default function AccountsPageWithSuspense() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+            <AccountsPage />
+        </Suspense>
+    )
+}
+
+function AccountsPage() {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()

@@ -1166,7 +1166,7 @@ export default function CRMPage() {
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl border border-white/5 bg-[#111116]/20 text-gray-400 hover:text-white transition-all">
-                                                    <Settings className="h-4 w-4" />
+                                                    <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-56 bg-[#111116] border-white/10 rounded-xl shadow-2xl p-2 z-[60]">

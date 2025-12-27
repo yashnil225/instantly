@@ -48,6 +48,8 @@ import {
     Legend,
     ResponsiveContainer,
 } from "recharts"
+import { DeliverabilityDashboard } from "@/components/deliverability-dashboard"
+import { SendTimeHeatmap, ConversionFunnel } from "@/components/analytics-charts"
 
 interface AnalyticsData {
     totalSent: number
@@ -521,6 +523,18 @@ export default function AnalyticsPage() {
                                         </ResponsiveContainer>
                                     </div>
 
+                                    {/* Advanced Analytics Charts - Show for campaign tab */}
+                                    {activeTab === "campaign" && (
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            <div className="bg-card border border-border rounded-lg p-6">
+                                                <SendTimeHeatmap />
+                                            </div>
+                                            <div className="bg-card border border-border rounded-lg p-6">
+                                                <ConversionFunnel />
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Tabs */}
                                     <div className="flex items-center gap-8 border-b border-border">
                                         <button
@@ -551,7 +565,28 @@ export default function AnalyticsPage() {
                                                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
                                             )}
                                         </button>
+                                        <button
+                                            onClick={() => setActiveTab("deliverability")}
+                                            className={cn(
+                                                "pb-3 text-sm font-medium transition-colors relative",
+                                                activeTab === "deliverability"
+                                                    ? "text-blue-500"
+                                                    : "text-muted-foreground hover:text-gray-200"
+                                            )}
+                                        >
+                                            Deliverability
+                                            {activeTab === "deliverability" && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                                            )}
+                                        </button>
                                     </div>
+
+                                    {/* Deliverability Dashboard - Show when tab is active */}
+                                    {activeTab === "deliverability" && (
+                                        <div className="pt-6">
+                                            <DeliverabilityDashboard />
+                                        </div>
+                                    )}
                                 </>
                             )}
                         </div>

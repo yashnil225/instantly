@@ -108,14 +108,25 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, variables
                         </div>
 
                         {/* Footer Actions */}
-                        <div className="p-4 bg-[#0a0a0a] border-t border-[#222] flex justify-end gap-3">
-                            <Button variant="outline" className="bg-transparent border-blue-900/50 text-blue-500 hover:bg-blue-900/20 hover:text-blue-400">
-                                <ShieldCheck className="h-4 w-4 mr-2" /> Check Deliverability Score
-                            </Button>
-                            <div className="flex items-center rounded-md bg-blue-600 hover:bg-blue-700 transition-colors">
-                                <Button className="bg-transparent hover:bg-transparent text-white border-0 shadow-none">
-                                    <Send className="h-4 w-4 mr-2" /> Send test email
+                        <div className="p-4 bg-[#0a0a0a] border-t border-[#222] flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-500">Preview as:</span>
+                                <Button variant="outline" size="sm" className="h-7 text-xs border-blue-900/50 text-blue-400 hover:bg-blue-900/20">
+                                    <Mail className="h-3 w-3 mr-1" /> Gmail
                                 </Button>
+                                <Button variant="outline" size="sm" className="h-7 text-xs border-[#333] text-gray-400 hover:bg-[#222]">
+                                    <Mail className="h-3 w-3 mr-1" /> Outlook
+                                </Button>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <Button variant="outline" className="bg-transparent border-blue-900/50 text-blue-500 hover:bg-blue-900/20 hover:text-blue-400">
+                                    <ShieldCheck className="h-4 w-4 mr-2" /> Check Deliverability Score
+                                </Button>
+                                <div className="flex items-center rounded-md bg-blue-600 hover:bg-blue-700 transition-colors">
+                                    <Button className="bg-transparent hover:bg-transparent text-white border-0 shadow-none">
+                                        <Send className="h-4 w-4 mr-2" /> Send test email
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>

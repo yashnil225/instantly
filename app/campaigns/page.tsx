@@ -816,6 +816,17 @@ export default function CampaignsPage() {
                                             <DropdownMenuItem onClick={() => toast({ title: "Downloading CSV...", description: "Analytics export started." })} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
                                                 <Download className="mr-2 h-4 w-4 text-muted-foreground" /> Download analytics CSV
                                             </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    import('@/lib/pdf-export').then(({ generateCampaignReport }) => {
+                                                        generateCampaignReport(campaign)
+                                                        toast({ title: "PDF Generated", description: "Report downloaded successfully" })
+                                                    })
+                                                }}
+                                                className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2"
+                                            >
+                                                <FileText className="mr-2 h-4 w-4 text-muted-foreground" /> Download PDF Report
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => openShareModal(campaign.id, campaign.name)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
                                                 <Share2 className="mr-2 h-4 w-4 text-muted-foreground" /> Share Campaign
                                             </DropdownMenuItem>

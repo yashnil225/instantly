@@ -697,6 +697,24 @@ export default function AccountsPage() {
                                     <TooltipContent className="bg-card border-border text-foreground">Export visible accounts</TooltipContent>
                                 </Tooltip>
 
+                                {/* PDF Export Button */}
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="border-border bg-card text-foreground hover:text-foreground hover:bg-secondary gap-2 h-10 rounded-lg"
+                                            onClick={() => {
+                                                import('@/lib/pdf-export').then(({ generateAccountsReport }) => {
+                                                    generateAccountsReport(filteredAccounts)
+                                                    toast({ title: "PDF Generated", description: "Report downloaded successfully" })
+                                                })
+                                            }}
+                                        >
+                                            <FileText className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-card border-border text-foreground">Export as PDF</TooltipContent>
+                                </Tooltip>
 
                                 {/* Bulk Actions */}
                                 <Tooltip>

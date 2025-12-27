@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useToast } from "@/components/ui/use-toast"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,16 @@ const GoogleLogo = () => (
     <svg viewBox="0 0 24 24" className="h-10 w-10"><path fill="#4285F4" d="M23.7 12.3c0-.8-.1-1.6-.2-2.4H12v4.5h6.6c-.3 1.5-1.1 2.8-2.3 3.6v3h3.7c2.2-2 3.4-5 3.4-8.7z" /><path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-3l-3.7-3c-1.1.7-2.4 1.1-4.2 1.1-3.2 0-5.9-2.2-6.9-5.2H1.3v3.2C3.3 21.1 7.4 24 12 24z" /><path fill="#FBBC05" d="M5.1 13.9c-.3-.8-.4-1.6-.4-2.5 0-.8.1-1.7.4-2.5V5.7H1.3C.5 7.2 0 8.9 0 10.6c0 1.8.5 3.5 1.3 5l3.8-3.1v1.4z" /><path fill="#EA4335" d="M12 4.6c1.8 0 3.3.6 4.6 1.8L19.9 3c-2.1-2-4.9-3.2-7.9-3.2C7.4 0 3.3 2.9 1.3 7l3.8 3.1c1-3 3.7-5.2 6.9-5.2z" /></svg>
 )
 
-export default function ConnectAccountPage() {
+// Wrapper component with Suspense for useSearchParams
+export default function ConnectAccountPageWithSuspense() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><div className="text-white">Loading...</div></div>}>
+            <ConnectAccountPage />
+        </Suspense>
+    )
+}
+
+function ConnectAccountPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { toast } = useToast()

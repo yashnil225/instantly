@@ -39,7 +39,8 @@ export async function GET(request: Request) {
             },
             _count: {
                 select: {
-                    leads: true
+                    leads: true,
+                    sequences: true
                 }
             }
         },

@@ -237,18 +237,19 @@ export default function LeadsPage() {
 
     // Stats
     const totalLeads = leads.length
-    const completedCount = leads.filter(l => l.status === 'completed').length
+    const completedCount = leads.filter(l => l.status === 'completed' || l.status === 'sequence_complete').length
     const bouncedCount = leads.filter(l => l.status === 'bounced').length
     const repliedCount = leads.filter(l => l.status === 'replied').length
-    const contactedCount = leads.filter(l => l.status === 'contacted').length
+    const contactedCount = leads.filter(l => l.status === 'contacted' || l.status === 'replied' || l.status === 'completed' || l.status === 'sequence_complete').length
 
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'completed':
+            case 'sequence_complete':
                 return (
                     <div className="flex items-center gap-1.5 text-green-400 text-sm">
                         <CheckCircle className="h-4 w-4" />
-                        <span>Completed</span>
+                        <span>Done</span>
                     </div>
                 )
             case 'bounced':

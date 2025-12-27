@@ -84,49 +84,126 @@ export async function GET(request: Request) {
                 })
             },
             _sum: {
-                sentCount: true,
-                openCount: true,
-                clickCount: true,
-                replyCount: true,
+                sent: true,
+                opened: true,
+                clicked: true,
+                replied: true,
             }
         })
 
-        const totalSent = stats._sum.sentCount || 0
-        const mockData = {
+        const dailyStats = await prisma.campaignStat.findMany({
+            where: {
+                date: { gte: startDate },
+                ...(workspaceId && workspaceId !== 'all' ? {
+                    campaign: {
+                        campaignWorkspaces: {
+                            some: { workspaceId }
+                        }
+                    }
+                } : {
+                    campaign: {
+                        userId: session.user.id
+                    }
+                })
+            },
+            orderBy: { date: 'asc' }
+        })
+
+        // Fetch events for heatmap and funnel
+        const events = await prisma.sendingEvent.findMany({
+            where: {
+                createdAt: { gte: startDate },
+                ...(workspaceId && workspaceId !== 'all' ? {
+                    campaign: {
+                        campaignWorkspaces: {
+                            some: { workspaceId }
+                        }
+                    }
+                } : {
+                    campaign: {
+                        userId: session.user.id
+                    }
+                })
+            }
+        })
+
+        // Calculate heatmap data
+        const heatmapData = []
+        for (let day = 0; day < 7; day++) {
+            for (let hour = 0; hour < 24; hour++) {
+                const hourEvents = events.filter(e => {
+                    const date = new Date(e.createdAt)
+                    return date.getDay() === day && date.getHours() === hour
+                })
+                heatmapData.push({
+                    day,
+                    hour,
+                    value: hourEvents.filter(e => e.type === 'sent').length,
+                    opens: hourEvents.filter(e => e.type === 'open').length,
+                    clicks: hourEvents.filter(e => e.type === 'click').length,
+                    replies: hourEvents.filter(e => e.type === 'reply').length
+                })
+            }
+        }
+
+        // Calculate funnel data
+        const sent = stats._sum.sent || 0
+        const opened = stats._sum.opened || 0
+        const clicked = stats._sum.clicked || 0
+        const replied = stats._sum.replied || 0
+
+        const funnelData = [
+            { stage: "Sent", value: sent, percentage: 100 },
+            { stage: "Delivered", value: Math.round(sent * 0.99), percentage: 99 }, // Estimate delivery
+            { stage: "Opened", value: opened, percentage: sent > 0 ? Math.round((opened / sent) * 100) : 0 },
+            { stage: "Clicked", value: clicked, percentage: sent > 0 ? Math.round((clicked / sent) * 100) : 0 },
+            { stage: "Replied", value: replied, percentage: sent > 0 ? Math.round((replied / sent) * 100) : 0 }
+        ]
+
+        const totalSent = stats._sum.sent || 0
+        const result = {
             totalSent,
-            opensRate: totalSent > 0 ? Math.round(((stats._sum.openCount || 0) / totalSent) * 100) : 0,
-            clickRate: totalSent > 0 ? Math.round(((stats._sum.clickCount || 0) / totalSent) * 100) : 0,
-            replyRate: totalSent > 0 ? Math.round(((stats._sum.replyCount || 0) / totalSent) * 100) : 0,
+            opensRate: totalSent > 0 ? Math.round(((stats._sum.opened || 0) / totalSent) * 100) : 0,
+            clickRate: totalSent > 0 ? Math.round(((stats._sum.clicked || 0) / totalSent) * 100) : 0,
+            replyRate: totalSent > 0 ? Math.round(((stats._sum.replied || 0) / totalSent) * 100) : 0,
             opportunities: {
                 count: opportunitiesLeads.length,
                 value: opportunitiesLeads.length * opportunityValue
             },
-            chartData: generateChartData(startDate, now)
+            chartData: generateChartData(startDate, now, dailyStats),
+            heatmapData,
+            funnelData
         }
 
-        return NextResponse.json(mockData)
+        return NextResponse.json(result)
     } catch (error) {
         console.error('Analytics error:', error)
-        return NextResponse.json(
-            { error: 'Failed to fetch analytics' },
-            { status: 500 }
-        )
+        return NextResponse.json({ error: 'Failed' }, { status: 500 })
     }
 }
 
-function generateChartData(startDate: Date, endDate: Date) {
+function generateChartData(startDate: Date, endDate: Date, dailyStats: any[]) {
     const data = []
     const currentDate = new Date(startDate)
+    currentDate.setHours(0, 0, 0, 0)
 
     while (currentDate <= endDate) {
+        const dateStr = currentDate.toISOString().split('T')[0]
+
+        // Aggregate stats for this specific day across all campaigns
+        const dayStats = dailyStats.filter(s => {
+            const sDate = new Date(s.date).toISOString().split('T')[0]
+            return sDate === dateStr
+        })
+
         data.push({
             date: currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            sent: 0,
-            totalOpens: 0,
-            uniqueOpens: 0,
-            totalReplies: 0,
-            sentClicks: 0,
-            uniqueClicks: 0
+            sent: dayStats.reduce((sum, s) => sum + (s.sent || 0), 0),
+            totalOpens: dayStats.reduce((sum, s) => sum + (s.opened || 0), 0),
+            uniqueOpens: dayStats.reduce((sum, s) => sum + (s.opened || 0), 0),
+            totalReplies: dayStats.reduce((sum, s) => sum + (s.replied || 0), 0),
+            sentClicks: dayStats.reduce((sum, s) => sum + (s.clicked || 0), 0),
+            uniqueClicks: dayStats.reduce((sum, s) => sum + (s.clicked || 0), 0)
         })
         currentDate.setDate(currentDate.getDate() + 1)
     }

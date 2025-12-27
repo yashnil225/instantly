@@ -757,20 +757,29 @@ export default function CampaignsPage() {
                                     </Badge>
                                 </div>
 
-                                <div className="text-muted-foreground text-sm">
-                                    {(campaign.sentCount || 0) > 0 ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-1.5 w-16 bg-[#222] rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-blue-600 rounded-full"
-                                                    style={{ width: `${Math.min(100, (campaign.sentCount / (campaign.leadsCount || 1)) * 100)}%` }}
-                                                />
+                                <div>
+                                    {(() => {
+                                        const leadsCount = campaign._count?.leads || 0
+                                        const stepsCount = campaign._count?.sequences || 0
+                                        const totalExpected = leadsCount * stepsCount
+                                        let progress = totalExpected > 0
+                                            ? Math.min(100, Math.round(((campaign.sentCount || 0) / totalExpected) * 100))
+                                            : 0
+
+                                        if (campaign.status === 'completed') progress = 100
+
+                                        return (
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-1.5 w-16 bg-secondary/50 rounded-full overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                                        style={{ width: `${progress}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-xs text-muted-foreground font-medium">{progress}%</span>
                                             </div>
-                                            <span className="text-xs">{Math.round((campaign.sentCount / (campaign.leadsCount || 1)) * 100)}%</span>
-                                        </div>
-                                    ) : (
-                                        <span className="text-xs">0%</span>
-                                    )}
+                                        )
+                                    })()}
                                 </div>
 
                                 <div className="text-muted-foreground text-sm font-medium">{campaign.sentCount || "-"}</div>

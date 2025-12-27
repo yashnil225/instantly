@@ -55,6 +55,15 @@ export async function POST(
             return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
         }
 
+        // Deduplication check
+        const existingLead = await prisma.lead.findFirst({
+            where: { email, campaignId: id }
+        })
+
+        if (existingLead) {
+            return NextResponse.json({ error: 'Lead already exists in this campaign' }, { status: 400 })
+        }
+
         const lead = await prisma.lead.create({
             data: {
                 email,

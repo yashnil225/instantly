@@ -82,9 +82,12 @@ export async function POST(
             return NextResponse.json({ error: 'No valid leads found in import' }, { status: 400 })
         }
 
-        // Check DB duplicates
+        // Check DB duplicates in this campaign specifically
         const existingLeads = await prisma.lead.findMany({
-            where: { email: { in: emailsToCheck } },
+            where: {
+                email: { in: emailsToCheck },
+                campaignId: campaignId
+            },
             select: { email: true }
         })
         const existingEmails = new Set(existingLeads.map(l => l.email.toLowerCase()))
@@ -104,10 +107,10 @@ export async function POST(
         // Bulk create using batches to avoid transaction limits
         const BATCH_SIZE = 500
         const createdLeads: any[] = []
-        
+
         for (let i = 0; i < newLeads.length; i += BATCH_SIZE) {
             const batch = newLeads.slice(i, i + BATCH_SIZE)
-            
+
             const batchResult = await prisma.$transaction(
                 batch.map(lead => prisma.lead.create({
                     data: {
@@ -120,7 +123,7 @@ export async function POST(
                     }
                 }))
             )
-            
+
             createdLeads.push(...batchResult)
         }
 

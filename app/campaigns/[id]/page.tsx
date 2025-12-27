@@ -37,6 +37,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
+import { SendTimeHeatmap, ConversionFunnel } from "@/components/analytics-charts"
 import {
     LineChart,
     Line,
@@ -83,6 +84,8 @@ interface CampaignAnalytics {
     }[]
     leads?: any[]
     sequences?: any[]
+    heatmapData?: any[]
+    funnelData?: any[]
     dailyLimit?: number | null
     trackOpens?: boolean
     trackLinks?: boolean
@@ -378,35 +381,41 @@ export default function CampaignAnalyticsPage() {
                                     <div className="grid grid-cols-2 gap-y-6 gap-x-8">
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Leads</div>
-                                            <div className="text-lg font-bold text-white">249</div>
+                                            <div className="text-lg font-bold text-white">{data?.leads?.length || 0}</div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Completed</div>
-                                            <div className="text-lg font-bold text-white">16</div>
+                                            <div className="text-lg font-bold text-white">
+                                                {data?.leads?.filter((l: any) => l.status === 'sequence_complete').length || 0}
+                                            </div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">In Progress</div>
-                                            <div className="text-lg font-bold text-white">167</div>
+                                            <div className="text-lg font-bold text-white">
+                                                {data?.leads?.filter((l: any) => l.status === 'contacted').length || 0}
+                                            </div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Not yet contacted</div>
-                                            <div className="text-lg font-bold text-white">162</div>
+                                            <div className="text-lg font-bold text-white">
+                                                {data?.leads?.filter((l: any) => l.status === 'new').length || 0}
+                                            </div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Bounced</div>
-                                            <div className="text-lg font-bold text-white">66</div>
+                                            <div className="text-lg font-bold text-white">
+                                                {data?.leads?.filter((l: any) => l.status === 'bounced').length || 0}
+                                            </div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Unsubscribed</div>
-                                            <div className="text-lg font-bold text-white">0</div>
-                                        </div>
-                                        <div>
-                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Bounce Shield</div>
-                                            <div className="text-lg font-bold text-white">0</div>
+                                            <div className="text-lg font-bold text-white">
+                                                {data?.leads?.filter((l: any) => l.status === 'unsubscribed').length || 0}
+                                            </div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Progress</div>
-                                            <div className="text-lg font-bold text-white">32%</div>
+                                            <div className="text-lg font-bold text-white">{data?.completion || 0}%</div>
                                         </div>
                                     </div>
                                 </div>
@@ -485,6 +494,16 @@ export default function CampaignAnalyticsPage() {
                                                 <Line type="monotone" dataKey="uniqueClicks" stroke="#9ca3af" name="Unique clicks" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
                                             </LineChart>
                                         </ResponsiveContainer>
+                                    </div>
+
+                                    {/* Advanced Analytics Charts */}
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
+                                            <SendTimeHeatmap data={data?.heatmapData} />
+                                        </div>
+                                        <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
+                                            <ConversionFunnel data={data?.funnelData} />
+                                        </div>
                                     </div>
 
                                     {/* Step Analytics Table */}

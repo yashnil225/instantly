@@ -69,6 +69,8 @@ interface AnalyticsData {
         sentClicks: number
         uniqueClicks: number
     }[]
+    heatmapData?: any[]
+    funnelData?: any[]
 }
 
 export default function AnalyticsPage() {
@@ -527,10 +529,10 @@ export default function AnalyticsPage() {
                                     {activeTab === "campaign" && (
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                             <div className="bg-card border border-border rounded-lg p-6">
-                                                <SendTimeHeatmap />
+                                                <SendTimeHeatmap data={data?.heatmapData} />
                                             </div>
                                             <div className="bg-card border border-border rounded-lg p-6">
-                                                <ConversionFunnel />
+                                                <ConversionFunnel data={data?.funnelData} />
                                             </div>
                                         </div>
                                     )}

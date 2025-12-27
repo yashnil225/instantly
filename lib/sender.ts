@@ -45,6 +45,9 @@ export async function processBatch() {
         }
     })
 
+    // 0. Fetch Blocklist
+    const blockedEmails = (await prisma.blocklist.findMany({ select: { email: true } })).map(b => b.email.toLowerCase())
+
     let totalSent = 0
     let errors = 0
 
@@ -138,6 +141,9 @@ export async function processBatch() {
                 return 0
             })
         }
+
+        // Filter out Blocklisted Emails
+        candidateLeads = candidateLeads.filter(l => !blockedEmails.includes(l.email.toLowerCase()))
 
         // Limit to batch size after sort
         candidateLeads = candidateLeads.slice(0, 20)
@@ -353,6 +359,12 @@ export async function processBatch() {
                         where: { id: lead.id },
                         data: { nextSendAt: nextSendDate }
                     })
+                } else {
+                    // No more steps after this one
+                    await prisma.lead.update({
+                        where: { id: lead.id },
+                        data: { status: 'sequence_complete', nextSendAt: null }
+                    })
                 }
 
                 totalSent++
@@ -389,6 +401,28 @@ export async function processBatch() {
             } catch (error) {
                 console.error(`Failed to send to ${lead.email}`, error)
                 errors++
+            }
+        }
+
+        // --- Campaign Auto-Completion Logic ---
+        // Check if there are ANY leads left that haven't reached a terminal status
+        // Terminal statuses: replied (if stop on reply is true), unsubscribed, bounced, sequence_complete
+        const activeLeadsCount = await prisma.lead.count({
+            where: {
+                campaignId: campaign.id,
+                status: { notIn: excludedStatuses }
+            }
+        })
+
+        if (activeLeadsCount === 0) {
+            // Check if there are any leads at all to prevent marking empty campaigns as completed
+            const totalLeadsCount = await prisma.lead.count({ where: { campaignId: campaign.id } })
+            if (totalLeadsCount > 0) {
+                await prisma.campaign.update({
+                    where: { id: campaign.id },
+                    data: { status: 'completed' }
+                })
+                console.log(`Campaign ${campaign.id} marked as completed.`)
             }
         }
     }

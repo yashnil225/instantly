@@ -67,6 +67,18 @@ export async function PATCH(
 
     try {
         const body = await request.json()
+
+        // Handle automatic start date for resume
+        if (body.status === 'active') {
+            const current = await prisma.campaign.findUnique({
+                where: { id: params.id },
+                select: { startDate: true }
+            })
+            if (current && !current.startDate && !body.startDate) {
+                body.startDate = new Date()
+            }
+        }
+
         const campaign = await prisma.campaign.update({
             where: { id: params.id, userId: session.user.id },
             data: body

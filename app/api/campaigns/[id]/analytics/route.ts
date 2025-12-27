@@ -49,31 +49,76 @@ export async function GET(
         const opportunities = campaign.leads.filter((l: any) => l.aiLabel === 'opportunity')
         const conversions = campaign.leads.filter((l: any) => l.status === 'converted')
 
-        // Generate chart data
-        const chartData = generateChartData(range, campaign)
+        // Fetch real daily stats
+        const dailyStats = await prisma.campaignStat.findMany({
+            where: {
+                campaignId: campaignId,
+                date: { gte: getStartDate(range) }
+            },
+            orderBy: { date: 'asc' }
+        })
 
-        // Generate step analytics from sequences
-        const stepAnalytics = campaign.sequences.map((seq: any, index: number) => {
-            // Estimate metrics per step (in real app, would track per-step)
-            const estimatedSent = Math.floor(sentCount / Math.max(1, campaign.sequences.length))
-            const estimatedOpened = Math.floor(openCount / Math.max(1, campaign.sequences.length))
-            const estimatedReplied = Math.floor(replyCount / Math.max(1, campaign.sequences.length))
-            const estimatedClicked = Math.floor(clickCount / Math.max(1, campaign.sequences.length))
+        // Fetch all events for this campaign to calculate accurate step analytics
+        const allEvents = await prisma.sendingEvent.findMany({
+            where: { campaignId: campaignId }
+        })
+
+        // Generate chart data using real stats
+        const chartData = generateChartData(range, dailyStats)
+
+        // Generate accurate step analytics from events
+        const stepAnalytics = campaign.sequences.map((seq: any) => {
+            const stepEvents = allEvents.filter(e => {
+                try {
+                    const meta = JSON.parse(e.metadata || '{}')
+                    return meta.step === seq.stepNumber
+                } catch { return false }
+            })
 
             return {
                 step: `Step ${seq.stepNumber}: ${seq.subject || 'Email'}`,
-                sent: estimatedSent,
-                opened: estimatedOpened,
-                replied: estimatedReplied,
-                clicked: estimatedClicked,
-                opportunities: Math.floor(opportunities.length / Math.max(1, campaign.sequences.length))
+                sent: stepEvents.filter(e => e.type === 'sent').length,
+                opened: stepEvents.filter(e => e.type === 'open').length,
+                replied: stepEvents.filter(e => e.type === 'reply').length,
+                clicked: stepEvents.filter(e => e.type === 'click').length,
+                opportunities: stepEvents.filter(e => e.type === 'reply').length // Simplified
             }
         })
 
         // Calculate completion
-        const completion = totalLeads > 0 && sentCount > 0
-            ? Math.min(100, Math.round((sentCount / (totalLeads * campaign.sequences.length)) * 100))
-            : 0
+        const completion = campaign.status === 'completed'
+            ? 100
+            : totalLeads > 0 && sentCount > 0
+                ? Math.min(100, Math.round((sentCount / (totalLeads * campaign.sequences.length)) * 100))
+                : 0
+
+        // Calculate heatmap data for this specific campaign
+        const heatmapData = []
+        for (let day = 0; day < 7; day++) {
+            for (let hour = 0; hour < 24; hour++) {
+                const hourEvents = allEvents.filter(e => {
+                    const date = new Date(e.createdAt)
+                    return date.getDay() === day && date.getHours() === hour
+                })
+                heatmapData.push({
+                    day,
+                    hour,
+                    value: hourEvents.filter(e => e.type === 'sent').length,
+                    opens: hourEvents.filter(e => e.type === 'open').length,
+                    clicks: hourEvents.filter(e => e.type === 'click').length,
+                    replies: hourEvents.filter(e => e.type === 'reply').length
+                })
+            }
+        }
+
+        // Calculate funnel data for this specific campaign
+        const funnelData = [
+            { stage: "Sent", value: sentCount, percentage: 100 },
+            { stage: "Delivered", value: Math.round(sentCount * 0.99), percentage: 99 },
+            { stage: "Opened", value: openCount, percentage: sentCount > 0 ? Math.round((openCount / sentCount) * 100) : 0 },
+            { stage: "Clicked", value: clickCount, percentage: sentCount > 0 ? Math.round((clickCount / sentCount) * 100) : 0 },
+            { stage: "Replied", value: replyCount, percentage: sentCount > 0 ? Math.round((replyCount / sentCount) * 100) : 0 }
+        ]
 
         const analyticsData = {
             name: campaign.name,
@@ -93,6 +138,8 @@ export async function GET(
             },
             chartData,
             stepAnalytics,
+            heatmapData,
+            funnelData,
             leads: campaign.leads,
             sequences: campaign.sequences
         }
@@ -101,13 +148,26 @@ export async function GET(
     } catch (error) {
         console.error('Campaign analytics error:', error)
         return NextResponse.json(
-            { error: 'Failed to fetch campaign analytics' },
+            { error: 'Failed' },
             { status: 500 }
         )
     }
 }
 
-function generateChartData(range: string, campaign: any) {
+function getStartDate(range: string) {
+    const now = new Date()
+    const startDate = new Date()
+    const days = range === 'last_7_days' ? 7 :
+        range === 'last_4_weeks' ? 28 :
+            range === 'last_3_months' ? 90 :
+                range === 'last_6_months' ? 180 :
+                    range === 'last_12_months' ? 365 : 30
+    startDate.setDate(now.getDate() - days)
+    startDate.setHours(0, 0, 0, 0)
+    return startDate
+}
+
+function generateChartData(range: string, dailyStats: any[]) {
     const data = []
     const days = range === 'last_7_days' ? 7 :
         range === 'last_4_weeks' ? 28 :
@@ -115,31 +175,24 @@ function generateChartData(range: string, campaign: any) {
                 range === 'last_6_months' ? 180 :
                     range === 'last_12_months' ? 365 : 30
 
-    const totalSent = campaign.sentCount || 0
-    const totalOpens = campaign.openCount || 0
-    const totalClicks = campaign.clickCount || 0
-    const totalReplies = campaign.replyCount || 0
-
-    const hasActivity = totalSent > 0 || totalOpens > 0 || totalClicks > 0 || totalReplies > 0
-
     for (let i = days - 1; i >= 0; i--) {
         const date = new Date()
         date.setDate(date.getDate() - i)
+        const dateStr = date.toISOString().split('T')[0]
 
-        // Distribute metrics across days (in real app, would have daily tracking)
-        // Only add random factor if there is actual activity to distribute
-        const dailySent = hasActivity ? Math.floor((totalSent / days) + (Math.random() * 2)) : 0
-        const dailyOpens = hasActivity ? Math.floor((totalOpens / days) + (Math.random() * 1)) : 0
-        const dailyClicks = hasActivity ? Math.floor((totalClicks / days)) : 0
-        const dailyReplies = hasActivity ? Math.floor((totalReplies / days)) : 0
+        const dayStat = dailyStats.find(s => {
+            const sDate = new Date(s.date).toISOString().split('T')[0]
+            return sDate === dateStr
+        })
 
         data.push({
             date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            sent: dailySent,
-            totalReplies: dailyReplies,
-            uniqueOpens: dailyOpens,
-            totalClicks: dailyClicks,
-            uniqueClicks: dailyClicks
+            sent: dayStat?.sent || 0,
+            totalOpens: dayStat?.opened || 0,
+            uniqueOpens: dayStat?.opened || 0,
+            totalReplies: dayStat?.replied || 0,
+            totalClicks: dayStat?.clicked || 0,
+            uniqueClicks: dayStat?.clicked || 0
         })
     }
 

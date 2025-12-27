@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
-import { emailQueue } from '@/lib/queue'
+import { getEmailQueue } from '@/lib/queue'
 
 const prisma = new PrismaClient()
 
@@ -51,7 +51,8 @@ export async function POST(
 
         for (const lead of campaign.leads) {
             try {
-                await emailQueue.add('send-email', {
+                const queue = getEmailQueue()
+                await queue.add('send-email', {
                     campaignId: campaign.id,
                     leadId: lead.id,
                     sequenceId: firstSequence.id,

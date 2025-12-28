@@ -9,45 +9,43 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const workspaceIds = searchParams.get('workspaceIds')?.split(',').filter(Boolean)
+    const singleWorkspaceId = searchParams.get('workspaceId')
+    const multipleWorkspaceIds = searchParams.get('workspaceIds')?.split(',').filter(Boolean) || []
 
-    const where: any = { userId: session.user.id }
+    // Support both single and multiple workspace IDs
+    const workspaceIds = singleWorkspaceId && singleWorkspaceId !== 'all'
+        ? [singleWorkspaceId]
+        : multipleWorkspaceIds
 
-    // Filter by workspace(s) if provided
-    if (workspaceIds && workspaceIds.length > 0) {
-        where.campaignWorkspaces = {
-            some: {
-                workspaceId: {
-                    in: workspaceIds
-                }
-            }
-        }
-    }
-
-    const campaigns = await prisma.campaign.findMany({
-        where,
-        include: {
-            campaignWorkspaces: {
-                include: {
-                    workspace: {
-                        select: {
-                            id: true,
-                            name: true
+    try {
+        const campaigns = await prisma.campaign.findMany({
+            where: {
+                userId: session.user.id,
+                ...(workspaceIds.length > 0 ? {
+                    campaignWorkspaces: {
+                        some: {
+                            workspaceId: { in: workspaceIds }
                         }
+                    }
+                } : {})
+            },
+            include: {
+                campaignWorkspaces: true,
+                _count: {
+                    select: {
+                        leads: true,
+                        sequences: true
                     }
                 }
             },
-            _count: {
-                select: {
-                    leads: true,
-                    sequences: true
-                }
-            }
-        },
-        orderBy: { createdAt: 'desc' }
-    })
+            orderBy: { createdAt: 'desc' }
+        })
 
-    return NextResponse.json(campaigns)
+        return NextResponse.json(campaigns)
+    } catch (error) {
+        console.error("Failed to fetch campaigns:", error)
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    }
 }
 
 export async function POST(request: Request) {

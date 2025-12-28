@@ -35,6 +35,9 @@ export async function GET(
         include: {
             stats: {
                 where: dateFilter
+            },
+            campaignWorkspaces: {
+                include: { workspace: true }
             }
         }
     })
@@ -67,24 +70,49 @@ export async function PATCH(
 
     try {
         const body = await request.json()
+        const { workspaceIds, ...updateData } = body
 
         // Handle automatic start date for resume
-        if (body.status === 'active') {
+        if (updateData.status === 'active') {
             const current = await prisma.campaign.findUnique({
                 where: { id: params.id },
                 select: { startDate: true }
             })
-            if (current && !current.startDate && !body.startDate) {
-                body.startDate = new Date()
+            if (current && !current.startDate && !updateData.startDate) {
+                updateData.startDate = new Date()
+            }
+        }
+
+        // If workspaceIds is provided, update workspace assignments
+        if (workspaceIds !== undefined) {
+            // First delete existing assignments
+            await prisma.campaignWorkspace.deleteMany({
+                where: { campaignId: params.id }
+            })
+
+            // Then create new assignments
+            if (workspaceIds.length > 0) {
+                await prisma.campaignWorkspace.createMany({
+                    data: workspaceIds.map((workspaceId: string) => ({
+                        campaignId: params.id,
+                        workspaceId
+                    }))
+                })
             }
         }
 
         const campaign = await prisma.campaign.update({
             where: { id: params.id, userId: session.user.id },
-            data: body
+            data: updateData,
+            include: {
+                campaignWorkspaces: {
+                    include: { workspace: true }
+                }
+            }
         })
         return NextResponse.json(campaign)
     } catch (error) {
+        console.error('Failed to update campaign:', error)
         return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
     }
 }

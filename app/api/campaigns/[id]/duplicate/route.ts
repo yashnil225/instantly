@@ -39,7 +39,22 @@ export async function POST(
 
         console.log(`[DUPLICATE] Found original with ${original.sequences.length} sequences`)
 
-        // Create new campaign
+        // Duplicate Sequences
+        const newSequences = original.sequences.map(seq => ({
+            stepNumber: seq.stepNumber,
+            dayGap: seq.dayGap,
+            subject: seq.subject || "",
+            body: seq.body || "",
+            variants: {
+                create: (seq.variants || []).map(v => ({
+                    subject: v.subject || "",
+                    body: v.body || "",
+                    weight: v.weight ?? 50
+                }))
+            }
+        }))
+
+        // Create new campaign with sequences
         const newCampaign = await prisma.campaign.create({
             data: {
                 name: newName,
@@ -58,24 +73,12 @@ export async function POST(
                 stopOnReply: original.stopOnReply,
                 trackLinks: original.trackLinks,
                 trackOpens: original.trackOpens,
-                settings: original.settings,
+                settings: original.settings as any,
                 lastAccountIndex: 0,
 
                 // Duplicate Sequences
                 sequences: {
-                    create: original.sequences.map(seq => ({
-                        stepNumber: seq.stepNumber,
-                        dayGap: seq.dayGap,
-                        subject: seq.subject || "",
-                        body: seq.body || "",
-                        variants: {
-                            create: (seq.variants || []).map(v => ({
-                                subject: v.subject || "",
-                                body: v.body || "",
-                                weight: v.weight ?? 50
-                            }))
-                        }
-                    }))
+                    create: newSequences
                 },
 
                 // Duplicate Workspace Links

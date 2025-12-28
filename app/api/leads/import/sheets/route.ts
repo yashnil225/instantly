@@ -14,10 +14,11 @@ export async function POST(request: Request) {
     }
 
     try {
-        const { campaignId, sheetUrl } = await request.json()
+        const { campaignId, url: rawUrl } = await request.json()
+        const sheetUrl = rawUrl
 
-        if (!sheetUrl || !campaignId) {
-            return NextResponse.json({ error: 'Missing parameters' }, { status: 400 })
+        if (!sheetUrl) {
+            return NextResponse.json({ error: 'Missing sheet URL' }, { status: 400 })
         }
 
         // 1. Transform URL to CSV Export URL if it's a standard edit URL
@@ -29,9 +30,22 @@ export async function POST(request: Request) {
         }
 
         // 2. Fetch the CSV
-        const response = await fetch(csvUrl)
+        const headers: Record<string, string> = {}
+        const accessToken = (session as any)?.accessToken
+        if (accessToken) {
+            headers['Authorization'] = `Bearer ${accessToken}`
+        }
+
+        const response = await fetch(csvUrl, { headers })
+
         if (!response.ok) {
-            return NextResponse.json({ error: 'Failed to fetch Google Sheet. Make sure it is public.' }, { status: 400 })
+            const errorText = await response.text()
+            console.error('Google Sheet fetch error:', response.status, errorText)
+            return NextResponse.json({
+                error: accessToken
+                    ? 'Failed to fetch Google Sheet. Make sure you have permission to access it.'
+                    : 'Failed to fetch Google Sheet. Make sure it is public or you are logged in with Google.'
+            }, { status: 400 })
         }
         const csvText = await response.text()
 

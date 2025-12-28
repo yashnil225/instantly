@@ -97,6 +97,11 @@ function CampaignsPage() {
             }
             if (e.key === "Delete" && selectedIds.length > 0) {
                 e.preventDefault()
+                if (selectedIds.length === 1) {
+                    setCampaignToDelete(selectedIds[0])
+                } else {
+                    setCampaignToDelete(selectedIds.join(','))
+                }
                 setDeleteOpen(true)
             }
             if (e.key === "Escape") {
@@ -118,6 +123,12 @@ function CampaignsPage() {
     const [shareCampaignId, setShareCampaignId] = useState<string | null>(null)
     const [shareCampaignName, setShareCampaignName] = useState("")
 
+    // Workspace assignment modal state
+    const [workspaceAssignOpen, setWorkspaceAssignOpen] = useState(false)
+    const [campaignForWorkspace, setCampaignForWorkspace] = useState<any>(null)
+    const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<string[]>([])
+    const [isAssigningWorkspaces, setIsAssigningWorkspaces] = useState(false)
+
     // Delete Modal State
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [campaignToDelete, setCampaignToDelete] = useState<string | null>(null)
@@ -137,6 +148,20 @@ function CampaignsPage() {
     useEffect(() => {
         loadWorkspaces()
     }, [])
+
+    useEffect(() => {
+        if (searchParams.get("welcome")) {
+            toast({
+                title: "Welcome to Instantly!",
+                description: "You have successfully logged in. Let's start reaching out!",
+            })
+            // Clear the param from URL without reloading
+            const params = new URLSearchParams(searchParams.toString())
+            params.delete("welcome")
+            const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
+            window.history.replaceState({}, "", newUrl)
+        }
+    }, [searchParams])
 
     useEffect(() => {
         fetchCampaigns()
@@ -265,19 +290,31 @@ function CampaignsPage() {
     const confirmDelete = async () => {
         if (!campaignToDelete) return
 
+        const idsToDelete = campaignToDelete.split(',')
+        let successCount = 0
+
         try {
-            const res = await fetch(`/api/campaigns/${campaignToDelete}`, { method: 'DELETE' })
-            if (res.ok) {
-                setCampaigns(prev => prev.filter(c => c.id !== campaignToDelete))
-                toast({ title: "Campaign deleted", description: "The campaign has been moved to trash." })
+            for (const id of idsToDelete) {
+                const res = await fetch(`/api/campaigns/${id}`, { method: 'DELETE' })
+                if (res.ok) successCount++
+            }
+
+            if (successCount > 0) {
+                setCampaigns(prev => prev.filter(c => !idsToDelete.includes(c.id)))
+                setSelectedIds([])
+                toast({
+                    title: successCount === 1 ? "Campaign deleted" : "Campaigns deleted",
+                    description: successCount === 1 ? "The campaign has been permanently deleted." : `${successCount} campaigns have been permanently deleted.`
+                })
             } else {
-                toast({ title: "Error", description: "Failed to delete campaign", variant: "destructive" })
+                toast({ title: "Error", description: "Failed to delete campaign(s)", variant: "destructive" })
             }
         } catch (error) {
             console.error(error)
-            toast({ title: "Error", description: "Failed to delete campaign", variant: "destructive" })
+            toast({ title: "Error", description: "An error occurred during deletion", variant: "destructive" })
         } finally {
             setDeleteOpen(false)
+            setCampaignToDelete(null)
         }
     }
 
@@ -361,6 +398,39 @@ function CampaignsPage() {
         toast({ title: "Success", description: "Link copied to clipboard" })
     }
 
+    const openWorkspaceAssign = (campaign: any) => {
+        setCampaignForWorkspace(campaign)
+        // Pre-select current workspaces
+        const currentWorkspaceIds = campaign.campaignWorkspaces?.map((cw: any) => cw.workspaceId) || []
+        setSelectedWorkspaceIds(currentWorkspaceIds)
+        setWorkspaceAssignOpen(true)
+    }
+
+    const handleAssignWorkspaces = async () => {
+        if (!campaignForWorkspace) return
+
+        setIsAssigningWorkspaces(true)
+        try {
+            const res = await fetch(`/api/campaigns/${campaignForWorkspace.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workspaceIds: selectedWorkspaceIds })
+            })
+
+            if (res.ok) {
+                fetchCampaigns()
+                setWorkspaceAssignOpen(false)
+                toast({ title: "Success", description: "Workspace assignment updated" })
+            } else {
+                toast({ title: "Error", description: "Failed to update workspaces", variant: "destructive" })
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to update workspaces", variant: "destructive" })
+        } finally {
+            setIsAssigningWorkspaces(false)
+        }
+    }
+
     // ...
 
     const handleRowClick = (e: React.MouseEvent, id: string) => {
@@ -426,8 +496,10 @@ function CampaignsPage() {
                 if (processed % 50 === 0) await new Promise(r => setTimeout(r, 10))
             }
 
-            const csv = csvRows.map(row => row.join(",")).join("\n")
-            const blob = new Blob([csv], { type: "text/csv" })
+            const csv = csvRows.map(row =>
+                row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(",")
+            ).join("\n")
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
             const url = URL.createObjectURL(blob)
             const a = document.createElement("a")
             a.href = url
@@ -445,6 +517,9 @@ function CampaignsPage() {
         setExportProgress(0)
 
         try {
+            // Dynamic import xlsx library
+            const XLSX = await import('xlsx')
+
             const total = filteredAndSortedCampaigns.length
             let processed = 0
 
@@ -455,11 +530,11 @@ function CampaignsPage() {
                 rows.push([
                     campaign.name,
                     campaign.status,
-                    (campaign.sentCount || 0).toString(),
-                    (campaign.openCount || 0).toString(),
-                    (campaign.clickCount || 0).toString(),
-                    (campaign.replyCount || 0).toString(),
-                    (campaign.bounceCount || 0).toString(),
+                    campaign.sentCount || 0,
+                    campaign.openCount || 0,
+                    campaign.clickCount || 0,
+                    campaign.replyCount || 0,
+                    campaign.bounceCount || 0,
                     campaign.createdAt ? new Date(campaign.createdAt).toLocaleDateString() : "",
                     campaign.updatedAt ? new Date(campaign.updatedAt).toLocaleDateString() : ""
                 ])
@@ -467,14 +542,17 @@ function CampaignsPage() {
                 setExportProgress(Math.round((processed / total) * 100))
             }
 
-            const content = rows.map(row => row.join("\t")).join("\n")
-            const blob = new Blob([content], { type: "application/vnd.ms-excel" })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.download = "campaigns.xls"
-            a.click()
+            // Create workbook and worksheet
+            const ws = XLSX.utils.aoa_to_sheet(rows)
+            const wb = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(wb, ws, "Campaigns")
+
+            // Generate and download
+            XLSX.writeFile(wb, "campaigns.xlsx")
             toast({ title: "Success", description: `Exported ${total} campaigns to Excel` })
+        } catch (error) {
+            console.error("Export error:", error)
+            toast({ title: "Error", description: "Failed to export Excel file", variant: "destructive" })
         } finally {
             setIsExporting(false)
             setExportProgress(0)
@@ -687,6 +765,23 @@ function CampaignsPage() {
                                 <TooltipContent>Export to CSV</TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
+                        {selectedIds.length > 0 && (
+                            <Button
+                                variant="destructive"
+                                onClick={() => {
+                                    if (selectedIds.length === 1) {
+                                        setCampaignToDelete(selectedIds[0])
+                                    } else {
+                                        setCampaignToDelete(selectedIds.join(','))
+                                    }
+                                    setDeleteOpen(true)
+                                }}
+                                className="h-10 px-4 font-medium rounded-lg gap-2"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Delete ({selectedIds.length})
+                            </Button>
+                        )}
                         <Button onClick={() => setCreateOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-foreground h-10 px-6 font-medium rounded-lg gap-2">
                             <Plus className="h-4 w-4" />
                             Add New
@@ -847,6 +942,10 @@ function CampaignsPage() {
                                             </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => openShareModal(campaign.id, campaign.name)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
                                                 <Share2 className="mr-2 h-4 w-4 text-muted-foreground" /> Share Campaign
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator className="bg-border" />
+                                            <DropdownMenuItem onClick={() => openWorkspaceAssign(campaign)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
+                                                <Zap className="mr-2 h-4 w-4 text-blue-500" /> Assign to Workspaces
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -1048,6 +1147,81 @@ function CampaignsPage() {
                     </div>
                 </DialogContent>
             </Dialog >
+
+            {/* Assign to Workspaces Modal */}
+            <Dialog open={workspaceAssignOpen} onOpenChange={setWorkspaceAssignOpen}>
+                <DialogContent className="bg-background border-border sm:max-w-[500px] p-0 overflow-hidden">
+                    <div className="sr-only">
+                        <DialogTitle>Assign to Workspaces</DialogTitle>
+                    </div>
+                    <div className="p-8 space-y-6">
+                        <div className="space-y-2">
+                            <h2 className="text-xl font-semibold text-foreground">Assign to Workspaces</h2>
+                            <p className="text-muted-foreground text-sm">Select workspaces for "{campaignForWorkspace?.name}"</p>
+                        </div>
+
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                            {workspaces.length === 0 ? (
+                                <p className="text-muted-foreground text-sm py-4 text-center">No workspaces available. Create a workspace first.</p>
+                            ) : (
+                                workspaces.map((ws: any) => (
+                                    <div
+                                        key={ws.id}
+                                        className={cn(
+                                            "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                                            selectedWorkspaceIds.includes(ws.id)
+                                                ? "border-blue-600 bg-blue-500/10"
+                                                : "border-border hover:border-muted-foreground/50"
+                                        )}
+                                        onClick={() => {
+                                            if (selectedWorkspaceIds.includes(ws.id)) {
+                                                setSelectedWorkspaceIds(prev => prev.filter(id => id !== ws.id))
+                                            } else {
+                                                setSelectedWorkspaceIds(prev => [...prev, ws.id])
+                                            }
+                                        }}
+                                    >
+                                        <Checkbox
+                                            checked={selectedWorkspaceIds.includes(ws.id)}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                    setSelectedWorkspaceIds(prev => [...prev, ws.id])
+                                                } else {
+                                                    setSelectedWorkspaceIds(prev => prev.filter(id => id !== ws.id))
+                                                }
+                                            }}
+                                            className="border-muted-foreground data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-medium text-foreground">{ws.name}</div>
+                                            {ws.isDefault && (
+                                                <span className="text-xs text-muted-foreground">Default</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setWorkspaceAssignOpen(false)}
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleAssignWorkspaces}
+                                disabled={isAssigningWorkspaces}
+                                className="bg-blue-600 hover:bg-blue-500 text-white"
+                            >
+                                {isAssigningWorkspaces ? "Saving..." : "Save Changes"}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div >
     )
 }

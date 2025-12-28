@@ -29,17 +29,36 @@ export async function POST(request: Request) {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        // Create user
-        const user = await prisma.user.create({
-            data: {
-                name,
-                email,
-                password: hashedPassword,
-            }
+        // Create user and default workspace in a transaction
+        const result = await prisma.$transaction(async (tx) => {
+            const newUser = await tx.user.create({
+                data: {
+                    name,
+                    email,
+                    password: hashedPassword,
+                }
+            })
+
+            const workspace = await tx.workspace.create({
+                data: {
+                    name: "My Organization",
+                    userId: newUser.id,
+                    isDefault: true,
+                    opportunityValue: 5000,
+                    members: {
+                        create: {
+                            userId: newUser.id,
+                            role: "owner"
+                        }
+                    }
+                }
+            })
+
+            return { user: newUser, workspace }
         })
 
         return NextResponse.json(
-            { message: "User created successfully", userId: user.id },
+            { message: "User created successfully", userId: result.user.id },
             { status: 201 }
         )
     } catch (error) {

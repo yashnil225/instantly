@@ -503,21 +503,23 @@ function AccountsPage() {
         setExportProgress(0)
 
         try {
-            // For Excel, we create a more detailed CSV that Excel can open
+            // Dynamic import xlsx library
+            const XLSX = await import('xlsx')
+
             const total = filteredAccounts.length
             let processed = 0
 
             const headers = ["Email", "Status", "Emails Sent", "Email Limit", "Warmup Emails", "Health Score", "Is Favorite", "Has Errors", "Is Warming", "Has Custom Domain"]
-            const rows = [headers]
+            const rows: (string | number)[][] = [headers]
 
             for (const account of filteredAccounts) {
                 rows.push([
                     account.email,
                     account.status,
-                    account.emailsSent.toString(),
-                    account.emailsLimit.toString(),
-                    account.warmupEmails.toString(),
-                    account.healthScore.toString(),
+                    account.emailsSent,
+                    account.emailsLimit,
+                    account.warmupEmails,
+                    account.healthScore,
                     account.isFavorite ? "Yes" : "No",
                     account.hasError ? "Yes" : "No",
                     account.isWarming ? "Yes" : "No",
@@ -527,15 +529,17 @@ function AccountsPage() {
                 setExportProgress(Math.round((processed / total) * 100))
             }
 
-            // Create tab-separated values for better Excel compatibility
-            const content = rows.map(row => row.join("\t")).join("\n")
-            const blob = new Blob([content], { type: "application/vnd.ms-excel" })
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.download = "email-accounts.xls"
-            a.click()
+            // Create workbook and worksheet
+            const ws = XLSX.utils.aoa_to_sheet(rows)
+            const wb = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(wb, ws, "Accounts")
+
+            // Generate and download
+            XLSX.writeFile(wb, "email-accounts.xlsx")
             toast({ title: "Success", description: `Exported ${total} accounts to Excel` })
+        } catch (error) {
+            console.error("Export error:", error)
+            toast({ title: "Error", description: "Failed to export Excel file", variant: "destructive" })
         } finally {
             setIsExporting(false)
             setExportProgress(0)

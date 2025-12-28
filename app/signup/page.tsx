@@ -4,8 +4,10 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SignupPage() {
+    const { toast } = useToast()
     const router = useRouter()
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
@@ -20,7 +22,11 @@ export default function SignupPage() {
         setError("")
 
         if (!termsAccepted) {
-            setError("Please accept the Terms of Use and Privacy Policy")
+            toast({
+                title: "Terms and Conditions",
+                description: "Please accept the terms and conditions to continue.",
+                variant: "destructive",
+            })
             return
         }
 
@@ -40,21 +46,31 @@ export default function SignupPage() {
                 return
             }
 
-            // Auto-login after successful signup
-            const result = await signIn("credentials", {
+            // Auto sign-in after successful signup
+            const signInResult = await signIn("credentials", {
                 email,
                 password,
                 redirect: false,
             })
 
-            if (result?.error) {
-                setError("Account created but login failed. Please try logging in.")
+            if (signInResult?.error) {
+                // If auto-login fails for some reason, redirect to login
+                toast({
+                    title: "Account Created!",
+                    description: "Please log in with your credentials.",
+                })
                 router.push("/login")
-                return
+            } else {
+                // Successfully signed in - redirect to campaigns
+                localStorage.setItem('instantly_auth', 'true')
+                toast({
+                    title: "Welcome to Instantly!",
+                    description: "Your account has been created. Let's get started!",
+                })
+                router.push("/campaigns?welcome=true")
+                router.refresh()
             }
 
-            // Redirect to campaigns page directly
-            router.push("/campaigns")
         } catch (error) {
             setError("An error occurred. Please try again.")
         } finally {
@@ -64,7 +80,7 @@ export default function SignupPage() {
 
 
     const handleGoogleSignIn = () => {
-        signIn("google", { callbackUrl: "/" })
+        signIn("google", { callbackUrl: "/campaigns?welcome=true" })
     }
 
     return (

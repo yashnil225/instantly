@@ -34,22 +34,26 @@ export default function LoginPage() {
             })
 
             if (result?.error) {
-                setError("Invalid email or password")
+                if (result.error === "CredentialsSignin") {
+                    setError("invalid_credentials")
+                } else {
+                    setError("general_error")
+                }
             } else {
                 // Persist auth state
                 localStorage.setItem('instantly_auth', 'true')
-                router.push("/campaigns")
+                router.push("/campaigns?welcome=true")
                 router.refresh()
             }
         } catch (error) {
-            setError("An error occurred. Please try again.")
+            setError("general_error")
         } finally {
             setLoading(false)
         }
     }
 
     const handleGoogleSignIn = () => {
-        signIn("google", { callbackUrl: "/campaigns" })
+        signIn("google", { callbackUrl: "/campaigns?welcome=true" })
     }
 
     return (
@@ -98,7 +102,21 @@ export default function LoginPage() {
                         </div>
 
                         {error && (
-                            <div className="text-red-400 text-sm text-center">{error}</div>
+                            <div className="text-red-400 text-sm text-center space-y-1">
+                                {error === "invalid_credentials" ? (
+                                    <>
+                                        <p>Invalid email or password.</p>
+                                        <p className="text-gray-400">
+                                            Don't have an account?{" "}
+                                            <Link href="/signup" className="text-blue-400 hover:text-blue-300 underline">
+                                                Sign up here
+                                            </Link>
+                                        </p>
+                                    </>
+                                ) : (
+                                    <p>An error occurred. Please try again.</p>
+                                )}
+                            </div>
                         )}
 
                         <div className="flex items-center justify-between">

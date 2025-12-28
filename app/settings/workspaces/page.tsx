@@ -56,16 +56,53 @@ export default function WorkspacesPage() {
             const res = await fetch(`/api/workspaces/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ opportunityValue: parseFloat(value) })
+                body: JSON.stringify({ opportunityValue: parseFloat(value) }),
             })
-
             if (res.ok) {
-                toast({ title: "Settings updated", description: "Opportunity value has been saved." })
+                setWorkspaces(workspaces.map(w => w.id === id ? { ...w, opportunityValue: parseFloat(value) } : w))
                 setEditingId(null)
-                fetchWorkspaces()
+                toast({ title: "Success", description: "Value updated" })
             }
         } catch (error) {
-            toast({ title: "Error", description: "Failed to update workspace", variant: "destructive" })
+            toast({ title: "Error", description: "Update failed", variant: "destructive" })
+        }
+    }
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this workspace?")) return
+
+        try {
+            const res = await fetch(`/api/workspaces/${id}`, {
+                method: "DELETE",
+            })
+            if (res.ok) {
+                setWorkspaces(workspaces.filter(w => w.id !== id))
+                toast({ title: "Success", description: "Workspace deleted" })
+            } else {
+                const data = await res.json()
+                toast({ title: "Error", description: data.error || "Delete failed", variant: "destructive" })
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Delete failed", variant: "destructive" })
+        }
+    }
+
+    const handleRename = async (id: string, newName: string) => {
+        if (!newName.trim()) return
+
+        try {
+            const res = await fetch(`/api/workspaces/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: newName }),
+            })
+            if (res.ok) {
+                setWorkspaces(workspaces.map(w => w.id === id ? { ...w, name: newName } : w))
+                setEditingId(null)
+                toast({ title: "Success", description: "Workspace renamed" })
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Rename failed", variant: "destructive" })
         }
     }
 
@@ -132,10 +169,18 @@ export default function WorkspacesPage() {
                                     </div>
 
                                     <div className="flex items-center gap-2">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors" onClick={() => {
+                                            const newName = prompt("Enter new workspace name", ws.name)
+                                            if (newName) handleRename(ws.id, newName)
+                                        }}>
+                                            <Settings className="h-4 w-4" />
+                                        </Button>
                                         <Button
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
+                                            onClick={() => handleDelete(ws.id)}
+                                            disabled={ws.isDefault}
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>

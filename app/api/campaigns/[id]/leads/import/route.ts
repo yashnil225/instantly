@@ -118,6 +118,7 @@ export async function POST(
                         firstName: lead.firstName,
                         lastName: lead.lastName,
                         company: lead.company,
+                        customFields: lead.customFields,
                         campaignId: campaignId,
                         status: 'new',
                     }

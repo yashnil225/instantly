@@ -363,7 +363,25 @@ Instantly`,
                 const res = await fetch(`/api/unibox/emails?${params.toString()}`)
                 if (res.ok) {
                     const data = await res.json()
-                    setEmails(Array.isArray(data) ? data : [])
+                    if (data.length === 0) {
+                        // Add demo email if none exist
+                        setEmails([{
+                            id: "demo-1",
+                            from: "team@instantly.ai",
+                            fromName: "Instantly Team",
+                            subject: "Welcome to Instantly! 👋",
+                            preview: "This is a demo email to help you get started with the Unibox. You'll see your real email replies here once your campaigns are active.",
+                            timestamp: new Date(),
+                            isRead: false,
+                            status: "interested",
+                            aiLabel: "interested",
+                            campaign: { id: "demo-camp", name: "Onboarding" },
+                            hasReply: false,
+                            body: "Welcome to Instantly!\n\nThe Unibox is where you can manage all your email replies from all your accounts in one place.\n\nHappy sending!"
+                        }])
+                    } else {
+                        setEmails(Array.isArray(data) ? data : [])
+                    }
                 }
             }
         } catch (error) {

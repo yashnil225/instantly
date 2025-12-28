@@ -3,6 +3,7 @@ export interface NormalizedLead {
     firstName: string
     lastName: string
     company: string
+    customFields?: string
 }
 
 export function normalizeLead(record: any): NormalizedLead | null {
@@ -53,10 +54,22 @@ export function normalizeLead(record: any): NormalizedLead | null {
     // 3. Find Company
     const company = findValue(['company', 'company name', 'business', 'organization', 'website'])
 
+    // 4. Capture Custom Fields (everything else)
+    const customFields: Record<string, any> = {}
+    const capturedKeys = new Set(['email', 'first name', 'firstname', 'fname', 'first', 'last name', 'lastname', 'lname', 'last', 'surname', 'name', 'full name', 'fullname', 'company', 'company name', 'business', 'organization', 'website'])
+
+    Object.keys(record).forEach(key => {
+        const lowerKey = key.toLowerCase().trim()
+        if (!capturedKeys.has(lowerKey)) {
+            customFields[key] = record[key]
+        }
+    })
+
     return {
         email: email.toLowerCase(),
         firstName,
         lastName,
-        company
+        company,
+        customFields: Object.keys(customFields).length > 0 ? JSON.stringify(customFields) : undefined
     }
 }

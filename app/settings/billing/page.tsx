@@ -9,26 +9,60 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Check, CreditCard, Download, FileText } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { cn } from "@/lib/utils"
 
 export default function BillingPage() {
     const { data: session, status } = useSession()
     const { toast } = useToast()
     const [leadCount, setLeadCount] = useState<number | null>(null)
+    const [currentPlan, setCurrentPlan] = useState<string>("trial")
+    const [planLoading, setPlanLoading] = useState(true)
 
     useEffect(() => {
-        const fetchLeadCount = async () => {
+        const fetchBillingData = async () => {
             try {
-                const res = await fetch('/api/stats/leads-count')
-                if (res.ok) {
-                    const data = await res.json()
+                const [leadsRes, billingRes] = await Promise.all([
+                    fetch('/api/stats/leads-count'),
+                    fetch('/api/user/billing')
+                ])
+
+                if (leadsRes.ok) {
+                    const data = await leadsRes.json()
                     setLeadCount(data.count)
                 }
+
+                if (billingRes.ok) {
+                    const data = await billingRes.json()
+                    setCurrentPlan(data.plan || "trial")
+                }
             } catch (error) {
-                console.error("Failed to load lead count:", error)
+                console.error("Failed to load billing data:", error)
+            } finally {
+                setPlanLoading(false)
             }
         }
-        fetchLeadCount()
+        fetchBillingData()
     }, [])
+
+    const handleSwitchPlan = async (plan: string) => {
+        try {
+            const res = await fetch('/api/user/billing', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plan })
+            })
+
+            if (res.ok) {
+                const data = await res.json()
+                setCurrentPlan(data.plan)
+                toast({ title: "Plan Updated", description: `You have successfully switched to the ${plan} plan.` })
+            } else {
+                toast({ title: "Error", description: "Failed to switch plan", variant: "destructive" })
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "An error occurred", variant: "destructive" })
+        }
+    }
 
     if (status === "unauthenticated") redirect("/login")
 
@@ -66,17 +100,21 @@ export default function BillingPage() {
             {/* Plans Section */}
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Growth Plan */}
-                <Card className="bg-[#111] border-[#222] relative overflow-hidden">
+                <Card className={cn("bg-[#111] border-[#222] relative overflow-hidden", currentPlan === "growth" && "border-blue-500/50")}>
                     <CardHeader>
                         <CardTitle className="text-white">Growth</CardTitle>
                         <div className="text-3xl font-bold text-white mt-2">$37<span className="text-sm font-normal text-gray-400">/mo</span></div>
                         <CardDescription>Perfect for verified startups.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Button
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                            onClick={() => toast({ title: "Plan Upgrade", description: "Switching to Growth plan..." })}
-                        >Switch to Growth</Button>
+                        {currentPlan === "growth" ? (
+                            <Button variant="outline" className="w-full border-blue-500 text-blue-500 hover:bg-blue-950">Current Plan</Button>
+                        ) : (
+                            <Button
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => handleSwitchPlan("growth")}
+                            >Switch to Growth</Button>
+                        )}
                         <ul className="space-y-2 text-sm text-gray-300">
                             <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Unlimited Email Accounts</li>
                             <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> 5,000 Emails / mo</li>
@@ -86,7 +124,7 @@ export default function BillingPage() {
                 </Card>
 
                 {/* Hypergrowth Plan */}
-                <Card className="bg-[#111] border-[#222] relative overflow-hidden">
+                <Card className={cn("bg-[#111] border-[#222] relative overflow-hidden", currentPlan === "hypergrowth" && "border-blue-500/50")}>
                     <div className="absolute top-0 right-0 bg-blue-500/20 text-blue-400 text-xs px-2 py-1 font-bold">POPULAR</div>
                     <CardHeader>
                         <CardTitle className="text-white">Hypergrowth</CardTitle>
@@ -94,10 +132,14 @@ export default function BillingPage() {
                         <CardDescription>Scale your outreach massively.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Button
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-                            onClick={() => toast({ title: "Plan Change", description: "Switching to Hypergrowth plan..." })}
-                        >Switch to Hypergrowth</Button>
+                        {currentPlan === "hypergrowth" ? (
+                            <Button variant="outline" className="w-full border-blue-500 text-blue-500 hover:bg-blue-950">Current Plan</Button>
+                        ) : (
+                            <Button
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => handleSwitchPlan("hypergrowth")}
+                            >Switch to Hypergrowth</Button>
+                        )}
                         <ul className="space-y-2 text-sm text-gray-300">
                             <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Unlimited Email Accounts</li>
                             <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> 25,000 Emails / mo</li>
@@ -106,15 +148,22 @@ export default function BillingPage() {
                     </CardContent>
                 </Card>
 
-                {/* Light Speed - CURRENT PLAN */}
-                <Card className="bg-[#111] border-blue-500/50 relative overflow-hidden">
+                {/* Light Speed */}
+                <Card className={cn("bg-[#111] border-[#222] relative overflow-hidden", currentPlan === "lightspeed" && "border-blue-500/50")}>
                     <CardHeader>
                         <CardTitle className="text-white">Light Speed</CardTitle>
                         <div className="text-3xl font-bold text-white mt-2">$297<span className="text-sm font-normal text-gray-400">/mo</span></div>
                         <CardDescription>For agencies & enterprise teams.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Button variant="outline" className="w-full border-blue-500 text-blue-500 hover:bg-blue-950">Current Plan</Button>
+                        {currentPlan === "lightspeed" ? (
+                            <Button variant="outline" className="w-full border-blue-500 text-blue-500 hover:bg-blue-950">Current Plan</Button>
+                        ) : (
+                            <Button
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                                onClick={() => handleSwitchPlan("lightspeed")}
+                            >Switch to Light Speed</Button>
+                        )}
                         <ul className="space-y-2 text-sm text-gray-300">
                             <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> 100,000 Emails / mo</li>
                             <li className="flex items-center gap-2"><Check className="h-4 w-4 text-green-500" /> Dedicated Success Manager</li>

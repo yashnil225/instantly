@@ -47,6 +47,14 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     providers.push(GoogleProvider({
         clientId: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        authorization: {
+            params: {
+                scope: "openid email profile https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/drive.metadata.readonly",
+                prompt: "consent",
+                access_type: "offline",
+                response_type: "code"
+            }
+        }
     }))
 }
 
@@ -55,21 +63,47 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session: { strategy: "jwt" },
     secret: process.env.NEXTAUTH_SECRET || "secret",
     pages: {
-        signIn: "/signup",
+        signIn: '/login',
+        newUser: '/signup',
     },
     providers,
     callbacks: {
-        async jwt({ token, user }) {
+        async signIn({ user, account, profile, isNewUser }) {
+            // For OAuth providers, check if user already exists
+            if (account?.provider === 'google') {
+                const existingUser = await prisma.user.findUnique({
+                    where: { email: user.email! }
+                })
+            }
+            return true
+        },
+        async jwt({ token, user, account, trigger }) {
             if (user) {
                 token.id = user.id
+            }
+            if (account) {
+                token.accessToken = account.access_token
+            }
+            // Check if this is a new session (first login indicator)
+            if (trigger === 'signIn') {
+                token.isNewLogin = true
             }
             return token
         },
         async session({ session, token }) {
             if (session.user) {
                 session.user.id = token.id as string
+                    // Pass access token to client for Google Picker
+                    ; (session as any).accessToken = token.accessToken
+                    ; (session as any).isNewLogin = token.isNewLogin || false
             }
+            // Clear the flag after first session
+            token.isNewLogin = false
             return session
+        },
+        async redirect({ url, baseUrl }) {
+            if (url.startsWith(baseUrl)) return url
+            return `${baseUrl}/campaigns`
         }
     }
 })

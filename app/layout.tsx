@@ -11,6 +11,11 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Instantly",
   description: "Unlimited Cold Email Outreach",
+  icons: {
+    icon: "/instantly-logo.png",
+    shortcut: "/instantly-logo.png",
+    apple: "/instantly-logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -66,6 +66,28 @@ export async function runDailyReset() {
     }
 }
 
+/**
+ * Starts the daily reset job and schedules it to run every 24 hours.
+ */
+export function startDailyResetJob() {
+    console.log('[Daily Reset] Initializing daily reset job...')
+
+    // Run immediately on start
+    runDailyReset().catch(err => console.error('[Daily Reset] Initial run failed:', err))
+
+    // Then run every 24 hours
+    const interval = 24 * 60 * 60 * 1000
+    const timer = setInterval(async () => {
+        try {
+            await runDailyReset()
+        } catch (err) {
+            console.error('[Daily Reset] Scheduled run failed:', err)
+        }
+    }, interval)
+
+    return () => clearInterval(timer)
+}
+
 // Run if called directly
 if (require.main === module) {
     runDailyReset()

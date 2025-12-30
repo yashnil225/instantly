@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { isCampaignScheduled } from './scheduler'
+import { dispatchWebhook } from './webhooks'
 import nodemailer from 'nodemailer'
 
 // Helper to rewrite links
@@ -418,10 +419,19 @@ export async function processBatch() {
             // Check if there are any leads at all to prevent marking empty campaigns as completed
             const totalLeadsCount = await prisma.lead.count({ where: { campaignId: campaign.id } })
             if (totalLeadsCount > 0) {
-                await prisma.campaign.update({
+                const updatedCampaign = await prisma.campaign.update({
                     where: { id: campaign.id },
                     data: { status: 'completed' }
                 })
+
+                // Dispatch Webhook
+                if (updatedCampaign.userId) {
+                    dispatchWebhook(updatedCampaign.userId, "campaign.finished", {
+                        campaignId: updatedCampaign.id,
+                        name: updatedCampaign.name,
+                        status: updatedCampaign.status
+                    })
+                }
                 console.log(`Campaign ${campaign.id} marked as completed.`)
             }
         }

@@ -118,6 +118,7 @@ export async function POST(request: Request) {
 
         const account = await prisma.emailAccount.create({
             data: {
+                userId: session.user.id,
                 email,
                 firstName,
                 lastName,

@@ -120,8 +120,16 @@ export async function checkForReplies(account: EmailAccount) {
                         reject(err)
                     })
 
-                    fetch.once('end', () => {
+                    fetch.once('end', async () => {
                         console.log(`Finished checking ${account.email} - Found ${repliesFound} replies`)
+                        // Update last synced
+                        try {
+                            await prisma.emailAccount.update({
+                                where: { id: account.id },
+                                data: { lastSyncedAt: new Date() }
+                            })
+                        } catch (e) { }
+
                         imap.end()
                         resolve(repliesFound)
                     })

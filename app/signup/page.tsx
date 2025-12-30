@@ -40,8 +40,29 @@ export default function SignupPage() {
                 body: JSON.stringify({ name, email, password }),
             })
 
+            const data = await res.json()
+
+            if (res.status === 409 || (res.status === 400 && data.error === "User already exists")) {
+                // If user exists, try to sign them in
+                const signInResult = await signIn("credentials", {
+                    email,
+                    password,
+                    redirect: false,
+                })
+
+                if (signInResult?.error) {
+                    setError("User already exists. Please login with your password.")
+                    return
+                }
+
+                // Successfully signed in existing user
+                localStorage.setItem('instantly_auth', 'true')
+                router.push("/campaigns?welcome=true")
+                router.refresh()
+                return
+            }
+
             if (!res.ok) {
-                const data = await res.json()
                 setError(data.error || "Signup failed")
                 return
             }
@@ -192,61 +213,56 @@ export default function SignupPage() {
                             </svg>
                             Sign Up with Google
                         </button>
-                        <button type="button" className="btn-social">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                            </svg>
-                            Sign Up with Apple
-                        </button>
-                    </div>
-
-                    <div className="auth-footer">
-                        Already have an account? <Link href="/login">Log In</Link>
-                    </div>
+                    </button>
                 </div>
 
-                {/* Right Side - Illustration */}
-                <div className="signup-illustration">
-                    <div className="illustration-content">
-                        <div className="illustration-image">
-                            <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                {/* Background elements */}
-                                <rect x="180" y="20" width="180" height="140" rx="8" fill="#1E3A5F" />
-                                <rect x="190" y="30" width="160" height="10" rx="2" fill="#2D5A87" />
-                                <rect x="190" y="50" width="120" height="6" rx="2" fill="#2D5A87" />
-                                <rect x="190" y="65" width="140" height="6" rx="2" fill="#2D5A87" />
-                                <rect x="190" y="80" width="100" height="6" rx="2" fill="#2D5A87" />
-                                <circle cx="330" cy="110" r="25" fill="#3B82F6" />
-                                <rect x="190" y="100" width="80" height="40" rx="4" fill="#2D5A87" />
+                <div className="auth-footer">
+                    Already have an account? <Link href="/login">Log In</Link>
+                </div>
+            </div>
 
-                                {/* Character */}
-                                <ellipse cx="120" cy="280" rx="80" ry="15" fill="#1a1a1a" opacity="0.3" />
-                                <path d="M80 180 L160 180 L150 270 L90 270 Z" fill="#3B82F6" />
-                                <circle cx="120" cy="140" r="40" fill="#F5D0C5" />
-                                <path d="M85 125 Q120 100 155 125" stroke="#4A3728" strokeWidth="8" fill="none" />
-                                <ellipse cx="105" cy="145" rx="5" ry="6" fill="#333" />
-                                <ellipse cx="135" cy="145" rx="5" ry="6" fill="#333" />
-                                <path d="M115 160 Q120 165 125 160" stroke="#333" strokeWidth="2" fill="none" />
+            {/* Right Side - Illustration */}
+            <div className="signup-illustration">
+                <div className="illustration-content">
+                    <div className="illustration-image">
+                        <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            {/* Background elements */}
+                            <rect x="180" y="20" width="180" height="140" rx="8" fill="#1E3A5F" />
+                            <rect x="190" y="30" width="160" height="10" rx="2" fill="#2D5A87" />
+                            <rect x="190" y="50" width="120" height="6" rx="2" fill="#2D5A87" />
+                            <rect x="190" y="65" width="140" height="6" rx="2" fill="#2D5A87" />
+                            <rect x="190" y="80" width="100" height="6" rx="2" fill="#2D5A87" />
+                            <circle cx="330" cy="110" r="25" fill="#3B82F6" />
+                            <rect x="190" y="100" width="80" height="40" rx="4" fill="#2D5A87" />
 
-                                {/* Arm with laptop/phone */}
-                                <path d="M160 200 L200 180 L220 200 L180 220 Z" fill="#3B82F6" />
-                                <rect x="185" y="175" width="40" height="30" rx="3" fill="#2D5A87" />
-                                <rect x="190" y="180" width="30" height="20" rx="2" fill="#1E3A5F" />
+                            {/* Character */}
+                            <ellipse cx="120" cy="280" rx="80" ry="15" fill="#1a1a1a" opacity="0.3" />
+                            <path d="M80 180 L160 180 L150 270 L90 270 Z" fill="#3B82F6" />
+                            <circle cx="120" cy="140" r="40" fill="#F5D0C5" />
+                            <path d="M85 125 Q120 100 155 125" stroke="#4A3728" strokeWidth="8" fill="none" />
+                            <ellipse cx="105" cy="145" rx="5" ry="6" fill="#333" />
+                            <ellipse cx="135" cy="145" rx="5" ry="6" fill="#333" />
+                            <path d="M115 160 Q120 165 125 160" stroke="#333" strokeWidth="2" fill="none" />
 
-                                {/* Floating elements */}
-                                <circle cx="280" cy="200" r="15" fill="#3B82F6" opacity="0.6" />
-                                <circle cx="320" cy="180" r="10" fill="#60A5FA" opacity="0.4" />
-                                <circle cx="350" cy="220" r="8" fill="#93C5FD" opacity="0.3" />
-                            </svg>
-                        </div>
-                        <h2 className="illustration-title">30,000+ clients</h2>
-                        <p className="illustration-subtitle">are getting more replies!</p>
-                        <p className="illustration-description">
-                            Unlock the power of effective outreach with our cutting-edge platform, and experience a surge in responses and engagement rates like never before.
-                        </p>
+                            {/* Arm with laptop/phone */}
+                            <path d="M160 200 L200 180 L220 200 L180 220 Z" fill="#3B82F6" />
+                            <rect x="185" y="175" width="40" height="30" rx="3" fill="#2D5A87" />
+                            <rect x="190" y="180" width="30" height="20" rx="2" fill="#1E3A5F" />
+
+                            {/* Floating elements */}
+                            <circle cx="280" cy="200" r="15" fill="#3B82F6" opacity="0.6" />
+                            <circle cx="320" cy="180" r="10" fill="#60A5FA" opacity="0.4" />
+                            <circle cx="350" cy="220" r="8" fill="#93C5FD" opacity="0.3" />
+                        </svg>
                     </div>
+                    <h2 className="illustration-title">30,000+ clients</h2>
+                    <p className="illustration-subtitle">are getting more replies!</p>
+                    <p className="illustration-description">
+                        Unlock the power of effective outreach with our cutting-edge platform, and experience a surge in responses and engagement rates like never before.
+                    </p>
                 </div>
             </div>
         </div>
+        </div >
     )
 }

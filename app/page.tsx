@@ -3,6 +3,6 @@
 import { redirect } from "next/navigation"
 
 export default function Home() {
-  // Redirect to campaigns page (main dashboard)
-  redirect("/campaigns")
+  // Redirect to login page by default if not logged in
+  redirect("/login")
 }

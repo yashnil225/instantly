@@ -7,8 +7,8 @@ export function SettingsSidebarController() {
     const pathname = usePathname()
 
     // Only show sidebar on the main settings page (Account & Settings)
-    // or if the path is explicitly /settings
-    const showSidebar = pathname === "/settings" || pathname === "/settings/"
+    // or if the path is explicitly /settings or /settings/integrations
+    const showSidebar = pathname === "/settings" || pathname === "/settings/" || pathname.startsWith("/settings/integrations")
 
     if (!showSidebar) return null
 

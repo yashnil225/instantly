@@ -1,6 +1,7 @@
 import imaps from 'imap-simple'
 import { simpleParser } from 'mailparser'
 import { PrismaClient } from '@prisma/client'
+import { dispatchWebhook } from './webhooks'
 
 const prisma = new PrismaClient()
 
@@ -83,7 +84,7 @@ export async function syncReplies(account: EmailAccount) {
                     console.log(`Reply detected from ${parsed.from?.text} for lead ${sentEvent.lead.email}`)
 
                     // Create reply event
-                    await prisma.sendingEvent.create({
+                    const replyEvent = await prisma.sendingEvent.create({
                         data: {
                             type: 'reply',
                             leadId: sentEvent.leadId,
@@ -98,10 +99,19 @@ export async function syncReplies(account: EmailAccount) {
                     })
 
                     // Update lead status
-                    await prisma.lead.update({
+                    const updatedLead = await prisma.lead.update({
                         where: { id: sentEvent.leadId },
                         data: { status: 'replied' }
                     })
+
+                    // Dispatch Webhook
+                    if (sentEvent.campaign.userId) {
+                        dispatchWebhook(sentEvent.campaign.userId, "lead.replied", {
+                            lead: updatedLead,
+                            campaign: sentEvent.campaign,
+                            reply: JSON.parse(replyEvent.metadata!)
+                        })
+                    }
 
                     // Update campaign stats
                     await prisma.campaign.update({

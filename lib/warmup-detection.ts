@@ -244,3 +244,41 @@ export async function rescueFromSpam(account: any): Promise<number> {
         return 0
     }
 }
+
+import { processWarmupReplies } from './warmup-reply'
+
+/**
+ * Process warmup maintenance for all active warmup accounts
+ * (Spam rescue + Auto-replies)
+ */
+export async function processWarmupMaintenance() {
+    const accounts = await prisma.emailAccount.findMany({
+        where: {
+            warmupEnabled: true,
+            status: 'active'
+        }
+    })
+
+    console.log(`[Warmup] Starting maintenance for ${accounts.length} accounts...`)
+    let totalRescued = 0
+    let totalReplied = 0
+
+    for (const account of accounts) {
+        try {
+            // 1. Rescue from spam
+            const rescued = await rescueFromSpam(account)
+            totalRescued += rescued
+
+            // 2. Detect and reply to warmup emails
+            const detection = await detectWarmupEmails(account)
+            if (detection.needsReply.length > 0) {
+                const replied = await processWarmupReplies(account, detection.needsReply)
+                totalReplied += replied
+            }
+        } catch (error) {
+            console.error(`[Warmup] Maintenance failed for ${account.email}:`, error)
+        }
+    }
+
+    return { totalRescued, totalReplied }
+}

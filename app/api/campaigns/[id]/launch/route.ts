@@ -52,25 +52,31 @@ export async function POST(
         for (const lead of campaign.leads) {
             try {
                 const queue = getEmailQueue()
-                await queue.add('send-email', {
-                    campaignId: campaign.id,
-                    leadId: lead.id,
-                    sequenceId: firstSequence.id,
-                    subject: firstSequence.subject || 'No Subject',
-                    emailBody: firstSequence.body
-                }, {
-                    attempts: 3,
-                    backoff: { type: 'exponential', delay: 60000 }
-                })
-                queued++
+                if (queue) {
+                    await queue.add('send-email', {
+                        campaignId: campaign.id,
+                        leadId: lead.id,
+                        sequenceId: firstSequence.id,
+                        subject: firstSequence.subject || 'No Subject',
+                        emailBody: firstSequence.body
+                    }, {
+                        attempts: 3,
+                        backoff: { type: 'exponential', delay: 60000 }
+                    })
+                    queued++
+                }
             } catch (err) {
                 console.error(`Failed to queue email for lead ${lead.id}:`, err)
             }
         }
 
+        const message = queued > 0
+            ? `Campaign launched! ${queued} emails queued for sending.`
+            : `Campaign launched! Background process will start sending soon.`
+
         return NextResponse.json({
             success: true,
-            message: `Campaign launched! ${queued} emails queued for sending.`,
+            message,
             queued
         })
 

@@ -108,6 +108,9 @@ export function SettingsOnePageView({ user, workspaceId }: SettingsOnePageProps)
 
             <div className="h-[1px] bg-secondary" />
 
+
+            <div className="h-[1px] bg-secondary" />
+
             {/* Logs Section */}
             <section id="logs" className="scroll-mt-6">
                 <div className="mb-8">

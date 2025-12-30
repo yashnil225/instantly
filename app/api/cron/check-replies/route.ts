@@ -2,7 +2,15 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkForReplies, checkForBounces } from '@/lib/imap-monitor'
 
-export async function GET() {
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: Request) {
+    const authHeader = request.headers.get('authorization')
+    if (process.env.NODE_ENV === 'production') {
+        if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+            return new Response('Unauthorized', { status: 401 })
+        }
+    }
     try {
         console.log('Starting IMAP check for replies and bounces...')
 

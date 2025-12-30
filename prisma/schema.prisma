@@ -26,6 +26,59 @@ model User {
   workspaceMembers WorkspaceMember[]
   invitations      Invitation[]
   auditLogs        AuditLog[]
+  apiKeys          ApiKey[]
+  webhooks         Webhook[]
+  emailAccounts    EmailAccount[]
+  templates        Template[]
+  tags             Tag[]
+  autoReplyRules   AutoReplyRule[]
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  name        String
+  key         String   @unique
+  scopes      String   @default("all:all") // JSON array or comma separated
+  lastUsedAt  DateTime?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+  @@index([userId])
+}
+
+model Webhook {
+  id          String   @id @default(cuid())
+  name        String?
+  url         String
+  events      String   @default("all") // Stores as comma-separated or JSON string for SQLite
+  secret      String   @default(cuid())
+  isActive    Boolean  @default(true)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs        WebhookLog[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model WebhookLog {
+  id            String   @id @default(cuid())
+  webhookId     String
+  webhook       Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event         String
+  payload       String   // JSON string
+  status        Int?     // HTTP status code
+  response      String?  // Response body or error
+  isSuccess     Boolean
+  duration      Int?     // Response time in ms
+  createdAt     DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([createdAt])
 }
 
 
@@ -48,6 +101,8 @@ model Workspace {
 
 model EmailAccount {
   id        String  @id @default(cuid())
+  userId    String? 
+  user      User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
   email     String  @unique
   firstName String?
   lastName  String?
@@ -191,10 +246,14 @@ model Lead {
   // Custom fields from CSV imports (stored as JSON)
   customFields     String?  // JSON object with dynamic fields like website, phone, location, etc.
   
+  // Lead Scoring
+  score            Int      @default(0) // Engagement score 0-100
+  
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   campaignId String
 
-  events SendingEvent[]
+  tags       LeadTag[]
+  events     SendingEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -525,4 +584,59 @@ model Reminder {
   
   @@index([userId])
   @@index([scheduledAt])
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  subject     String
+  body        String
+  category    String?  // e.g., "Outreach", "Follow-up"
+  isPublic    Boolean  @default(false)
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   @default("#3b82f6")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leads     LeadTag[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model LeadTag {
+  id     String @id @default(cuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, tagId])
+}
+
+model AutoReplyRule {
+  id           String   @id @default(cuid())
+  name         String
+  trigger      String   // "contains", "subject_contains", "from_domain"
+  triggerValue String   // The keyword/domain to match
+  action       String   // "auto_reply", "tag", "forward", "webhook"
+  actionValue  String   // The reply text, tag name, email, or webhook URL
+  priority     Int      @default(10)
+  isActive     Boolean  @default(true)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
 }

@@ -84,8 +84,9 @@ export default function LoginPage() {
 
             <div className="w-full max-w-md">
                 {/* Logo */}
-                <div className="flex items-center justify-center gap-3 mb-12">
+                <div className="flex items-center justify-center gap-2 mb-12">
                     <Logo size="lg" />
+                    <span className="text-xl font-semibold text-blue-500">Instantly</span>
                 </div>
 
                 {/* Login Card */}

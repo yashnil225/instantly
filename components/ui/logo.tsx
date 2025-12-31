@@ -65,15 +65,20 @@ export function Logo({
 
     return (
         <div className={cn(
-            "relative flex items-center justify-center transition-opacity",
+            "flex items-center justify-center rounded-full transition-colors",
             sizeClasses[size],
+            // If background is white (light mode) -> Blue (as in image)
+            // If background is black (dark mode) -> "Black" (maybe a dark circle or dark bolt)
+            // But a black logo on black bg is invisible. 
+            // We'll use the provided blue for light mode and an adaptive version for dark mode.
+            !isDarkMode ? "bg-[#3B82F6]" : "bg-foreground", // In dark mode, foreground is light gray/white
             className
         )}>
-            <img
-                src="/logo.svg"
-                alt="Instantly Logo"
-                className={cn("w-full h-full object-contain", iconClassName)}
-            />
+            <Zap className={cn(
+                iconSizeClasses[size],
+                !isDarkMode ? "text-white fill-white" : "text-background fill-background", // In dark mode, background is black
+                iconClassName
+            )} />
         </div>
     )
 }

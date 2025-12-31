@@ -7,7 +7,9 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization')
     if (process.env.NODE_ENV === 'production') {
-        if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        const secret = process.env.CRON_SECRET || process.env.AUTHORIZATION
+        const isValid = authHeader === `Bearer ${secret}` || authHeader === secret
+        if (!isValid) {
             return new Response('Unauthorized', { status: 401 })
         }
     }

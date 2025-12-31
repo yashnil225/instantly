@@ -126,7 +126,6 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
             <div className="h-16 flex items-center justify-between px-4 border-b border-border">
                 <div className="flex items-center">
                     <Logo size="md" />
-                    <span className="ml-2 text-xl font-semibold text-foreground">Instantly</span>
                 </div>
             </div>
 

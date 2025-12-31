@@ -13,7 +13,7 @@ export function SettingsSidebarController() {
     if (!showSidebar) return null
 
     return (
-        <div className="w-64 border-r border-[#1a1a1a] py-6 overflow-y-auto hidden md:block">
+        <div className="w-64 border-r border-border py-6 overflow-y-auto hidden md:block">
             <SettingsSidebar />
         </div>
     )

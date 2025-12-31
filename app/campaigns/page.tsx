@@ -37,7 +37,7 @@ import { useToast } from "@/components/ui/use-toast"
 // Wrapper component with Suspense for useSearchParams
 export default function CampaignsPageWithSuspense() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
             <CampaignsPage />
         </Suspense>
     )

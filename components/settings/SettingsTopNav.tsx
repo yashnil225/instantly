@@ -25,7 +25,7 @@ export function SettingsTopNav() {
                     "pb-3 transition-colors",
                     pathname.startsWith("/settings/billing")
                         ? "text-blue-500 border-b-2 border-blue-500"
-                        : "text-muted-foreground hover:text-gray-300"
+                        : "text-muted-foreground hover:text-foreground"
                 )}
             >
                 Billing & Usage
@@ -38,7 +38,7 @@ export function SettingsTopNav() {
                     // or just checking if it is NOT the others
                     (pathname === "/settings" || pathname.startsWith("/settings/profile") || pathname.startsWith("/settings/workspace") || pathname.startsWith("/settings/groups") || pathname.startsWith("/settings/labels") || pathname.startsWith("/settings/tags") || pathname.startsWith("/settings/agency") || pathname.startsWith("/settings/logs"))
                         ? "text-blue-500 border-b-2 border-blue-500"
-                        : "text-muted-foreground hover:text-gray-300"
+                        : "text-muted-foreground hover:text-foreground"
                 )}
             >
                 Account & Settings
@@ -49,7 +49,7 @@ export function SettingsTopNav() {
                     "pb-3 transition-colors",
                     pathname.startsWith("/settings/preferences")
                         ? "text-blue-500 border-b-2 border-blue-500"
-                        : "text-muted-foreground hover:text-gray-300"
+                        : "text-muted-foreground hover:text-foreground"
                 )}
             >
                 Preferences
@@ -60,7 +60,7 @@ export function SettingsTopNav() {
                     "pb-3 transition-colors",
                     pathname.startsWith("/settings/integrations")
                         ? "text-blue-500 border-b-2 border-blue-500"
-                        : "text-muted-foreground hover:text-gray-300"
+                        : "text-muted-foreground hover:text-foreground"
                 )}
             >
                 Integrations
@@ -71,7 +71,7 @@ export function SettingsTopNav() {
                     "pb-3 transition-colors",
                     pathname.startsWith("/settings/blocklist")
                         ? "text-blue-500 border-b-2 border-blue-500"
-                        : "text-muted-foreground hover:text-gray-300"
+                        : "text-muted-foreground hover:text-foreground"
                 )}
             >
                 Blocklist
@@ -82,7 +82,7 @@ export function SettingsTopNav() {
                     "pb-3 transition-colors flex items-center gap-2",
                     pathname.startsWith("/settings/deliverability")
                         ? "text-blue-500 border-b-2 border-blue-500"
-                        : "text-muted-foreground hover:text-gray-300"
+                        : "text-muted-foreground hover:text-foreground"
                 )}
             >
                 Advanced Deliverability

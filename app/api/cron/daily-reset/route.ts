@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { runDailyReset } from '@/lib/daily-reset'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60 // Max timeout in seconds (requires Vercel Pro for > 10s)
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization')

@@ -504,13 +504,13 @@ export default function AnalyticsPage() {
                                                 />
                                                 <RechartsTooltip
                                                     contentStyle={{
-                                                        backgroundColor: '#0a0a0a',
-                                                        border: '1px solid #333',
+                                                        backgroundColor: 'hsl(var(--card))',
+                                                        border: '1px solid hsl(var(--border))',
                                                         borderRadius: '8px',
-                                                        color: '#fff',
+                                                        color: 'hsl(var(--foreground))',
                                                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
                                                     }}
-                                                    cursor={{ stroke: '#333' }}
+                                                    cursor={{ stroke: 'hsl(var(--border))' }}
                                                 />
                                                 <Legend
                                                     wrapperStyle={{ paddingTop: '20px' }}
@@ -546,7 +546,7 @@ export default function AnalyticsPage() {
                                                 "pb-3 text-sm font-medium transition-colors relative",
                                                 activeTab === "campaign"
                                                     ? "text-blue-500"
-                                                    : "text-muted-foreground hover:text-gray-200"
+                                                    : "text-muted-foreground hover:text-foreground"
                                             )}
                                         >
                                             Campaign Analytics
@@ -560,7 +560,7 @@ export default function AnalyticsPage() {
                                                 "pb-3 text-sm font-medium transition-colors relative",
                                                 activeTab === "account"
                                                     ? "text-blue-500"
-                                                    : "text-muted-foreground hover:text-gray-200"
+                                                    : "text-muted-foreground hover:text-foreground"
                                             )}
                                         >
                                             Account Analytics
@@ -574,7 +574,7 @@ export default function AnalyticsPage() {
                                                 "pb-3 text-sm font-medium transition-colors relative",
                                                 activeTab === "deliverability"
                                                     ? "text-blue-500"
-                                                    : "text-muted-foreground hover:text-gray-200"
+                                                    : "text-muted-foreground hover:text-foreground"
                                             )}
                                         >
                                             Deliverability

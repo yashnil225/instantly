@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { processBatch } from '@/lib/sender'
 
 export const dynamic = 'force-dynamic' // Prevent caching
+export const maxDuration = 60 // Max timeout in seconds (requires Vercel Pro for > 10s)
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization')

@@ -72,7 +72,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 relative">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 relative">
             {/* Home Icon */}
             <Link
                 href="/"
@@ -86,12 +86,11 @@ export default function LoginPage() {
                 {/* Logo */}
                 <div className="flex items-center justify-center gap-3 mb-12">
                     <Logo size="lg" />
-                    <span className="text-2xl font-semibold text-foreground">Instantly</span>
                 </div>
 
                 {/* Login Card */}
                 <div className="space-y-6">
-                    <h1 className="text-2xl font-semibold text-white text-center">Login</h1>
+                    <h1 className="text-2xl font-semibold text-foreground text-center">Login</h1>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
@@ -101,7 +100,7 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#3a3a3a] transition-colors"
+                                className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors"
                             />
                         </div>
 
@@ -112,7 +111,7 @@ export default function LoginPage() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#3a3a3a] transition-colors"
+                                className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors"
                             />
                         </div>
 
@@ -121,7 +120,7 @@ export default function LoginPage() {
                                 {error === "invalid_credentials" ? (
                                     <>
                                         <p>Invalid email or password.</p>
-                                        <p className="text-gray-400">
+                                        <p className="text-muted-foreground">
                                             Don't have an account?{" "}
                                             <Link href="/signup" className="text-blue-400 hover:text-blue-300 underline">
                                                 Sign up here
@@ -148,7 +147,7 @@ export default function LoginPage() {
                                     </svg>
                                 )}
                             </button>
-                            <Link href="/forgot-password" className="text-sm text-gray-400 hover:text-white transition-colors">
+                            <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                 Forgot password?
                             </Link>
                         </div>
@@ -156,17 +155,17 @@ export default function LoginPage() {
 
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-[#2a2a2a]"></div>
+                            <div className="w-full border-t border-border"></div>
                         </div>
                         <div className="relative flex justify-center text-sm">
-                            <span className="px-4 bg-[#0a0a0a] text-gray-500">OR</span>
+                            <span className="px-4 bg-background text-muted-foreground">OR</span>
                         </div>
                     </div>
 
                     <div className="space-y-3">
                         <button
                             type="button"
-                            className="w-full px-4 py-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-white hover:bg-[#2a2a2a] transition-colors flex items-center justify-center gap-3"
+                            className="w-full px-4 py-3 bg-card border border-border rounded-lg text-foreground hover:bg-secondary transition-colors flex items-center justify-center gap-3"
                             onClick={handleGoogleSignIn}
                         >
                             <svg width="18" height="18" viewBox="0 0 24 24">
@@ -180,8 +179,8 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <div className="text-center text-sm text-gray-400">
-                    Don&apos;t have an account? <Link href="/signup" className="text-white hover:underline">Sign Up</Link>
+                <div className="text-center text-sm text-muted-foreground">
+                    Don&apos;t have an account? <Link href="/signup" className="text-foreground hover:underline">Sign Up</Link>
                 </div>
             </div>
         </div>

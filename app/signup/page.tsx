@@ -142,7 +142,6 @@ function SignupForm() {
                     {/* Logo */}
                     <div className="auth-logo">
                         <Logo size="md" />
-                        <span className="logo-text">Instantly</span>
                     </div>
 
                     <h1 className="auth-title signup-title">Create a new account</h1>
@@ -278,7 +277,7 @@ function SignupForm() {
 
 export default function SignupPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><div className="text-white">Loading...</div></div>}>
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="text-foreground">Loading...</div></div>}>
             <SignupForm />
         </Suspense>
     )

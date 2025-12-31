@@ -379,14 +379,14 @@ export async function processBatch() {
                 // Usually "Time gap" in Instantly IS minutes if it says "minutes". 
                 // Let's assume the UI setting 'minTimeGap' is MINUTES.
 
-                let baseDelayMs = 20000 // default 20s
+                let baseDelayMs = 2000 // default 2s for Hobby plan serverless compatibility
                 if (settings.minTimeGap) {
-                    baseDelayMs = parseInt(settings.minTimeGap) * 60 * 1000
+                    baseDelayMs = Math.min(parseInt(settings.minTimeGap) * 1000, 5000) // Cap at 5s in a loop
                 }
 
-                let randomDelayMs = 20000 // default additional 20s
+                let randomDelayMs = 1000 // default additional 1s
                 if (settings.randomTimeGap) {
-                    randomDelayMs = parseInt(settings.randomTimeGap) * 60 * 1000
+                    randomDelayMs = Math.min(parseInt(settings.randomTimeGap) * 1000, 3000) // Cap at 3s
                 }
 
                 // If user accidentally sets HUGE gaps (e.g. 10 mins), this single thread will block for 10 mins per email.

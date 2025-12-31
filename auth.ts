@@ -69,12 +69,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     providers,
     callbacks: {
         async signIn({ user, account, profile }) {
-            // For OAuth providers, check if user already exists
-            if (account?.provider === 'google') {
-                const existingUser = await prisma.user.findUnique({
-                    where: { email: user.email! }
-                })
-            }
             return true
         },
         async jwt({ token, user, account, trigger }) {

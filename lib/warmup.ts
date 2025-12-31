@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from './prisma'
 import { sendEmail } from './email'
-
-const prisma = new PrismaClient()
 
 interface WarmupConfig {
     startLimit: number      // Start with this many emails per day

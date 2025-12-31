@@ -1,9 +1,7 @@
 import imaps from 'imap-simple'
 import { simpleParser } from 'mailparser'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from './prisma'
 import { dispatchWebhook } from './webhooks'
-
-const prisma = new PrismaClient()
 
 interface EmailAccount {
     id: string

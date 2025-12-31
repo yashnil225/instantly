@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import { prisma } from './prisma'
 import { syncReplies } from './imap-sync'
-
-const prisma = new PrismaClient()
 
 const BOUNCE_KEYWORDS = [
     'delivery failed',

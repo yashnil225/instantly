@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from './prisma'
 
 interface Variant {
     id: string
@@ -75,22 +73,25 @@ export async function getABTestResults(campaignId: string) {
                     where: {
                         campaignId,
                         type: 'sent',
-                        metadata: {
+                        metadata: variant.subject ? {
                             contains: variant.subject
-                        }
-                    },
-                    include: {
-                        lead: true
+                        } : undefined
                     }
                 })
 
                 const sent = events.length
-                const opened = events.filter(e =>
-                    e.lead.status === 'opened' || e.lead.status === 'replied'
-                ).length
-                const replied = events.filter(e =>
-                    e.lead.status === 'replied'
-                ).length
+
+                // Get lead statuses for these events
+                let opened = 0
+                let replied = 0
+
+                for (const event of events) {
+                    const lead = await prisma.lead.findUnique({
+                        where: { id: event.leadId }
+                    })
+                    if (lead?.status === 'opened' || lead?.status === 'replied') opened++
+                    if (lead?.status === 'replied') replied++
+                }
 
                 return {
                     variant: variant.subject?.substring(0, 50) || 'Variant',

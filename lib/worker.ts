@@ -1,10 +1,8 @@
 import { Worker } from 'bullmq'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from './prisma'
 import { sendEmail } from './email'
 import { canSendNow, getNextSendTime } from './scheduler'
 import { selectVariant } from './ab-testing'
-
-const prisma = new PrismaClient()
 
 const getRedisConnection = () => {
     const redisUrl = process.env.REDIS_URL

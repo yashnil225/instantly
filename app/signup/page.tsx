@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
 
-export default function SignupPage() {
+function SignupForm() {
     const { toast } = useToast()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -277,5 +277,13 @@ export default function SignupPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function SignupPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center"><div className="text-white">Loading...</div></div>}>
+            <SignupForm />
+        </Suspense>
     )
 }

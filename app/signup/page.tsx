@@ -213,56 +213,54 @@ export default function SignupPage() {
                             </svg>
                             Sign Up with Google
                         </button>
-                    </button>
-                </div>
-
-                <div className="auth-footer">
-                    Already have an account? <Link href="/login">Log In</Link>
-                </div>
-            </div>
-
-            {/* Right Side - Illustration */}
-            <div className="signup-illustration">
-                <div className="illustration-content">
-                    <div className="illustration-image">
-                        <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            {/* Background elements */}
-                            <rect x="180" y="20" width="180" height="140" rx="8" fill="#1E3A5F" />
-                            <rect x="190" y="30" width="160" height="10" rx="2" fill="#2D5A87" />
-                            <rect x="190" y="50" width="120" height="6" rx="2" fill="#2D5A87" />
-                            <rect x="190" y="65" width="140" height="6" rx="2" fill="#2D5A87" />
-                            <rect x="190" y="80" width="100" height="6" rx="2" fill="#2D5A87" />
-                            <circle cx="330" cy="110" r="25" fill="#3B82F6" />
-                            <rect x="190" y="100" width="80" height="40" rx="4" fill="#2D5A87" />
-
-                            {/* Character */}
-                            <ellipse cx="120" cy="280" rx="80" ry="15" fill="#1a1a1a" opacity="0.3" />
-                            <path d="M80 180 L160 180 L150 270 L90 270 Z" fill="#3B82F6" />
-                            <circle cx="120" cy="140" r="40" fill="#F5D0C5" />
-                            <path d="M85 125 Q120 100 155 125" stroke="#4A3728" strokeWidth="8" fill="none" />
-                            <ellipse cx="105" cy="145" rx="5" ry="6" fill="#333" />
-                            <ellipse cx="135" cy="145" rx="5" ry="6" fill="#333" />
-                            <path d="M115 160 Q120 165 125 160" stroke="#333" strokeWidth="2" fill="none" />
-
-                            {/* Arm with laptop/phone */}
-                            <path d="M160 200 L200 180 L220 200 L180 220 Z" fill="#3B82F6" />
-                            <rect x="185" y="175" width="40" height="30" rx="3" fill="#2D5A87" />
-                            <rect x="190" y="180" width="30" height="20" rx="2" fill="#1E3A5F" />
-
-                            {/* Floating elements */}
-                            <circle cx="280" cy="200" r="15" fill="#3B82F6" opacity="0.6" />
-                            <circle cx="320" cy="180" r="10" fill="#60A5FA" opacity="0.4" />
-                            <circle cx="350" cy="220" r="8" fill="#93C5FD" opacity="0.3" />
-                        </svg>
                     </div>
-                    <h2 className="illustration-title">30,000+ clients</h2>
-                    <p className="illustration-subtitle">are getting more replies!</p>
-                    <p className="illustration-description">
-                        Unlock the power of effective outreach with our cutting-edge platform, and experience a surge in responses and engagement rates like never before.
-                    </p>
+
+                    <div className="auth-footer">
+                        Already have an account? <Link href="/login">Log In</Link>
+                    </div>
+                </div>
+
+                {/* Right Side - Illustration */}
+                <div className="signup-illustration">
+                    <div className="illustration-content">
+                        <div className="illustration-image">
+                            <svg viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                {/* Background elements */}
+                                <rect x="180" y="20" width="180" height="140" rx="8" fill="#1E3A5F" />
+                                <rect x="190" y="30" width="160" height="10" rx="2" fill="#2D5A87" />
+                                <rect x="190" y="50" width="120" height="6" rx="2" fill="#2D5A87" />
+                                <rect x="190" y="65" width="140" height="6" rx="2" fill="#2D5A87" />
+                                <rect x="190" y="80" width="100" height="6" rx="2" fill="#2D5A87" />
+                                <circle cx="330" cy="110" r="25" fill="#3B82F6" />
+                                <rect x="190" y="100" width="80" height="40" rx="4" fill="#2D5A87" />
+
+                                {/* Character */}
+                                <ellipse cx="120" cy="280" rx="80" ry="15" fill="#1a1a1a" opacity="0.3" />
+                                <path d="M80 180 L160 180 L150 270 L90 270 Z" fill="#3B82F6" />
+                                <circle cx="120" cy="140" r="40" fill="#F5D0C5" />
+                                <path d="M85 125 Q120 100 155 125" stroke="#4A3728" strokeWidth="8" fill="none" />
+                                <ellipse cx="105" cy="145" rx="5" ry="6" fill="#333" />
+                                <ellipse cx="135" cy="145" rx="5" ry="6" fill="#333" />
+                                <path d="M115 160 Q120 165 125 160" stroke="#333" strokeWidth="2" fill="none" />
+
+                                {/* Arm with laptop/phone */}
+                                <path d="M160 200 L200 180 L220 200 L180 220 Z" fill="#3B82F6" />
+                                <rect x="185" y="175" width="40" height="30" rx="3" fill="#2D5A87" />
+                                <rect x="190" y="180" width="30" height="20" rx="2" fill="#1E3A5F" />
+
+                                {/* Floating elements */}
+                                <circle cx="280" cy="200" r="15" fill="#3B82F6" opacity="0.6" />
+                                <circle cx="320" cy="180" r="10" fill="#60A5FA" opacity="0.4" />
+                                <circle cx="350" cy="220" r="8" fill="#93C5FD" opacity="0.3" />
+                            </svg>
+                        </div>
+                        <h2 className="illustration-title">30,000+ clients</h2>
+                        <p className="illustration-subtitle">are getting more replies!</p>
+                        <p className="illustration-description">
+                            Unlock the power of effective outreach with our cutting-edge platform, and experience a surge in responses and engagement rates like never before.
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div>
-        </div >
-    )
+            )
 }

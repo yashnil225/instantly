@@ -1,8 +1,7 @@
-"use client"
-
 import { redirect } from "next/navigation"
 
 export default function Home() {
-  // Redirect to login page by default if not logged in
-  redirect("/login")
+  // Redirect to campaigns by default. 
+  // Middleware will catch unauthenticated users and send them to /login
+  redirect("/campaigns")
 }

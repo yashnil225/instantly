@@ -9,13 +9,14 @@ export default auth((req) => {
     if (!isLoggedIn && !isAuthPage) {
         // Store the current URL so we can redirect back after login
         const callbackUrl = encodeURIComponent(req.nextUrl.pathname + req.nextUrl.search)
-        return NextResponse.redirect(new URL(`/signup?callbackUrl=${callbackUrl}`, req.url))
+        // Redirect to /login instead of /signup to avoid loops and confusion
+        return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url))
     }
 
     if (isLoggedIn && isAuthPage) {
-        // Redirect to callbackUrl if provided, otherwise to root (which can redirect to default page)
+        // Redirect to callbackUrl if provided, otherwise to /campaigns
         const callbackUrl = req.nextUrl.searchParams.get("callbackUrl")
-        const redirectTo = callbackUrl ? decodeURIComponent(callbackUrl) : "/"
+        const redirectTo = callbackUrl ? decodeURIComponent(callbackUrl) : "/campaigns"
         return NextResponse.redirect(new URL(redirectTo, req.url))
     }
 

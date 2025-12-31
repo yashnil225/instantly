@@ -1,25 +1,25 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Zap, Home } from "lucide-react"
 
 export default function LoginPage() {
+    const { status } = useSession()
     const router = useRouter()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
 
-    // Redirect if already logged in
+    // Redirect if already logged in according to session
     useEffect(() => {
-        const isClientAuth = localStorage.getItem('instantly_auth')
-        if (isClientAuth) {
+        if (status === "authenticated") {
             router.push('/campaigns')
         }
-    }, [])
+    }, [status, router])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()

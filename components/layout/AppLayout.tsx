@@ -13,14 +13,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     // Pages that should NOT have the sidebar
     const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname.startsWith("/unsubscribe") || pathname === "/"
 
-    useEffect(() => {
-        if (!isAuthPage) {
-            const isClientAuth = localStorage.getItem('instantly_auth')
-            if (!isClientAuth) {
-                router.push('/login')
-            }
-        }
-    }, [isAuthPage, router])
+    // We no longer need client-side redirect logic here as middleware handles it.
+    // This prevents conflicts between client-side and server-side navigation.
 
     const [sidebarWidth, setSidebarWidth] = useState(72)
     const [isMobile, setIsMobile] = useState(false)

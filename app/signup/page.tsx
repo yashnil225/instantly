@@ -141,8 +141,8 @@ function SignupForm() {
                 <div className="signup-form-section">
                     {/* Logo */}
                     <div className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Logo size="md" />
-                        <span style={{ fontSize: '1.25rem', fontWeight: 600, color: '#3B82F6' }}>Instantly</span>
+                        <Logo size="xl" />
+                        <span style={{ fontSize: '1.5rem', fontWeight: 600, color: '#3B82F6' }}>Instantly</span>
                     </div>
 
                     <h1 className="auth-title signup-title">Create a new account</h1>

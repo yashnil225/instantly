@@ -62,7 +62,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(prisma),
     session: { strategy: "jwt" },
     secret: process.env.NEXTAUTH_SECRET || "secret",
-    debug: process.env.NODE_ENV === 'development' || true, // Force debug for now to help user
     pages: {
         signIn: '/login',
         newUser: '/signup',

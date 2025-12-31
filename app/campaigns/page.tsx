@@ -14,6 +14,7 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { Logo } from "@/components/ui/logo"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -573,7 +574,7 @@ function CampaignsPage() {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="border-border bg-secondary text-foreground hover:text-foreground hover:bg-muted gap-2">
-                                    <Zap className="h-4 w-4 text-blue-500" />
+                                    <Logo variant="icon" size="sm" />
                                     {currentWorkspace}
                                     <ChevronDown className="h-4 w-4" />
                                 </Button>
@@ -597,7 +598,7 @@ function CampaignsPage() {
                                             currentWorkspace === workspace.name && "bg-blue-500/20 text-blue-400"
                                         )}
                                     >
-                                        <Zap className="h-4 w-4 mr-2 text-blue-500" />
+                                        <Logo variant="icon" size="sm" className="mr-2" />
                                         {workspace.name}
                                     </DropdownMenuItem>
                                 ))}
@@ -641,7 +642,7 @@ function CampaignsPage() {
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="h-10 border-border bg-card text-foreground hover:bg-secondary hover:text-foreground gap-2">
-                                    <Zap className="h-4 w-4 text-blue-400" />
+                                    <Logo variant="icon" size="sm" />
                                     {statusFilter === "all" && "All statuses"}
                                     {statusFilter === "active" && "Active"}
                                     {statusFilter === "draft" && "Draft"}
@@ -664,7 +665,7 @@ function CampaignsPage() {
                                     onClick={() => setStatusFilter("all")}
                                     className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "all" && "bg-blue-500/20 text-blue-400")}
                                 >
-                                    <Zap className="h-4 w-4 text-blue-400" />
+                                    <Logo variant="icon" size="sm" />
                                     All statuses
                                 </DropdownMenuItem>
                                 <DropdownMenuItem

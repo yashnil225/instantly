@@ -5,6 +5,7 @@ import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Zap, Home } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 
 export default function LoginPage() {
     const { status } = useSession()
@@ -83,9 +84,9 @@ export default function LoginPage() {
 
             <div className="w-full max-w-md">
                 {/* Logo */}
-                <div className="flex items-center justify-center gap-2 mb-12">
-                    <Zap className="h-6 w-6 text-blue-500 fill-blue-500" />
-                    <span className="text-xl font-semibold text-blue-500">Instantly</span>
+                <div className="flex items-center justify-center gap-3 mb-12">
+                    <Logo size="lg" />
+                    <span className="text-2xl font-semibold text-foreground">Instantly</span>
                 </div>
 
                 {/* Login Card */}

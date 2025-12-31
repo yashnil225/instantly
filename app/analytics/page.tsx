@@ -38,6 +38,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
+import { Logo } from "@/components/ui/logo"
 import {
     LineChart,
     Line,
@@ -267,7 +268,7 @@ export default function AnalyticsPage() {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="border-border bg-card text-foreground hover:text-foreground hover:bg-secondary gap-2">
-                                        <Zap className="h-4 w-4 text-blue-500" />
+                                        <Logo variant="icon" size="sm" />
                                         {currentWorkspace}
                                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                     </Button>
@@ -291,7 +292,7 @@ export default function AnalyticsPage() {
                                                 currentWorkspace === workspace.name && "bg-blue-600/10 text-blue-400"
                                             )}
                                         >
-                                            <Zap className="h-4 w-4 mr-2 text-blue-500" />
+                                            <Logo variant="icon" size="sm" className="mr-2" />
                                             {workspace.name}
                                         </DropdownMenuItem>
                                     ))}

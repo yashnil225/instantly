@@ -60,6 +60,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
+import { Logo } from "@/components/ui/logo"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface Email {
@@ -182,18 +183,18 @@ function UniboxPage() {
     const [inboxSearch, setInboxSearch] = useState("")
 
     const statusFilters = [
-        { name: "Lead", value: "new", icon: Zap, color: "text-blue-400", bgColor: "bg-blue-400/10" },
-        { name: "Interested", value: "interested", icon: Zap, color: "text-green-400", bgColor: "bg-green-400/10" },
-        { name: "Meeting booked", value: "meeting_booked", icon: Zap, color: "text-pink-400", bgColor: "bg-pink-400/10" },
-        { name: "Meeting completed", value: "meeting_completed", icon: Zap, color: "text-yellow-400", bgColor: "bg-yellow-400/10" },
-        { name: "Won", value: "won", icon: Zap, color: "text-green-500", bgColor: "bg-green-500/10" },
+        { name: "Lead", value: "new", icon: (props: any) => <Logo variant="icon" size="sm" {...props} />, color: "text-blue-400", bgColor: "bg-blue-400/10" },
+        { name: "Interested", value: "interested", icon: (props: any) => <Logo variant="icon" size="sm" {...props} />, color: "text-green-400", bgColor: "bg-green-400/10" },
+        { name: "Meeting booked", value: "meeting_booked", icon: (props: any) => <Logo variant="icon" size="sm" {...props} />, color: "text-pink-400", bgColor: "bg-pink-400/10" },
+        { name: "Meeting completed", value: "meeting_completed", icon: (props: any) => <Logo variant="icon" size="sm" {...props} />, color: "text-yellow-400", bgColor: "bg-yellow-400/10" },
+        { name: "Won", value: "won", icon: (props: any) => <Logo variant="icon" size="sm" {...props} />, color: "text-green-500", bgColor: "bg-green-500/10" },
     ]
 
     const aiFilters = [
-        { name: "Out of office", value: "out_of_office", icon: Zap, color: "text-muted-foreground", bgColor: "bg-gray-400/10" },
-        { name: "Wrong person", value: "wrong_person", icon: Zap, color: "text-yellow-400", bgColor: "bg-yellow-400/10" },
-        { name: "Not interested", value: "not_interested", icon: Zap, color: "text-red-400", bgColor: "bg-red-400/10" },
-        { name: "Lost", value: "lost", icon: Zap, color: "text-red-500", bgColor: "bg-red-500/10" },
+        { name: "Out of office", value: "out_of_office", icon: (props: any) => <Logo variant="icon" size="sm" {...props} />, color: "text-muted-foreground", bgColor: "bg-gray-400/10" },
+        { name: "Wrong person", value: "wrong_person", icon: (props: any) => <Logo variant="icon" size="sm" {...props} />, color: "text-yellow-400", bgColor: "bg-yellow-400/10" },
+        { name: "Not interested", value: "not_interested", icon: (props: any) => <Logo variant="icon" size="sm" {...props} />, color: "text-red-400", bgColor: "bg-red-400/10" },
+        { name: "Lost", value: "lost", icon: (props: any) => <Logo variant="icon" size="sm" {...props} />, color: "text-red-500", bgColor: "bg-red-500/10" },
     ]
 
     // Combined all status options for the detail view dropdown
@@ -1080,7 +1081,7 @@ Instantly`,
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="border-[#2a2a35] bg-[#1e1e24] text-foreground hover:text-foreground hover:bg-[#2a2a35] gap-2 h-9 px-4 rounded-md shadow-sm">
-                                    <Zap className="h-4 w-4 text-blue-500 fill-blue-500" />
+                                    <Logo variant="icon" size="sm" />
                                     {currentWorkspace}
                                     <ChevronDown className="h-4 w-4 text-[#a1a1aa]" />
                                 </Button>
@@ -1104,7 +1105,7 @@ Instantly`,
                                             currentWorkspace === workspace.name && "bg-blue-600/10 text-blue-400"
                                         )}
                                     >
-                                        <Zap className="h-4 w-4 mr-2 text-blue-500 fill-blue-500" />
+                                        <Logo variant="icon" size="sm" className="mr-2" />
                                         {workspace.name}
                                     </DropdownMenuItem>
                                 ))}

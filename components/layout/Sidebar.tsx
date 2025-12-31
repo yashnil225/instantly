@@ -23,6 +23,7 @@ import {
     MoreHorizontal,
     Flame
 } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import {
@@ -123,8 +124,9 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
 
             {/* Logo Area */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-border">
-                <div className="flex items-center text-primary">
-                    <Zap className="h-6 w-6 fill-primary" />
+                <div className="flex items-center">
+                    <Logo size="md" />
+                    <span className="ml-2 text-xl font-semibold text-foreground">Instantly</span>
                 </div>
             </div>
 

@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   title: "Instantly",
   description: "Unlimited Cold Email Outreach",
   icons: {
-    icon: "/instantly-logo.png",
-    shortcut: "/instantly-logo.png",
-    apple: "/instantly-logo.png",
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 

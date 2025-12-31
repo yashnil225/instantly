@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
+import { Logo } from "@/components/ui/logo"
 
 function SignupForm() {
     const { toast } = useToast()
@@ -140,12 +141,7 @@ function SignupForm() {
                 <div className="signup-form-section">
                     {/* Logo */}
                     <div className="auth-logo">
-                        <div className="logo-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                <circle cx="12" cy="12" r="10" fill="#3B82F6" />
-                                <path d="M8 12l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        </div>
+                        <Logo size="md" />
                         <span className="logo-text">Instantly</span>
                     </div>
 

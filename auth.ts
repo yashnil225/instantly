@@ -69,6 +69,52 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     providers,
     callbacks: {
         async signIn({ user, account, profile }) {
+            // For Google OAuth: check if user exists, if not redirect to signup
+            if (account?.provider === "google" && user.email) {
+                const existingUser = await prisma.user.findUnique({
+                    where: { email: user.email }
+                })
+
+                if (!existingUser) {
+                    // No account exists - redirect to signup with message
+                    return `/signup?error=no_account&email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name || '')}`
+                }
+
+                // User exists - check if Google account is already linked
+                // Use a separate query since include may not work with all adapters
+                const linkedAccount = await (prisma as any).account?.findFirst?.({
+                    where: {
+                        userId: existingUser.id,
+                        provider: account.provider,
+                        providerAccountId: account.providerAccountId
+                    }
+                })
+
+                if (!linkedAccount) {
+                    // Link the OAuth account to the existing user
+                    try {
+                        await (prisma as any).account?.create?.({
+                            data: {
+                                userId: existingUser.id,
+                                type: account.type,
+                                provider: account.provider,
+                                providerAccountId: account.providerAccountId,
+                                access_token: account.access_token,
+                                refresh_token: account.refresh_token,
+                                expires_at: account.expires_at,
+                                token_type: account.token_type,
+                                scope: account.scope,
+                                id_token: account.id_token,
+                            }
+                        })
+                    } catch (e) {
+                        // Account might already exist from adapter, continue
+                        console.log('Account link attempted:', e)
+                    }
+                }
+                // Update the user object to use the existing user's ID
+                user.id = existingUser.id
+            }
             return true
         },
         async jwt({ token, user, account, trigger }) {

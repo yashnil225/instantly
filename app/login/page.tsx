@@ -27,6 +27,20 @@ export default function LoginPage() {
         setLoading(true)
 
         try {
+            // First check if account exists
+            const checkResponse = await fetch('/api/auth/check-account', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            })
+            const checkData = await checkResponse.json()
+
+            if (!checkData.exists) {
+                // Account doesn't exist - redirect to signup with message
+                router.push('/signup?error=no_account&email=' + encodeURIComponent(email))
+                return
+            }
+
             const result = await signIn("credentials", {
                 email,
                 password,

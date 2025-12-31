@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { useToast } from "@/components/ui/use-toast"
@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast"
 export default function SignupPage() {
     const { toast } = useToast()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [firstName, setFirstName] = useState("")
     const [lastName, setLastName] = useState("")
     const [email, setEmail] = useState("")
@@ -16,6 +17,32 @@ export default function SignupPage() {
     const [termsAccepted, setTermsAccepted] = useState(false)
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
+
+    // Check for redirect from login page (no account exists)
+    useEffect(() => {
+        const errorParam = searchParams.get('error')
+        const emailParam = searchParams.get('email')
+        const nameParam = searchParams.get('name')
+
+        if (errorParam === 'no_account') {
+            toast({
+                title: "Account Not Found",
+                description: "No account exists with this email. Please sign up to create one.",
+            })
+
+            // Pre-fill email if provided
+            if (emailParam) {
+                setEmail(decodeURIComponent(emailParam))
+            }
+
+            // Pre-fill name if provided (from Google)
+            if (nameParam) {
+                const names = decodeURIComponent(nameParam).split(' ')
+                setFirstName(names[0] || '')
+                setLastName(names.slice(1).join(' ') || '')
+            }
+        }
+    }, [searchParams, toast])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()

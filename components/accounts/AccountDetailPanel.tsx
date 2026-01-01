@@ -768,308 +768,315 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                                         </div>
                                     </div>
                                 </div>
-                        </div>
-                </div>
+                            </TabsContent>
 
-                        {/* Connection Settings */ }
-                        <div className="pt-6 border-t border-[#2a2a2a]">
-                            <div className="flex items-center gap-2 text-white font-medium mb-6">
-                                <span className="text-gray-500"><Zap className="h-4 w-4" /></span>
-                                Connection Settings
-                            </div>
+                            {/* Settings Tab */}
+                            <TabsContent value="settings" className="space-y-6 mt-0">
+                                {/* Connection Settings */}
+                                <div className="pt-6 border-t border-[#2a2a2a]">
+                                    <div className="flex items-center gap-2 text-white font-medium mb-6">
+                                        <span className="text-gray-500"><Zap className="h-4 w-4" /></span>
+                                        Connection Settings
+                                    </div>
 
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <Label className="text-white font-medium">App Password / Password</Label>
-                                    <div className="text-xs text-gray-500 mb-2">Leave empty to keep current password. Enter new one to update.</div>
-                                    <Input
-                                        type="password"
-                                        placeholder="••••••••••••••••"
-                                        value={connectionPassword}
-                                        onChange={(e) => setConnectionPassword(e.target.value)}
-                                        className="bg-[#111] border-[#2a2a2a] text-white h-10"
-                                    />
+                                    <div className="space-y-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-white font-medium">App Password / Password</Label>
+                                            <div className="text-xs text-gray-500 mb-2">Leave empty to keep current password. Enter new one to update.</div>
+                                            <Input
+                                                type="password"
+                                                placeholder="••••••••••••••••"
+                                                value={connectionPassword}
+                                                onChange={(e) => setConnectionPassword(e.target.value)}
+                                                className="bg-[#111] border-[#2a2a2a] text-white h-10"
+                                            />
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-6">
+                                            <div className="space-y-4">
+                                                <h4 className="text-sm font-medium text-gray-400">SMTP (Sending)</h4>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-gray-500">Host</Label>
+                                                    <Input value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-gray-500">Port</Label>
+                                                    <Input value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-gray-500">Username</Label>
+                                                    <Input value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <h4 className="text-sm font-medium text-gray-400">IMAP (Receiving)</h4>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-gray-500">Host</Label>
+                                                    <Input value={imapHost} onChange={(e) => setImapHost(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-gray-500">Port</Label>
+                                                    <Input value={imapPort} onChange={(e) => setImapPort(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label className="text-xs text-gray-500">Username</Label>
+                                                    <Input value={imapUser} onChange={(e) => setImapUser(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="pt-6 border-t border-[#2a2a2a]">
+                                    <div className="flex items-center gap-2 text-white font-medium mb-6">
+                                        <span className="text-gray-500"><Send className="h-4 w-4" /></span>
+                                        Troubleshooting
+                                    </div>
                                     <div className="space-y-4">
-                                        <h4 className="text-sm font-medium text-gray-400">SMTP (Sending)</h4>
                                         <div className="space-y-2">
-                                            <Label className="text-xs text-gray-500">Host</Label>
-                                            <Input value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                            <Label className="text-gray-400 text-xs">Send a test email to verify SMTP connection</Label>
+                                            <div className="flex gap-2 max-w-md">
+                                                <Input
+                                                    placeholder="Recipient email address"
+                                                    value={testRecipient}
+                                                    onChange={(e) => setTestRecipient(e.target.value)}
+                                                    className="bg-[#111] border-[#2a2a2a] text-white h-10"
+                                                />
+                                                <Button
+                                                    variant="outline"
+                                                    className="border-blue-900/40 bg-blue-900/10 text-blue-400 hover:bg-blue-900/20 px-3"
+                                                    onClick={handleSendTestEmail}
+                                                    disabled={sendingTest}
+                                                >
+                                                    {sendingTest ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                                                    Send Test
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs text-gray-500">Port</Label>
-                                            <Input value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs text-gray-500">Username</Label>
-                                            <Input value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                        <div className="pt-2">
+                                            <Button
+                                                variant="outline"
+                                                className="border-[#2a2a2a] bg-[#111] text-gray-400 hover:bg-[#1a1a1a] hover:text-white px-4 h-10"
+                                                onClick={runWarmupManual}
+                                                disabled={runningWarmup}
+                                            >
+                                                {runningWarmup ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Flame className="h-4 w-4 mr-2" />}
+                                                Trigger Warmup Cycle Manually
+                                            </Button>
+                                            <p className="text-[10px] text-gray-500 mt-2">Useful for checking if your Warmup Pool and IMAP connection are working correctly.</p>
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div className="space-y-4">
-                                        <h4 className="text-sm font-medium text-gray-400">IMAP (Receiving)</h4>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs text-gray-500">Host</Label>
-                                            <Input value={imapHost} onChange={(e) => setImapHost(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs text-gray-500">Port</Label>
-                                            <Input value={imapPort} onChange={(e) => setImapPort(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-xs text-gray-500">Username</Label>
-                                            <Input value={imapUser} onChange={(e) => setImapUser(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
-                                        </div>
+                                {/* Custom Tracking Domain */}
+                                <div className="pt-6 border-t border-[#2a2a2a]">
+                                    <div className="flex items-center gap-2 text-white font-medium mb-6">
+                                        <span className="text-gray-500"><Globe className="h-4 w-4" /></span>
+                                        Custom Tracking Domain
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="pt-6 border-t border-[#2a2a2a]">
-                            <div className="flex items-center gap-2 text-white font-medium mb-6">
-                                <span className="text-gray-500"><Send className="h-4 w-4" /></span>
-                                Troubleshooting
-                            </div>
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="text-gray-400 text-xs">Send a test email to verify SMTP connection</Label>
-                                    <div className="flex gap-2 max-w-md">
-                                        <Input
-                                            placeholder="Recipient email address"
-                                            value={testRecipient}
-                                            onChange={(e) => setTestRecipient(e.target.value)}
-                                            className="bg-[#111] border-[#2a2a2a] text-white h-10"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            className="border-blue-900/40 bg-blue-900/10 text-blue-400 hover:bg-blue-900/20 px-3"
-                                            onClick={handleSendTestEmail}
-                                            disabled={sendingTest}
-                                        >
-                                            {sendingTest ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                                            Send Test
-                                        </Button>
-                                    </div>
-                                </div>
-                                <div className="pt-2">
-                                    <Button
-                                        variant="outline"
-                                        className="border-[#2a2a2a] bg-[#111] text-gray-400 hover:bg-[#1a1a1a] hover:text-white px-4 h-10"
-                                        onClick={runWarmupManual}
-                                        disabled={runningWarmup}
-                                    >
-                                        {runningWarmup ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Flame className="h-4 w-4 mr-2" />}
-                                        Trigger Warmup Cycle Manually
-                                    </Button>
-                                    <p className="text-[10px] text-gray-500 mt-2">Useful for checking if your Warmup Pool and IMAP connection are working correctly.</p>
-                                </div>
-                            </div>
-                        </div>
-
-            {/* Custom Tracking Domain */ }
-            <div className="pt-6 border-t border-[#2a2a2a]">
-                <div className="flex items-center gap-2 text-white font-medium mb-6">
-                    <span className="text-gray-500"><Globe className="h-4 w-4" /></span>
-                    Custom Tracking Domain
-                </div>
-                <div className="flex items-center gap-2">
-                    <Checkbox id="custom-domain" className="border-[#333] data-[state=checked]:bg-blue-600 rounded-[4px]" />
-                    <label htmlFor="custom-domain" className="text-gray-300 text-sm cursor-pointer">Enable custom tracking domain</label>
-                </div>
-            </div>
-
-            {/* Warmup Settings */ }
-                        <div className="pt-6 border-t border-[#2a2a2a] pb-20">
-                            <div className="flex items-center gap-2 text-white font-medium mb-6">
-                                <span className="text-gray-500"><Flame className="h-4 w-4" /></span>
-                                Warmup Settings
-                            </div>
-
-                            <div className="space-y-8">
-                                <div className="space-y-2">
                                     <div className="flex items-center gap-2">
-                                        <Label className="text-white font-medium">Warmup filter tag</Label>
-                                        <Info className="h-3 w-3 text-gray-500" />
+                                        <Checkbox id="custom-domain" className="border-[#333] data-[state=checked]:bg-blue-600 rounded-[4px]" />
+                                        <label htmlFor="custom-domain" className="text-gray-300 text-sm cursor-pointer">Enable custom tracking domain</label>
                                     </div>
-                                    <div className="flex gap-2 max-w-md">
-                                        <Input
-                                            placeholder="Custom tag"
-                                            value={warmupTag}
-                                            onChange={(e) => setWarmupTag(e.target.value)}
-                                            className="bg-[#111] border-[#2a2a2a] text-white h-10"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            className="border-[#2a2a2a] bg-[#111] text-gray-400 hover:bg-[#1a1a1a] hover:text-white px-3"
-                                            onClick={generateWarmupTag}
-                                        >
-                                            <RefreshCw className="h-4 w-4 mr-2" />
-                                            Generate
+                                </div>
+
+                            </TabsContent>
+
+                            {/* Warmup Settings (Continued) */}
+                            <TabsContent value="warmup" className="space-y-6 mt-0">
+                                {/* Warmup Settings */}
+                                <div className="pt-6 border-t border-[#2a2a2a] pb-20">
+                                    <div className="flex items-center gap-2 text-white font-medium mb-6">
+                                        <span className="text-gray-500"><Flame className="h-4 w-4" /></span>
+                                        Warmup Settings
+                                    </div>
+
+                                    <div className="space-y-8">
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-white font-medium">Warmup filter tag</Label>
+                                                <Info className="h-3 w-3 text-gray-500" />
+                                            </div>
+                                            <div className="flex gap-2 max-w-md">
+                                                <Input
+                                                    placeholder="Custom tag"
+                                                    value={warmupTag}
+                                                    onChange={(e) => setWarmupTag(e.target.value)}
+                                                    className="bg-[#111] border-[#2a2a2a] text-white h-10"
+                                                />
+                                                <Button
+                                                    variant="outline"
+                                                    className="border-[#2a2a2a] bg-[#111] text-gray-400 hover:bg-[#1a1a1a] hover:text-white px-3"
+                                                    onClick={generateWarmupTag}
+                                                >
+                                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                                    Generate
+                                                </Button>
+                                            </div>
+                                            <div className="text-xs text-gray-500 pl-1">Example: 'golden-pineapples'</div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                                            <div className="space-y-2">
+                                                <Label className="text-white font-medium">Increase per day</Label>
+                                                <div className="text-xs text-gray-500 mb-2">Suggested 1</div>
+                                                <Input
+                                                    value={warmupDailyIncrease}
+                                                    onChange={(e) => setWarmupDailyIncrease(e.target.value)}
+                                                    className="bg-[#111] border-[#2a2a2a] text-white w-full h-10"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label className="text-white font-medium">Daily warmup limit</Label>
+                                                <div className="text-xs text-gray-500 mb-2">Suggested 10</div>
+                                                <Input
+                                                    value={warmupDailyLimit}
+                                                    onChange={(e) => setWarmupDailyLimit(e.target.value)}
+                                                    className="bg-[#111] border-[#2a2a2a] text-white w-full h-10"
+                                                />
+                                                {parseInt(warmupDailyLimit) > 50 && (
+                                                    <p className="text-orange-500 text-xs mt-1">
+                                                        <span className="font-semibold">Warning</span> : Warmup limit is too high. It's recommended to keep it below 50.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-white font-medium">Reply rate %</Label>
+                                            <div className="text-xs text-gray-500 mb-2">Suggested 30</div>
+                                            <Input
+                                                value={warmupReplyRate}
+                                                onChange={(e) => setWarmupReplyRate(e.target.value)}
+                                                className="bg-[#111] border-[#2a2a2a] text-white w-32 h-10"
+                                            />
+                                        </div>
+
+                                        <Button variant="outline" className="text-gray-300 border-[#2a2a2a] bg-transparent hover:bg-[#1a1a1a] hover:text-white text-xs h-9">
+                                            Show advanced settings <ChevronDown className="ml-2 h-3 w-3" />
                                         </Button>
                                     </div>
-                                    <div className="text-xs text-gray-500 pl-1">Example: 'golden-pineapples'</div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-x-12 gap-y-8">
-                                    <div className="space-y-2">
-                                        <Label className="text-white font-medium">Increase per day</Label>
-                                        <div className="text-xs text-gray-500 mb-2">Suggested 1</div>
-                                        <Input
-                                            value={warmupDailyIncrease}
-                                            onChange={(e) => setWarmupDailyIncrease(e.target.value)}
-                                            className="bg-[#111] border-[#2a2a2a] text-white w-full h-10"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-white font-medium">Daily warmup limit</Label>
-                                        <div className="text-xs text-gray-500 mb-2">Suggested 10</div>
-                                        <Input
-                                            value={warmupDailyLimit}
-                                            onChange={(e) => setWarmupDailyLimit(e.target.value)}
-                                            className="bg-[#111] border-[#2a2a2a] text-white w-full h-10"
-                                        />
-                                        {parseInt(warmupDailyLimit) > 50 && (
-                                            <p className="text-orange-500 text-xs mt-1">
-                                                <span className="font-semibold">Warning</span> : Warmup limit is too high. It's recommended to keep it below 50.
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-white font-medium">Reply rate %</Label>
-                                    <div className="text-xs text-gray-500 mb-2">Suggested 30</div>
-                                    <Input
-                                        value={warmupReplyRate}
-                                        onChange={(e) => setWarmupReplyRate(e.target.value)}
-                                        className="bg-[#111] border-[#2a2a2a] text-white w-32 h-10"
-                                    />
-                                </div>
-
-                                <Button variant="outline" className="text-gray-300 border-[#2a2a2a] bg-transparent hover:bg-[#1a1a1a] hover:text-white text-xs h-9">
-                                    Show advanced settings <ChevronDown className="ml-2 h-3 w-3" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 fixed bottom-6 right-6 z-30">
-                            <Button
-                                className="bg-blue-600 hover:bg-blue-500 text-white w-20 h-10 shadow-lg shadow-blue-900/20"
-                                onClick={saveSettings}
-                                disabled={saving}
-                            >
-                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-                            </Button>
-                        </div>
-                    </TabsContent >
-
-        {/* Campaigns Tab */ }
-        < TabsContent value = "campaigns" className = "mt-0 pt-2" >
-            <div className="space-y-2">
-                {campaigns.length > 0 ? (
-                    campaigns.map((campaign) => {
-                        const badge = getStatusBadge(campaign.status)
-                        return (
-                            <div
-                                key={campaign.id}
-                                className="flex items-center justify-between p-4 bg-[#111] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors group cursor-pointer"
-                                onClick={() => router.push(`/campaigns/${campaign.id}`)}
-                            >
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-white font-medium text-sm">{campaign.name}</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <Badge className={`${badge.className} hover:${badge.className} font-medium px-2.5 py-0.5 rounded text-xs`}>
-                                        {badge.label}
-                                    </Badge>
+                                <div className="flex items-center gap-4 fixed bottom-6 right-6 z-30">
                                     <Button
-                                        variant="ghost"
-                                        className="text-blue-500 hover:text-blue-400 hover:bg-transparent font-medium text-sm p-0 h-auto group-hover:underline"
-                                        onClick={(e) => {
-                                            e.stopPropagation()
-                                            router.push(`/campaigns/${campaign.id}`)
-                                        }}
+                                        className="bg-blue-600 hover:bg-blue-500 text-white w-20 h-10 shadow-lg shadow-blue-900/20"
+                                        onClick={saveSettings}
+                                        disabled={saving}
                                     >
-                                        View
+                                        {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
                                     </Button>
                                 </div>
-                            </div>
-                        )
-                    })
-                ) : (
-                    <div className="flex flex-col items-center justify-center p-12 bg-[#111] border border-[#2a2a2a] rounded-xl">
-                        <Rocket className="h-10 w-10 text-gray-600 mb-4" />
-                        <p className="text-gray-400 text-sm">No campaigns are using this account yet.</p>
-                        <Button
-                            variant="outline"
-                            className="mt-4 border-[#333] text-gray-300 hover:bg-[#1a1a1a]"
-                            onClick={() => router.push('/campaigns')}
-                        >
-                            Go to Campaigns
-                        </Button>
-                    </div>
-                )}
-            </div>
-                    </TabsContent >
-                </div >
-            </Tabs >
+                            </TabsContent>
 
-        {/* Large Daily Limit Warning Modal */ }
-        < Dialog open = { showLargeLimitWarning } onOpenChange = { setShowLargeLimitWarning } >
-            <DialogContent className="bg-[#1a1a1a] border-[#333] text-white max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-3 text-xl">
-                        <span className="text-2xl">😟</span>
-                        Large daily limit
-                    </DialogTitle>
-                    <DialogDescription className="text-gray-400 pt-4 space-y-4">
-                        <p>
-                            You currently have your daily email limit for this account set to more than 500 emails per day.
-                        </p>
-                        <p className="text-orange-500">
-                            Sending too many emails from the same email account can not only damage your sender reputation, but could also get your account banned by your email service provider.
-                        </p>
-                        <p className="text-orange-500">
-                            Check with your email service provider before setting a large daily limit, or it could lead to them suspending your account.
-                        </p>
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="flex items-center gap-2 mt-4">
-                    <Checkbox
-                        id="acknowledge-limit"
-                        checked={largeLimitAcknowledged}
-                        onCheckedChange={(c) => setLargeLimitAcknowledged(c as boolean)}
-                        className="border-[#444] data-[state=checked]:bg-blue-600 rounded-[4px]"
-                    />
-                    <label htmlFor="acknowledge-limit" className="text-gray-300 text-sm cursor-pointer">
-                        I understand what I'm doing
-                    </label>
+                            {/* Campaigns Tab */}
+                            {/* Campaigns Tab */}
+                            <TabsContent value="campaigns" className="mt-0 pt-2">
+                                <div className="space-y-2">
+                                    {campaigns.length > 0 ? (
+                                        campaigns.map((campaign) => {
+                                            const badge = getStatusBadge(campaign.status)
+                                            return (
+                                                <div
+                                                    key={campaign.id}
+                                                    className="flex items-center justify-between p-4 bg-[#111] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors group cursor-pointer"
+                                                    onClick={() => router.push(`/campaigns/${campaign.id}`)}
+                                                >
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-white font-medium text-sm">{campaign.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <Badge className={`${badge.className} hover:${badge.className} font-medium px-2.5 py-0.5 rounded text-xs`}>
+                                                            {badge.label}
+                                                        </Badge>
+                                                        <Button
+                                                            variant="ghost"
+                                                            className="text-blue-500 hover:text-blue-400 hover:bg-transparent font-medium text-sm p-0 h-auto group-hover:underline"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                router.push(`/campaigns/${campaign.id}`)
+                                                            }}
+                                                        >
+                                                            View
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center p-12 bg-[#111] border border-[#2a2a2a] rounded-xl">
+                                            <Rocket className="h-10 w-10 text-gray-600 mb-4" />
+                                            <p className="text-gray-400 text-sm">No campaigns are using this account yet.</p>
+                                            <Button
+                                                variant="outline"
+                                                className="mt-4 border-[#333] text-gray-300 hover:bg-[#1a1a1a]"
+                                                onClick={() => router.push('/campaigns')}
+                                            >
+                                                Go to Campaigns
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </TabsContent>
+                        </div>
+                    </Tabs>
+
+                    {/* Large Daily Limit Warning Modal */}
+                    {/* Large Daily Limit Warning Modal */}
+                    <Dialog open={showLargeLimitWarning} onOpenChange={setShowLargeLimitWarning}>
+                        <DialogContent className="bg-[#1a1a1a] border-[#333] text-white max-w-md">
+                            <DialogHeader>
+                                <DialogTitle className="flex items-center gap-3 text-xl">
+                                    <span className="text-2xl">😟</span>
+                                    Large daily limit
+                                </DialogTitle>
+                                <DialogDescription className="text-gray-400 pt-4 space-y-4">
+                                    <p>
+                                        You currently have your daily email limit for this account set to more than 500 emails per day.
+                                    </p>
+                                    <p className="text-orange-500">
+                                        Sending too many emails from the same email account can not only damage your sender reputation, but could also get your account banned by your email service provider.
+                                    </p>
+                                    <p className="text-orange-500">
+                                        Check with your email service provider before setting a large daily limit, or it could lead to them suspending your account.
+                                    </p>
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex items-center gap-2 mt-4">
+                                <Checkbox
+                                    id="acknowledge-limit"
+                                    checked={largeLimitAcknowledged}
+                                    onCheckedChange={(c) => setLargeLimitAcknowledged(c as boolean)}
+                                    className="border-[#444] data-[state=checked]:bg-blue-600 rounded-[4px]"
+                                />
+                                <label htmlFor="acknowledge-limit" className="text-gray-300 text-sm cursor-pointer">
+                                    I understand what I'm doing
+                                </label>
+                            </div>
+                            <DialogFooter className="mt-6 gap-2">
+                                <Button
+                                    onClick={handleLargeLimitContinue}
+                                    disabled={!largeLimitAcknowledged || saving}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white"
+                                >
+                                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                    Continue
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => {
+                                        setShowLargeLimitWarning(false)
+                                        setLargeLimitAcknowledged(false)
+                                    }}
+                                    className="bg-red-800 hover:bg-red-700"
+                                >
+                                    Cancel
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
-                <DialogFooter className="mt-6 gap-2">
-                    <Button
-                        onClick={handleLargeLimitContinue}
-                        disabled={!largeLimitAcknowledged || saving}
-                        className="bg-blue-600 hover:bg-blue-500 text-white"
-                    >
-                        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                        Continue
-                    </Button>
-                    <Button
-                        variant="destructive"
-                        onClick={() => {
-                            setShowLargeLimitWarning(false)
-                            setLargeLimitAcknowledged(false)
-                        }}
-                        className="bg-red-800 hover:bg-red-700"
-                    >
-                        Cancel
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-            </Dialog >
-        </div >
-    )
-}
+            )
+        }

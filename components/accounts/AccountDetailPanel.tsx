@@ -44,6 +44,16 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
     // Account status
     const [status, setStatus] = useState(account?.status || "active")
 
+    // Connection settings state
+    const [smtpHost, setSmtpHost] = useState(account?.smtpHost || "")
+    const [smtpPort, setSmtpPort] = useState(account?.smtpPort?.toString() || "587")
+    const [smtpUser, setSmtpUser] = useState(account?.smtpUser || "")
+    const [imapHost, setImapHost] = useState(account?.imapHost || "")
+    const [imapPort, setImapPort] = useState(account?.imapPort?.toString() || "993")
+    const [imapUser, setImapUser] = useState(account?.imapUser || "")
+    const [connectionPassword, setConnectionPassword] = useState("") // Empty by default
+
+
     // Loading states
     const [saving, setSaving] = useState(false)
     const [toggling, setToggling] = useState(false)
@@ -103,6 +113,15 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                 } catch (e) {
                     setErrorDetail(data.errorDetail || "")
                 }
+
+                // Connection settings
+                setSmtpHost(data.smtpHost || "")
+                setSmtpPort(data.smtpPort?.toString() || "587")
+                setSmtpUser(data.smtpUser || data.email || "")
+                setImapHost(data.imapHost || "")
+                setImapPort(data.imapPort?.toString() || "993")
+                setImapUser(data.imapUser || data.email || "")
+
             }
         } catch (error) {
             console.error("Failed to fetch account details:", error)
@@ -118,7 +137,12 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
             const res = await fetch(`/api/accounts/${account.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: newStatus })
+                body: JSON.stringify({
+                    status: newStatus,
+                    // Auto-clear error on manual resume
+                    errorDetail: newStatus === "active" ? null : undefined,
+                    hasError: newStatus === "active" ? false : undefined
+                })
             })
 
             if (res.ok) {
@@ -224,595 +248,580 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                 title: 'Mailbox Issue',
                 description: 'There\'s an issue with the mailbox (possibly full or unavailable).',
                 suggestion: 'Check your email account storage. You may need to clear some space.',
-                canAutoFix: false
-            }
-        }
 
-        // Missing credentials
-        if (lowerError.includes('missing credentials') || lowerError.includes('no password') ||
-            error === 'null' || error === 'undefined' || !error) {
-            return {
-                type: 'missing',
-                title: 'Missing Credentials',
-                description: 'SMTP credentials are not configured for this account.',
-                suggestion: 'Please reconnect your email account with valid SMTP credentials.',
-                canAutoFix: false
-            }
-        }
-
-        // Default/unknown error
-        return {
-            type: 'unknown',
-            title: 'Connection Issue',
-            description: 'An error occurred while connecting to your email provider.',
-            suggestion: 'Try reconnecting. If the issue persists, contact your email service provider.',
-            canAutoFix: false
-        }
-    }
-
-    // Auto-fix error logic
-    const fixError = async () => {
-        if (errorDetail.includes("Daily user sending limit exceeded") || errorDetail.includes("daily limit")) {
-            setSaving(true)
-            try {
-                // Apply fix: Reduce limit to 50% and switch to smooth ramp
-                const newLimit = Math.max(10, Math.floor(parseInt(dailyLimit) * 0.5))
-                const res = await fetch(`/api/accounts/${account.id}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        status: "active", // Reactivate
-                        dailyLimit: newLimit,
-                        slowRamp: true
-                    })
-                })
-
-                if (res.ok) {
-                    setDailyLimit(newLimit.toString())
-                    setSlowRamp(true)
-                    setStatus("active")
-                    setErrorDetail("") // Clear error visually
-                    toast({
-                        title: "Auto-Fix Applied",
-                        description: `Daily limit lowered to ${newLimit} and Slow Ramp enabled. Account reactivated.`
-                    })
-                    onUpdate?.({ ...account, status: "active" })
+                // Default/Empty - Treat as generic error, NOT missing credentials
+                return {
+                    type: 'unknown',
+                    title: 'Connection Issue',
+                    description: error || 'An generic error occurred.',
+                    suggestion: 'The connection was interrupted. If your credentials are correct, you can dismiss this error.',
+                    canAutoFix: false
                 }
-            } catch (err) {
-                toast({ title: "Fix Failed", description: "Could not auto-fix the issue.", variant: "destructive" })
-            } finally {
-                setSaving(false)
             }
-        } else {
-            // Generic fix: just try to resume
-            toggleStatus()
-        }
-    }
 
-    // Toggle warmup
-    const toggleWarmup = async (enabled: boolean) => {
-        try {
-            const res = await fetch(`/api/accounts/${account.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ warmupEnabled: enabled })
-            })
+            // Auto-fix error logic
+            const fixError = async () => {
+                if (errorDetail.includes("Daily user sending limit exceeded") || errorDetail.includes("daily limit")) {
+                    setSaving(true)
+                    try {
+                        // Apply fix: Reduce limit to 50% and switch to smooth ramp
+                        const newLimit = Math.max(10, Math.floor(parseInt(dailyLimit) * 0.5))
+                        const res = await fetch(`/api/accounts/${account.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                status: "active", // Reactivate
+                                dailyLimit: newLimit,
+                                slowRamp: true
+                            })
+                        })
 
-            if (res.ok) {
-                setWarmupEnabled(enabled)
-                toast({
-                    title: enabled ? "Warmup Enabled" : "Warmup Disabled",
-                    description: `Warmup is now ${enabled ? "active" : "paused"} for ${account.email}`
-                })
-            } else {
-                throw new Error("Failed to toggle warmup")
+                        if (res.ok) {
+                            setDailyLimit(newLimit.toString())
+                            setSlowRamp(true)
+                            setStatus("active")
+                            setErrorDetail("") // Clear error visually
+                            toast({
+                                title: "Auto-Fix Applied",
+                                description: `Daily limit lowered to ${newLimit} and Slow Ramp enabled. Account reactivated.`
+                            })
+                            onUpdate?.({ ...account, status: "active" })
+                        }
+                    } catch (err) {
+                        toast({ title: "Fix Failed", description: "Could not auto-fix the issue.", variant: "destructive" })
+                    } finally {
+                        setSaving(false)
+                    }
+                } else {
+                    // Generic fix: just try to resume
+                    toggleStatus()
+                }
             }
-        } catch (error) {
-            toast({ title: "Error", description: "Failed to toggle warmup", variant: "destructive" })
-        }
-    }
 
-    // Actually perform the save API call
-    const performSave = async () => {
-        setSaving(true)
+            // Dismiss Error manually
+            const dismissError = async () => {
+                setSaving(true)
+                try {
+                    const res = await fetch(`/api/accounts/${account.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            status: "active",
+                            errorDetail: null, // Clear error
+                            hasError: false
+                        })
+                    })
 
-        try {
-            const res = await fetch(`/api/accounts/${account.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    firstName,
-                    lastName,
-                    signature,
-                    dailyLimit: parseInt(dailyLimit),
-                    minWaitTime: parseInt(minWaitTime),
-                    slowRamp,
-                    warmupTag,
-                    warmupDailyLimit: parseInt(warmupDailyLimit),
-                    warmupDailyIncrease: parseInt(warmupDailyIncrease),
-                    warmupReplyRate: parseInt(warmupReplyRate)
-                })
-            })
-
-            if (res.ok) {
-                toast({ title: "Settings Saved", description: "Account settings updated successfully" })
-                onUpdate?.({ ...account, firstName, lastName })
-                setShowLargeLimitWarning(false)
-                setLargeLimitAcknowledged(false)
-            } else {
-                throw new Error("Failed to save settings")
+                    if (res.ok) {
+                        setStatus("active")
+                        setErrorDetail("")
+                        toast({ title: "Error Dismissed", description: "Account is now active." })
+                        onUpdate?.({ ...account, status: "active", hasError: false })
+                    }
+                } catch (e) {
+                    toast({ title: "Error", description: "Failed to dismiss error", variant: "destructive" })
+                } finally {
+                    setSaving(false)
+                }
             }
-        } catch (error) {
-            toast({ title: "Error", description: "Failed to save settings", variant: "destructive" })
-        } finally {
-            setSaving(false)
-        }
-    }
 
-    // Save all settings - checks for large limit first
-    const saveSettings = async () => {
-        const limit = parseInt(dailyLimit) || 0
-        if (limit > 500) {
-            setShowLargeLimitWarning(true)
-            return
-        }
-        await performSave()
-    }
+            // Toggle warmup
+            const toggleWarmup = async (enabled: boolean) => {
+                try {
+                    const res = await fetch(`/api/accounts/${account.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ warmupEnabled: enabled })
+                    })
 
-    // Handle continue from large limit warning modal
-    const handleLargeLimitContinue = async () => {
-        if (largeLimitAcknowledged) {
-            await performSave()
-        }
-    }
-
-    const handleSendTestEmail = async () => {
-        if (!testRecipient) {
-            toast({ title: "Recipient Required", description: "Please enter an email address.", variant: "destructive" })
-            return
-        }
-
-        setSendingTest(true)
-        try {
-            const res = await fetch(`/api/accounts/${account.id}/test-send`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ to: testRecipient })
-            })
-
-            const data = await res.json()
-            if (res.ok) {
-                toast({ title: "Success", description: `Test email sent to ${testRecipient}` })
-                setTestRecipient("")
-            } else {
-                throw new Error(data.error || data.details || "Failed to send test email")
+                    if (res.ok) {
+                        setWarmupEnabled(enabled)
+                        toast({
+                            title: enabled ? "Warmup Enabled" : "Warmup Disabled",
+                            description: `Warmup is now ${enabled ? "active" : "paused"} for ${account.email}`
+                        })
+                    } else {
+                        throw new Error("Failed to toggle warmup")
+                    }
+                } catch (error) {
+                    toast({ title: "Error", description: "Failed to toggle warmup", variant: "destructive" })
+                }
             }
-        } catch (error: any) {
-            toast({ title: "Send Failed", description: error.message, variant: "destructive" })
-        } finally {
-            setSendingTest(false)
-        }
-    }
 
-    const runWarmupManual = async () => {
-        setRunningWarmup(true)
-        try {
-            const res = await fetch('/api/cron/warmup')
-            if (res.ok) {
-                toast({ title: "Warmup Started", description: "The warmup cycle has been triggered manually." })
-                fetchAccountDetails() // Refresh logs
-            } else {
-                const data = await res.json()
-                throw new Error(data.error || "Failed to trigger warmup")
+            // Actually perform the save API call
+            const performSave = async () => {
+                setSaving(true)
+
+                try {
+                    const res = await fetch(`/api/accounts/${account.id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            firstName,
+                            lastName,
+                            signature,
+                            dailyLimit: parseInt(dailyLimit),
+                            minWaitTime: parseInt(minWaitTime),
+                            slowRamp,
+                            warmupTag,
+                            warmupDailyLimit: parseInt(warmupDailyLimit),
+                            warmupDailyIncrease: parseInt(warmupDailyIncrease),
+                            warmupDailyIncrease: parseInt(warmupDailyIncrease),
+                            warmupReplyRate: parseInt(warmupReplyRate),
+                            // Connection settings update
+                            smtpHost,
+                            smtpPort: parseInt(smtpPort),
+                            smtpUser,
+                            imapHost,
+                            imapPort: parseInt(imapPort),
+                            imapUser,
+                            smtpPass: connectionPassword, // will only update if not empty
+                            imapPass: connectionPassword // assume same password for IMAP
+                        })
+
+                    })
+
+                    if (res.ok) {
+                        toast({ title: "Settings Saved", description: "Account settings updated successfully" })
+                        onUpdate?.({ ...account, firstName, lastName })
+                        setShowLargeLimitWarning(false)
+                        setLargeLimitAcknowledged(false)
+                    } else {
+                        throw new Error("Failed to save settings")
+                    }
+                } catch (error) {
+                    toast({ title: "Error", description: "Failed to save settings", variant: "destructive" })
+                } finally {
+                    setSaving(false)
+                }
             }
-        } catch (error: any) {
-            toast({ title: "Error", description: error.message, variant: "destructive" })
-        } finally {
-            setRunningWarmup(false)
-        }
-    }
 
-    // Generate random warmup tag
-    const generateWarmupTag = () => {
-        const adjectives = ["golden", "silver", "crystal", "cosmic", "mystic", "royal", "swift", "bright"]
-        const nouns = ["pineapples", "dolphins", "eagles", "tigers", "stars", "waves", "peaks", "rivers"]
-        const adj = adjectives[Math.floor(Math.random() * adjectives.length)]
-        const noun = nouns[Math.floor(Math.random() * nouns.length)]
-        setWarmupTag(`${adj}-${noun}`)
-    }
-
-    // Format date for display
-    const formatDate = (date: Date | null) => {
-        if (!date) return "Not started"
-        const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" }
-        const formatted = date.toLocaleDateString("en-US", options)
-        const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24))
-        return `Started on ${formatted} | ${daysAgo} days ago`
-    }
-
-    // Handle reconnect (uses stored credentials from database)
-    const handleReconnect = async () => {
-        setReconnecting(true)
-        try {
-            const res = await fetch('/api/accounts/bulk-reconnect', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: reconnectAll ? undefined : [account.id] })
-            })
-
-            if (res.ok) {
-                const data = await res.json()
-                toast({
-                    title: "Reconnection Complete",
-                    description: data.message
-                })
-                // Refresh account details
-                fetchAccountDetails()
-                onUpdate?.({ ...account, status: 'active' })
-            } else {
-                const error = await res.json()
-                throw new Error(error.error || 'Reconnection failed')
+            // Save all settings - checks for large limit first
+            const saveSettings = async () => {
+                const limit = parseInt(dailyLimit) || 0
+                if (limit > 500) {
+                    setShowLargeLimitWarning(true)
+                    return
+                }
+                await performSave()
             }
-        } catch (error: any) {
-            toast({
-                title: "Reconnection Failed",
-                description: error.message,
-                variant: "destructive"
-            })
-        } finally {
-            setReconnecting(false)
-        }
-    }
 
-    // Get status badge color and label
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'active':
-                return { className: 'bg-green-900/50 text-green-400 border-green-900', label: 'Active' }
-            case 'paused':
-                return { className: 'bg-yellow-900/50 text-yellow-400 border-yellow-900', label: 'Paused' }
-            case 'completed':
-                return { className: 'bg-[#1a4d3a] text-green-400 border-none', label: 'Completed' }
-            case 'draft':
-                return { className: 'bg-gray-800 text-gray-400 border-gray-700', label: 'Draft' }
-            default:
-                return { className: 'bg-gray-800 text-gray-400 border-gray-700', label: status }
-        }
-    }
+            // Handle continue from large limit warning modal
+            const handleLargeLimitContinue = async () => {
+                if (largeLimitAcknowledged) {
+                    await performSave()
+                }
+            }
 
-    if (!account) return null
+            const handleSendTestEmail = async () => {
+                if (!testRecipient) {
+                    toast({ title: "Recipient Required", description: "Please enter an email address.", variant: "destructive" })
+                    return
+                }
 
-    const hasError = status === "error" || (errorDetail && errorDetail.length > 0);
+                setSendingTest(true)
+                try {
+                    const res = await fetch(`/api/accounts/${account.id}/test-send`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ to: testRecipient })
+                    })
 
-    return (
-        <div className="w-[800px] border-l border-[#2a2a2a] bg-[#0a0a0a] flex flex-col h-full absolute right-0 top-0 bottom-0 shadow-2xl z-20">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2a2a]">
-                <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-400">{account.email}</span>
-                    {reconnecting ? (
-                        <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900 animate-pulse">
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Reconnecting...
-                        </Badge>
-                    ) : hasError ? (
-                        <Badge variant="destructive" className="bg-red-900/50 text-red-200 border-red-900">Connection Error</Badge>
-                    ) : null}
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 text-gray-400 hover:text-white gap-2 border border-[#2a2a2a]"
-                        onClick={toggleStatus}
-                        disabled={toggling}
-                    >
-                        {toggling ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : status === "active" ? (
-                            <Pause className="h-3 w-3" />
-                        ) : (
-                            <Flame className="h-3 w-3" />
-                        )}
-                        {status === "active" ? "Pause" : "Resume"}
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white" onClick={onClose}>
-                        <X className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
+                    const data = await res.json()
+                    if (res.ok) {
+                        toast({ title: "Success", description: `Test email sent to ${testRecipient}` })
+                        setTestRecipient("")
+                    } else {
+                        throw new Error(data.error || data.details || "Failed to send test email")
+                    }
+                } catch (error: any) {
+                    toast({ title: "Send Failed", description: error.message, variant: "destructive" })
+                } finally {
+                    setSendingTest(false)
+                }
+            }
 
-            {/* Tabs */}
-            <Tabs defaultValue={hasError ? "error" : "warmup"} className="flex-1 flex flex-col">
-                <div className="px-6 border-b border-[#2a2a2a]">
-                    <TabsList className="bg-transparent h-12 p-0 space-x-6">
-                        {hasError && (
-                            <TabsTrigger value="error" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-red-500 data-[state=active]:bg-transparent data-[state=active]:text-red-400 px-0 text-gray-400 hover:text-gray-300">Error</TabsTrigger>
-                        )}
-                        <TabsTrigger value="warmup" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-white px-0 text-gray-400 hover:text-gray-300">Warmup</TabsTrigger>
-                        <TabsTrigger value="settings" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-white px-0 text-gray-400 hover:text-gray-300">Settings</TabsTrigger>
-                        <TabsTrigger value="campaigns" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-white px-0 text-gray-400 hover:text-gray-300">Campaigns</TabsTrigger>
-                    </TabsList>
-                </div>
+            const runWarmupManual = async () => {
+                setRunningWarmup(true)
+                try {
+                    const res = await fetch('/api/cron/warmup')
+                    if (res.ok) {
+                        toast({ title: "Warmup Started", description: "The warmup cycle has been triggered manually." })
+                        fetchAccountDetails() // Refresh logs
+                    } else {
+                        const data = await res.json()
+                        throw new Error(data.error || "Failed to trigger warmup")
+                    }
+                } catch (error: any) {
+                    toast({ title: "Error", description: error.message, variant: "destructive" })
+                } finally {
+                    setRunningWarmup(false)
+                }
+            }
 
-                <div className="flex-1 overflow-y-auto overflow-x-hidden p-6" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+            // Generate random warmup tag
+            const generateWarmupTag = () => {
+                const adjectives = ["golden", "silver", "crystal", "cosmic", "mystic", "royal", "swift", "bright"]
+                const nouns = ["pineapples", "dolphins", "eagles", "tigers", "stars", "waves", "peaks", "rivers"]
+                const adj = adjectives[Math.floor(Math.random() * adjectives.length)]
+                const noun = nouns[Math.floor(Math.random() * nouns.length)]
+                setWarmupTag(`${adj}-${noun}`)
+            }
 
-                    {/* Error Tab */}
-                    {hasError && (
-                        <TabsContent value="error" className={cn("space-y-6 mt-0 relative", reconnecting && "opacity-50 pointer-events-none")}>
-                            {/* OAuth Warning - only show for Gmail accounts using App Password */}
-                            {(account?.email?.includes('@gmail.com') || account?.email?.includes('@googlemail.com')) && account?.smtpHost?.includes('smtp.gmail.com') && (
-                                <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-4 flex gap-4">
-                                    <div className="mt-1">
-                                        <Zap className="h-5 w-5 text-gray-400" />
+            // Format date for display
+            const formatDate = (date: Date | null) => {
+                if (!date) return "Not started"
+                const options: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" }
+                const formatted = date.toLocaleDateString("en-US", options)
+                const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24))
+                return `Started on ${formatted} | ${daysAgo} days ago`
+            }
+
+            // Handle reconnect (uses stored credentials from database)
+            const handleReconnect = async () => {
+                setReconnecting(true)
+                try {
+                    const res = await fetch('/api/accounts/bulk-reconnect', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: reconnectAll ? undefined : [account.id] })
+                    })
+
+                    if (res.ok) {
+                        const data = await res.json()
+                        toast({
+                            title: "Reconnection Complete",
+                            description: data.message
+                        })
+                        // Refresh account details
+                        fetchAccountDetails()
+                        onUpdate?.({ ...account, status: 'active' })
+                    } else {
+                        const error = await res.json()
+                        throw new Error(error.error || 'Reconnection failed')
+                    }
+                } catch (error: any) {
+                    toast({
+                        title: "Reconnection Failed",
+                        description: error.message,
+                        variant: "destructive"
+                    })
+                } finally {
+                    setReconnecting(false)
+                }
+            }
+
+            // Get status badge color and label
+            const getStatusBadge = (status: string) => {
+                switch (status) {
+                    case 'active':
+                        return { className: 'bg-green-900/50 text-green-400 border-green-900', label: 'Active' }
+                    case 'paused':
+                        return { className: 'bg-yellow-900/50 text-yellow-400 border-yellow-900', label: 'Paused' }
+                    case 'completed':
+                        return { className: 'bg-[#1a4d3a] text-green-400 border-none', label: 'Completed' }
+                    case 'draft':
+                        return { className: 'bg-gray-800 text-gray-400 border-gray-700', label: 'Draft' }
+                    default:
+                        return { className: 'bg-gray-800 text-gray-400 border-gray-700', label: status }
+                }
+            }
+
+            if (!account) return null
+
+            const hasError = status === "error" || (errorDetail && errorDetail.length > 0);
+
+            return (
+                <div className="w-[800px] border-l border-[#2a2a2a] bg-[#0a0a0a] flex flex-col h-full absolute right-0 top-0 bottom-0 shadow-2xl z-20">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2a2a]">
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-gray-400">{account.email}</span>
+                            {reconnecting ? (
+                                <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900 animate-pulse">
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Reconnecting...
+                                </Badge>
+                            ) : null}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 text-gray-400 hover:text-white gap-2 border border-[#2a2a2a]"
+                                onClick={toggleStatus}
+                                disabled={toggling}
+                            >
+                                {toggling ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : status === "active" ? (
+                                    <Pause className="h-3 w-3" />
+                                ) : (
+                                    <Flame className="h-3 w-3" />
+                                )}
+                                {status === "active" ? "Pause" : "Resume"}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-white" onClick={onClose}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Tabs */}
+                    <Tabs defaultValue="warmup" className="flex-1 flex flex-col">
+                        <div className="px-6 border-b border-[#2a2a2a]">
+                            <TabsList className="bg-transparent h-12 p-0 space-x-6">
+                                <TabsTrigger value="warmup" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-white px-0 text-gray-400 hover:text-gray-300">Warmup</TabsTrigger>
+                                <TabsTrigger value="settings" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-white px-0 text-gray-400 hover:text-gray-300">Settings</TabsTrigger>
+                                <TabsTrigger value="campaigns" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-blue-500 data-[state=active]:bg-transparent data-[state=active]:text-white px-0 text-gray-400 hover:text-gray-300">Campaigns</TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6" style={{ maxHeight: 'calc(100vh - 140px)' }}>
+
+
+                            {/* Error Tab removed as per user request */}
+
+                            {/* Warmup Tab */}
+                            <TabsContent value="warmup" className="space-y-6 mt-0">
+                                {/* Status Bar */}
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-gray-400 text-sm">
+                                        <span className="bg-purple-500/10 p-1 rounded-full"><RotateCw className="h-4 w-4 text-purple-400" /></span>
+                                        {formatDate(warmupStarted)}
                                     </div>
-                                    <div>
-                                        <h4 className="text-white font-medium text-sm">This Google account is not using OAuth.</h4>
-                                        <p className="text-gray-400 text-xs mt-1">We recommend switching to OAuth to avoid issues.</p>
+                                    <div className="flex bg-[#111] rounded-lg p-1 border border-[#2a2a2a]">
+                                        <button
+                                            className={cn("px-4 py-1.5 text-xs font-medium rounded-md transition-colors", !warmupEnabled ? "bg-[#2a2a2a] text-white shadow-sm" : "text-gray-400 hover:text-white")}
+                                            onClick={() => toggleWarmup(false)}
+                                        >
+                                            Disable
+                                        </button>
+                                        <button
+                                            className={cn("px-4 py-1.5 text-xs font-medium rounded-md transition-colors", warmupEnabled ? "bg-green-600 text-white shadow-sm" : "text-gray-400 hover:text-white")}
+                                            onClick={() => toggleWarmup(true)}
+                                        >
+                                            Enable
+                                        </button>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* What went wrong - Dynamic based on error */}
-                            {(() => {
-                                const errorInfo = getErrorInfo(errorDetail || '')
-                                return (
-                                    <>
-                                        <div className="space-y-4">
+                                {/* Summary Card */}
+                                <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-6">
+                                    <h3 className="text-sm text-gray-400 font-medium">Summary for past week</h3>
+                                    <div className="grid grid-cols-3 gap-8">
+                                        <div>
+                                            <div className="text-2xl font-bold text-white">{warmupStats.received}</div>
+                                            <div className="text-xs text-gray-500 mt-1 font-medium">warmup emails received</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold text-white">{warmupStats.sent}</div>
+                                            <div className="text-xs text-gray-500 mt-1 font-medium">warmup emails sent</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold text-white">{warmupStats.savedFromSpam}</div>
+                                            <div className="text-xs text-gray-500 mt-1 font-medium">saved from spam</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Chart */}
+                                <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-6">
+                                    <h3 className="text-sm text-gray-400 font-medium">Warmup Emails Sent</h3>
+                                    <div className="h-64 w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={chartData} barSize={24}>
+                                                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#666', fontSize: 11 }} dy={15} />
+                                                <YAxis hide />
+                                                <Bar dataKey="sent" radius={[6, 6, 0, 0]}>
+                                                    {chartData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill="#22c55e" />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                </div>
+                            </TabsContent>
+
+                            {/* Settings Tab */}
+                            <TabsContent value="settings" className="space-y-8 mt-0 text-sm">
+                                {/* Sender Name */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-white font-medium">
+                                        <span className="text-gray-500"><Users className="h-4 w-4" /></span>
+                                        Sender name
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <Label className="text-gray-400 text-xs">First Name</Label>
+                                            <Input
+                                                value={firstName}
+                                                onChange={(e) => setFirstName(e.target.value)}
+                                                className="bg-[#111] border-[#2a2a2a] text-white h-11"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-gray-400 text-xs">Last Name</Label>
+                                            <Input
+                                                value={lastName}
+                                                onChange={(e) => setLastName(e.target.value)}
+                                                className="bg-[#111] border-[#2a2a2a] text-white h-11"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Signature */}
+                                <div className="space-y-4 pt-4">
+                                    <div className="flex items-center gap-2 text-white font-medium">
+                                        <span className="text-gray-500"><Pencil className="h-4 w-4" /></span>
+                                        Signature
+                                    </div>
+                                    <div className="bg-[#111] border border-[#2a2a2a] rounded-lg overflow-hidden min-h-[160px] flex flex-col">
+                                        <textarea
+                                            className="flex-1 bg-transparent border-none text-gray-300 p-4 resize-none focus:ring-0 focus:outline-none placeholder-gray-600 text-sm"
+                                            placeholder="Start typing here..."
+                                            value={signature}
+                                            onChange={(e) => setSignature(e.target.value)}
+                                        />
+                                        <div className="border-t border-[#2a2a2a] bg-[#161616] p-2 flex items-center gap-3 text-gray-400">
+                                            <button className="hover:text-white p-1"><Bold className="h-4 w-4" /></button>
+                                            <button className="hover:text-white p-1"><Italic className="h-4 w-4" /></button>
+                                            <button className="hover:text-white p-1"><Underline className="h-4 w-4" /></button>
+                                            <div className="w-px h-4 bg-[#333]" />
+                                            <button className="hover:text-white p-1"><Type className="h-4 w-4" /></button>
+                                            <button className="hover:text-white p-1"><Link2 className="h-4 w-4" /></button>
+                                            <button className="hover:text-white p-1"><ImageIcon className="h-4 w-4" /></button>
+                                            <button className="hover:text-white p-1"><Smile className="h-4 w-4" /></button>
+                                            <div className="flex-1" />
+                                            <button className="hover:text-white p-1"><Code className="h-4 w-4" /></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Tags */}
+                                <div className="space-y-4 pt-4 border-t border-[#2a2a2a]">
+                                    <div className="flex items-center gap-2 text-white font-medium">
+                                        <span className="text-gray-500"><Tag className="h-4 w-4" /></span>
+                                        Tags <Info className="h-3 w-3 text-gray-500 cursor-help" />
+                                    </div>
+                                    <Select>
+                                        <SelectTrigger className="bg-[#111] border-[#2a2a2a] text-gray-500 h-11">
+                                            <SelectValue placeholder="Tags" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
+                                            <SelectItem value="warmup">Warmup</SelectItem>
+                                            <SelectItem value="outreach">Outreach</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Campaign Settings */}
+                                <div className="pt-6 border-t border-[#2a2a2a]">
+                                    <div className="flex items-center gap-2 text-white font-medium mb-6">
+                                        <span className="text-gray-500"><Rocket className="h-4 w-4" /></span>
+                                        Campaign Settings
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                                        <div className="space-y-2">
+                                            <Label className="text-white font-medium">Daily campaign limit</Label>
+                                            <div className="text-xs text-gray-500 mb-2">Daily sending limit</div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-orange-500"><AlertTriangle className="h-5 w-5" /></span>
-                                                <h3 className="text-white font-medium">{errorInfo.title}</h3>
+                                                <Input
+                                                    value={dailyLimit}
+                                                    onChange={(e) => setDailyLimit(e.target.value)}
+                                                    className="bg-[#111] border-[#2a2a2a] text-white w-24 h-10"
+                                                />
+                                                <span className="text-gray-500 text-sm font-medium">emails</span>
                                             </div>
-                                            <p className="text-gray-400 text-sm">{errorInfo.description}</p>
-
-                                            {errorDetail && errorDetail !== 'null' && (
-                                                <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-4 font-mono text-xs text-gray-300 break-words whitespace-pre-wrap">
-                                                    {errorDetail}
-                                                </div>
-                                            )}
                                         </div>
 
-                                        {/* How to fix - Dynamic suggestion */}
-                                        <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-white font-medium">Minimum wait time</Label>
+                                            <div className="text-xs text-gray-500 mb-2">When used with multiple campaigns</div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-blue-500"><Rocket className="h-5 w-5" /></span>
-                                                <h3 className="text-white font-medium">How do I fix this?</h3>
-                                            </div>
-
-                                            <div className="bg-blue-900/10 border border-blue-900/30 rounded-lg p-4">
-                                                <h4 className="text-blue-400 font-medium text-sm flex items-center gap-2">
-                                                    <Zap className="h-4 w-4" /> Suggested Fix
-                                                </h4>
-                                                <p className="text-gray-400 text-sm mt-2">
-                                                    {errorInfo.suggestion}
-                                                </p>
-
-                                                {errorInfo.canAutoFix && (
-                                                    <Button onClick={fixError} className="mt-3 bg-blue-600 hover:bg-blue-500 text-white h-8 text-xs">
-                                                        Fix it for me
-                                                    </Button>
-                                                )}
+                                                <Input
+                                                    value={minWaitTime}
+                                                    onChange={(e) => setMinWaitTime(e.target.value)}
+                                                    className="bg-[#111] border-[#2a2a2a] text-white w-24 h-10"
+                                                />
+                                                <span className="text-gray-500 text-sm font-medium">minute(s)</span>
                                             </div>
                                         </div>
-                                    </>
-                                )
-                            })()}
 
-                            {/* Actions */}
-                            <div className="pt-6 border-t border-[#2a2a2a] flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <Checkbox
-                                        id="reconnect-all"
-                                        checked={reconnectAll}
-                                        onCheckedChange={(checked) => setReconnectAll(checked as boolean)}
-                                        className="border-[#333] data-[state=checked]:bg-blue-600 rounded-[4px]"
-                                    />
-                                    <label htmlFor="reconnect-all" className="text-gray-300 text-sm cursor-pointer">Reconnect all accounts</label>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-white font-medium">Campaign slow ramp</Label>
+                                                <Info className="h-3 w-3 text-gray-500" />
+                                            </div>
+                                            <div className="text-xs text-gray-500 mb-2">Gradually increase emails per day</div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-gray-400 text-sm">Enable</span>
+                                                <Switch
+                                                    checked={slowRamp}
+                                                    onCheckedChange={setSlowRamp}
+                                                    className="data-[state=checked]:bg-blue-600"
+                                                />
+                                                <Badge className="bg-blue-600 hover:bg-blue-600 border-none text-white text-[10px] px-1.5 py-0.5 h-5">Recommended</Badge>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <Button
-                                    onClick={handleReconnect}
-                                    disabled={reconnecting}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white gap-2"
-                                >
-                                    {reconnecting ? (
-                                        <>
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Reconnecting...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <RefreshCw className="h-4 w-4" />
-                                            {reconnectAll ? 'Reconnect all accounts' : 'Reconnect account'}
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-
-                        </TabsContent>
-                    )}
-
-                    {/* Warmup Tab */}
-                    <TabsContent value="warmup" className="space-y-6 mt-0">
-                        {/* Status Bar */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
-                                <span className="bg-purple-500/10 p-1 rounded-full"><RotateCw className="h-4 w-4 text-purple-400" /></span>
-                                {formatDate(warmupStarted)}
-                            </div>
-                            <div className="flex bg-[#111] rounded-lg p-1 border border-[#2a2a2a]">
-                                <button
-                                    className={cn("px-4 py-1.5 text-xs font-medium rounded-md transition-colors", !warmupEnabled ? "bg-[#2a2a2a] text-white shadow-sm" : "text-gray-400 hover:text-white")}
-                                    onClick={() => toggleWarmup(false)}
-                                >
-                                    Disable
-                                </button>
-                                <button
-                                    className={cn("px-4 py-1.5 text-xs font-medium rounded-md transition-colors", warmupEnabled ? "bg-green-600 text-white shadow-sm" : "text-gray-400 hover:text-white")}
-                                    onClick={() => toggleWarmup(true)}
-                                >
-                                    Enable
-                                </button>
-                            </div>
                         </div>
+                </div>
 
-                        {/* Summary Card */}
-                        <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-6">
-                            <h3 className="text-sm text-gray-400 font-medium">Summary for past week</h3>
-                            <div className="grid grid-cols-3 gap-8">
-                                <div>
-                                    <div className="text-2xl font-bold text-white">{warmupStats.received}</div>
-                                    <div className="text-xs text-gray-500 mt-1 font-medium">warmup emails received</div>
-                                </div>
-                                <div>
-                                    <div className="text-2xl font-bold text-white">{warmupStats.sent}</div>
-                                    <div className="text-xs text-gray-500 mt-1 font-medium">warmup emails sent</div>
-                                </div>
-                                <div>
-                                    <div className="text-2xl font-bold text-white">{warmupStats.savedFromSpam}</div>
-                                    <div className="text-xs text-gray-500 mt-1 font-medium">saved from spam</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Chart */}
-                        <div className="bg-[#111] border border-[#2a2a2a] rounded-xl p-6 space-y-6">
-                            <h3 className="text-sm text-gray-400 font-medium">Warmup Emails Sent</h3>
-                            <div className="h-64 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={chartData} barSize={24}>
-                                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#666', fontSize: 11 }} dy={15} />
-                                        <YAxis hide />
-                                        <Bar dataKey="sent" radius={[6, 6, 0, 0]}>
-                                            {chartData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill="#22c55e" />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </div>
-                    </TabsContent>
-
-                    {/* Settings Tab */}
-                    <TabsContent value="settings" className="space-y-8 mt-0 text-sm">
-                        {/* Sender Name */}
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-white font-medium">
-                                <span className="text-gray-500"><Users className="h-4 w-4" /></span>
-                                Sender name
-                            </div>
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label className="text-gray-400 text-xs">First Name</Label>
-                                    <Input
-                                        value={firstName}
-                                        onChange={(e) => setFirstName(e.target.value)}
-                                        className="bg-[#111] border-[#2a2a2a] text-white h-11"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-gray-400 text-xs">Last Name</Label>
-                                    <Input
-                                        value={lastName}
-                                        onChange={(e) => setLastName(e.target.value)}
-                                        className="bg-[#111] border-[#2a2a2a] text-white h-11"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Signature */}
-                        <div className="space-y-4 pt-4">
-                            <div className="flex items-center gap-2 text-white font-medium">
-                                <span className="text-gray-500"><Pencil className="h-4 w-4" /></span>
-                                Signature
-                            </div>
-                            <div className="bg-[#111] border border-[#2a2a2a] rounded-lg overflow-hidden min-h-[160px] flex flex-col">
-                                <textarea
-                                    className="flex-1 bg-transparent border-none text-gray-300 p-4 resize-none focus:ring-0 focus:outline-none placeholder-gray-600 text-sm"
-                                    placeholder="Start typing here..."
-                                    value={signature}
-                                    onChange={(e) => setSignature(e.target.value)}
-                                />
-                                <div className="border-t border-[#2a2a2a] bg-[#161616] p-2 flex items-center gap-3 text-gray-400">
-                                    <button className="hover:text-white p-1"><Bold className="h-4 w-4" /></button>
-                                    <button className="hover:text-white p-1"><Italic className="h-4 w-4" /></button>
-                                    <button className="hover:text-white p-1"><Underline className="h-4 w-4" /></button>
-                                    <div className="w-px h-4 bg-[#333]" />
-                                    <button className="hover:text-white p-1"><Type className="h-4 w-4" /></button>
-                                    <button className="hover:text-white p-1"><Link2 className="h-4 w-4" /></button>
-                                    <button className="hover:text-white p-1"><ImageIcon className="h-4 w-4" /></button>
-                                    <button className="hover:text-white p-1"><Smile className="h-4 w-4" /></button>
-                                    <div className="flex-1" />
-                                    <button className="hover:text-white p-1"><Code className="h-4 w-4" /></button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Tags */}
-                        <div className="space-y-4 pt-4 border-t border-[#2a2a2a]">
-                            <div className="flex items-center gap-2 text-white font-medium">
-                                <span className="text-gray-500"><Tag className="h-4 w-4" /></span>
-                                Tags <Info className="h-3 w-3 text-gray-500 cursor-help" />
-                            </div>
-                            <Select>
-                                <SelectTrigger className="bg-[#111] border-[#2a2a2a] text-gray-500 h-11">
-                                    <SelectValue placeholder="Tags" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
-                                    <SelectItem value="warmup">Warmup</SelectItem>
-                                    <SelectItem value="outreach">Outreach</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Campaign Settings */}
+                        {/* Connection Settings */ }
                         <div className="pt-6 border-t border-[#2a2a2a]">
                             <div className="flex items-center gap-2 text-white font-medium mb-6">
-                                <span className="text-gray-500"><Rocket className="h-4 w-4" /></span>
-                                Campaign Settings
+                                <span className="text-gray-500"><Zap className="h-4 w-4" /></span>
+                                Connection Settings
                             </div>
 
-                            <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                            <div className="space-y-6">
                                 <div className="space-y-2">
-                                    <Label className="text-white font-medium">Daily campaign limit</Label>
-                                    <div className="text-xs text-gray-500 mb-2">Daily sending limit</div>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            value={dailyLimit}
-                                            onChange={(e) => setDailyLimit(e.target.value)}
-                                            className="bg-[#111] border-[#2a2a2a] text-white w-24 h-10"
-                                        />
-                                        <span className="text-gray-500 text-sm font-medium">emails</span>
-                                    </div>
+                                    <Label className="text-white font-medium">App Password / Password</Label>
+                                    <div className="text-xs text-gray-500 mb-2">Leave empty to keep current password. Enter new one to update.</div>
+                                    <Input
+                                        type="password"
+                                        placeholder="••••••••••••••••"
+                                        value={connectionPassword}
+                                        onChange={(e) => setConnectionPassword(e.target.value)}
+                                        className="bg-[#111] border-[#2a2a2a] text-white h-10"
+                                    />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <Label className="text-white font-medium">Minimum wait time</Label>
-                                    <div className="text-xs text-gray-500 mb-2">When used with multiple campaigns</div>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            value={minWaitTime}
-                                            onChange={(e) => setMinWaitTime(e.target.value)}
-                                            className="bg-[#111] border-[#2a2a2a] text-white w-24 h-10"
-                                        />
-                                        <span className="text-gray-500 text-sm font-medium">minute(s)</span>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <h4 className="text-sm font-medium text-gray-400">SMTP (Sending)</h4>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-gray-500">Host</Label>
+                                            <Input value={smtpHost} onChange={(e) => setSmtpHost(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-gray-500">Port</Label>
+                                            <Input value={smtpPort} onChange={(e) => setSmtpPort(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-gray-500">Username</Label>
+                                            <Input value={smtpUser} onChange={(e) => setSmtpUser(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <Label className="text-white font-medium">Campaign slow ramp</Label>
-                                        <Info className="h-3 w-3 text-gray-500" />
-                                    </div>
-                                    <div className="text-xs text-gray-500 mb-2">Gradually increase emails per day</div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-gray-400 text-sm">Enable</span>
-                                        <Switch
-                                            checked={slowRamp}
-                                            onCheckedChange={setSlowRamp}
-                                            className="data-[state=checked]:bg-blue-600"
-                                        />
-                                        <Badge className="bg-blue-600 hover:bg-blue-600 border-none text-white text-[10px] px-1.5 py-0.5 h-5">Recommended</Badge>
+                                    <div className="space-y-4">
+                                        <h4 className="text-sm font-medium text-gray-400">IMAP (Receiving)</h4>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-gray-500">Host</Label>
+                                            <Input value={imapHost} onChange={(e) => setImapHost(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-gray-500">Port</Label>
+                                            <Input value={imapPort} onChange={(e) => setImapPort(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="text-xs text-gray-500">Username</Label>
+                                            <Input value={imapUser} onChange={(e) => setImapUser(e.target.value)} className="bg-[#111] border-[#2a2a2a] text-white h-9 text-xs" />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -859,19 +868,19 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                             </div>
                         </div>
 
-                        {/* Custom Tracking Domain */}
-                        <div className="pt-6 border-t border-[#2a2a2a]">
-                            <div className="flex items-center gap-2 text-white font-medium mb-6">
-                                <span className="text-gray-500"><Globe className="h-4 w-4" /></span>
-                                Custom Tracking Domain
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Checkbox id="custom-domain" className="border-[#333] data-[state=checked]:bg-blue-600 rounded-[4px]" />
-                                <label htmlFor="custom-domain" className="text-gray-300 text-sm cursor-pointer">Enable custom tracking domain</label>
-                            </div>
-                        </div>
+            {/* Custom Tracking Domain */ }
+            <div className="pt-6 border-t border-[#2a2a2a]">
+                <div className="flex items-center gap-2 text-white font-medium mb-6">
+                    <span className="text-gray-500"><Globe className="h-4 w-4" /></span>
+                    Custom Tracking Domain
+                </div>
+                <div className="flex items-center gap-2">
+                    <Checkbox id="custom-domain" className="border-[#333] data-[state=checked]:bg-blue-600 rounded-[4px]" />
+                    <label htmlFor="custom-domain" className="text-gray-300 text-sm cursor-pointer">Enable custom tracking domain</label>
+                </div>
+            </div>
 
-                        {/* Warmup Settings */}
+            {/* Warmup Settings */ }
                         <div className="pt-6 border-t border-[#2a2a2a] pb-20">
                             <div className="flex items-center gap-2 text-white font-medium mb-6">
                                 <span className="text-gray-500"><Flame className="h-4 w-4" /></span>
@@ -955,112 +964,112 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
                             </Button>
                         </div>
-                    </TabsContent>
+                    </TabsContent >
 
-                    {/* Campaigns Tab */}
-                    <TabsContent value="campaigns" className="mt-0 pt-2">
-                        <div className="space-y-2">
-                            {campaigns.length > 0 ? (
-                                campaigns.map((campaign) => {
-                                    const badge = getStatusBadge(campaign.status)
-                                    return (
-                                        <div
-                                            key={campaign.id}
-                                            className="flex items-center justify-between p-4 bg-[#111] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors group cursor-pointer"
-                                            onClick={() => router.push(`/campaigns/${campaign.id}`)}
-                                        >
-                                            <div className="flex flex-col gap-1">
-                                                <span className="text-white font-medium text-sm">{campaign.name}</span>
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                                <Badge className={`${badge.className} hover:${badge.className} font-medium px-2.5 py-0.5 rounded text-xs`}>
-                                                    {badge.label}
-                                                </Badge>
-                                                <Button
-                                                    variant="ghost"
-                                                    className="text-blue-500 hover:text-blue-400 hover:bg-transparent font-medium text-sm p-0 h-auto group-hover:underline"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        router.push(`/campaigns/${campaign.id}`)
-                                                    }}
-                                                >
-                                                    View
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            ) : (
-                                <div className="flex flex-col items-center justify-center p-12 bg-[#111] border border-[#2a2a2a] rounded-xl">
-                                    <Rocket className="h-10 w-10 text-gray-600 mb-4" />
-                                    <p className="text-gray-400 text-sm">No campaigns are using this account yet.</p>
+        {/* Campaigns Tab */ }
+        < TabsContent value = "campaigns" className = "mt-0 pt-2" >
+            <div className="space-y-2">
+                {campaigns.length > 0 ? (
+                    campaigns.map((campaign) => {
+                        const badge = getStatusBadge(campaign.status)
+                        return (
+                            <div
+                                key={campaign.id}
+                                className="flex items-center justify-between p-4 bg-[#111] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors group cursor-pointer"
+                                onClick={() => router.push(`/campaigns/${campaign.id}`)}
+                            >
+                                <div className="flex flex-col gap-1">
+                                    <span className="text-white font-medium text-sm">{campaign.name}</span>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <Badge className={`${badge.className} hover:${badge.className} font-medium px-2.5 py-0.5 rounded text-xs`}>
+                                        {badge.label}
+                                    </Badge>
                                     <Button
-                                        variant="outline"
-                                        className="mt-4 border-[#333] text-gray-300 hover:bg-[#1a1a1a]"
-                                        onClick={() => router.push('/campaigns')}
+                                        variant="ghost"
+                                        className="text-blue-500 hover:text-blue-400 hover:bg-transparent font-medium text-sm p-0 h-auto group-hover:underline"
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            router.push(`/campaigns/${campaign.id}`)
+                                        }}
                                     >
-                                        Go to Campaigns
+                                        View
                                     </Button>
                                 </div>
-                            )}
-                        </div>
-                    </TabsContent>
-                </div>
-            </Tabs>
-
-            {/* Large Daily Limit Warning Modal */}
-            <Dialog open={showLargeLimitWarning} onOpenChange={setShowLargeLimitWarning}>
-                <DialogContent className="bg-[#1a1a1a] border-[#333] text-white max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-3 text-xl">
-                            <span className="text-2xl">😟</span>
-                            Large daily limit
-                        </DialogTitle>
-                        <DialogDescription className="text-gray-400 pt-4 space-y-4">
-                            <p>
-                                You currently have your daily email limit for this account set to more than 500 emails per day.
-                            </p>
-                            <p className="text-orange-500">
-                                Sending too many emails from the same email account can not only damage your sender reputation, but could also get your account banned by your email service provider.
-                            </p>
-                            <p className="text-orange-500">
-                                Check with your email service provider before setting a large daily limit, or it could lead to them suspending your account.
-                            </p>
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex items-center gap-2 mt-4">
-                        <Checkbox
-                            id="acknowledge-limit"
-                            checked={largeLimitAcknowledged}
-                            onCheckedChange={(c) => setLargeLimitAcknowledged(c as boolean)}
-                            className="border-[#444] data-[state=checked]:bg-blue-600 rounded-[4px]"
-                        />
-                        <label htmlFor="acknowledge-limit" className="text-gray-300 text-sm cursor-pointer">
-                            I understand what I'm doing
-                        </label>
+                            </div>
+                        )
+                    })
+                ) : (
+                    <div className="flex flex-col items-center justify-center p-12 bg-[#111] border border-[#2a2a2a] rounded-xl">
+                        <Rocket className="h-10 w-10 text-gray-600 mb-4" />
+                        <p className="text-gray-400 text-sm">No campaigns are using this account yet.</p>
+                        <Button
+                            variant="outline"
+                            className="mt-4 border-[#333] text-gray-300 hover:bg-[#1a1a1a]"
+                            onClick={() => router.push('/campaigns')}
+                        >
+                            Go to Campaigns
+                        </Button>
                     </div>
-                    <DialogFooter className="mt-6 gap-2">
-                        <Button
-                            onClick={handleLargeLimitContinue}
-                            disabled={!largeLimitAcknowledged || saving}
-                            className="bg-blue-600 hover:bg-blue-500 text-white"
-                        >
-                            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                            Continue
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            onClick={() => {
-                                setShowLargeLimitWarning(false)
-                                setLargeLimitAcknowledged(false)
-                            }}
-                            className="bg-red-800 hover:bg-red-700"
-                        >
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
+                )}
+            </div>
+                    </TabsContent >
+                </div >
+            </Tabs >
+
+        {/* Large Daily Limit Warning Modal */ }
+        < Dialog open = { showLargeLimitWarning } onOpenChange = { setShowLargeLimitWarning } >
+            <DialogContent className="bg-[#1a1a1a] border-[#333] text-white max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-3 text-xl">
+                        <span className="text-2xl">😟</span>
+                        Large daily limit
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-400 pt-4 space-y-4">
+                        <p>
+                            You currently have your daily email limit for this account set to more than 500 emails per day.
+                        </p>
+                        <p className="text-orange-500">
+                            Sending too many emails from the same email account can not only damage your sender reputation, but could also get your account banned by your email service provider.
+                        </p>
+                        <p className="text-orange-500">
+                            Check with your email service provider before setting a large daily limit, or it could lead to them suspending your account.
+                        </p>
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="flex items-center gap-2 mt-4">
+                    <Checkbox
+                        id="acknowledge-limit"
+                        checked={largeLimitAcknowledged}
+                        onCheckedChange={(c) => setLargeLimitAcknowledged(c as boolean)}
+                        className="border-[#444] data-[state=checked]:bg-blue-600 rounded-[4px]"
+                    />
+                    <label htmlFor="acknowledge-limit" className="text-gray-300 text-sm cursor-pointer">
+                        I understand what I'm doing
+                    </label>
+                </div>
+                <DialogFooter className="mt-6 gap-2">
+                    <Button
+                        onClick={handleLargeLimitContinue}
+                        disabled={!largeLimitAcknowledged || saving}
+                        className="bg-blue-600 hover:bg-blue-500 text-white"
+                    >
+                        {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                        Continue
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        onClick={() => {
+                            setShowLargeLimitWarning(false)
+                            setLargeLimitAcknowledged(false)
+                        }}
+                        className="bg-red-800 hover:bg-red-700"
+                    >
+                        Cancel
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+            </Dialog >
+        </div >
     )
 }

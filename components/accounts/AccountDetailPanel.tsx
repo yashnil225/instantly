@@ -490,7 +490,13 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#2a2a2a]">
                 <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-gray-400">{account.email}</span>
-                    {hasError && <Badge variant="destructive" className="bg-red-900/50 text-red-200 border-red-900">Connection Error</Badge>}
+                    {reconnecting ? (
+                        <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-900 animate-pulse">
+                            <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Reconnecting...
+                        </Badge>
+                    ) : hasError ? (
+                        <Badge variant="destructive" className="bg-red-900/50 text-red-200 border-red-900">Connection Error</Badge>
+                    ) : null}
                 </div>
                 <div className="flex items-center gap-2">
                     <Button
@@ -532,7 +538,7 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
 
                     {/* Error Tab */}
                     {hasError && (
-                        <TabsContent value="error" className="space-y-6 mt-0">
+                        <TabsContent value="error" className={cn("space-y-6 mt-0 relative", reconnecting && "opacity-50 pointer-events-none")}>
                             {/* OAuth Warning - only show for Gmail accounts using App Password */}
                             {(account?.email?.includes('@gmail.com') || account?.email?.includes('@googlemail.com')) && account?.smtpHost?.includes('smtp.gmail.com') && (
                                 <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-4 flex gap-4">
@@ -608,11 +614,16 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                                     className="bg-blue-600 hover:bg-blue-500 text-white gap-2"
                                 >
                                     {reconnecting ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Reconnecting...
+                                        </>
                                     ) : (
-                                        <RefreshCw className="h-4 w-4" />
+                                        <>
+                                            <RefreshCw className="h-4 w-4" />
+                                            {reconnectAll ? 'Reconnect all accounts' : 'Reconnect account'}
+                                        </>
                                     )}
-                                    {reconnectAll ? 'Reconnect all accounts' : 'Reconnect account'}
                                 </Button>
                             </div>
 

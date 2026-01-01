@@ -21,28 +21,18 @@ interface HeatmapData {
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 
-// Generate sample heatmap data
-function generateSampleData(): HeatmapData[] {
+// Generate zero-filled empty heatmap data
+function generateEmptyData(): HeatmapData[] {
     const data: HeatmapData[] = []
     for (let day = 0; day < 7; day++) {
         for (let hour = 0; hour < 24; hour++) {
-            // Simulate business hours having better engagement
-            let baseValue = 0
-            if (hour >= 9 && hour <= 17 && day >= 1 && day <= 5) {
-                baseValue = 50 + Math.random() * 50
-            } else if (hour >= 8 && hour <= 20) {
-                baseValue = 20 + Math.random() * 30
-            } else {
-                baseValue = Math.random() * 20
-            }
-
             data.push({
                 day,
                 hour,
-                value: Math.round(baseValue),
-                opens: Math.round(baseValue * 0.4),
-                clicks: Math.round(baseValue * 0.1),
-                replies: Math.round(baseValue * 0.05)
+                value: 0,
+                opens: 0,
+                clicks: 0,
+                replies: 0
             })
         }
     }
@@ -54,13 +44,18 @@ interface SendTimeHeatmapProps {
     metric?: "sends" | "opens" | "clicks" | "replies"
 }
 
-export function SendTimeHeatmap({ data = generateSampleData(), metric = "sends" }: SendTimeHeatmapProps) {
+export function SendTimeHeatmap({ data, metric = "sends" }: SendTimeHeatmapProps) {
+    // Use provided data, or fall back to empty zero-data (NO MOCKS)
+    const displayData = (data && data.length > 0) ? data : generateEmptyData()
     const [hoveredCell, setHoveredCell] = useState<{ day: number; hour: number } | null>(null)
 
     const getColor = (value: number) => {
-        const maxValue = Math.max(...data.map(d => d.value))
+        const maxValue = Math.max(...displayData.map(d => d.value))
+        if (maxValue === 0) return "bg-secondary" // No data color
+
         const intensity = value / maxValue
 
+        if (intensity === 0) return "bg-secondary"
         if (intensity < 0.1) return "bg-blue-500/5"
         if (intensity < 0.25) return "bg-blue-500/20"
         if (intensity < 0.5) return "bg-blue-500/40"
@@ -69,7 +64,7 @@ export function SendTimeHeatmap({ data = generateSampleData(), metric = "sends" 
     }
 
     const getCellData = (day: number, hour: number) => {
-        return data.find(d => d.day === day && d.hour === hour)
+        return displayData.find(d => d.day === day && d.hour === hour)
     }
 
     const formatHour = (hour: number) => {
@@ -161,23 +156,15 @@ export function SendTimeHeatmap({ data = generateSampleData(), metric = "sends" 
             </TooltipProvider>
 
             {/* Insights */}
-            <div className="grid grid-cols-3 gap-4 pt-4">
-                <InsightCard
-                    label="Best Day"
-                    value="Tuesday"
-                    detail="32% higher open rate"
-                />
-                <InsightCard
-                    label="Best Time"
-                    value="10:00 AM"
-                    detail="Peak engagement"
-                />
-                <InsightCard
-                    label="Avoid"
-                    value="Weekends"
-                    detail="60% lower response"
-                />
-            </div>
+            {(data && data.length > 0) ? (
+                <div className="grid grid-cols-3 gap-4 pt-4">
+                    {/* Real insights logic would go here, for now empty or simple stats */}
+                </div>
+            ) : (
+                <div className="text-center text-xs text-muted-foreground py-4">
+                    No data available for heatmap yet.
+                </div>
+            )}
         </div>
     )
 }
@@ -200,16 +187,17 @@ interface FunnelData {
 }
 
 export function ConversionFunnel({ data }: { data?: FunnelData[] }) {
-    const defaultData: FunnelData[] = [
-        { stage: "Sent", value: 10000, percentage: 100 },
-        { stage: "Delivered", value: 9800, percentage: 98 },
-        { stage: "Opened", value: 4200, percentage: 42 },
-        { stage: "Clicked", value: 840, percentage: 8.4 },
-        { stage: "Replied", value: 520, percentage: 5.2 },
-        { stage: "Converted", value: 156, percentage: 1.56 }
+    // Zero state funnel
+    const emptyData: FunnelData[] = [
+        { stage: "Sent", value: 0, percentage: 0 },
+        { stage: "Delivered", value: 0, percentage: 0 },
+        { stage: "Opened", value: 0, percentage: 0 },
+        { stage: "Clicked", value: 0, percentage: 0 },
+        { stage: "Replied", value: 0, percentage: 0 },
+        { stage: "Converted", value: 0, percentage: 0 }
     ]
 
-    const funnelData = data || defaultData
+    const funnelData = (data && data.length > 0) ? data : emptyData
 
     return (
         <div className="space-y-4">

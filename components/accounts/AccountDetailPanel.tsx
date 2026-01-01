@@ -138,6 +138,118 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
         }
     }
 
+    // Intelligent error pattern detection
+    const getErrorInfo = (error: string) => {
+        const lowerError = error.toLowerCase()
+
+        // Authentication errors
+        if (lowerError.includes('authentication') || lowerError.includes('auth') ||
+            lowerError.includes('invalid credentials') || lowerError.includes('535') ||
+            lowerError.includes('username and password not accepted')) {
+            return {
+                type: 'auth',
+                title: 'Authentication Failed',
+                description: 'Your email credentials were rejected by the mail server.',
+                suggestion: 'Check that your App Password is correct. For Gmail, generate a new App Password from your Google Account security settings.',
+                canAutoFix: false
+            }
+        }
+
+        // Rate limit / sending limit errors
+        if (lowerError.includes('limit exceeded') || lowerError.includes('daily limit') ||
+            lowerError.includes('too many') || lowerError.includes('rate limit') ||
+            lowerError.includes('452') || lowerError.includes('421')) {
+            return {
+                type: 'rate_limit',
+                title: 'Sending Limit Exceeded',
+                description: 'You\'ve hit your email provider\'s daily sending limit.',
+                suggestion: 'We can automatically reduce your daily limit and enable slow ramp-up to prevent this.',
+                canAutoFix: true
+            }
+        }
+
+        // Connection / hostname errors
+        if (lowerError.includes('enotfound') || lowerError.includes('getaddrinfo') ||
+            lowerError.includes('hostname') || lowerError.includes('dns') ||
+            lowerError.includes('could not resolve')) {
+            return {
+                type: 'connection',
+                title: 'Connection Failed',
+                description: 'Cannot connect to the mail server. The hostname could not be resolved.',
+                suggestion: 'Check that your SMTP server address is correct (e.g., smtp.gmail.com for Gmail).',
+                canAutoFix: false
+            }
+        }
+
+        // Timeout errors
+        if (lowerError.includes('timeout') || lowerError.includes('timed out') ||
+            lowerError.includes('etimedout') || lowerError.includes('econnreset')) {
+            return {
+                type: 'timeout',
+                title: 'Connection Timeout',
+                description: 'The mail server took too long to respond.',
+                suggestion: 'This is usually a temporary issue. Try reconnecting. If it persists, check your firewall settings.',
+                canAutoFix: false
+            }
+        }
+
+        // SSL/TLS errors
+        if (lowerError.includes('ssl') || lowerError.includes('tls') ||
+            lowerError.includes('certificate') || lowerError.includes('handshake')) {
+            return {
+                type: 'ssl',
+                title: 'SSL/TLS Error',
+                description: 'Secure connection could not be established.',
+                suggestion: 'Check that the SMTP port is correct (587 for TLS, 465 for SSL). Try switching ports.',
+                canAutoFix: false
+            }
+        }
+
+        // Port blocked
+        if (lowerError.includes('econnrefused') || lowerError.includes('connection refused')) {
+            return {
+                type: 'blocked',
+                title: 'Connection Refused',
+                description: 'The mail server refused the connection.',
+                suggestion: 'The SMTP port might be blocked. Try using port 587 or 465.',
+                canAutoFix: false
+            }
+        }
+
+        // Mailbox errors
+        if (lowerError.includes('mailbox') || lowerError.includes('quota') ||
+            lowerError.includes('storage') || lowerError.includes('full')) {
+            return {
+                type: 'mailbox',
+                title: 'Mailbox Issue',
+                description: 'There\'s an issue with the mailbox (possibly full or unavailable).',
+                suggestion: 'Check your email account storage. You may need to clear some space.',
+                canAutoFix: false
+            }
+        }
+
+        // Missing credentials
+        if (lowerError.includes('missing credentials') || lowerError.includes('no password') ||
+            error === 'null' || error === 'undefined' || !error) {
+            return {
+                type: 'missing',
+                title: 'Missing Credentials',
+                description: 'SMTP credentials are not configured for this account.',
+                suggestion: 'Please reconnect your email account with valid SMTP credentials.',
+                canAutoFix: false
+            }
+        }
+
+        // Default/unknown error
+        return {
+            type: 'unknown',
+            title: 'Connection Issue',
+            description: 'An error occurred while connecting to your email provider.',
+            suggestion: 'Try reconnecting. If the issue persists, contact your email service provider.',
+            canAutoFix: false
+        }
+    }
+
     // Auto-fix error logic
     const fixError = async () => {
         if (errorDetail.includes("Daily user sending limit exceeded") || errorDetail.includes("daily limit")) {
@@ -421,54 +533,63 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                     {/* Error Tab */}
                     {hasError && (
                         <TabsContent value="error" className="space-y-6 mt-0">
-                            {/* OAuth Warning */}
-                            <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-4 flex gap-4">
-                                <div className="mt-1">
-                                    <Zap className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <div>
-                                    <h4 className="text-white font-medium text-sm">This Google account is not using OAuth.</h4>
-                                    <p className="text-gray-400 text-xs mt-1">We recommend switching to OAuth to avoid issues.</p>
-                                </div>
-                            </div>
-
-                            {/* What went wrong */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-orange-500"><AlertTriangle className="h-5 w-5" /></span>
-                                    <h3 className="text-white font-medium">What went wrong?</h3>
-                                </div>
-                                <p className="text-gray-400 text-sm">Your email service provider is responding with the following error:</p>
-
-                                <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-4 font-mono text-xs text-gray-300 break-words whitespace-pre-wrap">
-                                    {errorDetail || "Unknown error occurred."}
-                                </div>
-                            </div>
-
-                            {/* How to fix */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-blue-500"><Rocket className="h-5 w-5" /></span>
-                                    <h3 className="text-white font-medium">How do I fix this?</h3>
-                                </div>
-                                <p className="text-gray-400 text-sm">Email sending issues are usually caused by a number of factors.</p>
-                                <p className="text-gray-400 text-sm">Unless the error message states that it's a temporary issue, we recommend you contact your email service provider and ask them to investigate the issue.</p>
-
-                                {(errorDetail.includes("limit exceeded") || errorDetail.includes("Daily user sending limit")) && (
-                                    <div className="bg-blue-900/10 border border-blue-900/30 rounded-lg p-4 mt-4">
-                                        <h4 className="text-blue-400 font-medium text-sm flex items-center gap-2">
-                                            <Zap className="h-4 w-4" /> AI Suggestion
-                                        </h4>
-                                        <p className="text-gray-400 text-xs mt-2">
-                                            It looks like you've hit your daily sending limit.
-                                            We can automatically lower your daily limit and switch to a slower ramp-up to prevent this from happening again.
-                                        </p>
-                                        <Button onClick={fixError} className="mt-3 bg-blue-600 hover:bg-blue-500 text-white h-8 text-xs">
-                                            Fix it for me
-                                        </Button>
+                            {/* OAuth Warning - only show for Gmail accounts using App Password */}
+                            {(account?.email?.includes('@gmail.com') || account?.email?.includes('@googlemail.com')) && account?.smtpHost?.includes('smtp.gmail.com') && (
+                                <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-4 flex gap-4">
+                                    <div className="mt-1">
+                                        <Zap className="h-5 w-5 text-gray-400" />
                                     </div>
-                                )}
-                            </div>
+                                    <div>
+                                        <h4 className="text-white font-medium text-sm">This Google account is not using OAuth.</h4>
+                                        <p className="text-gray-400 text-xs mt-1">We recommend switching to OAuth to avoid issues.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* What went wrong - Dynamic based on error */}
+                            {(() => {
+                                const errorInfo = getErrorInfo(errorDetail || '')
+                                return (
+                                    <>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-orange-500"><AlertTriangle className="h-5 w-5" /></span>
+                                                <h3 className="text-white font-medium">{errorInfo.title}</h3>
+                                            </div>
+                                            <p className="text-gray-400 text-sm">{errorInfo.description}</p>
+
+                                            {errorDetail && errorDetail !== 'null' && (
+                                                <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-4 font-mono text-xs text-gray-300 break-words whitespace-pre-wrap">
+                                                    {errorDetail}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* How to fix - Dynamic suggestion */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-blue-500"><Rocket className="h-5 w-5" /></span>
+                                                <h3 className="text-white font-medium">How do I fix this?</h3>
+                                            </div>
+
+                                            <div className="bg-blue-900/10 border border-blue-900/30 rounded-lg p-4">
+                                                <h4 className="text-blue-400 font-medium text-sm flex items-center gap-2">
+                                                    <Zap className="h-4 w-4" /> Suggested Fix
+                                                </h4>
+                                                <p className="text-gray-400 text-sm mt-2">
+                                                    {errorInfo.suggestion}
+                                                </p>
+
+                                                {errorInfo.canAutoFix && (
+                                                    <Button onClick={fixError} className="mt-3 bg-blue-600 hover:bg-blue-500 text-white h-8 text-xs">
+                                                        Fix it for me
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                )
+                            })()}
 
                             {/* Actions */}
                             <div className="pt-6 border-t border-[#2a2a2a] flex justify-between items-center">

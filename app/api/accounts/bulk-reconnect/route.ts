@@ -13,16 +13,17 @@ export async function POST(request: Request) {
         const body = await request.json()
         const ids = body.ids
 
-        // Build query - if no IDs provided, get all user accounts with error status
+        // Build query
         const whereClause: any = {
             userId: session.user.id
         }
 
         if (ids && Array.isArray(ids) && ids.length > 0) {
+            // If specific IDs provided, use them regardless of status
             whereClause.id = { in: ids }
         } else {
-            // If no specific IDs, only reconnect accounts in error state
-            whereClause.status = 'error'
+            // If no specific IDs, get all user accounts (not just error ones)
+            // This way "Reconnect all accounts" actually reconnects all
         }
 
         // Get accounts to verify existence AND get credentials
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
         })
 
         if (accounts.length === 0) {
-            return NextResponse.json({ error: 'No accounts to reconnect' }, { status: 404 })
+            return NextResponse.json({ error: 'No accounts found' }, { status: 404 })
         }
 
         let successCount = 0
@@ -59,22 +60,23 @@ export async function POST(request: Request) {
 
                 await transporter.verify()
 
-                // Success: Update status
+                // Success: Update status and clear error detail
                 await prisma.emailAccount.update({
                     where: { id: account.id },
-                    data: { status: 'active' } // Clear error status
+                    data: { status: 'active', errorDetail: null }
                 })
                 successCount++
                 results.push({ id: account.id, status: 'success' })
 
             } catch (err: any) {
                 errorCount++
-                // Set to error state
+                // Set to error state with error detail
+                const errorMessage = err.message || 'Unknown connection error'
                 await prisma.emailAccount.update({
                     where: { id: account.id },
-                    data: { status: 'error' }
+                    data: { status: 'error', errorDetail: errorMessage }
                 })
-                results.push({ id: account.id, status: 'error', message: err.message })
+                results.push({ id: account.id, status: 'error', message: errorMessage })
             }
         }
 

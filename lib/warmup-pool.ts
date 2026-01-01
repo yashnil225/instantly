@@ -224,6 +224,11 @@ export async function runPoolWarmupCycle(): Promise<{ sent: number, errors: numb
 
         console.log(`🌐 Pool warmup: ${participants.length} participants`)
 
+        if (participants.length < 2) {
+            console.log('Skipping pool warmup: At least 2 active participants are required for pool exchange.')
+            return { sent: 0, errors: 0 }
+        }
+
         for (const account of participants) {
             // Check daily limit
             if ((account.warmupSentToday || 0) >= (account.warmupMaxPerDay || 10)) {

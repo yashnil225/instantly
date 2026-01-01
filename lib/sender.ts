@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { isCampaignScheduled } from './scheduler'
 import { dispatchWebhook } from './webhooks'
+import { calculateWarmupLimit } from './warmup'
 import nodemailer from 'nodemailer'
 
 // Helper to rewrite links
@@ -82,10 +83,8 @@ export async function processBatch() {
 
                 // Check warmup mode
                 if (acc.warmupEnabled) {
-                    const warmupLimit = Math.min(
-                        acc.warmupCurrentDay * acc.warmupDailyIncrease,
-                        acc.warmupMaxPerDay
-                    )
+                    // Use centralized logic to ensure consistency (e.g. starting at 1 email)
+                    const warmupLimit = calculateWarmupLimit(acc)
                     return acc.sentToday < warmupLimit
                 }
 

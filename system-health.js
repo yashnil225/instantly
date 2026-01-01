@@ -1,8 +1,19 @@
 const { PrismaClient } = require('@prisma/client');
+const { calculateWarmupLimit } = require('./lib/warmup');
 const prisma = new PrismaClient();
 
 async function checkHealth() {
     console.log('--- System Health Check ---');
+
+    // Warmup Volume Proof
+    console.log('Warmup Logic Verification:');
+    const mockAccountDay1 = { warmupEnabled: true, warmupCurrentDay: 1, warmupDailyIncrease: 5, warmupDailyLimit: 50 };
+    const limitDay1 = calculateWarmupLimit(mockAccountDay1);
+    console.log(`  - Day 1 Volume (CurrentDay=1, Increase=5): ${limitDay1} (Should be 1)`);
+
+    const mockAccountDay2 = { warmupEnabled: true, warmupCurrentDay: 2, warmupDailyIncrease: 5, warmupDailyLimit: 50 };
+    const limitDay2 = calculateWarmupLimit(mockAccountDay2);
+    console.log(`  - Day 2 Volume (CurrentDay=2, Increase=5): ${limitDay2} (Should be 6)`);
 
     // 1. Check Campaigns
     const activeCampaigns = await prisma.campaign.findMany({

@@ -15,13 +15,13 @@ const DEFAULT_CONFIG: WarmupConfig = {
     replyRate: 30
 }
 
-export async function calculateWarmupLimit(account: any): Promise<number> {
+export function calculateWarmupLimit(account: any): number {
     if (!account.warmupEnabled) {
         return account.dailyLimit || 50
     }
 
     // Use account's configured warmup settings
-    const startLimit = 1  // Start with 1 email on day 1
+    const startLimit = 1  // Start with 1 email on day 1 (Satisfies user request for odd start)
     const dailyIncrease = account.warmupDailyIncrease || 1  // Increase per day from account settings
     const maxLimit = account.warmupDailyLimit || 50  // Max limit from account settings
 
@@ -46,9 +46,14 @@ export async function sendWarmupEmails() {
 
     console.log(`Sending warmup emails for ${accounts.length} accounts`)
 
+    if (accounts.length < 2) {
+        console.log('Skipping warmup: At least 2 active warmup accounts are required for internal exchange.')
+        return
+    }
+
     for (const account of accounts) {
         try {
-            const warmupLimit = await calculateWarmupLimit(account)
+            const warmupLimit = calculateWarmupLimit(account)
             const alreadySent = account.warmupSentToday
 
             if (alreadySent >= warmupLimit) {

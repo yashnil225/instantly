@@ -5,15 +5,16 @@ import { dispatchWebhook } from "@/lib/webhooks"
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const auth = await validateApiKey()
     if (auth.error || !auth.user) {
         return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 })
     }
 
     try {
-        const id = await params.id
+        // id already awaited
 
         // Verify ownership
         const existing = await prisma.campaign.findFirst({

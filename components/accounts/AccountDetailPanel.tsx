@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,6 +24,7 @@ interface AccountDetailPanelProps {
 
 export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetailPanelProps) {
     const { toast } = useToast()
+    const router = useRouter()
 
     // Form state
     const [firstName, setFirstName] = useState(account?.firstName || "")
@@ -63,8 +65,18 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
     ])
     const [warmupStarted, setWarmupStarted] = useState<Date | null>(null)
 
+    // Campaigns state
+    const [campaigns, setCampaigns] = useState<{ id: string, name: string, status: string }[]>([])
+
     // Error state
     const [errorDetail, setErrorDetail] = useState(account?.errorDetail || "")
+
+    // Reconnect state
+    const [reconnecting, setReconnecting] = useState(false)
+    const [reconnectAll, setReconnectAll] = useState(false)
+    const [sendingTest, setSendingTest] = useState(false)
+    const [testRecipient, setTestRecipient] = useState("")
+    const [runningWarmup, setRunningWarmup] = useState(false)
 
     // Fetch account details with warmup stats
     useEffect(() => {
@@ -83,6 +95,7 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                 setWarmupStarted(data.warmupStarted ? new Date(data.warmupStarted) : null)
                 setWarmupEnabled(data.warmupEnabled || false)
                 setStatus(data.status || "active")
+                setCampaigns(data.campaigns || [])
                 // Parsing error detail if it's JSON
                 try {
                     const parsed = JSON.parse(data.errorDetail)
@@ -241,6 +254,52 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
         }
     }
 
+    const handleSendTestEmail = async () => {
+        if (!testRecipient) {
+            toast({ title: "Recipient Required", description: "Please enter an email address.", variant: "destructive" })
+            return
+        }
+
+        setSendingTest(true)
+        try {
+            const res = await fetch(`/api/accounts/${account.id}/test-send`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ to: testRecipient })
+            })
+
+            const data = await res.json()
+            if (res.ok) {
+                toast({ title: "Success", description: `Test email sent to ${testRecipient}` })
+                setTestRecipient("")
+            } else {
+                throw new Error(data.error || data.details || "Failed to send test email")
+            }
+        } catch (error: any) {
+            toast({ title: "Send Failed", description: error.message, variant: "destructive" })
+        } finally {
+            setSendingTest(false)
+        }
+    }
+
+    const runWarmupManual = async () => {
+        setRunningWarmup(true)
+        try {
+            const res = await fetch('/api/cron/warmup')
+            if (res.ok) {
+                toast({ title: "Warmup Started", description: "The warmup cycle has been triggered manually." })
+                fetchAccountDetails() // Refresh logs
+            } else {
+                const data = await res.json()
+                throw new Error(data.error || "Failed to trigger warmup")
+            }
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" })
+        } finally {
+            setRunningWarmup(false)
+        }
+    }
+
     // Generate random warmup tag
     const generateWarmupTag = () => {
         const adjectives = ["golden", "silver", "crystal", "cosmic", "mystic", "royal", "swift", "bright"]
@@ -257,6 +316,56 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
         const formatted = date.toLocaleDateString("en-US", options)
         const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24))
         return `Started on ${formatted} | ${daysAgo} days ago`
+    }
+
+    // Handle reconnect (uses stored credentials from database)
+    const handleReconnect = async () => {
+        setReconnecting(true)
+        try {
+            const res = await fetch('/api/accounts/bulk-reconnect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: reconnectAll ? undefined : [account.id] })
+            })
+
+            if (res.ok) {
+                const data = await res.json()
+                toast({
+                    title: "Reconnection Complete",
+                    description: data.message
+                })
+                // Refresh account details
+                fetchAccountDetails()
+                onUpdate?.({ ...account, status: 'active' })
+            } else {
+                const error = await res.json()
+                throw new Error(error.error || 'Reconnection failed')
+            }
+        } catch (error: any) {
+            toast({
+                title: "Reconnection Failed",
+                description: error.message,
+                variant: "destructive"
+            })
+        } finally {
+            setReconnecting(false)
+        }
+    }
+
+    // Get status badge color and label
+    const getStatusBadge = (status: string) => {
+        switch (status) {
+            case 'active':
+                return { className: 'bg-green-900/50 text-green-400 border-green-900', label: 'Active' }
+            case 'paused':
+                return { className: 'bg-yellow-900/50 text-yellow-400 border-yellow-900', label: 'Paused' }
+            case 'completed':
+                return { className: 'bg-[#1a4d3a] text-green-400 border-none', label: 'Completed' }
+            case 'draft':
+                return { className: 'bg-gray-800 text-gray-400 border-gray-700', label: 'Draft' }
+            default:
+                return { className: 'bg-gray-800 text-gray-400 border-gray-700', label: status }
+        }
     }
 
     if (!account) return null
@@ -307,7 +416,7 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                     </TabsList>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-[#2a2a2a] scrollbar-track-transparent">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden p-6" style={{ maxHeight: 'calc(100vh - 140px)' }}>
 
                     {/* Error Tab */}
                     {hasError && (
@@ -364,12 +473,25 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                             {/* Actions */}
                             <div className="pt-6 border-t border-[#2a2a2a] flex justify-between items-center">
                                 <div className="flex items-center gap-2">
-                                    <Checkbox id="reconnect-all" className="border-[#333] data-[state=checked]:bg-blue-600 rounded-[4px]" />
+                                    <Checkbox
+                                        id="reconnect-all"
+                                        checked={reconnectAll}
+                                        onCheckedChange={(checked) => setReconnectAll(checked as boolean)}
+                                        className="border-[#333] data-[state=checked]:bg-blue-600 rounded-[4px]"
+                                    />
                                     <label htmlFor="reconnect-all" className="text-gray-300 text-sm cursor-pointer">Reconnect all accounts</label>
                                 </div>
-                                <Button className="bg-blue-600 hover:bg-blue-500 text-white gap-2">
-                                    <RefreshCw className="h-4 w-4" />
-                                    Reconnect all accounts
+                                <Button
+                                    onClick={handleReconnect}
+                                    disabled={reconnecting}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white gap-2"
+                                >
+                                    {reconnecting ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="h-4 w-4" />
+                                    )}
+                                    {reconnectAll ? 'Reconnect all accounts' : 'Reconnect account'}
                                 </Button>
                             </div>
 
@@ -564,6 +686,47 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                             </div>
                         </div>
 
+                        <div className="pt-6 border-t border-[#2a2a2a]">
+                            <div className="flex items-center gap-2 text-white font-medium mb-6">
+                                <span className="text-gray-500"><Send className="h-4 w-4" /></span>
+                                Troubleshooting
+                            </div>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label className="text-gray-400 text-xs">Send a test email to verify SMTP connection</Label>
+                                    <div className="flex gap-2 max-w-md">
+                                        <Input
+                                            placeholder="Recipient email address"
+                                            value={testRecipient}
+                                            onChange={(e) => setTestRecipient(e.target.value)}
+                                            className="bg-[#111] border-[#2a2a2a] text-white h-10"
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            className="border-blue-900/40 bg-blue-900/10 text-blue-400 hover:bg-blue-900/20 px-3"
+                                            onClick={handleSendTestEmail}
+                                            disabled={sendingTest}
+                                        >
+                                            {sendingTest ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                                            Send Test
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="pt-2">
+                                    <Button
+                                        variant="outline"
+                                        className="border-[#2a2a2a] bg-[#111] text-gray-400 hover:bg-[#1a1a1a] hover:text-white px-4 h-10"
+                                        onClick={runWarmupManual}
+                                        disabled={runningWarmup}
+                                    >
+                                        {runningWarmup ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Flame className="h-4 w-4 mr-2" />}
+                                        Trigger Warmup Cycle Manually
+                                    </Button>
+                                    <p className="text-[10px] text-gray-500 mt-2">Useful for checking if your Warmup Pool and IMAP connection are working correctly.</p>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Custom Tracking Domain */}
                         <div className="pt-6 border-t border-[#2a2a2a]">
                             <div className="flex items-center gap-2 text-white font-medium mb-6">
@@ -665,17 +828,49 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                     {/* Campaigns Tab */}
                     <TabsContent value="campaigns" className="mt-0 pt-2">
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between p-4 bg-[#111] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors group cursor-pointer">
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-white font-medium text-sm">leadgen conversion based</span>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <Badge className="bg-[#1a4d3a] hover:bg-[#1a4d3a] text-green-400 border-none font-medium px-2.5 py-0.5 rounded text-xs">Completed</Badge>
-                                    <Button variant="ghost" className="text-blue-500 hover:text-blue-400 hover:bg-transparent font-medium text-sm p-0 h-auto group-hover:underline">
-                                        View
+                            {campaigns.length > 0 ? (
+                                campaigns.map((campaign) => {
+                                    const badge = getStatusBadge(campaign.status)
+                                    return (
+                                        <div
+                                            key={campaign.id}
+                                            className="flex items-center justify-between p-4 bg-[#111] border border-[#2a2a2a] rounded-xl hover:border-[#333] transition-colors group cursor-pointer"
+                                            onClick={() => router.push(`/campaigns/${campaign.id}`)}
+                                        >
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-white font-medium text-sm">{campaign.name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <Badge className={`${badge.className} hover:${badge.className} font-medium px-2.5 py-0.5 rounded text-xs`}>
+                                                    {badge.label}
+                                                </Badge>
+                                                <Button
+                                                    variant="ghost"
+                                                    className="text-blue-500 hover:text-blue-400 hover:bg-transparent font-medium text-sm p-0 h-auto group-hover:underline"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        router.push(`/campaigns/${campaign.id}`)
+                                                    }}
+                                                >
+                                                    View
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )
+                                })
+                            ) : (
+                                <div className="flex flex-col items-center justify-center p-12 bg-[#111] border border-[#2a2a2a] rounded-xl">
+                                    <Rocket className="h-10 w-10 text-gray-600 mb-4" />
+                                    <p className="text-gray-400 text-sm">No campaigns are using this account yet.</p>
+                                    <Button
+                                        variant="outline"
+                                        className="mt-4 border-[#333] text-gray-300 hover:bg-[#1a1a1a]"
+                                        onClick={() => router.push('/campaigns')}
+                                    >
+                                        Go to Campaigns
                                     </Button>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </TabsContent>
                 </div>

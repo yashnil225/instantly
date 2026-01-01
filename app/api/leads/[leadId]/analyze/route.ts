@@ -5,15 +5,15 @@ import { classifyEmailStatus } from "@/lib/ai-service"
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { leadId: string } }
+    { params }: { params: Promise<{ leadId: string }> }
 ) {
     try {
+        const { leadId } = await params
         const session = await auth()
         if (!session?.user?.email) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const { leadId } = params
         if (!leadId) {
             return NextResponse.json({ error: "Lead ID required" }, { status: 400 })
         }
@@ -33,8 +33,16 @@ export async function POST(
             return NextResponse.json({ error: "Lead not found" }, { status: 404 })
         }
 
-        // Use the last event or lead info to classify
-        const lastMessage = lead.events[0]?.details || ""
+        // Parse metadata to get last message body
+        const event = lead.events[0]
+        let lastMessage = ""
+        if (event?.metadata) {
+            try {
+                const meta = JSON.parse(event.metadata)
+                lastMessage = meta.bodyText || meta.snippet || ""
+            } catch (e) { }
+        }
+
         const subject = "Email Reply" // Generic if not stored in events
 
         const suggestedLabel = await classifyEmailStatus(subject, lastMessage)

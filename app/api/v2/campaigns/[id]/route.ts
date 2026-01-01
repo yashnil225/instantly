@@ -4,15 +4,16 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const auth = await validateApiKey()
     if (auth.error || !auth.user) {
         return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 })
     }
 
     try {
-        const id = await params.id
+        // id already awaited
         const campaign = await prisma.campaign.findFirst({
             where: {
                 id,
@@ -38,15 +39,16 @@ export async function GET(
 
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const auth = await validateApiKey()
     if (auth.error || !auth.user) {
         return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 })
     }
 
     try {
-        const id = await params.id
+        // id already awaited
         const body = await req.json()
         const { name, status } = body
 
@@ -79,15 +81,16 @@ export async function PATCH(
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const auth = await validateApiKey()
     if (auth.error || !auth.user) {
         return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 })
     }
 
     try {
-        const id = await params.id
+        // id already awaited
 
         // Verify ownership
         const existing = await prisma.campaign.findFirst({

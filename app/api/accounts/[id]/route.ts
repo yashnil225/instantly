@@ -17,6 +17,18 @@ export async function GET(
                         createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
                     },
                     orderBy: { createdAt: 'desc' }
+                },
+                // Include campaigns that use this email account
+                campaignAccounts: {
+                    include: {
+                        campaign: {
+                            select: {
+                                id: true,
+                                name: true,
+                                status: true
+                            }
+                        }
+                    }
                 }
             }
         })
@@ -58,12 +70,17 @@ export async function GET(
             ? account.warmupLogs[account.warmupLogs.length - 1].createdAt
             : account.createdAt
 
+        // Extract campaigns from the join table
+        const campaigns = account.campaignAccounts.map(ca => ca.campaign)
+
         return NextResponse.json({
             ...account,
             warmupStats,
             chartData,
             warmupStarted,
-            warmupLogs: undefined // Don't send raw logs
+            campaigns,
+            warmupLogs: undefined, // Don't send raw logs
+            campaignAccounts: undefined // Don't send raw join data
         })
     } catch (error) {
         console.error("Failed to fetch account:", error)

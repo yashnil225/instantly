@@ -10,21 +10,28 @@ export async function POST(request: Request) {
     }
 
     try {
-        const { ids } = await request.json()
+        const body = await request.json()
+        const ids = body.ids
 
-        if (!ids || !Array.isArray(ids) || ids.length === 0) {
-            return NextResponse.json({ error: 'No accounts selected' }, { status: 400 })
+        // Build query - if no IDs provided, get all user accounts with error status
+        const whereClause: any = {
+            userId: session.user.id
+        }
+
+        if (ids && Array.isArray(ids) && ids.length > 0) {
+            whereClause.id = { in: ids }
+        } else {
+            // If no specific IDs, only reconnect accounts in error state
+            whereClause.status = 'error'
         }
 
         // Get accounts to verify existence AND get credentials
         const accounts = await prisma.emailAccount.findMany({
-            where: {
-                id: { in: ids }
-            }
+            where: whereClause
         })
 
         if (accounts.length === 0) {
-            return NextResponse.json({ error: 'No valid accounts found' }, { status: 404 })
+            return NextResponse.json({ error: 'No accounts to reconnect' }, { status: 404 })
         }
 
         let successCount = 0

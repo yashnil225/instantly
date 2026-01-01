@@ -5,9 +5,9 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
     request: Request,
-    prop: { params: Promise<{ id: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const params = await prop.params;
+    const { id } = await params
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -29,7 +29,7 @@ export async function GET(
 
     const campaign = await prisma.campaign.findUnique({
         where: {
-            id: params.id,
+            id,
             userId: session.user.id
         },
         include: {
@@ -60,9 +60,9 @@ export async function GET(
 
 export async function PATCH(
     request: Request,
-    prop: { params: Promise<{ id: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const params = await prop.params;
+    const { id } = await params
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -75,7 +75,7 @@ export async function PATCH(
         // Handle automatic start date for resume
         if (updateData.status === 'active') {
             const current = await prisma.campaign.findUnique({
-                where: { id: params.id },
+                where: { id: id },
                 select: { startDate: true }
             })
             if (current && !current.startDate && !updateData.startDate) {
@@ -87,14 +87,14 @@ export async function PATCH(
         if (workspaceIds !== undefined) {
             // First delete existing assignments
             await prisma.campaignWorkspace.deleteMany({
-                where: { campaignId: params.id }
+                where: { campaignId: id }
             })
 
             // Then create new assignments
             if (workspaceIds.length > 0) {
                 await prisma.campaignWorkspace.createMany({
                     data: workspaceIds.map((workspaceId: string) => ({
-                        campaignId: params.id,
+                        campaignId: id,
                         workspaceId
                     }))
                 })
@@ -102,7 +102,7 @@ export async function PATCH(
         }
 
         const campaign = await prisma.campaign.update({
-            where: { id: params.id, userId: session.user.id },
+            where: { id: id, userId: session.user.id },
             data: updateData,
             include: {
                 campaignWorkspaces: {
@@ -119,9 +119,9 @@ export async function PATCH(
 
 export async function DELETE(
     request: Request,
-    prop: { params: Promise<{ id: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
-    const params = await prop.params;
+    const { id } = await params
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -129,7 +129,7 @@ export async function DELETE(
 
     try {
         await prisma.campaign.delete({
-            where: { id: params.id, userId: session.user.id }
+            where: { id: id, userId: session.user.id }
         })
         return NextResponse.json({ success: true })
     } catch (error) {

@@ -399,9 +399,18 @@ export async function processBatch() {
                 console.log(`Waiting ${delay / 1000}s before next email...`)
                 await new Promise(resolve => setTimeout(resolve, delay))
 
-            } catch (error) {
+            } catch (error: any) {
                 console.error(`Failed to send to ${lead.email}`, error)
                 errors++
+
+                // Log error to the account to surface in UI
+                await prisma.emailAccount.update({
+                    where: { id: account.id },
+                    data: {
+                        status: 'error',
+                        errorDetail: `Sending failed: ${error.message || 'Unknown SMTP error'}`
+                    }
+                }).catch(e => console.error('Failed to update account error status', e))
             }
         }
 

@@ -8,13 +8,12 @@ import { prisma } from "@/lib/prisma"
  */
 export async function POST(
     req: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const auth = await validateApiKey()
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: (auth as any).status || 401 })
     const { user } = auth
-
-    const { id } = await params
 
     try {
         const campaign = await prisma.campaign.findFirst({

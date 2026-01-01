@@ -187,14 +187,24 @@ export async function detectWarmupEmails(account: any): Promise<{
             inSpam: spamEmails,
             totalFound: inboxEmails.length + spamEmails.length
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error(`IMAP detection failed for ${account.email}:`, error)
+
+        // Log error to the account to surface in UI
+        await prisma.emailAccount.update({
+            where: { id: account.id },
+            data: {
+                status: 'error',
+                errorDetail: `IMAP Connection failed: ${error.message || 'Unknown IMAP error'}`
+            }
+        }).catch(e => console.error('Failed to update account error status', e))
+
         return { needsReply: [], inSpam: [], totalFound: 0 }
     }
 }
 
 /**
- * Rescue warmup emails from spam folder
+ * rescueFromSpam already has a catch block, let's enhance it too
  */
 export async function rescueFromSpam(account: any): Promise<number> {
     const config: ImapConfig = {
@@ -239,8 +249,18 @@ export async function rescueFromSpam(account: any): Promise<number> {
 
         imap.end()
         return rescued
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Spam rescue failed for ${account.email}:`, error)
+
+        // Log error to the account to surface in UI
+        await prisma.emailAccount.update({
+            where: { id: account.id },
+            data: {
+                status: 'error',
+                errorDetail: `IMAP Spamshelf failed: ${error.message || 'Unknown IMAP error'}`
+            }
+        }).catch(e => console.error('Failed to update account error status', e))
+
         return 0
     }
 }

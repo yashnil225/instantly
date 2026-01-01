@@ -7,16 +7,17 @@ export const dynamic = 'force-dynamic'
 // DELETE - Permanently delete an email
 export async function DELETE(
     request: Request,
-    { params }: { params: { emailId: string } }
+    { params }: { params: Promise<{ emailId: string }> }
 ) {
+    const { emailId } = await params
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     try {
-        await prisma.email.delete({
-            where: { id: params.emailId }
+        await prisma.sendingEvent.delete({
+            where: { id: emailId }
         })
 
         return NextResponse.json({ success: true })

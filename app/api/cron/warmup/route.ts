@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sendWarmupEmails } from '@/lib/warmup'
+import { runPoolWarmupCycle } from '@/lib/warmup-pool'
 import { processWarmupMaintenance } from '@/lib/warmup-detection'
 
 export const dynamic = 'force-dynamic'
@@ -14,13 +15,17 @@ export async function GET(request: Request) {
         }
     }
 
-    console.log('[Cron] Starting warmup tasks (sending + maintenance)...')
+    console.log('[Cron] Starting warmup tasks (sending + pool + maintenance)...')
 
     try {
-        // 1. Send new warmup emails
+        // 1. Send system warmup emails (internal peer-to-peer)
         await sendWarmupEmails()
 
-        // 2. Run maintenance (Spam rescue + Auto-replies)
+        // 2. Run Pool Warmup Cycle (cross-domain exchange)
+        const poolResults = await runPoolWarmupCycle()
+        console.log(`[Cron] Pool Warmup: Sent ${poolResults.sent}, Errors ${poolResults.errors}`)
+
+        // 3. Run maintenance (Spam rescue + Auto-replies)
         const result = await processWarmupMaintenance()
 
         return NextResponse.json({

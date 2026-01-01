@@ -7,8 +7,9 @@ export const dynamic = 'force-dynamic'
 // GET single lead
 export async function GET(
     request: Request,
-    { params }: { params: { leadId: string } }
+    { params }: { params: Promise<{ leadId: string }> }
 ) {
+    const { leadId } = await params
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -16,7 +17,7 @@ export async function GET(
 
     try {
         const lead = await prisma.lead.findUnique({
-            where: { id: params.leadId },
+            where: { id: leadId },
             include: {
                 campaign: { select: { id: true, name: true } },
                 events: {
@@ -39,8 +40,9 @@ export async function GET(
 // PATCH - Update lead (label, campaign, read status, etc.)
 export async function PATCH(
     request: Request,
-    { params }: { params: { leadId: string } }
+    { params }: { params: Promise<{ leadId: string }> }
 ) {
+    const { leadId } = await params
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -58,7 +60,7 @@ export async function PATCH(
         if (status !== undefined) updateData.status = status
 
         const lead = await prisma.lead.update({
-            where: { id: params.leadId },
+            where: { id: leadId },
             data: updateData,
             include: {
                 campaign: { select: { id: true, name: true } }
@@ -75,8 +77,9 @@ export async function PATCH(
 // DELETE - Delete lead and add to blocklist
 export async function DELETE(
     request: Request,
-    { params }: { params: { leadId: string } }
+    { params }: { params: Promise<{ leadId: string }> }
 ) {
+    const { leadId } = await params
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -85,7 +88,7 @@ export async function DELETE(
     try {
         // Get lead email before deletion
         const lead = await prisma.lead.findUnique({
-            where: { id: params.leadId },
+            where: { id: leadId },
             select: { email: true }
         })
 
@@ -95,7 +98,7 @@ export async function DELETE(
 
         // Delete the lead
         await prisma.lead.delete({
-            where: { id: params.leadId }
+            where: { id: leadId }
         })
 
         // Add to Blocklist

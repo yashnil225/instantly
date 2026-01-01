@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -15,7 +16,7 @@ export async function GET(
         // Ensure user has access to workspace
         const hasAccess = await prisma.workspace.findFirst({
             where: {
-                id: params.id,
+                id,
                 OR: [
                     { userId: session.user.id },
                     { members: { some: { userId: session.user.id } } }
@@ -28,13 +29,13 @@ export async function GET(
         }
 
         const members = await prisma.workspaceMember.findMany({
-            where: { workspaceId: params.id },
+            where: { workspaceId: id },
             include: { user: { select: { id: true, name: true, email: true } } },
             orderBy: { createdAt: 'asc' }
         })
 
         const invitations = await prisma.invitation.findMany({
-            where: { workspaceId: params.id },
+            where: { workspaceId: id },
             orderBy: { createdAt: 'desc' }
         })
 
@@ -47,8 +48,9 @@ export async function GET(
 
 export async function POST(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -61,14 +63,14 @@ export async function POST(
         // Check if user has permission to invite (owner or admin)
         const canInvite = await prisma.workspaceMember.findFirst({
             where: {
-                workspaceId: params.id,
+                workspaceId: id,
                 userId: session.user.id,
                 role: { in: ["owner", "admin"] }
             }
         })
 
         const isOwner = await prisma.workspace.findFirst({
-            where: { id: params.id, userId: session.user.id }
+            where: { id: id, userId: session.user.id }
         })
 
         if (!canInvite && !isOwner) {
@@ -83,7 +85,7 @@ export async function POST(
             const isMember = await prisma.workspaceMember.findUnique({
                 where: {
                     workspaceId_userId: {
-                        workspaceId: params.id,
+                        workspaceId: id,
                         userId: existingUser.id
                     }
                 }
@@ -96,7 +98,7 @@ export async function POST(
             // Add directly
             const member = await prisma.workspaceMember.create({
                 data: {
-                    workspaceId: params.id,
+                    workspaceId: id,
                     userId: existingUser.id,
                     role: role || 'member'
                 },
@@ -111,7 +113,7 @@ export async function POST(
             const invitation = await prisma.invitation.create({
                 data: {
                     email,
-                    workspaceId: params.id,
+                    workspaceId: id,
                     role: role || 'member',
                     token: Math.random().toString(36).substring(7),
                     inviterId: session.user.id,

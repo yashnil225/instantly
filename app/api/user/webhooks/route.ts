@@ -14,10 +14,19 @@ export async function GET() {
             orderBy: { createdAt: "desc" }
         })
 
-        const formattedWebhooks = webhooks.map((w: any) => ({
-            ...w,
-            events: JSON.parse(w.events)
-        }))
+        const formattedWebhooks = webhooks.map((w: any) => {
+            let events = w.events
+            // Try to parse as JSON, fallback to the original string if it fails
+            try {
+                events = JSON.parse(w.events)
+            } catch {
+                // Keep as string (e.g., "all")
+            }
+            return {
+                ...w,
+                events
+            }
+        })
 
         return NextResponse.json(formattedWebhooks)
     } catch (error) {

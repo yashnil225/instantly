@@ -578,7 +578,7 @@ export default function SequencesPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white">
-                                            {VARIABLES.map(v => (
+                                            {availableVariables.map((v: { label: string; value: string }) => (
                                                 <DropdownMenuItem key={v.value} onClick={() => insertVariable(v.value)} className="hover:bg-[#333] cursor-pointer">
                                                     {v.label} <span className="ml-2 text-gray-500 text-xs">{v.value}</span>
                                                 </DropdownMenuItem>

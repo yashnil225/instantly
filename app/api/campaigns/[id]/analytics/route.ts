@@ -42,8 +42,16 @@ export async function GET(
         const replyCount = campaign.replyCount || 0
 
         // Calculate rates
-        const openRate = sentCount > 0 ? Math.round((openCount / sentCount) * 100) + '%' : 'Disabled'
-        const clickRate = sentCount > 0 ? Math.round((clickCount / sentCount) * 100) + '%' : 'Disabled'
+        // Calculate rates based on tracking settings and sent count
+        let openRate = 'Disabled'
+        if (campaign.trackOpens) {
+            openRate = sentCount > 0 ? Math.round((openCount / sentCount) * 100) + '%' : '0%'
+        }
+
+        let clickRate = 'Disabled'
+        if (campaign.trackLinks) {
+            clickRate = sentCount > 0 ? Math.round((clickCount / sentCount) * 100) + '%' : '0%'
+        }
 
         // Calculate opportunities and conversions from leads
         const opportunities = campaign.leads.filter((l: any) => l.aiLabel === 'opportunity')

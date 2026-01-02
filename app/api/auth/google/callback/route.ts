@@ -2,63 +2,76 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { google } from 'googleapis'
 
 export async function GET(request: Request) {
     const session = await auth()
     if (!session?.user?.id) {
-        // In real flow, this might be handled by middleware, but here just redirect to login or error
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        return NextResponse.redirect(new URL('/campaigns?error=unauthorized', request.url))
     }
 
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
+    const error = searchParams.get('error')
 
-    if (!code) {
-        return NextResponse.json({ error: 'No code provided' }, { status: 400 })
+    if (error) {
+        return NextResponse.redirect(new URL(`/campaigns?error=${error}`, request.url))
     }
 
-    // Simulate Token Exchange
-    const mockEmail = `user_${Date.now()}@gmail.com` // Generate unique mock email
-    const mockRefreshToken = `mock_refresh_token_${Date.now()}`
+    if (!code) {
+        return NextResponse.redirect(new URL('/campaigns?error=no_code', request.url))
+    }
 
     try {
-        // Create the account in DB
-        // We use the existing EmailAccount model but map OAuth fields differently
-        // Since schema might not have specific oauth fields, we'll store minimal info
-        // or reuse smtp/imap fields with placeholders if strict schema
-        // Assuming loose schema or existing fields:
+        const oauth2Client = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET,
+            `${process.env.NEXTAUTH_URL}/api/auth/google/callback`
+        )
 
-        await prisma.emailAccount.create({
-            data: {
-                email: mockEmail,
-                firstName: 'Google',
-                lastName: 'User',
-                provider: 'google-oauth',
-                status: 'active',
-                smtpHost: 'smtp.gmail.com',
-                smtpPort: 587,
-                smtpUser: mockEmail,
-                smtpPass: 'oauth-token-placeholder', // In real world, we'd store tokens in a separate table or encrypted field
-                imapHost: 'imap.gmail.com',
-                imapPort: 993,
-                imapUser: mockEmail,
-                imapPass: 'oauth-token-placeholder',
-                // userID link would happen here if schema has it, but based on accounts/route.ts it seems to rely on session but doesn't explicitly link userId in `data`?
-                // Wait, api/accounts/route.ts POST didn't use `userId`. It just created it.
-                // Does EmailAccount not have a userId?
-                // Let me check api/accounts/route.ts again. It didn't put userId in `data`.
-                // Maybe it's not multi-tenant in that way, or table doesn't have it?
-                // Ah, looking at `api/campaigns/route.ts`, that DOES use `userId`.
-                // Let's assume EmailAccount might be global or missing relations?
-                // I'll stick to what accounts/route.ts does.
+        const { tokens } = await oauth2Client.getToken(code)
+        oauth2Client.setCredentials(tokens)
+
+        // Get user info to identify this account
+        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client })
+        const { data: userInfo } = await oauth2.userinfo.get()
+
+        if (!userInfo.email) {
+            throw new Error('No email found in Google profile')
+        }
+
+        // Upsert EmailAccount
+        await prisma.emailAccount.upsert({
+            where: {
+                email: userInfo.email
+            },
+            create: {
+                userId: session.user.id,
+                email: userInfo.email,
+                firstName: userInfo.given_name,
+                lastName: userInfo.family_name,
+                provider: 'google',
+                refreshToken: tokens.refresh_token,
+                accessToken: tokens.access_token,
+                expiresAt: tokens.expiry_date ? BigInt(tokens.expiry_date) : null,
+                idToken: tokens.id_token,
+                scope: tokens.scope
+            },
+            update: {
+                userId: session.user.id, // Re-claim if needed
+                provider: 'google',
+                refreshToken: tokens.refresh_token, // Update if we got a new one
+                accessToken: tokens.access_token,
+                expiresAt: tokens.expiry_date ? BigInt(tokens.expiry_date) : null,
+                scope: tokens.scope,
+                status: 'active'
             }
         })
 
-        // Redirect to accounts page
-        return NextResponse.redirect(new URL('/accounts', request.url))
+        return NextResponse.redirect(new URL('/campaigns/accounts?success=connected', request.url))
 
     } catch (error) {
-        console.error("OAuth Callback Error", error)
-        return NextResponse.redirect(new URL('/accounts/connect?error=oauth_failed', request.url))
+        console.error('Google Connect Error:', error)
+        return NextResponse.redirect(new URL('/campaigns?error=connect_failed', request.url))
     }
 }

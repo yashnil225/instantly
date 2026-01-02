@@ -30,57 +30,59 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json()
 
+    const preferenceData = {
+        // Default Opportunity Value
+        opportunityValue: body.opportunityValue ?? undefined,
+
+        // Lead Preferences
+        disableLeadSync: body.disableLeadSync ?? undefined,
+
+        // AI Automations
+        autoTagReplies: body.autoTagReplies ?? undefined,
+        aiInboxManager: body.aiInboxManager ?? undefined,
+        autoSuggestReplies: body.autoSuggestReplies ?? undefined,
+        autoTagOoo: body.autoTagOoo ?? undefined,
+
+        // Unibox
+        showAutoReplies: body.showAutoReplies ?? undefined,
+        saveExternalEmails: body.saveExternalEmails ?? undefined,
+        saveUndelivered: body.saveUndelivered ?? undefined,
+        crmNotifyOnly: body.crmNotifyOnly ?? undefined,
+
+        // Outreach
+        autoPauseBounce: body.autoPauseBounce ?? undefined,
+        singleAccountGap: body.singleAccountGap ?? undefined,
+        sequentialSend: body.sequentialSend ?? undefined,
+        resetAzDaily: body.resetAzDaily ?? undefined,
+        resetTimezone: body.resetTimezone ?? undefined,
+
+        // Notifications
+        disconnectNotify: body.disconnectNotify ?? undefined,
+        positiveReplyNotify: body.positiveReplyNotify ?? undefined,
+        notifyRecipients: body.notifyRecipients ?? undefined,
+        audioNotify: body.audioNotify ?? undefined,
+
+        // Language
+        language: body.language ?? undefined,
+
+        // Deliverability
+        unlikelyReplyAction: body.unlikelyReplyAction ?? undefined,
+        hostileAction: body.hostileAction ?? undefined,
+        disableOpenTracking: body.disableOpenTracking ?? undefined,
+        espMatching: body.espMatching ?? undefined,
+        firstEmailText: body.firstEmailText ?? undefined,
+        sisrMode: body.sisrMode ?? undefined,
+        limitPerCompany: body.limitPerCompany ?? undefined,
+        hasSeenWelcomeModal: body.hasSeenWelcomeModal ?? undefined,
+    }
+
     // Update or create preferences
     const prefs = await prisma.userPreference.upsert({
         where: { userId: session.user.id },
-        update: {
-            // Default Opportunity Value
-            opportunityValue: body.opportunityValue ?? undefined,
-
-            // Lead Preferences
-            disableLeadSync: body.disableLeadSync ?? undefined,
-
-            // AI Automations
-            autoTagReplies: body.autoTagReplies ?? undefined,
-            aiInboxManager: body.aiInboxManager ?? undefined,
-            autoSuggestReplies: body.autoSuggestReplies ?? undefined,
-            autoTagOoo: body.autoTagOoo ?? undefined,
-
-            // Unibox
-            showAutoReplies: body.showAutoReplies ?? undefined,
-            saveExternalEmails: body.saveExternalEmails ?? undefined,
-            saveUndelivered: body.saveUndelivered ?? undefined,
-            crmNotifyOnly: body.crmNotifyOnly ?? undefined,
-
-            // Outreach
-            autoPauseBounce: body.autoPauseBounce ?? undefined,
-            singleAccountGap: body.singleAccountGap ?? undefined,
-            sequentialSend: body.sequentialSend ?? undefined,
-            resetAzDaily: body.resetAzDaily ?? undefined,
-            resetTimezone: body.resetTimezone ?? undefined,
-
-            // Notifications
-            disconnectNotify: body.disconnectNotify ?? undefined,
-            positiveReplyNotify: body.positiveReplyNotify ?? undefined,
-            notifyRecipients: body.notifyRecipients ?? undefined,
-            audioNotify: body.audioNotify ?? undefined,
-
-            // Language
-            language: body.language ?? undefined,
-
-            // Deliverability
-            unlikelyReplyAction: body.unlikelyReplyAction ?? undefined,
-            hostileAction: body.hostileAction ?? undefined,
-            disableOpenTracking: body.disableOpenTracking ?? undefined,
-            espMatching: body.espMatching ?? undefined,
-            firstEmailText: body.firstEmailText ?? undefined,
-            sisrMode: body.sisrMode ?? undefined,
-            limitPerCompany: body.limitPerCompany ?? undefined,
-            hasSeenWelcomeModal: body.hasSeenWelcomeModal ?? undefined,
-        },
+        update: preferenceData,
         create: {
             userId: session.user.id,
-            ...body
+            ...preferenceData
         }
     })
 

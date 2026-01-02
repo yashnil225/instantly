@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import Papa from 'papaparse'
 import { normalizeLead } from '@/lib/leads'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function POST(
     request: Request,
@@ -85,8 +83,7 @@ export async function POST(
 
         // Bulk insert
         const createdLeads = await prisma.lead.createMany({
-            data: finalLeads,
-            skipDuplicates: true
+            data: finalLeads
         })
 
         // Update campaign timestamp

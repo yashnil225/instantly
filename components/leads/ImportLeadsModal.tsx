@@ -5,11 +5,13 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Upload, X, Check, FileText, Search, Mail, Loader2, ChevronLeft, ArrowRight } from "lucide-react"
 import { useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
+import { useToast } from "@/components/ui/use-toast"
 import Papa from "papaparse"
 import * as XLSX from "xlsx"
 
@@ -32,6 +34,7 @@ const SYSTEM_FIELDS = [
 
 export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: ImportLeadsModalProps) {
     const params = useParams()
+    const { toast } = useToast()
     const { data: session } = useSession()
     const [step, setStep] = useState<Step>('source')
     const [file, setFile] = useState<File | null>(null)
@@ -46,50 +49,16 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
     const [parsedData, setParsedData] = useState<any[]>([])
     const [columnMapping, setColumnMapping] = useState<Record<string, string>>({})
 
-    // Google Picker
-    const [pickerLoaded, setPickerLoaded] = useState(false)
+    const [duplicateCheck, setDuplicateCheck] = useState({
+        campaigns: true,
+        lists: true,
+        workspace: true
+    })
 
-    useEffect(() => {
-        const loadPicker = () => {
-            const script = document.createElement("script")
-            script.src = "https://apis.google.com/js/api.js"
-            script.onload = () => {
-                const gapi = (window as any).gapi
-                gapi.load('client:picker', () => {
-                    setPickerLoaded(true)
-                })
-            }
-            document.body.appendChild(script)
-        }
-        loadPicker()
-    }, [])
+    // removed Google Picker
 
-    const handleGoogleDriveSelect = () => {
-        const accessToken = (session as any)?.accessToken
-        if (!accessToken) {
-            setError("Google login required to browse Drive")
-            return
-        }
 
-        const gapi = (window as any).gapi
-        const google = (window as any).google
-
-        const view = new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS)
-            .setMimeTypes('application/vnd.google-apps.spreadsheet')
-
-        const picker = new google.picker.PickerBuilder()
-            .addView(view)
-            .setOAuthToken(accessToken)
-            .setCallback((data: any) => {
-                if (data.action === google.picker.Action.PICKED) {
-                    const doc = data.docs[0]
-                    setSheetsUrl(doc.url)
-                    // We can also use doc.id directly in the future
-                }
-            })
-            .build()
-        picker.setVisible(true)
-    }
+    // removed handleGoogleDriveSelect
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -299,16 +268,37 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
     const handleImportManual = async () => {
         if (!manualEmails || !params.id) return
         setUploading(true)
+        setError(null)
         try {
             const emails = manualEmails.split(/[\n,]/).map(e => e.trim()).filter(e => e.includes('@'))
+
+            if (emails.length === 0) {
+                throw new Error("No valid emails found. Please enter emails separated by commas or new lines.")
+            }
+
             const res = await fetch(`/api/campaigns/${params.id}/leads/import`, {
                 method: "POST",
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'manual', emails }),
             })
-            if (!res.ok) throw new Error("Import failed")
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Import failed")
+
+            toast({
+                title: "Import Successful",
+                description: data.message || `Successfully imported ${data.count} leads.`
+            })
+
             onImportSuccess(); resetAndClose()
-        } catch (err: any) { setError(err.message) } finally { setUploading(false) }
+        } catch (err: any) {
+            setError(err.message)
+            toast({
+                title: "Import Failed",
+                description: err.message,
+                variant: "destructive"
+            })
+        } finally { setUploading(false) }
     }
 
 
@@ -333,7 +323,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                     <div className="flex flex-col h-full p-8 items-center justify-center relative flex-1">
                         <div className="space-y-3 w-full max-w-md">
                             <div
-                                onClick={() => setStep('csv_choice')}
+                                onClick={() => setStep('csv')}
                                 className="group flex items-center gap-4 p-4 rounded-xl bg-[#111] hover:bg-[#1a1a1a] cursor-pointer transition-all border border-[#222] hover:border-[#333]"
                             >
                                 <div className="h-10 w-10 flex items-center justify-center bg-[#00D4AA] rounded-lg">
@@ -374,50 +364,12 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                     </div>
                 )}
 
-                {/* CSV Choice */}
-                {step === 'csv_choice' && (
-                    <div className="flex flex-col h-full p-8 items-center justify-center relative flex-1">
-                        <Button variant="ghost" onClick={() => setStep('source')} className="absolute top-6 left-6 text-gray-500 hover:text-white pl-0 hover:bg-transparent text-xs">
-                            <ChevronLeft className="h-4 w-4 mr-1" /> Back
-                        </Button>
-                        <div className="space-y-4 w-full max-w-md">
-                            <div
-                                onClick={() => setStep('csv')}
-                                className="group flex items-center gap-4 p-5 rounded-xl bg-[#111] hover:bg-[#1a1a1a] cursor-pointer transition-all border border-[#222] hover:border-[#333]"
-                            >
-                                <div className="h-10 w-10 flex items-center justify-center bg-blue-500/10 rounded-lg">
-                                    <FileText className="h-5 w-5 text-blue-500" />
-                                </div>
-                                <div className="flex-1">
-                                    <div className="text-lg font-semibold text-white">Upload from Local File</div>
-                                    <div className="text-xs text-gray-400">Import .csv, .xls or .xlsx from your computer</div>
-                                </div>
-                                <ArrowRight className="h-4 w-4 text-gray-600 group-hover:text-blue-500 transition-colors" />
-                            </div>
-
-                            <div
-                                onClick={() => setStep('sheets')}
-                                className="group flex items-center gap-4 p-5 rounded-xl bg-[#111] hover:bg-[#1a1a1a] cursor-pointer transition-all border border-[#222] hover:border-[#333]"
-                            >
-                                <div className="h-10 w-10 flex items-center justify-center bg-green-500/10 rounded-lg">
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                        <path fill="#0F9D58" d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
-                                    </svg>
-                                </div>
-                                <div className="flex-1">
-                                    <div className="text-lg font-semibold text-white">Import from Google Sheets</div>
-                                    <div className="text-xs text-gray-400">Select a file from Google Drive or paste a public link</div>
-                                </div>
-                                <ArrowRight className="h-4 w-4 text-gray-600 group-hover:text-green-500 transition-colors" />
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* CSV Choice Removed */}
 
                 {/* CSV Upload */}
                 {step === 'csv' && (
                     <div className="p-8 flex flex-col h-full flex-1 justify-center items-center">
-                        <Button variant="ghost" onClick={() => setStep('csv_choice')} className="absolute top-6 left-6 text-gray-500 hover:text-white pl-0 hover:bg-transparent">
+                        <Button variant="ghost" onClick={() => setStep('source')} className="absolute top-6 left-6 text-gray-500 hover:text-white pl-0 hover:bg-transparent">
                             <ChevronLeft className="h-4 w-4 mr-1" /> Back
                         </Button>
 
@@ -528,15 +480,27 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                     <div className="text-sm font-bold text-white">Check for duplicates across all</div>
                                     <div className="flex items-center gap-6">
                                         <div className="flex items-center gap-2">
-                                            <div className="bg-blue-600 rounded-[4px] flex items-center justify-center p-0.5"><Check className="h-3 w-3 text-white" /></div>
+                                            <Checkbox
+                                                checked={duplicateCheck.campaigns}
+                                                onCheckedChange={(c) => setDuplicateCheck(p => ({ ...p, campaigns: !!c }))}
+                                                className="border-[#333] data-[state=checked]:bg-blue-600"
+                                            />
                                             <span className="text-white text-sm font-medium">Campaigns</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <div className="bg-blue-600 rounded-[4px] flex items-center justify-center p-0.5"><Check className="h-3 w-3 text-white" /></div>
+                                            <Checkbox
+                                                checked={duplicateCheck.lists}
+                                                onCheckedChange={(c) => setDuplicateCheck(p => ({ ...p, lists: !!c }))}
+                                                className="border-[#333] data-[state=checked]:bg-blue-600"
+                                            />
                                             <span className="text-white text-sm font-medium">Lists</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <div className="bg-blue-600 rounded-[4px] flex items-center justify-center p-0.5"><Check className="h-3 w-3 text-white" /></div>
+                                            <Checkbox
+                                                checked={duplicateCheck.workspace}
+                                                onCheckedChange={(c) => setDuplicateCheck(p => ({ ...p, workspace: !!c }))}
+                                                className="border-[#333] data-[state=checked]:bg-blue-600"
+                                            />
                                             <span className="text-white text-sm font-medium">The Workspace</span>
                                         </div>
                                     </div>
@@ -587,9 +551,21 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                             className="flex-1 bg-[#111] border-[#333] text-white resize-none"
                             placeholder="Enter emails..."
                             value={manualEmails}
-                            onChange={e => setManualEmails(e.target.value)}
+                            onChange={e => {
+                                setManualEmails(e.target.value)
+                                if (error) setError(null)
+                            }}
                         />
-                        <Button className="mt-4 bg-blue-600" onClick={handleImportManual} disabled={uploading}>Import</Button>
+                        {error && (
+                            <div className="text-red-400 text-sm mt-2 flex items-center gap-2">
+                                <span className="bg-red-400/10 p-1 rounded-full"><X className="h-3 w-3" /></span>
+                                {error}
+                            </div>
+                        )}
+                        <Button className="mt-4 bg-blue-600 hover:bg-blue-700" onClick={handleImportManual} disabled={uploading || !manualEmails.trim()}>
+                            {uploading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Import Emails
+                        </Button>
                     </div>
                 )}
 
@@ -597,7 +573,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                     <div className="flex flex-col h-full flex-1 relative bg-[#0a0a0a]">
                         <Button
                             variant="ghost"
-                            onClick={() => setStep('csv_choice')}
+                            onClick={() => setStep('source')}
                             className="absolute top-16 left-1/2 -translate-x-1/2 text-blue-500 hover:text-blue-400 font-medium hover:bg-transparent"
                         >
                             <ChevronLeft className="h-4 w-4 mr-1" /> Choose another method
@@ -623,22 +599,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
 
                             <div className="w-full max-w-lg space-y-6">
                                 <div className="flex flex-col items-center gap-4 w-full mb-4">
-                                    <Button
-                                        variant="outline"
-                                        className="w-full h-12 border-[#222] bg-[#111] text-white hover:bg-[#1a1a1a] flex items-center justify-center gap-2"
-                                        onClick={handleGoogleDriveSelect}
-                                        disabled={!pickerLoaded}
-                                    >
-                                        <svg className="w-5 h-5" viewBox="0 0 24 24">
-                                            <path fill="#4285F4" d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" />
-                                        </svg>
-                                        Browse Google Drive
-                                    </Button>
-                                    <div className="flex items-center gap-4 w-full">
-                                        <div className="h-px bg-[#222] flex-1"></div>
-                                        <span className="text-gray-500 text-xs">OR PASTE LINK</span>
-                                        <div className="h-px bg-[#222] flex-1"></div>
-                                    </div>
+                                    {/* Removed Google Picker Button */}
                                 </div>
 
                                 <Input

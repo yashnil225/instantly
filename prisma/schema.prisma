@@ -124,6 +124,13 @@ model EmailAccount {
   imapPort Int?
   imapUser String?
   imapPass String?
+  
+  // OAuth Credentials
+  refreshToken String?
+  accessToken  String?
+  expiresAt    BigInt?
+  idToken      String?
+  scope        String?
 
   // Settings
   dailyLimit  Int     @default(50)

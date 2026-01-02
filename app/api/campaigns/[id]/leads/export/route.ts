@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-
-// Do not use "const prisma = ..." in global scope if using hot reload heavily, 
-// but for standard route it is standard. Ideally import from a lib.
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
     request: Request,

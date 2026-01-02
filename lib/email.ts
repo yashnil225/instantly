@@ -5,9 +5,24 @@ interface EmailConfig {
     port: number
     user: string
     pass: string
+    provider?: string
+    refreshToken?: string
 }
 
 export async function createTransporter(config: EmailConfig) {
+    if (config.provider === 'google' && config.refreshToken) {
+        return nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                type: 'OAuth2',
+                user: config.user,
+                clientId: process.env.GOOGLE_CLIENT_ID,
+                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                refreshToken: config.refreshToken
+            }
+        })
+    }
+
     return nodemailer.createTransport({
         host: config.host,
         port: config.port,

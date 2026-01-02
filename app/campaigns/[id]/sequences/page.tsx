@@ -250,7 +250,7 @@ export default function SequencesPage() {
     if (loading) return <div className="p-8 text-center text-gray-500">Loading...</div>
 
     const activeStep = steps[activeStepIndex]
-    const activeVariant = activeStep?.variants[activeStep?.activeVariant || 0] || { subject: '', body: '' }
+    const activeVariant = activeStep?.variants?.[activeStep?.activeVariant || 0] || { subject: '', body: '' }
 
     return (
         <div className="flex bg-[#0a0a0a] min-h-[calc(100vh-100px)]"> {/* Subtracting header height approx */}

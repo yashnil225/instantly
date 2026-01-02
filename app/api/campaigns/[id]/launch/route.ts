@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { getEmailQueue } from '@/lib/queue'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 // Launch a campaign - starts sending emails
 export async function POST(

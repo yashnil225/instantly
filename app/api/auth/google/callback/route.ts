@@ -70,8 +70,19 @@ export async function GET(request: Request) {
 
         return NextResponse.redirect(new URL('/campaigns/accounts?success=connected', request.url))
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Google Connect Error:', error)
-        return NextResponse.redirect(new URL('/campaigns?error=connect_failed', request.url))
+        
+        // Detect specific error types for better user feedback
+        let errorType = 'connect_failed'
+        if (error?.message?.includes('invalid_grant') || error?.code === 400) {
+            errorType = 'token_expired'
+        } else if (error?.message?.includes('No email')) {
+            errorType = 'no_email'
+        } else if (error?.code === 401) {
+            errorType = 'unauthorized'
+        }
+        
+        return NextResponse.redirect(new URL(`/campaigns/accounts?error=${errorType}`, request.url))
     }
 }

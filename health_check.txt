@@ -1,9 +1,0 @@
-﻿--- System Health Check ---
-Active Campaigns: 0
-Active Email Accounts: 0
-Leads Due for Sending: 0
-Last Email Sent: NEVER
-Emails Sent (last 24h): 0
-Accounts in Error State: 0
-Accounts with Warmup Enabled: 0
---- End of Report ---

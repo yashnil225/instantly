@@ -13,7 +13,11 @@ export async function DELETE(
         })
 
         return NextResponse.json({ success: true })
-    } catch (error) {
+    } catch (error: any) {
+        if (error.code === 'P2025') {
+            // Record already deleted, treat as success
+            return NextResponse.json({ success: true })
+        }
         console.error('Failed to delete lead:', error)
         return NextResponse.json({ error: 'Failed to delete lead' }, { status: 500 })
     }

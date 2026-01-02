@@ -29,34 +29,52 @@ export async function POST(request: Request) {
             csvUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv`
         }
 
-        // 2. Fetch the CSV
-        const headers: Record<string, string> = {}
+        // 2. Fetch the CSV (with smart fallback for public sheets)
+        let response: Response | null = null
         const accessToken = (session as any)?.accessToken
+
+        // Try with auth first if available
         if (accessToken) {
-            headers['Authorization'] = `Bearer ${accessToken}`
+            try {
+                response = await fetch(csvUrl, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                })
+            } catch (e) {
+                console.warn('Authenticated fetch failed, trying public access', e)
+            }
         }
 
-        const response = await fetch(csvUrl, { headers })
+        // Fallback to public access if auth failed or wasn't available
+        if (!response || !response.ok) {
+            response = await fetch(csvUrl)
+        }
 
         if (!response.ok) {
             const errorText = await response.text()
-            console.error('Google Sheet fetch error:', response.status, errorText)
+            console.error('Google Sheet fetch error:', response.status, errorText.substring(0, 200))
             return NextResponse.json({
-                error: accessToken
-                    ? 'Failed to fetch Google Sheet. Make sure you have permission to access it.'
-                    : 'Failed to fetch Google Sheet. Make sure it is public or you are logged in with Google.'
+                error: 'Failed to fetch Google Sheet. Make sure it is shared publicly (Anyone with the link can view).'
             }, { status: 400 })
         }
+
         const csvText = await response.text()
+        console.log('Sheet CSV fetched, length:', csvText.length)
 
         // 3. Parse CSV
         const { data, meta } = Papa.parse(csvText, {
             header: true,
-            skipEmptyLines: true
+            skipEmptyLines: true,
+            transformHeader: (h) => h.toLowerCase().trim()
         })
 
-        if (!data || data.length === 0) {
-            return NextResponse.json({ error: 'Sheet is empty' }, { status: 400 })
+        console.log('Parsed sheet data:', {
+            rowCount: (data as any[]).length,
+            headers: meta.fields,
+            sampleRow: (data as any[])[0]
+        })
+
+        if (!data || (data as any[]).length === 0) {
+            return NextResponse.json({ error: 'Sheet is empty or could not be parsed' }, { status: 400 })
         }
 
         return NextResponse.json({

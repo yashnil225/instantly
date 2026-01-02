@@ -111,16 +111,39 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                 skipEmptyLines: true,
                 preview: 5,
                 complete: (results) => {
-                    if (results.meta.fields) {
-                        setCsvHeaders(results.meta.fields)
-                        if (results.data.length > 0) {
-                            const firstRow = results.data[0] as any
-                            const sample = results.meta.fields.map(h => String(firstRow[h] || ''))
-                            setFirstRowSample(sample)
-                        }
-                        autoMap(results.meta.fields)
-                        setStep('mapping')
+                    console.log('PapaParse results:', results)
+
+                    // Try to get headers from meta.fields first, then fall back to first row keys
+                    let headers = results.meta.fields || []
+
+                    if (headers.length === 0 && results.data.length > 0) {
+                        // Fallback: extract keys from first data row
+                        headers = Object.keys(results.data[0] as any)
                     }
+
+                    if (headers.length === 0) {
+                        console.error('No headers detected in CSV')
+                        setError('Could not detect columns in this file. Please ensure your CSV has a header row.')
+                        return
+                    }
+
+                    setCsvHeaders(headers)
+
+                    if (results.data.length > 0) {
+                        const firstRow = results.data[0] as any
+                        const sample = headers.map(h => String(firstRow[h] ?? ''))
+                        setFirstRowSample(sample)
+                    }
+
+                    // Also store parsed data for the row count display
+                    setParsedData(results.data as any[])
+
+                    autoMap(headers)
+                    setStep('mapping')
+                },
+                error: (err) => {
+                    console.error('PapaParse error:', err)
+                    setError('Failed to parse CSV file: ' + err.message)
                 }
             })
         }
@@ -308,6 +331,11 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
         setError(null)
         setSheetsUrl('')
         setManualEmails('')
+        // Clear all parsing state to prevent stale data
+        setCsvHeaders([])
+        setFirstRowSample([])
+        setParsedData([])
+        setColumnMapping({})
         onOpenChange(false)
     }
 

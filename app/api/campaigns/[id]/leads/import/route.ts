@@ -69,30 +69,53 @@ export async function POST(
                 return NextResponse.json({ error: 'Failed to import from Google Sheets' }, { status: 500 })
             }
         } else if (leads && Array.isArray(leads)) {
-            // Direct leads array (raw objects)
+            // Direct leads array (raw objects) - frontend already mapped
             leadsToProcess = leads
         } else {
             return NextResponse.json({ error: 'Invalid import data' }, { status: 400 })
         }
+
+        console.log('Leads to process:', leadsToProcess.length, 'Sample:', leadsToProcess[0])
 
         // Normalize and Deduplicate locally
         const validLeads: any[] = []
         const emailsToCheck: string[] = []
 
         for (const record of leadsToProcess) {
-            const normalized = normalizeLead(record)
-            if (normalized) {
-                // Local dedup
-                if (!emailsToCheck.includes(normalized.email)) {
-                    emailsToCheck.push(normalized.email)
-                    validLeads.push({
-                        ...normalized,
-                        campaignId,
-                        status: 'new'
-                    })
+            // If record already has 'email' field directly (pre-mapped from frontend), use it as-is
+            let email = record.email
+            let firstName = record.firstName || ''
+            let lastName = record.lastName || ''
+            let company = record.company || ''
+            let customFields = record.customFields
+
+            // If no direct email, try to normalize (for raw CSV data)
+            if (!email) {
+                const normalized = normalizeLead(record)
+                if (normalized) {
+                    email = normalized.email
+                    firstName = normalized.firstName
+                    lastName = normalized.lastName
+                    company = normalized.company
+                    customFields = normalized.customFields
                 }
             }
+
+            if (email && !emailsToCheck.includes(email.toLowerCase())) {
+                emailsToCheck.push(email.toLowerCase())
+                validLeads.push({
+                    email: email.toLowerCase(),
+                    firstName,
+                    lastName,
+                    company,
+                    customFields,
+                    campaignId,
+                    status: 'new'
+                })
+            }
         }
+
+        console.log('Valid leads after processing:', validLeads.length)
 
         if (validLeads.length === 0) {
             return NextResponse.json({ error: 'No valid leads found in import' }, { status: 400 })

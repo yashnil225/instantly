@@ -139,7 +139,7 @@ export default function SequencesPage() {
                     id: seq.id,
                     stepNumber: seq.stepNumber,
                     day: seq.dayGap,
-                    variants: seq.variants.length > 0 ? seq.variants : [{ subject: '', body: '' }],
+                    variants: seq.variants && seq.variants.length > 0 ? seq.variants : [{ subject: '', body: '' }],
                     activeVariant: 0
                 }))
                 setSteps(mappedSteps)

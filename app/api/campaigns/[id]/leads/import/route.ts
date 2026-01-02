@@ -60,7 +60,8 @@ export async function POST(
                 const parseResult = Papa.parse(csvText, {
                     header: true,
                     skipEmptyLines: true,
-                    transformHeader: (h) => h.toLowerCase().trim()
+                    // Keep original case for proper column matching
+                    transformHeader: (h) => h.trim()
                 })
 
                 leadsToProcess = parseResult.data

@@ -24,12 +24,18 @@ interface ImportLeadsModalProps {
 type Step = 'source' | 'csv_choice' | 'csv' | 'sheets' | 'manual' | 'mapping'
 
 const SYSTEM_FIELDS = [
-    { value: "email", label: "Email" },
-    { value: "firstName", label: "First Name" },
-    { value: "lastName", label: "Last Name" },
-    { value: "company", label: "Company Name" },
-    { value: "custom", label: "Custom Variable" },
-    { value: "skip", label: "Do not import" },
+    { value: "email", label: "Email", icon: "📧" },
+    { value: "firstName", label: "First Name", icon: "👤" },
+    { value: "lastName", label: "Last Name", icon: "👤" },
+    { value: "jobTitle", label: "Job Title", icon: "💼" },
+    { value: "company", label: "Company Name", icon: "🏢" },
+    { value: "personalization", label: "Personalization", icon: "✨" },
+    { value: "phone", label: "Phone", icon: "📱" },
+    { value: "website", label: "Website", icon: "🌐" },
+    { value: "location", label: "Location", icon: "📍" },
+    { value: "linkedin", label: "LinkedIn", icon: "💼" },
+    { value: "custom", label: "Custom Variable", icon: "⚙️" },
+    { value: "skip", label: "Do not import", icon: "🚫" },
 ]
 
 export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: ImportLeadsModalProps) {
@@ -45,7 +51,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
 
     // Mapping State
     const [csvHeaders, setCsvHeaders] = useState<string[]>([])
-    const [firstRowSample, setFirstRowSample] = useState<string[]>([])
+    const [sampleRows, setSampleRows] = useState<any[]>([]) // Store first 4 rows for samples
     const [parsedData, setParsedData] = useState<any[]>([])
     const [columnMapping, setColumnMapping] = useState<Record<string, string>>({})
 
@@ -90,7 +96,12 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                     const headers = json[0].map(h => String(h))
                     setCsvHeaders(headers)
                     if (json.length > 1) {
-                        setFirstRowSample(json[1].map(v => String(v || '')))
+                        // Store first 4 rows for sample display
+                        setSampleRows(json.slice(1, 5).map(row => {
+                            const obj: any = {}
+                            headers.forEach((h, i) => obj[h] = row[i])
+                            return obj
+                        }))
                     }
 
                     // Convert to object array for compatibility
@@ -109,7 +120,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
-                preview: 5,
+                // Parse ALL rows for accurate count (removed preview: 5 limit)
                 complete: (results) => {
                     console.log('PapaParse results:', results)
 
@@ -130,9 +141,8 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                     setCsvHeaders(headers)
 
                     if (results.data.length > 0) {
-                        const firstRow = results.data[0] as any
-                        const sample = headers.map(h => String(firstRow[h] ?? ''))
-                        setFirstRowSample(sample)
+                        // Store first 4 rows for sample display
+                        setSampleRows((results.data as any[]).slice(0, 4))
                     }
 
                     // Also store parsed data for the row count display
@@ -155,10 +165,15 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
             const lower = header.toLowerCase().replace(/[^a-z]/g, '')
             if (lower.includes('email')) initialMapping[header] = 'email'
             else if (lower.includes('first')) initialMapping[header] = 'firstName'
-            else if (lower.includes('last')) initialMapping[header] = 'lastName'
+            else if (lower.includes('last') || lower.includes('surname')) initialMapping[header] = 'lastName'
+            else if (lower.includes('job') || lower.includes('title') || lower.includes('position') || lower.includes('role')) initialMapping[header] = 'jobTitle'
             else if (lower.includes('company') || lower.includes('organization') || lower.includes('org')) initialMapping[header] = 'company'
-            else if (lower.includes('skip')) initialMapping[header] = 'skip'
-            else initialMapping[header] = 'custom' // Default to custom instead of skip for better data retention
+            else if (lower.includes('phone') || lower.includes('mobile') || lower.includes('cell') || lower.includes('tel')) initialMapping[header] = 'phone'
+            else if (lower.includes('website') || lower.includes('url') || lower.includes('domain')) initialMapping[header] = 'website'
+            else if (lower.includes('location') || lower.includes('city') || lower.includes('country') || lower.includes('address') || lower.includes('state')) initialMapping[header] = 'location'
+            else if (lower.includes('linkedin')) initialMapping[header] = 'linkedin'
+            else if (lower.includes('personalization') || lower.includes('icebreaker') || lower.includes('intro')) initialMapping[header] = 'personalization'
+            else initialMapping[header] = 'custom' // Default to custom for better data retention
         })
         setColumnMapping(initialMapping)
     }
@@ -175,12 +190,18 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                         const targetField = columnMapping[header]
                         const value = row[header]
 
+                        // Core fields stored directly in Lead model
                         if (targetField === 'email') lead.email = value
                         else if (targetField === 'firstName') lead.firstName = value
                         else if (targetField === 'lastName') lead.lastName = value
                         else if (targetField === 'company') lead.company = value
-                        else if (targetField === 'custom') {
-                            lead.customFields[header] = value
+                        // All other mapped fields go to customFields for use in sequences
+                        else if (targetField !== 'skip' && value) {
+                            // Store with both the mapped type (for {{jobTitle}}) and original header (for {{Job Title}})
+                            lead.customFields[targetField] = value
+                            if (header !== targetField) {
+                                lead.customFields[header] = value
+                            }
                         }
                     })
 
@@ -224,16 +245,16 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
         setUploading(true)
         setError(null)
 
-        if (file) {
-            // Re-parse file if we have one (CSV flow)
+        if (parsedData.length > 0) {
+            // Use already-parsed data for INSTANT upload (no re-parsing delay)
+            processAndUpload(parsedData)
+        } else if (file) {
+            // Fallback: Re-parse only if somehow no parsed data exists
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
-                complete: (results) => processAndUpload(results.data)
+                complete: (results) => processAndUpload(results.data as any[])
             })
-        } else if (parsedData.length > 0) {
-            // Use pre-parsed data (Sheets flow)
-            processAndUpload(parsedData)
         }
     }
 
@@ -266,10 +287,9 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
             const headers = Object.keys(data[0])
             setCsvHeaders(headers)
 
-            // Set Sample
             const firstRow = data[0]
-            const sample = headers.map(h => String(firstRow[h] || ''))
-            setFirstRowSample(sample)
+            // Store first 4 rows for sample display
+            setSampleRows(data.slice(0, 4))
 
             // Auto-guess mapping using centralized logic
             autoMap(headers)
@@ -331,9 +351,8 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
         setError(null)
         setSheetsUrl('')
         setManualEmails('')
-        // Clear all parsing state to prevent stale data
         setCsvHeaders([])
-        setFirstRowSample([])
+        setSampleRows([])
         setParsedData([])
         setColumnMapping({})
         onOpenChange(false)
@@ -485,15 +504,29 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                                 </SelectTrigger>
                                                 <SelectContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
                                                     {SYSTEM_FIELDS.map(f => (
-                                                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                                                        <SelectItem key={f.value} value={f.value}>
+                                                            <span className="flex items-center gap-2">
+                                                                <span>{f.icon}</span>
+                                                                <span>{f.label}</span>
+                                                            </span>
+                                                        </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="col-span-5 text-sm font-medium text-[#c084fc] pt-2.5 overflow-hidden text-ellipsis whitespace-nowrap">
-                                            {firstRowSample[idx]}
-                                            {/* Mocking more lines for "Samples" look if needed, but single line is cleaner for table */}
-                                            {/* <div className="text-blue-500 text-xs mt-1">Second sample...</div> */}
+                                        <div className="col-span-5 pt-2.5 space-y-1">
+                                            {/* Show up to 4 sample values per column */}
+                                            {sampleRows.slice(0, 4).map((row, rowIdx) => {
+                                                const value = String(row[header] ?? '')
+                                                return value ? (
+                                                    <div
+                                                        key={rowIdx}
+                                                        className={`text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap ${rowIdx % 2 === 0 ? 'text-white' : 'text-[#c084fc]'}`}
+                                                    >
+                                                        {value}
+                                                    </div>
+                                                ) : null
+                                            })}
                                         </div>
                                     </div>
                                 ))}

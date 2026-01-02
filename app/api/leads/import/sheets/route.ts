@@ -64,7 +64,8 @@ export async function POST(request: Request) {
         const { data, meta } = Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
-            transformHeader: (h) => h.toLowerCase().trim()
+            // Keep original case for frontend column display (only trim whitespace)
+            transformHeader: (h) => h.trim()
         })
 
         console.log('Parsed sheet data:', {

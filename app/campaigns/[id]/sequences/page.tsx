@@ -17,7 +17,10 @@ import {
     Eraser,
     Link as LinkIcon,
     Code,
-    Copy
+    Copy,
+    X,
+    ToggleLeft,
+    ToggleRight
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
@@ -45,6 +48,7 @@ import { EmailPreviewModal } from "@/components/campaigns/EmailPreviewModal"
 interface SequenceVariant {
     subject: string
     body: string
+    enabled?: boolean // For toggle on/off
 }
 
 interface SequenceStep {
@@ -166,10 +170,13 @@ export default function SequencesPage() {
     }
 
     const removeStep = (index: number) => {
-        if (steps.length === 1) return // Don't delete last step maybe? Or allow empty.
         const newSteps = steps.filter((_, i) => i !== index).map((s, i) => ({ ...s, stepNumber: i + 1 }))
         setSteps(newSteps)
-        if (activeStepIndex >= newSteps.length) setActiveStepIndex(newSteps.length - 1)
+        if (newSteps.length === 0) {
+            setActiveStepIndex(-1) // No step selected
+        } else if (activeStepIndex >= newSteps.length) {
+            setActiveStepIndex(newSteps.length - 1)
+        }
     }
 
     const [deleteStepId, setDeleteStepId] = useState<number | null>(null)
@@ -201,8 +208,30 @@ export default function SequencesPage() {
 
     const addVariant = (stepIndex: number) => {
         const newSteps = [...steps]
-        newSteps[stepIndex].variants.push({ subject: '', body: '' })
+        newSteps[stepIndex].variants.push({ subject: '', body: '', enabled: true })
         newSteps[stepIndex].activeVariant = newSteps[stepIndex].variants.length - 1
+        setSteps(newSteps)
+    }
+
+    const removeVariant = (stepIndex: number, variantIndex: number) => {
+        const newSteps = [...steps]
+        if (newSteps[stepIndex].variants.length <= 1) {
+            toast({ title: "Cannot Delete", description: "Step must have at least one variant", variant: "destructive" })
+            return
+        }
+        newSteps[stepIndex].variants = newSteps[stepIndex].variants.filter((_, i) => i !== variantIndex)
+        // Reset active variant if needed
+        if ((newSteps[stepIndex].activeVariant || 0) >= newSteps[stepIndex].variants.length) {
+            newSteps[stepIndex].activeVariant = 0
+        }
+        setSteps(newSteps)
+        toast({ title: "Variant Removed" })
+    }
+
+    const toggleVariant = (stepIndex: number, variantIndex: number) => {
+        const newSteps = [...steps]
+        const variant = newSteps[stepIndex].variants[variantIndex]
+        variant.enabled = variant.enabled === false ? true : false // Toggle
         setSteps(newSteps)
     }
 
@@ -296,12 +325,70 @@ export default function SequencesPage() {
                             </div>
                         </div>
 
-                        {/* Subject Preview Box */}
-                        <div className="bg-[#1a1a1a] rounded-lg p-3 mb-3 border border-[#2a2a2a]">
-                            <p className="text-xs text-gray-400 truncate">
-                                {step.variants[0].subject || <span className="italic opacity-50">No subject</span>}
-                            </p>
-                        </div>
+                        {/* Variant Tabs - Show when multiple variants */}
+                        {step.variants.length > 1 ? (
+                            <div className="space-y-2 mb-3">
+                                {step.variants.map((variant, vIdx) => (
+                                    <div
+                                        key={vIdx}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const newSteps = [...steps];
+                                            newSteps[index].activeVariant = vIdx;
+                                            setSteps(newSteps);
+                                        }}
+                                        className={cn(
+                                            "flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all group",
+                                            step.activeVariant === vIdx
+                                                ? "bg-blue-600/20 border border-blue-600"
+                                                : "bg-[#1a1a1a] border border-[#2a2a2a] hover:border-[#333]",
+                                            variant.enabled === false && "opacity-50"
+                                        )}
+                                    >
+                                        {/* Letter Badge */}
+                                        <div className={cn(
+                                            "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold",
+                                            step.activeVariant === vIdx ? "bg-blue-600 text-white" : "bg-[#333] text-gray-400"
+                                        )}>
+                                            {String.fromCharCode(65 + vIdx)}
+                                        </div>
+
+                                        {/* Subject Preview */}
+                                        <span className="flex-1 text-xs text-gray-300 truncate">
+                                            {variant.subject || `Subject ${String.fromCharCode(65 + vIdx)}`}
+                                        </span>
+
+                                        {/* Toggle On/Off */}
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); toggleVariant(index, vIdx); }}
+                                            className="text-gray-500 hover:text-white transition-colors"
+                                            title={variant.enabled === false ? "Enable variant" : "Disable variant"}
+                                        >
+                                            {variant.enabled === false
+                                                ? <ToggleLeft className="h-4 w-4" />
+                                                : <ToggleRight className="h-4 w-4 text-blue-500" />
+                                            }
+                                        </button>
+
+                                        {/* Delete Button */}
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); removeVariant(index, vIdx); }}
+                                            className="text-gray-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                            title="Delete variant"
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            /* Single variant - show simple subject preview */
+                            <div className="bg-[#1a1a1a] rounded-lg p-3 mb-3 border border-[#2a2a2a]">
+                                <p className="text-xs text-gray-400 truncate">
+                                    {step.variants[0].subject || <span className="italic opacity-50">No subject</span>}
+                                </p>
+                            </div>
+                        )}
 
                         {/* + Add Variant Button */}
                         <div className="flex justify-center mb-4">
@@ -329,8 +416,7 @@ export default function SequencesPage() {
                             </div>
                         )}
                     </div>
-                ))
-                }
+                ))}
 
                 {/* Big Add Step Button */}
                 <Button
@@ -651,7 +737,7 @@ export default function SequencesPage() {
                         </>
                     )
                 }
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }

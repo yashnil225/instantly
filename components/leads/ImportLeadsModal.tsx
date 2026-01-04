@@ -96,14 +96,14 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
 
                     if (json.length > 0) {
                         const headers = json[0].map(h => String(h || '').trim()).filter(h => h)
-                        
+
                         if (headers.length === 0) {
                             setError('No column headers found in the first row of the file.')
                             return
                         }
-                        
+
                         setCsvHeaders(headers)
-                        
+
                         if (json.length > 1) {
                             // Store first 4 rows for sample display
                             setSampleRows(json.slice(1, 5).map(row => {
@@ -140,7 +140,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
             reader.onload = (e) => {
                 try {
                     const csvText = e.target?.result as string
-                    
+
                     if (!csvText || csvText.trim().length === 0) {
                         setError('The file appears to be empty.')
                         return
@@ -155,7 +155,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
 
                             // Get headers from meta.fields (preferred) or from first data row
                             let headers = results.meta.fields || []
-                            
+
                             // Filter out empty headers
                             headers = headers.filter(h => h && h.trim().length > 0)
 
@@ -191,7 +191,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                             autoMap(headers)
                             setStep('mapping')
                         },
-                        error: (err) => {
+                        error: (err: Error) => {
                             console.error('PapaParse error:', err)
                             setError('Failed to parse CSV file: ' + err.message)
                         }
@@ -542,6 +542,30 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                         {/* Scrollable Mapping List */}
                         <div className="flex-1 overflow-y-auto px-8 min-h-0">
                             <div className="space-y-4 pb-4">
+                                {/* Fallback: if csvHeaders is empty but we have parsedData, extract headers from it */}
+                                {csvHeaders.length === 0 && parsedData.length > 0 && (() => {
+                                    // Try to extract headers from first parsed row
+                                    const extractedHeaders = Object.keys(parsedData[0] || {}).filter(k => k && k.trim().length > 0)
+                                    if (extractedHeaders.length > 0) {
+                                        // Side effect: update csvHeaders state
+                                        setTimeout(() => {
+                                            setCsvHeaders(extractedHeaders)
+                                            autoMap(extractedHeaders)
+                                        }, 0)
+                                    }
+                                    return null
+                                })()}
+
+                                {csvHeaders.length === 0 && parsedData.length === 0 && (
+                                    <div className="text-center py-8 text-gray-400">
+                                        <div className="text-yellow-500 mb-2">⚠️ No columns detected</div>
+                                        <p className="text-sm mb-4">Could not detect columns from your file. Please ensure your CSV has a header row.</p>
+                                        <Button variant="outline" onClick={() => { setStep('csv'); setFile(null) }} className="border-[#333] text-white">
+                                            Try Different File
+                                        </Button>
+                                    </div>
+                                )}
+
                                 {csvHeaders.map((header, idx) => (
                                     <div key={idx} className="grid grid-cols-12 gap-8 items-start py-2 border-b border-[#1a1a1a] last:border-0">
                                         <div className="col-span-3 text-sm font-medium text-gray-300 pt-2.5 break-words">{header}</div>

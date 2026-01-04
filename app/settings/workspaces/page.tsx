@@ -1,11 +1,19 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Settings, Trash2, DollarSign, Building2 } from "lucide-react"
+import { Plus, Settings, Trash2, DollarSign, Building2, Loader2, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from "@/components/ui/dialog"
 
 export default function WorkspacesPage() {
     const [workspaces, setWorkspaces] = useState<any[]>([])
@@ -14,6 +22,18 @@ export default function WorkspacesPage() {
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editValue, setEditValue] = useState<string>("")
     const { toast } = useToast()
+
+    // Rename dialog state
+    const [renameDialogOpen, setRenameDialogOpen] = useState(false)
+    const [renameWorkspace, setRenameWorkspace] = useState<any>(null)
+    const [renameInput, setRenameInput] = useState("")
+    const [renaming, setRenaming] = useState(false)
+
+    // Delete dialog state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [deleteWorkspace, setDeleteWorkspace] = useState<any>(null)
+    const [deleteConfirmInput, setDeleteConfirmInput] = useState("")
+    const [deleting, setDeleting] = useState(false)
 
     useEffect(() => {
         fetchWorkspaces()
@@ -68,41 +88,60 @@ export default function WorkspacesPage() {
         }
     }
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this workspace?")) return
+    const openRenameDialog = (ws: any) => {
+        setRenameWorkspace(ws)
+        setRenameInput(ws.name)
+        setRenameDialogOpen(true)
+    }
 
+    const handleRename = async () => {
+        if (!renameInput.trim() || !renameWorkspace) return
+
+        setRenaming(true)
         try {
-            const res = await fetch(`/api/workspaces/${id}`, {
+            const res = await fetch(`/api/workspaces/${renameWorkspace.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: renameInput }),
+            })
+            if (res.ok) {
+                setWorkspaces(workspaces.map(w => w.id === renameWorkspace.id ? { ...w, name: renameInput } : w))
+                setRenameDialogOpen(false)
+                toast({ title: "Success", description: "Workspace renamed" })
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Rename failed", variant: "destructive" })
+        } finally {
+            setRenaming(false)
+        }
+    }
+
+    const openDeleteDialog = (ws: any) => {
+        setDeleteWorkspace(ws)
+        setDeleteConfirmInput("")
+        setDeleteDialogOpen(true)
+    }
+
+    const handleDelete = async () => {
+        if (!deleteWorkspace || deleteConfirmInput !== deleteWorkspace.name) return
+
+        setDeleting(true)
+        try {
+            const res = await fetch(`/api/workspaces/${deleteWorkspace.id}`, {
                 method: "DELETE",
             })
             if (res.ok) {
-                setWorkspaces(workspaces.filter(w => w.id !== id))
-                toast({ title: "Success", description: "Workspace deleted" })
+                setWorkspaces(workspaces.filter(w => w.id !== deleteWorkspace.id))
+                setDeleteDialogOpen(false)
+                toast({ title: "Success", description: "Workspace deleted along with its campaigns and leads" })
             } else {
                 const data = await res.json()
                 toast({ title: "Error", description: data.error || "Delete failed", variant: "destructive" })
             }
         } catch (error) {
             toast({ title: "Error", description: "Delete failed", variant: "destructive" })
-        }
-    }
-
-    const handleRename = async (id: string, newName: string) => {
-        if (!newName.trim()) return
-
-        try {
-            const res = await fetch(`/api/workspaces/${id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: newName }),
-            })
-            if (res.ok) {
-                setWorkspaces(workspaces.map(w => w.id === id ? { ...w, name: newName } : w))
-                setEditingId(null)
-                toast({ title: "Success", description: "Workspace renamed" })
-            }
-        } catch (error) {
-            toast({ title: "Error", description: "Rename failed", variant: "destructive" })
+        } finally {
+            setDeleting(false)
         }
     }
 
@@ -169,17 +208,19 @@ export default function WorkspacesPage() {
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors" onClick={() => {
-                                            const newName = prompt("Enter new workspace name", ws.name)
-                                            if (newName) handleRename(ws.id, newName)
-                                        }}>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+                                            onClick={() => openRenameDialog(ws)}
+                                        >
                                             <Settings className="h-4 w-4" />
                                         </Button>
                                         <Button
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
-                                            onClick={() => handleDelete(ws.id)}
+                                            onClick={() => openDeleteDialog(ws)}
                                             disabled={ws.isDefault}
                                         >
                                             <Trash2 className="h-4 w-4" />
@@ -233,6 +274,84 @@ export default function WorkspacesPage() {
                     </div>
                 )}
             </div>
+
+            {/* Rename Dialog */}
+            <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+                <DialogContent className="bg-card border-border">
+                    <DialogHeader>
+                        <DialogTitle className="text-foreground">Rename Workspace</DialogTitle>
+                        <DialogDescription className="text-muted-foreground">
+                            Enter a new name for "{renameWorkspace?.name}"
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Input
+                            value={renameInput}
+                            onChange={(e) => setRenameInput(e.target.value)}
+                            placeholder="New workspace name"
+                            className="bg-background border-border"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleRename()
+                            }}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleRename} disabled={!renameInput.trim() || renaming}>
+                            {renaming ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Rename
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent className="bg-card border-border">
+                    <DialogHeader>
+                        <DialogTitle className="text-destructive flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5" />
+                            Delete Workspace
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground space-y-3 pt-2">
+                            <p>
+                                Are you sure you want to delete <strong className="text-foreground">"{deleteWorkspace?.name}"</strong>?
+                            </p>
+                            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm text-destructive">
+                                <strong>Warning:</strong> This will permanently delete:
+                                <ul className="list-disc ml-5 mt-1">
+                                    <li>All campaigns in this workspace</li>
+                                    <li>All leads associated with those campaigns</li>
+                                    <li>All email history and analytics</li>
+                                </ul>
+                            </div>
+                            <p className="text-sm pt-2">
+                                Type <strong className="text-foreground font-mono">{deleteWorkspace?.name}</strong> to confirm:
+                            </p>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-2">
+                        <Input
+                            value={deleteConfirmInput}
+                            onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                            placeholder="Type workspace name to confirm"
+                            className="bg-background border-border"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleDelete}
+                            disabled={deleteConfirmInput !== deleteWorkspace?.name || deleting}
+                        >
+                            {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Delete Permanently
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
+

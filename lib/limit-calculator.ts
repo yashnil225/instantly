@@ -56,7 +56,7 @@ export function validateCampaignLimits(
     accounts: EmailAccount[],
     campaignDailyLimit?: number
 ): LimitValidation {
-    const activeAccounts = accounts.filter(acc => acc.status === 'Active')
+    const activeAccounts = accounts.filter(acc => acc.status?.toLowerCase() === 'active')
     const accountCapacity = calculateDailyCapacity(activeAccounts)
 
     // Effective limit is the minimum of account capacity and campaign limit

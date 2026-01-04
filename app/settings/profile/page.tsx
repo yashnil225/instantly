@@ -1,11 +1,28 @@
 import { auth } from "@/auth"
 import { ProfileSection } from "@/components/settings/ProfileSection"
 import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
 
 export default async function ProfilePage() {
     const session = await auth()
 
-    if (!session?.user) {
+    if (!session?.user?.id) {
+        redirect("/login")
+    }
+
+    // Fetch user with plan info
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            plan: true,
+            planExpiresAt: true,
+        }
+    })
+
+    if (!user) {
         redirect("/login")
     }
 
@@ -16,7 +33,8 @@ export default async function ProfilePage() {
                 <p className="text-gray-400 text-sm">Manage your personal information and security settings.</p>
             </div>
 
-            <ProfileSection user={session.user} />
+            <ProfileSection user={user} />
         </div>
     )
 }
+

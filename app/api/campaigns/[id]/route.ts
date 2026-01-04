@@ -38,6 +38,9 @@ export async function GET(
             },
             campaignWorkspaces: {
                 include: { workspace: true }
+            },
+            campaignAccounts: {
+                include: { emailAccount: true }
             }
         }
     })

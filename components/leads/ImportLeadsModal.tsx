@@ -81,83 +81,134 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
 
     const processFile = (file: File) => {
         setFile(file)
+        setError(null)
         const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
 
         if (isExcel) {
             const reader = new FileReader()
             reader.onload = (e) => {
-                const data = e.target?.result
-                const workbook = XLSX.read(data, { type: 'binary' })
-                const sheetName = workbook.SheetNames[0]
-                const sheet = workbook.Sheets[sheetName]
-                const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][]
+                try {
+                    const data = e.target?.result
+                    const workbook = XLSX.read(data, { type: 'binary' })
+                    const sheetName = workbook.SheetNames[0]
+                    const sheet = workbook.Sheets[sheetName]
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][]
 
-                if (json.length > 0) {
-                    const headers = json[0].map(h => String(h))
-                    setCsvHeaders(headers)
-                    if (json.length > 1) {
-                        // Store first 4 rows for sample display
-                        setSampleRows(json.slice(1, 5).map(row => {
+                    if (json.length > 0) {
+                        const headers = json[0].map(h => String(h || '').trim()).filter(h => h)
+                        
+                        if (headers.length === 0) {
+                            setError('No column headers found in the first row of the file.')
+                            return
+                        }
+                        
+                        setCsvHeaders(headers)
+                        
+                        if (json.length > 1) {
+                            // Store first 4 rows for sample display
+                            setSampleRows(json.slice(1, 5).map(row => {
+                                const obj: any = {}
+                                headers.forEach((h, i) => obj[h] = row[i])
+                                return obj
+                            }))
+                        }
+
+                        // Convert to object array for compatibility
+                        const rows = json.slice(1).map(row => {
                             const obj: any = {}
                             headers.forEach((h, i) => obj[h] = row[i])
                             return obj
-                        }))
+                        })
+                        setParsedData(rows)
+                        autoMap(headers)
+                        setStep('mapping')
+                    } else {
+                        setError('The file appears to be empty.')
                     }
-
-                    // Convert to object array for compatibility
-                    const rows = json.slice(1).map(row => {
-                        const obj: any = {}
-                        headers.forEach((h, i) => obj[h] = row[i])
-                        return obj
-                    })
-                    setParsedData(rows)
-                    autoMap(headers)
-                    setStep('mapping')
+                } catch (err: any) {
+                    console.error('Excel parsing error:', err)
+                    setError('Failed to parse Excel file: ' + (err?.message || 'Unknown error'))
                 }
+            }
+            reader.onerror = () => {
+                setError('Failed to read the file. Please try again.')
             }
             reader.readAsBinaryString(file)
         } else {
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                // Parse ALL rows for accurate count (removed preview: 5 limit)
-                complete: (results) => {
-                    console.log('PapaParse results:', results)
-
-                    // Try to get headers from meta.fields first, then fall back to first row keys
-                    let headers = results.meta.fields || []
-
-                    if (headers.length === 0 && results.data.length > 0) {
-                        // Fallback: extract keys from first data row
-                        headers = Object.keys(results.data[0] as any)
-                    }
-
-                    if (headers.length === 0) {
-                        console.error('No headers detected in CSV')
-                        setError('Could not detect columns in this file. Please ensure your CSV has a header row.')
+            // CSV file - try reading with proper encoding
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                try {
+                    const csvText = e.target?.result as string
+                    
+                    if (!csvText || csvText.trim().length === 0) {
+                        setError('The file appears to be empty.')
                         return
                     }
 
-                    setCsvHeaders(headers)
+                    // Parse CSV using PapaParse
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            console.log('PapaParse results:', results)
 
-                    if (results.data.length > 0) {
-                        // Store first 4 rows for sample display
-                        setSampleRows((results.data as any[]).slice(0, 4))
-                    }
+                            // Get headers from meta.fields (preferred) or from first data row
+                            let headers = results.meta.fields || []
+                            
+                            // Filter out empty headers
+                            headers = headers.filter(h => h && h.trim().length > 0)
 
-                    // Also store parsed data for the row count display
-                    setParsedData(results.data as any[])
+                            if (headers.length === 0 && results.data.length > 0) {
+                                // Fallback: extract keys from first data row
+                                headers = Object.keys(results.data[0] as any).filter(k => k && k.trim().length > 0)
+                            }
 
-                    autoMap(headers)
-                    setStep('mapping')
-                },
-                error: (err) => {
-                    console.error('PapaParse error:', err)
-                    setError('Failed to parse CSV file: ' + err.message)
+                            if (headers.length === 0) {
+                                console.error('No headers detected in CSV')
+                                setError('Could not detect columns in this file. Please ensure your CSV has a header row with column names.')
+                                return
+                            }
+
+                            console.log('Detected headers:', headers)
+                            setCsvHeaders(headers)
+
+                            // Filter out empty rows and store sample data
+                            const validData = (results.data as any[]).filter(row => {
+                                // Check if row has at least one non-empty value
+                                return Object.values(row).some(v => v !== null && v !== undefined && String(v).trim().length > 0)
+                            })
+
+                            if (validData.length > 0) {
+                                // Store first 4 rows for sample display
+                                setSampleRows(validData.slice(0, 4))
+                            }
+
+                            // Store all parsed data for upload
+                            setParsedData(validData)
+                            console.log('Parsed data count:', validData.length)
+
+                            autoMap(headers)
+                            setStep('mapping')
+                        },
+                        error: (err) => {
+                            console.error('PapaParse error:', err)
+                            setError('Failed to parse CSV file: ' + err.message)
+                        }
+                    })
+                } catch (err: any) {
+                    console.error('CSV reading error:', err)
+                    setError('Failed to read CSV file: ' + (err?.message || 'Unknown error'))
                 }
-            })
+            }
+            reader.onerror = () => {
+                setError('Failed to read the file. Please try again.')
+            }
+            // Read as text with UTF-8 encoding
+            reader.readAsText(file, 'UTF-8')
         }
     }
+
 
     const autoMap = (headers: string[]) => {
         const initialMapping: Record<string, string> = {}

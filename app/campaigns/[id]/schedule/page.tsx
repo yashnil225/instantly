@@ -37,6 +37,7 @@ export default function SchedulePage() {
     const [saving, setSaving] = useState(false)
 
     // Schedule State
+    const [scheduleName, setScheduleName] = useState("Main Schedule")
     const [startDate, setStartDate] = useState<string | null>(null)
     const [endDate, setEndDate] = useState<string | null>(null)
     const [selectedDays, setSelectedDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri'])
@@ -55,6 +56,7 @@ export default function SchedulePage() {
                 const data = await res.json()
                 setStartDate(data.startDate)
                 setEndDate(data.endDate)
+                if (data.scheduleName) setScheduleName(data.scheduleName)
                 if (data.startTime) setStartTime(data.startTime)
                 if (data.endTime) setEndTime(data.endTime)
                 if (data.timezone) setTimezone(data.timezone)
@@ -74,6 +76,7 @@ export default function SchedulePage() {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    scheduleName,
                     startDate: startDate ? new Date(startDate).toISOString() : null,
                     endDate: endDate ? new Date(endDate).toISOString() : null,
                     startTime,
@@ -185,7 +188,9 @@ export default function SchedulePage() {
                     <h3 className="text-gray-400 font-medium">Schedule Name</h3>
                     <Input
                         className="bg-[#111111] border-[#222] text-white"
-                        defaultValue="Main Schedule"
+                        value={scheduleName}
+                        onChange={(e) => setScheduleName(e.target.value)}
+                        placeholder="Enter schedule name"
                     />
                 </div>
 

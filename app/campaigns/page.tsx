@@ -143,7 +143,7 @@ function CampaignsPage() {
 
     // Workspace state
     const [workspaces, setWorkspaces] = useState<any[]>([])
-    const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
+    const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null) // null = show all (Organization)
     const [workspaceSearch, setWorkspaceSearch] = useState("")
 
     useEffect(() => {
@@ -168,7 +168,7 @@ function CampaignsPage() {
         fetchCampaigns()
         const interval = setInterval(fetchCampaigns, 10000)
         return () => clearInterval(interval)
-    }, [currentWorkspace, workspaces])
+    }, [currentWorkspaceId, workspaces])
 
     const loadWorkspaces = async () => {
         try {
@@ -176,9 +176,10 @@ function CampaignsPage() {
             if (res.ok) {
                 const data = await res.json()
                 setWorkspaces(data)
-                const savedWorkspace = localStorage.getItem('activeWorkspace')
-                if (savedWorkspace) {
-                    setCurrentWorkspace(savedWorkspace)
+                // Restore saved workspace ID
+                const savedWorkspaceId = localStorage.getItem('activeWorkspaceId')
+                if (savedWorkspaceId && data.some((w: any) => w.id === savedWorkspaceId)) {
+                    setCurrentWorkspaceId(savedWorkspaceId)
                 }
             }
         } catch (error) {
@@ -186,9 +187,9 @@ function CampaignsPage() {
         }
     }
 
-    const switchWorkspace = (workspaceName: string) => {
-        setCurrentWorkspace(workspaceName)
-        localStorage.setItem('activeWorkspace', workspaceName)
+    const switchWorkspace = (workspaceId: string | null) => {
+        setCurrentWorkspaceId(workspaceId)
+        localStorage.setItem('activeWorkspaceId', workspaceId || '')
     }
 
     const filteredWorkspaces = workspaces.filter((w: any) =>
@@ -197,12 +198,10 @@ function CampaignsPage() {
 
     const fetchCampaigns = async () => {
         try {
-            const workspace = workspaces.find((w: any) => w.name === currentWorkspace)
-            const workspaceId = workspace?.id || 'all'
-
-            const url = workspaceId === 'all'
-                ? '/api/campaigns'
-                : `/api/campaigns?workspaceId=${workspaceId}`
+            // Use workspace ID directly - null means show all
+            const url = currentWorkspaceId
+                ? `/api/campaigns?workspaceId=${currentWorkspaceId}`
+                : '/api/campaigns'
 
             const res = await fetch(url)
             if (res.ok) {
@@ -224,7 +223,10 @@ function CampaignsPage() {
             const res = await fetch('/api/campaigns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newCampaignName })
+                body: JSON.stringify({
+                    name: newCampaignName,
+                    workspaceIds: currentWorkspaceId ? [currentWorkspaceId] : []
+                })
             })
 
             if (res.ok) {
@@ -575,7 +577,7 @@ function CampaignsPage() {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="border-border bg-secondary text-foreground hover:text-foreground hover:bg-muted gap-2">
                                     <Logo variant="icon" size="sm" />
-                                    {currentWorkspace}
+                                    {currentWorkspaceId ? (workspaces.find(w => w.id === currentWorkspaceId)?.name || 'Workspace') : 'My Organization'}
                                     <ChevronDown className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -589,13 +591,24 @@ function CampaignsPage() {
                                     />
                                 </div>
                                 <DropdownMenuSeparator className="bg-muted" />
-                                {filteredWorkspaces.map((workspace) => (
+                                {/* Organization option (show all) */}
+                                <DropdownMenuItem
+                                    onClick={() => switchWorkspace(null)}
+                                    className={cn(
+                                        "cursor-pointer focus:bg-muted focus:text-foreground",
+                                        currentWorkspaceId === null && "bg-blue-500/20 text-blue-400"
+                                    )}
+                                >
+                                    <Logo variant="icon" size="sm" className="mr-2" />
+                                    My Organization
+                                </DropdownMenuItem>
+                                {filteredWorkspaces.filter(w => !w.isDefault).map((workspace) => (
                                     <DropdownMenuItem
-                                        key={workspace.id || workspace.name}
-                                        onClick={() => switchWorkspace(workspace.name)}
+                                        key={workspace.id}
+                                        onClick={() => switchWorkspace(workspace.id)}
                                         className={cn(
                                             "cursor-pointer focus:bg-muted focus:text-foreground",
-                                            currentWorkspace === workspace.name && "bg-blue-500/20 text-blue-400"
+                                            currentWorkspaceId === workspace.id && "bg-blue-500/20 text-blue-400"
                                         )}
                                     >
                                         <Logo variant="icon" size="sm" className="mr-2" />

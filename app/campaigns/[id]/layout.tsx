@@ -118,10 +118,17 @@ export default function CampaignLayout({
     const checkLimitsBeforeLaunch = async () => {
         setUpdating(true)
         try {
-            // Load accounts
-            const accountsRes = await fetch('/api/accounts')
-            const accountsData = await accountsRes.json()
-            const accounts = Array.isArray(accountsData.accounts) ? accountsData.accounts : []
+            // Load campaign with its assigned accounts
+            const campaignRes = await fetch(`/api/campaigns/${campaignId}`)
+            const campaignData = await campaignRes.json()
+
+            // Extract the email accounts assigned to this campaign
+            let accounts: any[] = []
+            if (campaignData.campaignAccounts && Array.isArray(campaignData.campaignAccounts)) {
+                accounts = campaignData.campaignAccounts
+                    .filter((ca: any) => ca.emailAccount)
+                    .map((ca: any) => ca.emailAccount)
+            }
 
             // Load leads count
             const leadsRes = await fetch(`/api/campaigns/${campaignId}/leads`)
@@ -133,7 +140,7 @@ export default function CampaignLayout({
             const validation = validateCampaignLimits(
                 totalLeads,
                 accounts,
-                (campaign as any).dailyLimit
+                (campaignData.dailyLimit ?? campaign?.dailyLimit) || undefined
             )
 
             // If no accounts or exceeds limits, show warning

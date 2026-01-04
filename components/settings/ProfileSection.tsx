@@ -4,11 +4,17 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
-import { User } from "next-auth"
-import { Loader2 } from "lucide-react"
+import { Loader2, Crown, Zap } from "lucide-react"
+import Link from "next/link"
 
 interface ProfileSectionProps {
-    user: User & { name?: string | null, email?: string | null }
+    user: {
+        id: string
+        name?: string | null
+        email?: string | null
+        plan?: string | null
+        planExpiresAt?: Date | null
+    }
 }
 
 export function ProfileSection({ user }: ProfileSectionProps) {
@@ -44,8 +50,58 @@ export function ProfileSection({ user }: ProfileSectionProps) {
         }
     }
 
+    const getPlanInfo = (plan?: string | null) => {
+        switch (plan?.toLowerCase()) {
+            case 'growth':
+                return { label: 'Growth', color: 'bg-blue-600', icon: Zap }
+            case 'hypergrowth':
+                return { label: 'Hypergrowth', color: 'bg-purple-600', icon: Zap }
+            case 'lightspeed':
+                return { label: 'Light Speed', color: 'bg-gradient-to-r from-yellow-500 to-orange-500', icon: Crown }
+            case 'trial':
+            default:
+                return { label: 'Trial', color: 'bg-gray-600', icon: Zap }
+        }
+    }
+
+    const planInfo = getPlanInfo(user.plan)
+    const PlanIcon = planInfo.icon
+
     return (
         <div className="max-w-2xl space-y-8">
+            {/* Current Plan Section */}
+            <div className="space-y-4 bg-[#111] border border-[#2a2a2a] rounded-xl p-5">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${planInfo.color}`}>
+                            <PlanIcon className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-white font-semibold">Current Plan:</span>
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold text-white ${planInfo.color}`}>
+                                    {planInfo.label}
+                                </span>
+                            </div>
+                            {user.planExpiresAt && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Expires: {new Date(user.planExpiresAt).toLocaleDateString('en-US', {
+                                        month: 'long',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    })}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                    <Link href="/settings/billing">
+                        <Button variant="outline" size="sm" className="border-blue-600 text-blue-500 hover:bg-blue-600/10">
+                            {user.plan === 'trial' ? 'Upgrade Plan' : 'Manage Plan'}
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+
             <div className="space-y-4">
                 <div className="flex items-center gap-2 text-white font-medium">
                     <span className="p-1"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span>
@@ -119,3 +175,4 @@ export function ProfileSection({ user }: ProfileSectionProps) {
         </div>
     )
 }
+

@@ -14,18 +14,23 @@ export async function PATCH(
 
     try {
         const body = await request.json()
-        const { name } = body
+        const { name, opportunityValue } = body
 
-        if (!name) {
-            return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+        // Allow updating either name or opportunityValue or both
+        if (!name && opportunityValue === undefined) {
+            return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
         }
+
+        const updateData: any = {}
+        if (name) updateData.name = name
+        if (opportunityValue !== undefined) updateData.opportunityValue = parseFloat(opportunityValue)
 
         const workspace = await prisma.workspace.update({
             where: {
                 id: workspaceId,
-                userId: session.user.id // Only owner can rename
+                userId: session.user.id // Only owner can update
             },
-            data: { name }
+            data: updateData
         })
 
         return NextResponse.json(workspace)
@@ -48,23 +53,99 @@ export async function DELETE(
     try {
         // Find if it's the default workspace
         const workspace = await prisma.workspace.findUnique({
-            where: { id: workspaceId }
-        })
-
-        if (workspace?.isDefault) {
-            return NextResponse.json({ error: 'Cannot delete default workspace' }, { status: 400 })
-        }
-
-        await prisma.workspace.delete({
-            where: {
-                id: workspaceId,
-                userId: session.user.id // Only owner can delete
+            where: { id: workspaceId },
+            include: {
+                campaignWorkspaces: {
+                    include: {
+                        campaign: {
+                            include: {
+                                campaignWorkspaces: true // Get all workspaces this campaign belongs to
+                            }
+                        }
+                    }
+                }
             }
         })
 
-        return NextResponse.json({ success: true })
+        if (!workspace) {
+            return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
+        }
+
+        if (workspace.isDefault) {
+            return NextResponse.json({ error: 'Cannot delete default workspace' }, { status: 400 })
+        }
+
+        if (workspace.userId !== session.user.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // Find campaigns that ONLY belong to this workspace (not shared with others)
+        const exclusiveCampaignIds = workspace.campaignWorkspaces
+            .filter(cw => cw.campaign.campaignWorkspaces.length === 1)
+            .map(cw => cw.campaignId)
+
+        // Delete exclusive campaigns and their related data
+        if (exclusiveCampaignIds.length > 0) {
+            // Delete leads for these campaigns
+            await prisma.lead.deleteMany({
+                where: { campaignId: { in: exclusiveCampaignIds } }
+            })
+
+            // Delete campaign stats
+            await prisma.campaignStat.deleteMany({
+                where: { campaignId: { in: exclusiveCampaignIds } }
+            })
+
+            // Delete sequences and their variants
+            // First get sequence IDs for these campaigns
+            const sequences = await prisma.sequence.findMany({
+                where: { campaignId: { in: exclusiveCampaignIds } },
+                select: { id: true }
+            })
+            const sequenceIds = sequences.map(s => s.id)
+
+            if (sequenceIds.length > 0) {
+                await prisma.sequenceVariant.deleteMany({
+                    where: { sequenceId: { in: sequenceIds } }
+                })
+            }
+            await prisma.sequence.deleteMany({
+                where: { campaignId: { in: exclusiveCampaignIds } }
+            })
+
+            // Delete campaign email accounts
+            await prisma.campaignEmailAccount.deleteMany({
+                where: { campaignId: { in: exclusiveCampaignIds } }
+            })
+
+            // Delete campaign workspace links
+            await prisma.campaignWorkspace.deleteMany({
+                where: { campaignId: { in: exclusiveCampaignIds } }
+            })
+
+            // Delete the campaigns themselves
+            await prisma.campaign.deleteMany({
+                where: { id: { in: exclusiveCampaignIds } }
+            })
+        }
+
+        // Delete workspace links for shared campaigns (they remain but lose this workspace)
+        await prisma.campaignWorkspace.deleteMany({
+            where: { workspaceId }
+        })
+
+        // Finally delete the workspace
+        await prisma.workspace.delete({
+            where: { id: workspaceId }
+        })
+
+        return NextResponse.json({
+            success: true,
+            deletedCampaigns: exclusiveCampaignIds.length
+        })
     } catch (error) {
         console.error("[WORKSPACE DELETE ERROR]:", error)
         return NextResponse.json({ error: 'Failed to delete workspace' }, { status: 500 })
     }
 }
+

@@ -18,6 +18,7 @@ export async function checkReplies() {
 
     for (const account of accounts) {
         checked++
+        let connection: any = null
         try {
             const config = {
                 imap: {
@@ -26,11 +27,11 @@ export async function checkReplies() {
                     host: account.imapHost!,
                     port: account.imapPort || 993,
                     tls: true,
-                    authTimeout: 10000 // Increased timeout
+                    authTimeout: 3000 // Reduced from 10000 to prevent Vercel timeouts
                 }
             }
 
-            const connection = await imaps.connect(config)
+            connection = await imaps.connect(config)
             await connection.openBox('INBOX')
 
             // Fetch UNSEEN messages
@@ -190,11 +191,19 @@ export async function checkReplies() {
                 }
             }
 
-            connection.end()
+            if (connection) {
+                await connection.end()
+            }
 
         } catch (error) {
             console.error(`IMAP Error for ${account.email}`, error)
             errors++
+        } finally {
+            if (connection && connection.state !== 'disconnected') {
+                try {
+                    connection.end();
+                } catch (e) { }
+            }
         }
     }
 

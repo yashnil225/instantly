@@ -4,6 +4,7 @@ import { checkReplies } from "@/lib/replies";
 import { processBatch } from "@/lib/sender";
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60; // Request up to 60s for background tasks (Pro plan)
 
 /**
  * Master Sync Endpoint (Self-Driving Automation)

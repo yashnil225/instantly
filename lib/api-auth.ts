@@ -8,16 +8,16 @@ import { checkRateLimit, RATE_LIMITS } from "./rate-limiting"
  */
 export async function validateApiKey() {
     const headersList = await headers()
+    let key = headersList.get("x-api-key")
+    
+    // Check Authorization header as fallback or primary
     const authHeader = headersList.get("authorization")
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return { user: null, error: "Unauthorized: Missing or invalid API key" }
+    if (!key && authHeader && authHeader.startsWith("Bearer ")) {
+        key = authHeader.split(" ")[1]
     }
 
-    const key = authHeader.split(" ")[1]
-
     if (!key) {
-        return { user: null, error: "Unauthorized: API key is empty" }
+        return { user: null, error: "Unauthorized: Missing or invalid API key" }
     }
 
     const apiKeyRecord = await prisma.apiKey.findUnique({

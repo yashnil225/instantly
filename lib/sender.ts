@@ -3,6 +3,7 @@ import { isCampaignScheduled } from './scheduler'
 import { dispatchWebhook } from './webhooks'
 import { calculateWarmupLimit } from './warmup'
 import nodemailer from 'nodemailer'
+import { AutomationFilter } from './replies'
 
 // Helper to rewrite links
 function injectTracking(html: string, eventId: string, baseUrl: string) {
@@ -27,15 +28,25 @@ function injectTracking(html: string, eventId: string, baseUrl: string) {
     return newHtml
 }
 
-export async function processBatch() {
+export async function processBatch(options: { filter?: AutomationFilter } = {}) {
+    const { filter } = options
     console.log("Starting batch processing...")
 
     // Base URL for tracking (assume localhost if not set)
     const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000"
 
-    // 1. Fetch Active Campaigns
+    // 1. Fetch Active Campaigns with FILTERS
+    const campaignWhere: any = { status: 'active' }
+
+    if (filter?.campaignId) {
+        campaignWhere.id = filter.campaignId
+    }
+    if (filter?.campaignName) {
+        campaignWhere.name = { contains: filter.campaignName }
+    }
+
     const campaigns = await prisma.campaign.findMany({
-        where: { status: 'active' },
+        where: campaignWhere,
         include: {
             campaignAccounts: {
                 include: { emailAccount: true }
@@ -79,6 +90,9 @@ export async function processBatch() {
         const availableAccounts = campaign.campaignAccounts
             .map(ca => ca.emailAccount)
             .filter(acc => {
+                // Filter by Email Account ID if specified
+                if (filter?.emailAccountId && acc.id !== filter.emailAccountId) return false
+
                 if (acc.status !== 'active') return false
 
                 // Check warmup mode
@@ -96,7 +110,7 @@ export async function processBatch() {
         // --- 4. Campaign Limit Check ---
         if (campaign.dailyLimit && campaign.sentCount >= campaign.dailyLimit) continue
 
-        // --- 5. Find Due Leads ---
+        // --- 5. Find Due Leads with FILTERS ---
         const excludedStatuses = ['unsubscribed', 'bounced', 'sequence_complete']
         if (campaign.stopOnReply) {
             excludedStatuses.push('replied')
@@ -104,23 +118,27 @@ export async function processBatch() {
 
         const now = new Date()
 
-        // Prioritize New Leads Logic:
-        // If prioritizeNewLeads is set, we want to fetch leads that have NO events (step 1) first.
-        // Prisma doesn't easily support mixed sort on relation count. 
-        // We'll fetch a mix and sort in memory, or split query. 
-        // Splitting query is safer for large datasets but for "take: 20" sorting in memory is fine if we fetch enough.
-        // Let's rely on standard query but maybe tweak ordering if needed in V2.
-        // For now, we'll keep standard query but might increase 'take' slightly to have room to sort.
+        const leadWhere: any = {
+            campaignId: campaign.id,
+            status: { notIn: excludedStatuses },
+            OR: [
+                { nextSendAt: null }, // Never sent before
+                { nextSendAt: { lte: now } } // Time to send next email
+            ]
+        }
+
+        // Apply Lead Status Filter
+        if (filter?.leadStatus) {
+            leadWhere.status = filter.leadStatus
+        }
+
+        // Apply Tag Filter
+        if (filter?.tag) {
+            leadWhere.tags = { some: { tag: { name: filter.tag } } }
+        }
 
         let candidateLeads = await prisma.lead.findMany({
-            where: {
-                campaignId: campaign.id,
-                status: { notIn: excludedStatuses },
-                OR: [
-                    { nextSendAt: null }, // Never sent before
-                    { nextSendAt: { lte: now } } // Time to send next email
-                ]
-            },
+            where: leadWhere,
             include: {
                 events: {
                     where: { type: 'sent' },
@@ -386,12 +404,7 @@ export async function processBatch() {
                 console.log(`Sent Step ${nextStepNumber} to ${lead.email} via ${account.email}`)
 
                 // Throttling with Custom Time Gap
-                const minGap = (settings.minTimeGap || 20) * 1000 // default 20s if not set (or use setting minutes?)
-                // Wait, minTimeGap in UI is "9 minutes". If it IS minutes, then * 60 * 1000.
-                // But default code was 20000ms (20s). "9 minutes" is huge for a loop delay.
-                // Usually "Time gap" in Instantly IS minutes if it says "minutes". 
-                // Let's assume the UI setting 'minTimeGap' is MINUTES.
-
+                const minGap = (settings.minTimeGap || 20) * 1000
                 let baseDelayMs = 2000 // default 2s for Hobby plan serverless compatibility
                 if (settings.minTimeGap) {
                     baseDelayMs = Math.min(parseInt(settings.minTimeGap) * 1000, 5000) // Cap at 5s in a loop
@@ -401,12 +414,6 @@ export async function processBatch() {
                 if (settings.randomTimeGap) {
                     randomDelayMs = Math.min(parseInt(settings.randomTimeGap) * 1000, 3000) // Cap at 3s
                 }
-
-                // If user accidentally sets HUGE gaps (e.g. 10 mins), this single thread will block for 10 mins per email.
-                // In a real sys, this is handled by a queue worker refetching. 
-                // Since this is a simple loop, if we wait 10 mins, the Cron job might overlap or timeout.
-                // However, for this implementation, we will honor the logic but cap it or just use it.
-                // Let's assume standard usage is small or the user knows what they are doing.
 
                 const delay = baseDelayMs + Math.floor(Math.random() * randomDelayMs)
                 console.log(`Waiting ${delay / 1000}s before next email...`)
@@ -428,8 +435,6 @@ export async function processBatch() {
         }
 
         // --- Campaign Auto-Completion Logic ---
-        // Check if there are ANY leads left that haven't reached a terminal status
-        // Terminal statuses: replied (if stop on reply is true), unsubscribed, bounced, sequence_complete
         const activeLeadsCount = await prisma.lead.count({
             where: {
                 campaignId: campaign.id,

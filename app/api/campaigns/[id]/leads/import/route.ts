@@ -34,7 +34,7 @@ export async function POST(
                 const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`
 
                 let response
-                // 1. Try with Auth token if available
+                // 1. Try with Auth token if available (For logged in UI users)
                 if ((session as any)?.accessToken) {
                     try {
                         response = await fetch(csvUrl, {
@@ -51,7 +51,7 @@ export async function POST(
                 }
 
                 if (!response.ok) {
-                    return NextResponse.json({ error: 'Could not access Google Sheet. Make sure it is public or you are logged in with access.' }, { status: 400 })
+                    return NextResponse.json({ error: 'Could not access Google Sheet. Make sure it is public OR you are logged in with access.' }, { status: 400 })
                 }
 
                 const csvText = await response.text()

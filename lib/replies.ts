@@ -1,17 +1,29 @@
 import { prisma } from '@/lib/prisma'
 import imaps from 'imap-simple'
 import { simpleParser } from 'mailparser'
-import { getCampaignKB } from './google-sheets'
-import { generateReply } from './ai-reply'
-import { sendEmail } from './mail-service'
 
-export async function checkReplies() {
+export interface AutomationFilter {
+    campaignId?: string;
+    campaignName?: string; // Partial match
+    emailAccountId?: string;
+    leadStatus?: string;
+    tag?: string;
+}
+
+export async function checkReplies(options: { filter?: AutomationFilter } = {}) {
     let checked = 0
     let detected = 0
     let errors = 0
+    const { filter } = options
+
+    // 1. Filter Email Accounts (if specified)
+    const accountWhere: any = { status: 'active' }
+    if (filter?.emailAccountId) {
+        accountWhere.id = filter.emailAccountId
+    }
 
     const accounts = await prisma.emailAccount.findMany({
-        where: { status: 'active' }
+        where: accountWhere
     })
 
     console.log(`Checking replies for ${accounts.length} accounts...`)
@@ -56,23 +68,40 @@ export async function checkReplies() {
                 if (!fromEmailMatch || !fromEmailMatch[0]) continue
                 const fromEmail = fromEmailMatch[0]
 
-                // Find matching Lead
+                // Find matching Lead with FILTERS
+                const leadWhere: any = {
+                    email: fromEmail,
+                }
+
+                // Default Status logic OR Filtered Status
+                if (filter?.leadStatus) {
+                    leadWhere.status = filter.leadStatus
+                } else {
+                    leadWhere.status = { in: ['contacted', 'new', 'replied'] }
+                }
+
+                // Campaign Filters
+                if (filter?.campaignId) {
+                    leadWhere.campaignId = filter.campaignId
+                }
+                if (filter?.campaignName) {
+                    leadWhere.campaign = { name: { contains: filter.campaignName } }
+                }
+
+                // Tag Filter
+                if (filter?.tag) {
+                    leadWhere.tags = { some: { tag: { name: filter.tag } } }
+                }
+
                 const lead = await prisma.lead.findFirst({
-                    where: {
-                        email: fromEmail,
-                        status: { in: ['contacted', 'new', 'replied'] } // Include replied to catch follow-ups
-                    }
+                    where: leadWhere,
+                    include: { campaign: true } // Need campaign data for name check if strict, but where clause handles it
                 })
 
                 if (lead) {
                     const subject = parsed.subject || 'No Subject'
                     const bodyText = parsed.text || ''
-                    const bodyHtml = parsed.html || ''
                     const snippet = bodyText.substring(0, 200)
-
-                    // Check if we already logged this reply? (deduplication)
-                    // Simple check: do we have a reply event from this lead in the last hour?
-                    // Better: check message-id if strictly needed. For V1 we accept duplicate checks if crons overlap (unlikely with 1 min gap).
 
                     // 0. Smart Detection (OOO / Bounce)
                     const oooRegex = /(out of office|auto-reply|automatic reply|away from email)/i
@@ -138,56 +167,6 @@ export async function checkReplies() {
 
                     detected++
                     console.log(`Detected reply from ${fromEmail}`)
-
-                    // --- AI AUTOREPLY INTEGRATION ---
-                    if (newStatus === 'replied' && !isOOO) {
-                        try {
-                            const kbData = await getCampaignKB(lead.campaignId)
-                            if (kbData && kbData.knowledgeBase) {
-                                console.log(`Triggering AI Autoreply for ${fromEmail}...`)
-                                const generatedReply = await generateReply({
-                                    knowledgeBase: kbData.knowledgeBase,
-                                    replyExamples: kbData.replyExamples,
-                                    incomingReply: bodyText || bodyHtml,
-                                    senderName: lead.firstName || fromEmail,
-                                    senderCompany: lead.company || '',
-                                    eaccountFirstName: account.firstName || 'Me'
-                                })
-
-                                if (generatedReply && generatedReply.trim() !== '') {
-                                    const info = await sendEmail({
-                                        account: account,
-                                        to: fromEmail,
-                                        subject: subject.startsWith('Re:') ? subject : `Re: ${subject}`,
-                                        html: generatedReply,
-                                        inReplyTo: parsed.messageId,
-                                        references: parsed.references ? `${parsed.references} ${parsed.messageId}` : parsed.messageId
-                                    })
-
-                                    const messageId = info.messageId.replace(/[<>]/g, '')
-
-                                    // Log Sent AI Reply
-                                    await prisma.sendingEvent.create({
-                                        data: {
-                                            type: 'sent',
-                                            campaignId: lead.campaignId,
-                                            leadId: lead.id,
-                                            emailAccountId: account.id,
-                                            messageId: messageId,
-                                            metadata: JSON.stringify({
-                                                isAiReply: true,
-                                                subject: `Re: ${subject}`,
-                                                originalMessageId: parsed.messageId
-                                            })
-                                        }
-                                    })
-                                    console.log(`AI Autoreply sent to ${fromEmail}`)
-                                }
-                            }
-                        } catch (aiError) {
-                            console.error(`AI Autoreply failed for ${fromEmail}:`, aiError)
-                        }
-                    }
                 }
             }
 

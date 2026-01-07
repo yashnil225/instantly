@@ -110,7 +110,11 @@ export async function DELETE(
         })
 
         return NextResponse.json({ success: true, deletedEmail: lead.email, blocked: true })
-    } catch (error) {
+    } catch (error: any) {
+        // Handle race condition where lead was already deleted
+        if (error.code === 'P2025') {
+            return NextResponse.json({ success: true, message: 'Lead already deleted' })
+        }
         console.error('Failed to delete lead:', error)
         return NextResponse.json({ error: 'Failed to delete lead' }, { status: 500 })
     }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,10 +20,13 @@ import {
     Copy,
     X,
     ToggleLeft,
-    ToggleRight
+    ToggleRight,
+    AlertTriangle,
+    CheckCircle
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
+import { checkSpamScore, type SpamCheckResult, getGradeColor } from "@/lib/spam-checker"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -84,6 +87,10 @@ export default function SequencesPage() {
     const [templatesOpen, setTemplatesOpen] = useState(false)
     const [previewOpen, setPreviewOpen] = useState(false)
 
+    // Spam Score State
+    const [spamResult, setSpamResult] = useState<SpamCheckResult | null>(null)
+    const [checkingSpam, setCheckingSpam] = useState(false)
+
     // Fetch available variables from campaign leads
     useEffect(() => {
         const fetchLeadFields = async () => {
@@ -128,6 +135,36 @@ export default function SequencesPage() {
             fetchLeadFields()
         }
     }, [params.id])
+
+    // Spam Score Check - debounced
+    const checkSpam = useCallback(async (subject: string, body: string) => {
+        if (!subject && !body) {
+            setSpamResult(null)
+            return
+        }
+        setCheckingSpam(true)
+        try {
+            const result = await checkSpamScore(subject, body)
+            setSpamResult(result)
+        } catch (error) {
+            console.error('Spam check failed:', error)
+        } finally {
+            setCheckingSpam(false)
+        }
+    }, [])
+
+    // Check spam when active variant changes
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (activeStep) {
+                const variant = activeStep.variants[activeStep.activeVariant || 0]
+                if (variant) {
+                    checkSpam(variant.subject || '', variant.body || '')
+                }
+            }
+        }, 500) // Debounce 500ms
+        return () => clearTimeout(timer)
+    }, [steps, activeStepIndex, checkSpam])
 
     // Initial Load
     useEffect(() => {
@@ -473,6 +510,24 @@ export default function SequencesPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
+                                    {/* Spam Score Badge */}
+                                    {spamResult && (
+                                        <div className={cn(
+                                            "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border",
+                                            spamResult.grade === 'A' || spamResult.grade === 'B'
+                                                ? "bg-green-900/30 text-green-400 border-green-800/50"
+                                                : spamResult.grade === 'C'
+                                                    ? "bg-yellow-900/30 text-yellow-400 border-yellow-800/50"
+                                                    : "bg-red-900/30 text-red-400 border-red-800/50"
+                                        )}>
+                                            {spamResult.passed ? (
+                                                <CheckCircle className="h-3.5 w-3.5" />
+                                            ) : (
+                                                <AlertTriangle className="h-3.5 w-3.5" />
+                                            )}
+                                            <span>Spam: {spamResult.grade}</span>
+                                        </div>
+                                    )}
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -568,12 +623,48 @@ export default function SequencesPage() {
                                                             <span className="text-[10px] text-gray-500 group-hover:text-gray-400">Add variety to your emails</span>
                                                         </div>
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem className="hover:bg-[#2a2a2a] cursor-pointer gap-3 justify-between p-2.5 rounded-md group" onClick={() => toast({ title: "Spam Check Passed", description: "No high-risk spam words detected." })}>
-                                                        <div className="flex items-center gap-3">
-                                                            <ShieldAlert className="h-4 w-4 text-orange-400 group-hover:text-orange-300 transition-colors" />
-                                                            <span className="text-sm font-medium">AI Spam Words Checker</span>
+                                                    <DropdownMenuItem
+                                                        className="hover:bg-[#2a2a2a] cursor-pointer gap-3 p-2.5 rounded-md group flex-col items-start"
+                                                        onClick={(e) => {
+                                                            e.preventDefault()
+                                                            checkSpam(activeVariant.subject || '', activeVariant.body || '')
+                                                        }}
+                                                    >
+                                                        <div className="flex items-center justify-between w-full">
+                                                            <div className="flex items-center gap-3">
+                                                                <ShieldAlert className="h-4 w-4 text-orange-400 group-hover:text-orange-300 transition-colors" />
+                                                                <span className="text-sm font-medium">Spam Words Checker</span>
+                                                            </div>
+                                                            {spamResult && (
+                                                                <span className={cn(
+                                                                    "text-xs px-1.5 py-0.5 rounded font-bold",
+                                                                    spamResult.grade === 'A' || spamResult.grade === 'B' ? "bg-green-600 text-white" :
+                                                                        spamResult.grade === 'C' ? "bg-yellow-600 text-black" : "bg-red-600 text-white"
+                                                                )}>
+                                                                    {spamResult.grade} ({spamResult.score})
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                        <span className="text-[10px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded border border-green-800/50">Beta</span>
+                                                        {spamResult && spamResult.issues.length > 0 && (
+                                                            <div className="mt-2 pl-7 space-y-1 max-h-32 overflow-y-auto w-full">
+                                                                {spamResult.issues.slice(0, 5).map((issue, idx) => (
+                                                                    <div key={idx} className={cn(
+                                                                        "text-[10px] flex items-start gap-1",
+                                                                        issue.type === 'critical' ? "text-red-400" :
+                                                                            issue.type === 'warning' ? "text-yellow-400" : "text-gray-400"
+                                                                    )}>
+                                                                        <span>•</span>
+                                                                        <span>{issue.message}</span>
+                                                                    </div>
+                                                                ))}
+                                                                {spamResult.issues.length > 5 && (
+                                                                    <div className="text-[10px] text-gray-500">+{spamResult.issues.length - 5} more issues</div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {spamResult && spamResult.issues.length === 0 && (
+                                                            <div className="mt-1 pl-7 text-[10px] text-green-400">✓ No spam issues detected!</div>
+                                                        )}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

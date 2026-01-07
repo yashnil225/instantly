@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import imaps from 'imap-simple'
 import { simpleParser } from 'mailparser'
+import { getCampaignKB } from './google-sheets'
+import { generateReply } from './ai-reply'
+import { sendEmail } from './mail-service'
 
 export async function checkReplies() {
     let checked = 0
@@ -134,6 +137,56 @@ export async function checkReplies() {
 
                     detected++
                     console.log(`Detected reply from ${fromEmail}`)
+
+                    // --- AI AUTOREPLY INTEGRATION ---
+                    if (newStatus === 'replied' && !isOOO) {
+                        try {
+                            const kbData = await getCampaignKB(lead.campaignId)
+                            if (kbData && kbData.knowledgeBase) {
+                                console.log(`Triggering AI Autoreply for ${fromEmail}...`)
+                                const generatedReply = await generateReply({
+                                    knowledgeBase: kbData.knowledgeBase,
+                                    replyExamples: kbData.replyExamples,
+                                    incomingReply: bodyText || bodyHtml,
+                                    senderName: lead.firstName || fromEmail,
+                                    senderCompany: lead.company || '',
+                                    eaccountFirstName: account.firstName || 'Me'
+                                })
+
+                                if (generatedReply && generatedReply.trim() !== '') {
+                                    const info = await sendEmail({
+                                        account: account,
+                                        to: fromEmail,
+                                        subject: subject.startsWith('Re:') ? subject : `Re: ${subject}`,
+                                        html: generatedReply,
+                                        inReplyTo: parsed.messageId,
+                                        references: parsed.references ? `${parsed.references} ${parsed.messageId}` : parsed.messageId
+                                    })
+
+                                    const messageId = info.messageId.replace(/[<>]/g, '')
+
+                                    // Log Sent AI Reply
+                                    await prisma.sendingEvent.create({
+                                        data: {
+                                            type: 'sent',
+                                            campaignId: lead.campaignId,
+                                            leadId: lead.id,
+                                            emailAccountId: account.id,
+                                            messageId: messageId,
+                                            metadata: JSON.stringify({
+                                                isAiReply: true,
+                                                subject: `Re: ${subject}`,
+                                                originalMessageId: parsed.messageId
+                                            })
+                                        }
+                                    })
+                                    console.log(`AI Autoreply sent to ${fromEmail}`)
+                                }
+                            }
+                        } catch (aiError) {
+                            console.error(`AI Autoreply failed for ${fromEmail}:`, aiError)
+                        }
+                    }
                 }
             }
 

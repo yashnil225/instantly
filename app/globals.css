@@ -558,3 +558,19 @@
 .signup-illustration {
   animation: fadeIn 0.4s ease-out;
 }
+
+/* Progress bar pulse animation for indeterminate loading */
+@keyframes pulse-width {
+  0% {
+    width: 15%;
+    opacity: 1;
+  }
+  50% {
+    width: 70%;
+    opacity: 0.7;
+  }
+  100% {
+    width: 15%;
+    opacity: 1;
+  }
+}

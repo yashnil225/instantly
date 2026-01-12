@@ -201,6 +201,7 @@ model Campaign {
   days         String? // "Mon,Tue,Wed,Thu,Fri"
   startDate    DateTime?
   endDate      DateTime?
+  schedules    String? // JSON string for multiple schedules
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

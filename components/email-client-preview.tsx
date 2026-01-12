@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Mail, Monitor, Smartphone, Moon, Sun } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -17,9 +18,29 @@ type Client = "gmail" | "outlook"
 type Theme = "light" | "dark"
 
 export function EmailClientPreview({ subject, body, fromName = "Your Name", fromEmail = "you@example.com" }: EmailPreviewProps) {
+    const { theme: systemTheme } = useTheme()
     const [viewMode, setViewMode] = useState<ViewMode>("desktop")
     const [client, setClient] = useState<Client>("gmail")
-    const [theme, setTheme] = useState<Theme>("light")
+    const [localTheme, setLocalTheme] = useState<Theme>("light")
+
+    // Sync local theme with system theme
+    useEffect(() => {
+        if (systemTheme === 'dark' || systemTheme === 'light') {
+            setLocalTheme(systemTheme)
+        }
+    }, [systemTheme])
+
+    // Use localTheme for rendering
+    const theme = localTheme
+
+    // Override setTheme to update local state (allow manual toggle for preview only)
+    const setTheme = (t: Theme | ((old: Theme) => Theme)) => {
+        if (typeof t === 'function') {
+            setLocalTheme(prev => t(prev))
+        } else {
+            setLocalTheme(t)
+        }
+    }
 
     return (
         <div className="space-y-4">

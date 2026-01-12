@@ -61,6 +61,9 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
         workspace: true
     })
 
+    // Upload progress for animated progress bar
+    const [uploadProgress, setUploadProgress] = useState(0)
+
     // removed Google Picker
 
 
@@ -149,7 +152,8 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                     // Parse CSV using PapaParse
                     Papa.parse(csvText, {
                         header: true,
-                        skipEmptyLines: true,
+                        skipEmptyLines: 'greedy', // More robust empty line skipping
+                        transformHeader: (h) => h.trim(), // Trim headers
                         complete: (results) => {
                             console.log('PapaParse results:', results)
 
@@ -159,9 +163,10 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                             // Filter out empty headers
                             headers = headers.filter(h => h && h.trim().length > 0)
 
+                            // If meta.fields failed, try extracting from first row of data
                             if (headers.length === 0 && results.data.length > 0) {
-                                // Fallback: extract keys from first data row
-                                headers = Object.keys(results.data[0] as any).filter(k => k && k.trim().length > 0)
+                                const firstRow = results.data[0] as any
+                                headers = Object.keys(firstRow).filter(k => k && k.trim().length > 0)
                             }
 
                             if (headers.length === 0) {
@@ -173,15 +178,34 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                             console.log('Detected headers:', headers)
                             setCsvHeaders(headers)
 
-                            // Filter out empty rows and store sample data
+                            // Less aggressive filtering: Keep row if it has ANY data matching a header
                             const validData = (results.data as any[]).filter(row => {
-                                // Check if row has at least one non-empty value
-                                return Object.values(row).some(v => v !== null && v !== undefined && String(v).trim().length > 0)
+                                // Check if row has at least one valid value for our known headers
+                                return headers.some(h => {
+                                    const val = row[h]
+                                    return val !== null && val !== undefined && String(val).trim().length > 0
+                                })
                             })
+
+                            // If filtering removed too many (more than 50% discrepancy), fallback to raw data length warning or use raw
+                            // But usually invalid rows are just empty lines. 620 vs 850 is huge.
+                            // Maybe the user has rows with different columns? 
+                            // PapaParse handling of malformed CSVs might be the cause, but 'greedy' skip helps.
 
                             if (validData.length > 0) {
                                 // Store first 4 rows for sample display
                                 setSampleRows(validData.slice(0, 4))
+                            } else {
+                                // If validData is empty but results.data wasn't, something is wrong with filtering
+                                if (results.data.length > 0) {
+                                    console.warn("All rows filtered out as empty?", results.data.slice(0, 3))
+                                    // Fallback to results.data if validData is empty (safeguard)
+                                    setParsedData(results.data)
+                                    setSampleRows(results.data.slice(0, 4))
+                                    autoMap(headers)
+                                    setStep('mapping')
+                                    return
+                                }
                             }
 
                             // Store all parsed data for upload
@@ -232,23 +256,40 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
     const handleUploadWithMapping = async () => {
         if (!params.id) return
 
-        // Helper to process raw data array
-        const processAndUpload = async (rawData: any[]) => {
+        setUploading(true)
+        setError(null)
+        setUploadProgress(0)
+
+        const dataToProcess = parsedData.length > 0 ? parsedData : []
+
+        // If no parsed data but we have a file, parse it first
+        if (dataToProcess.length === 0 && file) {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: async (results) => {
+                    await processAndUploadBatched(results.data as any[])
+                }
+            })
+            return
+        }
+
+        await processAndUploadBatched(dataToProcess)
+
+        async function processAndUploadBatched(rawData: any[]) {
             try {
+                // Map all leads first
                 const mappedLeads = rawData.map((row: any) => {
                     const lead: any = { email: '', firstName: '', lastName: '', company: '', customFields: {} }
                     Object.keys(row).forEach((header) => {
                         const targetField = columnMapping[header]
                         const value = row[header]
 
-                        // Core fields stored directly in Lead model
                         if (targetField === 'email') lead.email = value
                         else if (targetField === 'firstName') lead.firstName = value
                         else if (targetField === 'lastName') lead.lastName = value
                         else if (targetField === 'company') lead.company = value
-                        // All other mapped fields go to customFields for use in sequences
                         else if (targetField !== 'skip' && value) {
-                            // Store with both the mapped type (for {{jobTitle}}) and original header (for {{Job Title}})
                             lead.customFields[targetField] = value
                             if (header !== targetField) {
                                 lead.customFields[header] = value
@@ -256,7 +297,6 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                         }
                     })
 
-                    // Ensure customFields is a string or undefined
                     const customFieldsStr = Object.keys(lead.customFields).length > 0
                         ? JSON.stringify(lead.customFields)
                         : null
@@ -270,42 +310,51 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                     }
                 }).filter((l: any) => l.email)
 
-                const res = await fetch(`/api/campaigns/${params.id}/leads/import`, {
-                    method: "POST",
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'json',
-                        leads: mappedLeads
-                    }),
-                })
+                const BATCH_SIZE = 200
+                const totalLeads = mappedLeads.length
+                let processed = 0
 
-                if (!res.ok) {
-                    const data = await res.json()
-                    throw new Error(data.error || "Upload failed")
+                // Upload in batches for large datasets with progress tracking
+                for (let i = 0; i < mappedLeads.length; i += BATCH_SIZE) {
+                    const batch = mappedLeads.slice(i, i + BATCH_SIZE)
+
+                    const res = await fetch(`/api/campaigns/${params.id}/leads/import`, {
+                        method: "POST",
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: 'json',
+                            leads: batch
+                        }),
+                    })
+
+                    if (!res.ok) {
+                        const data = await res.json()
+                        throw new Error(data.error || "Upload failed")
+                    }
+
+                    processed += batch.length
+                    const progress = Math.round((processed / totalLeads) * 100)
+                    setUploadProgress(progress)
                 }
+
+                toast({
+                    title: "Import Successful",
+                    description: `Successfully imported ${totalLeads} leads.`
+                })
 
                 onImportSuccess()
                 resetAndClose()
             } catch (err: any) {
                 setError(err.message)
+                toast({
+                    title: "Import Failed",
+                    description: err.message,
+                    variant: "destructive"
+                })
             } finally {
                 setUploading(false)
+                setUploadProgress(0)
             }
-        }
-
-        setUploading(true)
-        setError(null)
-
-        if (parsedData.length > 0) {
-            // Use already-parsed data for INSTANT upload (no re-parsing delay)
-            processAndUpload(parsedData)
-        } else if (file) {
-            // Fallback: Re-parse only if somehow no parsed data exists
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => processAndUpload(results.data as any[])
-            })
         }
     }
 
@@ -364,25 +413,61 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
         setUploading(true)
         setError(null)
         try {
-            const emails = manualEmails.split(/[\n,]/).map(e => e.trim()).filter(e => e.includes('@'))
+            // Parse emails (don't use regex in main thread for huge strings)
+            const emailLines = manualEmails.split(/[\n,]/)
+            const emails: string[] = []
+            for (const line of emailLines) {
+                const trimmed = line.trim()
+                if (trimmed.includes('@')) {
+                    emails.push(trimmed)
+                }
+            }
 
             if (emails.length === 0) {
                 throw new Error("No valid emails found. Please enter emails separated by commas or new lines.")
             }
 
-            const res = await fetch(`/api/campaigns/${params.id}/leads/import`, {
-                method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'manual', emails }),
-            })
+            // For large datasets, use batching
+            const BATCH_SIZE = 100
+            let totalImported = 0
 
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || "Import failed")
+            if (emails.length > BATCH_SIZE) {
+                // Process in batches for large datasets
+                for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+                    const batch = emails.slice(i, i + BATCH_SIZE)
 
-            toast({
-                title: "Import Successful",
-                description: data.message || `Successfully imported ${data.count} leads.`
-            })
+                    const res = await fetch(`/api/campaigns/${params.id}/leads/import`, {
+                        method: "POST",
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ type: 'manual', emails: batch }),
+                    })
+
+                    const data = await res.json()
+                    if (!res.ok) throw new Error(data.error || "Import failed")
+
+                    totalImported += data.count || batch.length
+                }
+
+                toast({
+                    title: "Import Successful",
+                    description: `Successfully imported ${totalImported} leads in batches.`
+                })
+            } else {
+                // Small dataset - single request
+                const res = await fetch(`/api/campaigns/${params.id}/leads/import`, {
+                    method: "POST",
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: 'manual', emails }),
+                })
+
+                const data = await res.json()
+                if (!res.ok) throw new Error(data.error || "Import failed")
+
+                toast({
+                    title: "Import Successful",
+                    description: data.message || `Successfully imported ${data.count} leads.`
+                })
+            }
 
             onImportSuccess(); resetAndClose()
         } catch (err: any) {
@@ -545,16 +630,22 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                 {/* Fallback: if csvHeaders is empty but we have parsedData, extract headers from it */}
                                 {csvHeaders.length === 0 && parsedData.length > 0 && (() => {
                                     // Try to extract headers from first parsed row
-                                    const extractedHeaders = Object.keys(parsedData[0] || {}).filter(k => k && k.trim().length > 0)
+                                    const firstRow = parsedData[0] || {}
+                                    const extractedHeaders = Object.keys(firstRow).filter(k => k && k.trim().length > 0)
                                     if (extractedHeaders.length > 0) {
                                         // Side effect: update csvHeaders state
+                                        // Use setTimeout to avoid render-cycle error
                                         setTimeout(() => {
                                             setCsvHeaders(extractedHeaders)
-                                            autoMap(extractedHeaders)
+                                            // Only run automap if we haven't already mapped
+                                            if (Object.keys(columnMapping).length === 0) {
+                                                autoMap(extractedHeaders)
+                                            }
                                         }, 0)
                                     }
                                     return null
                                 })()}
+
 
                                 {csvHeaders.length === 0 && parsedData.length === 0 && (
                                     <div className="text-center py-8 text-gray-400">
@@ -663,9 +754,29 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                 <Button
                                     onClick={handleUploadWithMapping}
                                     disabled={uploading}
-                                    className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-bold tracking-wide px-12 py-6 rounded-lg shadow-lg shadow-green-900/20 w-48 text-sm"
+                                    className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-bold tracking-wide px-12 py-6 rounded-lg shadow-lg shadow-green-900/20 w-48 text-sm relative overflow-hidden"
                                 >
-                                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                    {uploading ? (
+                                        <div className="flex flex-col items-center gap-2 w-full">
+                                            <div className="flex items-center gap-2">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                <span>Uploading...</span>
+                                            </div>
+                                            {/* Animated Progress Bar */}
+                                            <div className="w-full h-1.5 bg-green-900/50 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-white rounded-full transition-all duration-300 ease-out"
+                                                    style={{
+                                                        width: uploadProgress > 0 ? `${uploadProgress}%` : '15%',
+                                                        animation: uploadProgress === 0 ? 'pulse-width 1.5s infinite ease-in-out' : 'none'
+                                                    }}
+                                                />
+                                            </div>
+                                            {uploadProgress > 0 && (
+                                                <span className="text-[10px] opacity-75">{uploadProgress}%</span>
+                                            )}
+                                        </div>
+                                    ) : (
                                         <div className="flex flex-col items-center leading-none gap-1">
                                             <span>UPLOAD ALL</span>
                                             <Upload className="h-3 w-3 opacity-80" />

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Calendar as CalendarIcon, Plus, Save, Loader2 } from "lucide-react"
+import { Calendar as CalendarIcon, Plus, Save, Loader2, Check } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { Calendar } from "@/components/ui/calendar"
@@ -30,14 +30,31 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
     return `${hour}:00 ${ampm}`
 })
 
+interface Schedule {
+    id: string
+    name: string
+    startDate: string | null
+    endDate: string | null
+    startTime: string
+    endTime: string
+    timezone: string
+    days: string[]
+    isActive: boolean
+}
+
 export default function SchedulePage() {
     const params = useParams()
     const { toast } = useToast()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
 
-    // Schedule State
-    const [scheduleName, setScheduleName] = useState("Main Schedule")
+    // Schedule List State
+    const [schedules, setSchedules] = useState<Schedule[]>([])
+    const [activeScheduleId, setActiveScheduleId] = useState<string | null>(null)
+    const [editingScheduleId, setEditingScheduleId] = useState<string | null>(null)
+
+    // Form State (reflects the currently "editing" schedule)
+    const [name, setName] = useState("Main Schedule")
     const [startDate, setStartDate] = useState<string | null>(null)
     const [endDate, setEndDate] = useState<string | null>(null)
     const [selectedDays, setSelectedDays] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri'])
@@ -54,13 +71,42 @@ export default function SchedulePage() {
             const res = await fetch(`/api/campaigns/${params.id}`)
             if (res.ok) {
                 const data = await res.json()
-                setStartDate(data.startDate)
-                setEndDate(data.endDate)
-                if (data.scheduleName) setScheduleName(data.scheduleName)
-                if (data.startTime) setStartTime(data.startTime)
-                if (data.endTime) setEndTime(data.endTime)
-                if (data.timezone) setTimezone(data.timezone)
-                if (data.days) setSelectedDays(data.days.split(','))
+
+                let loadedSchedules: Schedule[] = []
+                if (data.schedules) {
+                    try {
+                        loadedSchedules = JSON.parse(data.schedules)
+                    } catch (e) {
+                        console.error("Failed to parse schedules", e)
+                    }
+                }
+
+                if (loadedSchedules.length === 0) {
+                    // Create default schedule from top-level data
+                    const defaultSchedule: Schedule = {
+                        id: crypto.randomUUID(),
+                        name: data.scheduleName || "Main Schedule",
+                        startDate: data.startDate,
+                        endDate: data.endDate,
+                        startTime: data.startTime || "09:00",
+                        endTime: data.endTime || "17:00",
+                        timezone: data.timezone || "America/New_York",
+                        days: data.days ? data.days.split(',') : ['mon', 'tue', 'wed', 'thu', 'fri'],
+                        isActive: true
+                    }
+                    loadedSchedules = [defaultSchedule]
+                }
+
+                setSchedules(loadedSchedules)
+
+                // Determine which one to show/edit
+                // Prefer the one marked active, else the first one
+                const active = loadedSchedules.find(s => s.isActive) || loadedSchedules[0]
+
+                setActiveScheduleId(active.id) // The one that IS active for the campaign
+                setEditingScheduleId(active.id) // The one we are currently viewing/editing
+
+                loadScheduleToForm(active)
             }
         } catch (error) {
             console.error("Failed to fetch schedule data", error)
@@ -69,27 +115,134 @@ export default function SchedulePage() {
         }
     }
 
+    const loadScheduleToForm = (schedule: Schedule) => {
+        setName(schedule.name)
+        setStartDate(schedule.startDate)
+        setEndDate(schedule.endDate)
+        setStartTime(schedule.startTime)
+        setEndTime(schedule.endTime)
+        setTimezone(schedule.timezone)
+        setSelectedDays(schedule.days)
+    }
+
+    // When switching editing view
+    const handleSelectSchedule = (id: string) => {
+        // First, save current form state to the schedule we were just editing (in memory only)
+        // actually, simpler to just switch. If user didn't save, changes are lost? 
+        // Or we can auto-update the array as they type.
+        // Let's simple: Switch editing ID, load its data.
+
+        // BETTER: Update the `schedules` array with current form values before switching?
+        // No, let's keep it explicit "Save" model as per request "i hit save".
+
+        // HOWEVER, if they switch without saving, they lose changes. 
+        // Let's prompt or just load the target. For now, just load.
+
+        const target = schedules.find(s => s.id === id)
+        if (target) {
+            setEditingScheduleId(id)
+            loadScheduleToForm(target)
+        }
+    }
+
+    // Toggle which one is ACTIVE (the radio button behavior)
+    // NOTE: This does NOT necessarily change the form view, but let's say it does for clarity.
+    // Actually request says: "click on the schedule it gets chossen for the campaign".
+    // Does this mean "Selected for editing" or "Selected as the active schedule"?
+    // "rest stay not chosen" implies active state.
+    const handleSetAsActive = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation() // Prevent triggering the row click if we bind row click to edit
+        setActiveScheduleId(id)
+
+        // Update the schedules array to reflect active status
+        const updated = schedules.map(s => ({
+            ...s,
+            isActive: s.id === id
+        }))
+        setSchedules(updated)
+
+        // If we want to also edit it:
+        handleSelectSchedule(id)
+    }
+
+    const handleAddSchedule = () => {
+        const newSchedule: Schedule = {
+            id: crypto.randomUUID(),
+            name: `New Schedule ${schedules.length + 1}`,
+            startDate: null,
+            endDate: null,
+            startTime: "09:00",
+            endTime: "17:00",
+            timezone: "America/New_York",
+            days: ['mon', 'tue', 'wed', 'thu', 'fri'],
+            isActive: false
+        }
+
+        const updated = [...schedules, newSchedule]
+        setSchedules(updated)
+        setEditingScheduleId(newSchedule.id)
+        loadScheduleToForm(newSchedule)
+    }
+
     const handleSave = async () => {
         setSaving(true)
         try {
+            // 1. Update the currently editing schedule with form data
+            if (!editingScheduleId) return
+
+            const updatedSchedules = schedules.map(s => {
+                if (s.id === editingScheduleId) {
+                    return {
+                        ...s,
+                        name,
+                        startDate,
+                        endDate,
+                        startTime,
+                        endTime,
+                        timezone,
+                        days: selectedDays,
+                        // If this was the active ID, it stays active.
+                        isActive: activeScheduleId === s.id
+                    }
+                }
+                // Also ensure only the activeScheduleId is set to active
+                return {
+                    ...s,
+                    isActive: activeScheduleId === s.id
+                }
+            })
+
+            setSchedules(updatedSchedules)
+
+            // 2. Prepare payload for API
+            // We need to send the 'active' schedule's data as the top-level campaign data
+            const activeSchedule = updatedSchedules.find(s => s.id === activeScheduleId) || updatedSchedules[0]
+
+            const payload = {
+                // Top-level fields (effective campaign settings)
+                scheduleName: activeSchedule.name, // "Update Main Schedule text" requirement
+                startDate: activeSchedule.startDate ? new Date(activeSchedule.startDate).toISOString() : null,
+                endDate: activeSchedule.endDate ? new Date(activeSchedule.endDate).toISOString() : null,
+                startTime: activeSchedule.startTime,
+                endTime: activeSchedule.endTime,
+                timezone: activeSchedule.timezone,
+                days: activeSchedule.days.join(','),
+
+                // The list of all schedules (JSON stringified)
+                schedules: JSON.stringify(updatedSchedules)
+            }
+
             const res = await fetch(`/api/campaigns/${params.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    scheduleName,
-                    startDate: startDate ? new Date(startDate).toISOString() : null,
-                    endDate: endDate ? new Date(endDate).toISOString() : null,
-                    startTime,
-                    endTime,
-                    timezone,
-                    days: selectedDays.join(',')
-                })
+                body: JSON.stringify(payload)
             })
 
             if (!res.ok) throw new Error("Failed to save schedule")
 
             toast({ title: "Saved", description: "Schedule settings updated" })
         } catch (error) {
+            console.error(error)
             toast({ title: "Error", description: "Failed to save schedule", variant: "destructive" })
         } finally {
             setSaving(false)
@@ -106,9 +259,19 @@ export default function SchedulePage() {
 
     return (
         <div className="flex gap-8 p-6 max-w-[1200px]">
-            {/* Sidebar with Dates */}
+            {/* Sidebar with Schedules List and Global Date Pickers? 
+               Wait, "Start Date/End Date" usually apply to the campaign or the schedule?
+               In original code, they were just dates.
+               User request: "hit save the the text which is showing main schedule changes and to what the user has wriiteten"
+               The screenshot shows "Main Schedule" in sidebar.
+               I will move the Date pickers into the main form area if they are schedule-specific, 
+               OR keep them global if they are campaign-specific. 
+               However, `startDate` and `endDate` are in the schedule object in my design.
+               Let's keep them in the sidebar but bind them to the form state.
+            */}
+
             <div className="w-[300px] flex flex-col gap-6">
-                {/* ... Date Popovers (Unchanged, skipping for brevity in search/replace) ... */}
+                {/* Date Pickers (Bound to form state of CURRENTLY EDITING schedule) */}
                 <div className="space-y-6 bg-[#111] p-4 rounded-xl border border-[#222]">
                     <div className="space-y-2">
                         <Label className="text-gray-400 text-xs uppercase tracking-wider flex items-center gap-2">
@@ -174,11 +337,59 @@ export default function SchedulePage() {
                     </Button>
                 </div>
 
+                {/* Schedules List */}
                 <div className="space-y-3">
-                    <div className="p-3 bg-[#111111] border border-blue-600 rounded-lg flex items-center gap-3 cursor-pointer">
-                        <CalendarIcon className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm font-medium text-white">Main Schedule</span>
+                    <div className="flex items-center justify-between px-1">
+                        <Label className="text-gray-500 text-xs uppercase tracking-wider">Schedules</Label>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-blue-400 hover:text-blue-300"
+                            onClick={handleAddSchedule}
+                        >
+                            <Plus className="h-4 w-4" />
+                        </Button>
                     </div>
+
+                    {schedules.map(schedule => {
+                        // Use 'name' from state if this is the one being edited, else use stored name 
+                        const displayName = schedule.id === editingScheduleId ? name : schedule.name
+                        const isEditing = schedule.id === editingScheduleId
+                        const isActive = activeScheduleId === schedule.id
+
+                        return (
+                            <div
+                                key={schedule.id}
+                                onClick={() => handleSelectSchedule(schedule.id)}
+                                className={cn(
+                                    "p-3 rounded-lg flex items-center gap-3 cursor-pointer border transition-all",
+                                    isEditing
+                                        ? "bg-[#161616] border-blue-600/50"
+                                        : "bg-[#111] border-[#222] hover:bg-[#161616]"
+                                )}
+                            >
+                                {/* Radio/Checkbox for selection */}
+                                <div
+                                    onClick={(e) => handleSetAsActive(schedule.id, e)}
+                                    className={cn(
+                                        "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
+                                        isActive
+                                            ? "border-blue-500 bg-blue-500"
+                                            : "border-gray-600 hover:border-blue-400"
+                                    )}
+                                >
+                                    {isActive && <Check className="h-3 w-3 text-white" />}
+                                </div>
+
+                                <span className={cn(
+                                    "text-sm font-medium",
+                                    isEditing ? "text-white" : "text-gray-400"
+                                )}>
+                                    {displayName}
+                                </span>
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
 
@@ -188,8 +399,8 @@ export default function SchedulePage() {
                     <h3 className="text-gray-400 font-medium">Schedule Name</h3>
                     <Input
                         className="bg-[#111111] border-[#222] text-white"
-                        value={scheduleName}
-                        onChange={(e) => setScheduleName(e.target.value)}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                         placeholder="Enter schedule name"
                     />
                 </div>
@@ -205,9 +416,6 @@ export default function SchedulePage() {
                                 </SelectTrigger>
                                 <SelectContent className="bg-[#1a1a1a] border-[#2a2a2a] text-white max-h-[200px]">
                                     {HOURS.map((hour) => (
-                                        // Need to match format provided by backend or standardized.
-                                        // HOURS array is "12:00 AM", "1:00 AM"...
-                                        // Let's assume standard format matches.
                                         <SelectItem key={hour} value={hour}>{hour}</SelectItem>
                                     ))}
                                 </SelectContent>
@@ -269,6 +477,6 @@ export default function SchedulePage() {
                     </div>
                 </div>
             </div>
-        </div >
+        </div>
     )
 }

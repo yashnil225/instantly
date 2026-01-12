@@ -104,6 +104,11 @@ export async function PATCH(
             }
         }
 
+        // Ensure schedules is stringified if it's an object/array
+        if (updateData.schedules && typeof updateData.schedules !== 'string') {
+            updateData.schedules = JSON.stringify(updateData.schedules)
+        }
+
         const campaign = await prisma.campaign.update({
             where: { id: id, userId: session.user.id },
             data: updateData,

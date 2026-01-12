@@ -543,11 +543,17 @@ export default function CampaignOptionsPage() {
                     </Button>
                 ) : (
                     <Button
-                        onClick={() => router.push(`/campaigns/${campaignId}/launch`)}
+                        onClick={async () => {
+                            // Auto-save before launching
+                            await handleSave()
+                            router.push(`/campaigns/${campaignId}/launch`)
+                        }}
+                        disabled={saving || selectedAccounts.length === 0}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-9 text-xs font-bold"
+                        title={selectedAccounts.length === 0 ? "Please select at least one email account" : ""}
                     >
                         <Rocket className="h-3 w-3 mr-2" />
-                        Launch
+                        {selectedAccounts.length === 0 ? "Select Accounts First" : "Save & Launch"}
                     </Button>
                 )}
             </div>

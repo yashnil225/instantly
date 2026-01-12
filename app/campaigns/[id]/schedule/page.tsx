@@ -388,8 +388,8 @@ export default function SchedulePage() {
                                 >
                                     {/* Letter Badge */}
                                     <div className={cn(
-                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                                        isEditing ? "bg-blue-600 text-white" : "bg-[#333] text-gray-400"
+                                        "badge badge-circle badge-md font-bold shrink-0 h-6 w-6 border-none",
+                                        isEditing ? "badge-primary text-white" : "bg-[#333] text-gray-400"
                                     )}>
                                         {String.fromCharCode(65 + idx)}
                                     </div>
@@ -403,16 +403,25 @@ export default function SchedulePage() {
                                     </span>
 
                                     {/* Toggle Active Switch */}
-                                    <button
-                                        onClick={(e) => handleSetAsActive(schedule.id, e)}
-                                        className="text-gray-500 hover:text-white transition-colors"
-                                        title={isActive ? "Deactivate" : "Set as Active"}
-                                    >
-                                        {isActive
-                                            ? <ToggleRight className="h-4 w-4 text-blue-500" />
-                                            : <ToggleLeft className="h-4 w-4" />
-                                        }
-                                    </button>
+                                    <div className="flex items-center" title={isActive ? "Deactivate" : "Set as Active"}>
+                                        <input
+                                            type="checkbox"
+                                            className="toggle toggle-primary toggle-xs"
+                                            checked={isActive}
+                                            onChange={(e) => {
+                                                // handleSetAsActive expects a native MouseEvent if we use e.stopPropagation()
+                                                // but since this is an onChange, we'll just call the logic directly
+                                                setActiveScheduleId(schedule.id)
+                                                const updated = schedules.map(s => ({
+                                                    ...s,
+                                                    isActive: s.id === schedule.id
+                                                }))
+                                                setSchedules(updated)
+                                                handleSelectSchedule(schedule.id)
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
 
                                     {/* Delete Button */}
                                     <button
@@ -501,7 +510,7 @@ export default function SchedulePage() {
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-gray-400 font-medium">Days</h3>
+                    <h3 className="text-gray-400 font-medium text-sm">Days</h3>
                     <div className="flex flex-wrap gap-2">
                         {DAYS.map((day) => {
                             const isSelected = selectedDays.includes(day.id)
@@ -510,10 +519,10 @@ export default function SchedulePage() {
                                     key={day.id}
                                     onClick={() => toggleDay(day.id)}
                                     className={cn(
-                                        "flex items-center justify-center w-12 h-10 rounded-md border transition-all text-sm font-medium",
+                                        "btn btn-sm w-12 h-10 border-[#2a2a2a] no-animation",
                                         isSelected
-                                            ? "bg-blue-600 border-blue-600 text-white"
-                                            : "bg-[#111] border-[#2a2a2a] text-gray-500 hover:bg-[#1a1a1a] hover:border-[#3a3a3a]"
+                                            ? "btn-primary text-white"
+                                            : "bg-[#111] text-gray-500 hover:bg-[#1a1a1a] hover:border-[#3a3a3a]"
                                     )}
                                 >
                                     {day.label.substring(0, 3)}

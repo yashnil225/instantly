@@ -439,101 +439,106 @@ export default function AnalyticsPage() {
                                 </div>
                             ) : (
                                 <>
-                                    {/* Metric Cards */}
-                                    <div className="grid grid-cols-4 gap-4">
+                                    {/* Metric Cards - DaisyUI Stats */}
+                                    <div className="stats shadow bg-card border border-border w-full">
                                         {metricCards.map((metric) => (
-                                            <div
-                                                key={metric.title}
-                                                className="bg-card border border-border rounded-lg p-6 hover:border-border transition-colors"
-                                            >
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <span className="text-sm font-medium text-muted-foreground">{metric.title}</span>
+                                            <div key={metric.title} className="stat">
+                                                <div className="stat-figure text-muted-foreground pt-1">
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <Info className="h-4 w-4 text-gray-600 cursor-help hover:text-muted-foreground transition-colors" />
+                                                            <Info className="h-4 w-4 cursor-help hover:text-muted-foreground transition-colors" />
                                                         </TooltipTrigger>
                                                         <TooltipContent className="bg-card border-border text-foreground">{metric.tooltip}</TooltipContent>
                                                     </Tooltip>
                                                 </div>
-                                                <div className="text-3xl font-bold text-foreground tracking-tight">{metric.value}</div>
+                                                <div className="stat-title text-muted-foreground uppercase text-[10px] font-bold tracking-widest">{metric.title}</div>
+                                                <div className="stat-value text-primary text-3xl">{metric.value}</div>
+                                                <div className="stat-desc text-muted-foreground">Updated just now</div>
                                             </div>
                                         ))}
                                     </div>
 
-                                    {/* Opportunities Card */}
+                                    {/* Opportunities Card - DaisyUI Stat */}
                                     {filters.showOpportunities && (
-                                        <div className="bg-card border border-border rounded-lg p-6 hover:border-border transition-colors">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <span className="text-sm font-medium text-muted-foreground">Opportunities</span>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Info className="h-4 w-4 text-gray-600 cursor-help hover:text-muted-foreground transition-colors" />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent className="bg-card border-border text-foreground">Number and value of opportunities</TooltipContent>
-                                                </Tooltip>
-                                            </div>
-                                            <div className="text-3xl font-bold text-foreground tracking-tight flex items-baseline gap-2">
-                                                {data?.opportunities.count || 0}
-                                                <span className="text-xl text-muted-foreground font-normal">|</span>
-                                                <div className="text-green-500 text-3xl font-bold">
+                                        <div className="stats shadow bg-card border border-border w-full overflow-visible">
+                                            <div className="stat">
+                                                <div className="stat-figure text-green-500 pt-1">
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Zap className="h-6 w-6" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="bg-card border-border text-foreground">Number and value of opportunities</TooltipContent>
+                                                    </Tooltip>
+                                                </div>
+                                                <div className="stat-title text-muted-foreground uppercase text-[10px] font-bold tracking-widest">Opportunities</div>
+                                                <div className="stat-value text-green-500 flex items-baseline gap-2">
+                                                    {data?.opportunities.count || 0}
+                                                    <span className="text-xl text-muted-foreground font-normal">|</span>
                                                     ${data?.opportunities.value || 0}
                                                 </div>
+                                                <div className="stat-desc text-muted-foreground">High growth potential</div>
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Chart */}
-                                    <div className="bg-card border border-border rounded-lg p-6">
-                                        <ResponsiveContainer width="100%" height={400}>
-                                            <LineChart data={data?.chartData || []}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                                <XAxis
-                                                    dataKey="date"
-                                                    stroke="#666"
-                                                    style={{ fontSize: '12px' }}
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    dy={10}
-                                                />
-                                                <YAxis
-                                                    stroke="#666"
-                                                    style={{ fontSize: '12px' }}
-                                                    axisLine={false}
-                                                    tickLine={false}
-                                                    dx={-10}
-                                                />
-                                                <RechartsTooltip
-                                                    contentStyle={{
-                                                        backgroundColor: 'hsl(var(--card))',
-                                                        border: '1px solid hsl(var(--border))',
-                                                        borderRadius: '8px',
-                                                        color: 'hsl(var(--foreground))',
-                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                                                    }}
-                                                    cursor={{ stroke: 'hsl(var(--border))' }}
-                                                />
-                                                <Legend
-                                                    wrapperStyle={{ paddingTop: '20px' }}
-                                                    iconType="circle"
-                                                />
-                                                <Line type="monotone" dataKey="sent" stroke="#3b82f6" name="Sent" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                <Line type="monotone" dataKey="totalOpens" stroke="#eab308" name="Total opens" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                <Line type="monotone" dataKey="uniqueOpens" stroke="#22c55e" name="Unique opens" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                <Line type="monotone" dataKey="totalReplies" stroke="#10b981" name="Total replies" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                <Line type="monotone" dataKey="sentClicks" stroke="#6b7280" name="Sent clicks" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                <Line type="monotone" dataKey="uniqueClicks" stroke="#9ca3af" name="Unique clicks" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                            </LineChart>
-                                        </ResponsiveContainer>
+                                    {/* Chart in DaisyUI Card */}
+                                    <div className="card bg-card border border-border shadow-xl">
+                                        <div className="card-body p-6">
+                                            <ResponsiveContainer width="100%" height={400}>
+                                                <LineChart data={data?.chartData || []}>
+                                                    <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                                    <XAxis
+                                                        dataKey="date"
+                                                        stroke="#666"
+                                                        style={{ fontSize: '12px' }}
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        dy={10}
+                                                    />
+                                                    <YAxis
+                                                        stroke="#666"
+                                                        style={{ fontSize: '12px' }}
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        dx={-10}
+                                                    />
+                                                    <RechartsTooltip
+                                                        contentStyle={{
+                                                            backgroundColor: 'hsl(var(--card))',
+                                                            border: '1px solid hsl(var(--border))',
+                                                            borderRadius: '8px',
+                                                            color: 'hsl(var(--foreground))',
+                                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                                                        }}
+                                                        cursor={{ stroke: 'hsl(var(--border))' }}
+                                                    />
+                                                    <Legend
+                                                        wrapperStyle={{ paddingTop: '20px' }}
+                                                        iconType="circle"
+                                                    />
+                                                    <Line type="monotone" dataKey="sent" stroke="#3b82f6" name="Sent" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                    <Line type="monotone" dataKey="totalOpens" stroke="#eab308" name="Total opens" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                    <Line type="monotone" dataKey="uniqueOpens" stroke="#22c55e" name="Unique opens" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                    <Line type="monotone" dataKey="totalReplies" stroke="#10b981" name="Total replies" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                    <Line type="monotone" dataKey="sentClicks" stroke="#6b7280" name="Sent clicks" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                    <Line type="monotone" dataKey="uniqueClicks" stroke="#9ca3af" name="Unique clicks" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                </LineChart>
+                                            </ResponsiveContainer>
+                                        </div>
                                     </div>
 
                                     {/* Advanced Analytics Charts - Show for campaign tab */}
                                     {activeTab === "campaign" && (
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            <div className="bg-card border border-border rounded-lg p-6">
-                                                <SendTimeHeatmap data={data?.heatmapData} />
+                                            <div className="card bg-card border border-border shadow-xl">
+                                                <div className="card-body p-6">
+                                                    <SendTimeHeatmap data={data?.heatmapData} />
+                                                </div>
                                             </div>
-                                            <div className="bg-card border border-border rounded-lg p-6">
-                                                <ConversionFunnel data={data?.funnelData} />
+                                            <div className="card bg-card border border-border shadow-xl">
+                                                <div className="card-body p-6">
+                                                    <ConversionFunnel data={data?.funnelData} />
+                                                </div>
                                             </div>
                                         </div>
                                     )}

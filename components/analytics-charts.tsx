@@ -200,43 +200,45 @@ export function ConversionFunnel({ data }: { data?: FunnelData[] }) {
     const funnelData = (data && data.length > 0) ? data : emptyData
 
     return (
-        <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Conversion Funnel</h3>
+        <div className="space-y-6">
+            <h3 className="text-lg font-semibold border-b border-[#2a2a2a] pb-2">Conversion Funnel</h3>
 
-            <div className="space-y-2">
+            <div className="space-y-4">
                 {funnelData.map((stage, index) => {
                     const widthPercent = (stage.value / funnelData[0].value) * 100
+                    const colorClass =
+                        index === 0 ? "progress-primary" :
+                            index === 1 ? "progress-secondary" :
+                                index === 2 ? "progress-success" :
+                                    index === 3 ? "progress-warning" :
+                                        index === 4 ? "progress-accent" :
+                                            "progress-info"
+
                     return (
-                        <div key={stage.stage} className="space-y-1">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">{stage.stage}</span>
-                                <span className="text-muted-foreground">
+                        <div key={stage.stage} className="space-y-2">
+                            <div className="flex items-center justify-between text-xs px-1">
+                                <span className="font-bold uppercase tracking-wider text-gray-400">{stage.stage}</span>
+                                <span className="font-mono text-white bg-[#1a1a1a] px-2 py-0.5 rounded">
                                     {stage.value.toLocaleString()} ({stage.percentage}%)
                                 </span>
                             </div>
-                            <div className="h-8 bg-secondary rounded-lg overflow-hidden">
-                                <div
-                                    className={cn(
-                                        "h-full rounded-lg transition-all duration-500 flex items-center justify-end pr-3",
-                                        index === 0 && "bg-blue-500",
-                                        index === 1 && "bg-blue-500/90",
-                                        index === 2 && "bg-green-500",
-                                        index === 3 && "bg-yellow-500",
-                                        index === 4 && "bg-orange-500",
-                                        index === 5 && "bg-purple-500"
-                                    )}
-                                    style={{ width: `${widthPercent}%` }}
-                                >
-                                    {widthPercent > 20 && (
-                                        <span className="text-xs font-medium text-white">
-                                            {stage.percentage}%
-                                        </span>
-                                    )}
+                            <div className="relative h-4 group">
+                                <progress
+                                    className={cn("progress w-full h-4", colorClass)}
+                                    value={stage.value}
+                                    max={funnelData[0].value}
+                                ></progress>
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="text-[10px] font-bold text-white drop-shadow-md">
+                                        {stage.percentage}%
+                                    </span>
                                 </div>
                             </div>
-                            {index < funnelData.length - 1 && (
-                                <div className="text-[10px] text-muted-foreground text-center">
-                                    ↓ {Math.round((funnelData[index + 1].value / stage.value) * 100)}% conversion
+                            {index < funnelData.length - 1 && stage.value > 0 && (
+                                <div className="flex justify-center -my-1">
+                                    <div className="badge badge-ghost badge-xs text-[9px] font-bold py-2 px-3 border-[#2a2a2a]">
+                                        ↓ {Math.round((funnelData[index + 1].value / stage.value) * 100)}% conversion
+                                    </div>
                                 </div>
                             )}
                         </div>

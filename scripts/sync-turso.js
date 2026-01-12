@@ -1,41 +1,52 @@
-
 const { createClient } = require("@libsql/client");
+const dotenv = require("dotenv");
+const path = require("path");
 
-const url = "libsql://instantly-yashnil225.aws-ap-south-1.turso.io";
-const authToken = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NjY4MjQ0NTksImlkIjoiY2VhMzA2MDktNTJmNS00OGJlLWIyNDAtZjdiNTZkZmJkYmExIiwicmlkIjoiYzdiMzI3ZGQtMDg4My00NzI3LThmOTItYmQ5Y2YzODAyY2YzIn0.nO4Ro7WKv-uskVDVxKz7qj_jNNJwbRycD8AaU-1dRWY1TdnTlqiR6LJ4R1nxHJbB4FMBdjGeDPs07ipOuBTsBQ";
+// Load environment variables from .env
+dotenv.config({ path: path.join(process.cwd(), ".env") });
 
-const client = createClient({
-  url,
-  authToken,
-});
+async function sync() {
+  console.log("🚀 Starting Turso sync (JS version)...");
 
-async function main() {
-  console.log("Connecting to Turso...");
-  
-  const columns = [
-    "refreshToken TEXT",
-    "accessToken TEXT", 
-    "expiresAt BIGINT",
-    "idToken TEXT",
-    "scope TEXT"
+  const url = process.env.TURSO_DATABASE_URL;
+  const authToken = process.env.TURSO_AUTH_TOKEN;
+
+  if (!url || !authToken) {
+    console.error("❌ TURSO_DATABASE_URL or TURSO_AUTH_TOKEN missing in .env");
+    process.exit(1);
+  }
+
+  const client = createClient({
+    url,
+    authToken,
+  });
+
+  const columnsToAdd = [
+    { name: "scheduleName", type: "TEXT" },
+    { name: "startTime", type: "TEXT" },
+    { name: "endTime", type: "TEXT" },
+    { name: "timezone", type: "TEXT" },
+    { name: "days", type: "TEXT" },
+    { name: "startDate", type: "DATETIME" },
+    { name: "endDate", type: "DATETIME" },
+    { name: "schedules", type: "TEXT" }
   ];
 
-  for (const col of columns) {
+  for (const column of columnsToAdd) {
     try {
-      const colName = col.split(" ")[0];
-      console.log(`Adding column ${colName}...`);
-      await client.execute(`ALTER TABLE EmailAccount ADD COLUMN ${col};`);
-      console.log(`✅ Added ${colName}`);
-    } catch (e) {
-      if (e.message && e.message.includes("duplicate column")) {
-        console.log(`⚠️ Column already exists (skipping)`);
+      console.log(`Adding column ${column.name}...`);
+      await client.execute(`ALTER TABLE Campaign ADD COLUMN ${column.name} ${column.type}`);
+      console.log(`✅ Column ${column.name} added.`);
+    } catch (error) {
+      if (error.message.includes("duplicate column name") || error.message.includes("already exists")) {
+        console.log(`ℹ️ Column ${column.name} already exists. Skipping.`);
       } else {
-        console.error(`❌ Failed to add column:`, e);
+        console.warn(`⚠️ Error adding column ${column.name}: ${error.message}`);
       }
     }
   }
 
-  console.log("Done syncing Turso!");
+  console.log("🏁 Sync completed.");
 }
 
-main();
+sync().catch(console.error);

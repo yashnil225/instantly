@@ -6,3 +6,4 @@ export async function register() {
     // which calls /api/cron/send, /api/cron/warmup, etc.
     // No local scheduler needed.
 }
+

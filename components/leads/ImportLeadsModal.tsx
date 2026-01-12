@@ -763,9 +763,9 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                                 <span>Uploading...</span>
                                             </div>
                                             {/* Animated Progress Bar */}
-                                            <div className="w-full h-1.5 bg-green-900/50 rounded-full overflow-hidden">
+                                            <div className="w-full h-1.5 bg-green-900/50 dark:bg-green-900/50 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-white rounded-full transition-all duration-300 ease-out"
+                                                    className="h-full bg-foreground rounded-full transition-all duration-300 ease-out"
                                                     style={{
                                                         width: uploadProgress > 0 ? `${uploadProgress}%` : '15%',
                                                         animation: uploadProgress === 0 ? 'pulse-width 1.5s infinite ease-in-out' : 'none'

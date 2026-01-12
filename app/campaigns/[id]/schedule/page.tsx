@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Calendar as CalendarIcon, Plus, Save, Loader2, Check } from "lucide-react"
+import { Calendar as CalendarIcon, Plus, Save, Loader2, Check, Trash2, ToggleLeft, ToggleRight } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { Calendar } from "@/components/ui/calendar"
@@ -184,6 +184,32 @@ export default function SchedulePage() {
         loadScheduleToForm(newSchedule)
     }
 
+    const handleRemoveSchedule = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (schedules.length <= 1) {
+            toast({ title: "Cannot Delete", description: "At least one schedule is required", variant: "destructive" })
+            return
+        }
+
+        const updated = schedules.filter(s => s.id !== id)
+        setSchedules(updated)
+
+        // If we deleted the editing one, switch to another
+        if (editingScheduleId === id) {
+            const next = updated[0]
+            setEditingScheduleId(next.id)
+            loadScheduleToForm(next)
+        }
+
+        // If we deleted the active one, mark the first as active
+        if (activeScheduleId === id) {
+            const next = updated[0]
+            setActiveScheduleId(next.id)
+        }
+
+        toast({ title: "Schedule Removed" })
+    }
+
     const handleSave = async () => {
         setSaving(true)
         try {
@@ -341,55 +367,75 @@ export default function SchedulePage() {
                 <div className="space-y-3">
                     <div className="flex items-center justify-between px-1">
                         <Label className="text-gray-500 text-xs uppercase tracking-wider">Schedules</Label>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-blue-400 hover:text-blue-300"
-                            onClick={handleAddSchedule}
-                        >
-                            <Plus className="h-4 w-4" />
-                        </Button>
                     </div>
 
-                    {schedules.map(schedule => {
-                        // Use 'name' from state if this is the one being edited, else use stored name 
-                        const displayName = schedule.id === editingScheduleId ? name : schedule.name
-                        const isEditing = schedule.id === editingScheduleId
-                        const isActive = activeScheduleId === schedule.id
+                    <div className="space-y-2">
+                        {schedules.map((schedule, idx) => {
+                            const isEditing = schedule.id === editingScheduleId
+                            const isActive = activeScheduleId === schedule.id
+                            const displayName = isEditing ? name : schedule.name
 
-                        return (
-                            <div
-                                key={schedule.id}
-                                onClick={() => handleSelectSchedule(schedule.id)}
-                                className={cn(
-                                    "p-3 rounded-lg flex items-center gap-3 cursor-pointer border transition-all",
-                                    isEditing
-                                        ? "bg-[#161616] border-blue-600/50"
-                                        : "bg-[#111] border-[#222] hover:bg-[#161616]"
-                                )}
-                            >
-                                {/* Radio/Checkbox for selection */}
+                            return (
                                 <div
-                                    onClick={(e) => handleSetAsActive(schedule.id, e)}
+                                    key={schedule.id}
+                                    onClick={() => handleSelectSchedule(schedule.id)}
                                     className={cn(
-                                        "w-4 h-4 rounded-full border flex items-center justify-center transition-colors",
-                                        isActive
-                                            ? "border-blue-500 bg-blue-500"
-                                            : "border-gray-600 hover:border-blue-400"
+                                        "flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all group",
+                                        isEditing
+                                            ? "bg-blue-600/20 border border-blue-600"
+                                            : "bg-[#111] border border-[#222] hover:border-[#333]"
                                     )}
                                 >
-                                    {isActive && <Check className="h-3 w-3 text-white" />}
-                                </div>
+                                    {/* Letter Badge */}
+                                    <div className={cn(
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                                        isEditing ? "bg-blue-600 text-white" : "bg-[#333] text-gray-400"
+                                    )}>
+                                        {String.fromCharCode(65 + idx)}
+                                    </div>
 
-                                <span className={cn(
-                                    "text-sm font-medium",
-                                    isEditing ? "text-white" : "text-gray-400"
-                                )}>
-                                    {displayName}
-                                </span>
-                            </div>
-                        )
-                    })}
+                                    {/* Name Preview */}
+                                    <span className={cn(
+                                        "flex-1 text-xs truncate",
+                                        isEditing ? "text-white font-medium" : "text-gray-400"
+                                    )}>
+                                        {displayName}
+                                    </span>
+
+                                    {/* Toggle Active Switch */}
+                                    <button
+                                        onClick={(e) => handleSetAsActive(schedule.id, e)}
+                                        className="text-gray-500 hover:text-white transition-colors"
+                                        title={isActive ? "Deactivate" : "Set as Active"}
+                                    >
+                                        {isActive
+                                            ? <ToggleRight className="h-4 w-4 text-blue-500" />
+                                            : <ToggleLeft className="h-4 w-4" />
+                                        }
+                                    </button>
+
+                                    {/* Delete Button */}
+                                    <button
+                                        onClick={(e) => handleRemoveSchedule(schedule.id, e)}
+                                        className="text-gray-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                        title="Delete schedule"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                </div>
+                            )
+                        })}
+                    </div>
+
+                    {/* + Add Schedule Button styled like variants */}
+                    <div className="flex justify-center pt-2">
+                        <button
+                            onClick={handleAddSchedule}
+                            className="text-blue-500 text-xs font-medium hover:text-blue-400 flex items-center gap-1.5 transition-colors"
+                        >
+                            <Plus className="h-4 w-4" /> Add schedule
+                        </button>
+                    </div>
                 </div>
             </div>
 

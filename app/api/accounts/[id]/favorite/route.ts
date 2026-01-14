@@ -13,9 +13,21 @@ export async function PATCH(
     }
 
     try {
-        // TODO: Implement favorite tracking in database
-        // For now, just return success
-        return NextResponse.json({ success: true })
+        const existing = await prisma.emailAccount.findUnique({
+            where: { id },
+            select: { isFavorite: true }
+        })
+
+        if (!existing) {
+            return NextResponse.json({ error: 'Account not found' }, { status: 404 })
+        }
+
+        const updated = await prisma.emailAccount.update({
+            where: { id },
+            data: { isFavorite: !existing.isFavorite }
+        })
+
+        return NextResponse.json({ success: true, isFavorite: updated.isFavorite })
     } catch (error) {
         return NextResponse.json(
             { error: 'Failed to update favorite' },

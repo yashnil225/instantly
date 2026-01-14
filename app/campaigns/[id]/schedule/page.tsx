@@ -9,9 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Calendar as CalendarIcon, Plus, Save, Loader2, Check, Trash2, ToggleLeft, ToggleRight } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
+import { CallyCalendar } from "@/components/ui/cally-calendar"
 import { cn } from "@/lib/utils"
 
 const DAYS = [
@@ -24,10 +22,13 @@ const DAYS = [
     { id: "sun", label: "Sunday" },
 ]
 
-const HOURS = Array.from({ length: 24 }, (_, i) => {
-    const hour = i % 12 || 12
-    const ampm = i < 12 ? "AM" : "PM"
-    return `${hour}:00 ${ampm}`
+const HOURS = Array.from({ length: 48 }, (_, i) => {
+    const totalMinutes = i * 30
+    const hour24 = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    const hour12 = hour24 % 12 || 12
+    const ampm = hour24 < 12 ? "AM" : "PM"
+    return `${hour12}:${minutes.toString().padStart(2, '0')} ${ampm}`
 })
 
 interface Schedule {
@@ -303,58 +304,22 @@ export default function SchedulePage() {
                         <Label className="text-gray-400 text-xs uppercase tracking-wider flex items-center gap-2">
                             <CalendarIcon className="h-3 w-3" /> Start Date
                         </Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal bg-[#1a1a1a] border-[#333] text-white hover:bg-[#222]",
-                                        !startDate && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {startDate && !isNaN(new Date(startDate).getTime()) ? format(new Date(startDate), "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 bg-[#111] border-[#333]" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={startDate ? new Date(startDate) : undefined}
-                                    onSelect={(date) => setStartDate(date ? date.toISOString() : null)}
-                                    initialFocus
-                                    className="text-white"
-                                />
-                            </PopoverContent>
-                        </Popover>
+                        <CallyCalendar
+                            value={startDate ? new Date(startDate) : null}
+                            onChange={(date) => setStartDate(date ? date.toISOString() : null)}
+                            placeholder="Pick a start date"
+                        />
                     </div>
 
                     <div className="space-y-2">
                         <Label className="text-gray-400 text-xs uppercase tracking-wider flex items-center gap-2">
                             <CalendarIcon className="h-3 w-3" /> End Date
                         </Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal bg-[#1a1a1a] border-[#333] text-white hover:bg-[#222]",
-                                        !endDate && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {endDate && !isNaN(new Date(endDate).getTime()) ? format(new Date(endDate), "PPP") : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0 bg-[#111] border-[#333]" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={endDate ? new Date(endDate) : undefined}
-                                    onSelect={(date) => setEndDate(date ? date.toISOString() : null)}
-                                    initialFocus
-                                    className="text-white"
-                                />
-                            </PopoverContent>
-                        </Popover>
+                        <CallyCalendar
+                            value={endDate ? new Date(endDate) : null}
+                            onChange={(date) => setEndDate(date ? date.toISOString() : null)}
+                            placeholder="Pick an end date"
+                        />
                     </div>
 
                     <Button onClick={handleSave} disabled={saving} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
@@ -388,8 +353,8 @@ export default function SchedulePage() {
                                 >
                                     {/* Letter Badge */}
                                     <div className={cn(
-                                        "badge badge-circle badge-md font-bold shrink-0 h-6 w-6 border-none",
-                                        isEditing ? "badge-primary text-white" : "bg-[#333] text-gray-400"
+                                        "h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
+                                        isEditing ? "bg-blue-600 text-white" : "bg-[#333] text-gray-400"
                                     )}>
                                         {String.fromCharCode(65 + idx)}
                                     </div>
@@ -403,25 +368,16 @@ export default function SchedulePage() {
                                     </span>
 
                                     {/* Toggle Active Switch */}
-                                    <div className="flex items-center" title={isActive ? "Deactivate" : "Set as Active"}>
-                                        <input
-                                            type="checkbox"
-                                            className="toggle toggle-primary toggle-xs"
-                                            checked={isActive}
-                                            onChange={(e) => {
-                                                // handleSetAsActive expects a native MouseEvent if we use e.stopPropagation()
-                                                // but since this is an onChange, we'll just call the logic directly
-                                                setActiveScheduleId(schedule.id)
-                                                const updated = schedules.map(s => ({
-                                                    ...s,
-                                                    isActive: s.id === schedule.id
-                                                }))
-                                                setSchedules(updated)
-                                                handleSelectSchedule(schedule.id)
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
-                                    </div>
+                                    <button
+                                        onClick={(e) => handleSetAsActive(schedule.id, e)}
+                                        className="text-gray-500 hover:text-white transition-colors"
+                                        title={isActive ? "Deactivate" : "Set as Active"}
+                                    >
+                                        {isActive
+                                            ? <ToggleRight className="h-4 w-4 text-blue-500" />
+                                            : <ToggleLeft className="h-4 w-4" />
+                                        }
+                                    </button>
 
                                     {/* Delete Button */}
                                     <button
@@ -510,7 +466,7 @@ export default function SchedulePage() {
                 </div>
 
                 <div className="space-y-4">
-                    <h3 className="text-gray-400 font-medium text-sm">Days</h3>
+                    <h3 className="text-gray-400 font-medium">Days</h3>
                     <div className="flex flex-wrap gap-2">
                         {DAYS.map((day) => {
                             const isSelected = selectedDays.includes(day.id)
@@ -519,10 +475,10 @@ export default function SchedulePage() {
                                     key={day.id}
                                     onClick={() => toggleDay(day.id)}
                                     className={cn(
-                                        "btn btn-sm w-12 h-10 border-[#2a2a2a] no-animation",
+                                        "flex items-center justify-center w-12 h-10 rounded-md border transition-all text-sm font-medium",
                                         isSelected
-                                            ? "btn-primary text-white"
-                                            : "bg-[#111] text-gray-500 hover:bg-[#1a1a1a] hover:border-[#3a3a3a]"
+                                            ? "bg-blue-600 border-blue-600 text-white"
+                                            : "bg-[#111] border-[#2a2a2a] text-gray-500 hover:bg-[#1a1a1a] hover:border-[#3a3a3a]"
                                     )}
                                 >
                                     {day.label.substring(0, 3)}

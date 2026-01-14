@@ -50,7 +50,7 @@ export async function PATCH(
     try {
         // id already awaited
         const body = await req.json()
-        const { name, status } = body
+        const { name, status, startTime, endTime, timezone, days } = body
 
         // Verify ownership
         const existing = await prisma.campaign.findFirst({
@@ -68,7 +68,11 @@ export async function PATCH(
             where: { id },
             data: {
                 ...(name && { name }),
-                ...(status && { status })
+                ...(status && { status }),
+                ...(startTime && { startTime }),
+                ...(endTime && { endTime }),
+                ...(timezone && { timezone }),
+                ...(days && { days })
             }
         })
 

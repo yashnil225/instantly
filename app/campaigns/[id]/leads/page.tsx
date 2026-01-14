@@ -30,6 +30,7 @@ import {
     Heart,
     AtSign,
     X,
+    RefreshCw,
 } from "lucide-react"
 import { ImportLeadsModal } from "@/components/leads/ImportLeadsModal"
 import { cn } from "@/lib/utils"
@@ -430,6 +431,16 @@ export default function LeadsPage() {
                         )}
                     </div>
 
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-gray-400 hover:text-white border border-[#222] bg-[#111]"
+                        onClick={fetchLeads}
+                        disabled={loading}
+                        title="Refresh Leads"
+                    >
+                        <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+                    </Button>
                     <Button
                         variant="ghost"
                         size="icon"

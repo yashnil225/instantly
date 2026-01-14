@@ -39,12 +39,18 @@ interface DeliverabilityData {
     }[]
 }
 
-export function DeliverabilityDashboard() {
-    const [data, setData] = useState<DeliverabilityData | null>(null)
-    const [loading, setLoading] = useState(true)
+export function DeliverabilityDashboard({ initialData }: { initialData?: DeliverabilityData }) {
+    const [data, setData] = useState<DeliverabilityData | null>(initialData || null)
+    const [loading, setLoading] = useState(!initialData)
 
     useEffect(() => {
-        // Simulate fetching data
+        if (initialData) {
+            setData(initialData)
+            setLoading(false)
+            return
+        }
+
+        // Simulate fetching data if no initial data provided
         setTimeout(() => {
             setData({
                 overallScore: 87,
@@ -63,7 +69,7 @@ export function DeliverabilityDashboard() {
             })
             setLoading(false)
         }, 1000)
-    }, [])
+    }, [initialData])
 
     const getScoreColor = (score: number) => {
         if (score >= 80) return "text-green-500"
@@ -101,57 +107,48 @@ export function DeliverabilityDashboard() {
                 </Button>
             </div>
 
-            {/* Main Score Card - DaisyUI Stats & Radial Progress */}
-            <div className="card bg-gradient-to-br from-blue-600/10 to-purple-600/10 border border-blue-600/20 shadow-xl">
-                <div className="card-body p-8">
-                    <div className="flex flex-col md:flex-row items-center gap-12">
-                        <div className="flex flex-col items-center gap-4">
-                            <div
-                                className={cn("radial-progress", getScoreColor(data.overallScore))}
-                                style={{
-                                    "--value": data.overallScore,
-                                    "--size": "10rem",
-                                    "--thickness": "12px"
-                                } as any}
-                                role="progressbar"
-                            >
-                                <div className="flex flex-col items-center">
-                                    <span className="text-4xl font-black">{data.overallScore}</span>
-                                    <span className="text-[10px] opacity-60 font-bold tracking-widest">SCORE</span>
-                                </div>
-                            </div>
-                            <div className="badge badge-outline gap-2 border-blue-600/20 text-blue-500 font-bold uppercase tracking-tighter text-[10px] px-3">
-                                <Shield className="h-3 w-3" /> Secure domain
+            {/* Main Score Card */}
+            <Card className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 border-blue-600/20">
+                <CardContent className="p-8">
+                    <div className="flex items-center gap-8">
+                        <div className="relative">
+                            <svg className="w-32 h-32 transform -rotate-90">
+                                <circle
+                                    cx="64"
+                                    cy="64"
+                                    r="56"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="12"
+                                    className="text-gray-700"
+                                />
+                                <circle
+                                    cx="64"
+                                    cy="64"
+                                    r="56"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="12"
+                                    strokeDasharray={`${data.overallScore * 3.52} 352`}
+                                    className={getScoreColor(data.overallScore)}
+                                />
+                            </svg>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                <span className={cn("text-4xl font-black", getScoreColor(data.overallScore))}>
+                                    {data.overallScore}
+                                </span>
+                                <span className="text-xs text-muted-foreground font-medium">SCORE</span>
                             </div>
                         </div>
-
-                        <div className="flex-1 w-full mt-4">
-                            <div className="stats shadow bg-[#111] border border-[#2a2a2a] w-full">
-                                <div className="stat">
-                                    <div className="stat-title text-gray-400 uppercase text-[10px] font-bold tracking-widest">Bounce Rate</div>
-                                    <div className={cn("stat-value text-2xl", data.bounceRate < 5 ? "text-green-500" : "text-red-500")}>{data.bounceRate}%</div>
-                                    <div className="stat-desc text-green-500">Good</div>
-                                </div>
-                                <div className="stat">
-                                    <div className="stat-title text-gray-400 uppercase text-[10px] font-bold tracking-widest">Spam Rate</div>
-                                    <div className={cn("stat-value text-2xl", data.spamRate < 1 ? "text-green-500" : "text-red-500")}>{data.spamRate}%</div>
-                                    <div className="stat-desc text-green-500">Good</div>
-                                </div>
-                                <div className="stat">
-                                    <div className="stat-title text-gray-400 uppercase text-[10px] font-bold tracking-widest">Open Rate</div>
-                                    <div className={cn("stat-value text-2xl", data.openRate > 30 ? "text-green-500" : "text-yellow-500")}>{data.openRate}%</div>
-                                    <div className="stat-desc text-green-500">High</div>
-                                </div>
-                                <div className="stat">
-                                    <div className="stat-title text-gray-400 uppercase text-[10px] font-bold tracking-widest">Reply Rate</div>
-                                    <div className={cn("stat-value text-2xl", data.replyRate > 5 ? "text-green-500" : "text-yellow-500")}>{data.replyRate}%</div>
-                                    <div className="stat-desc text-green-500">Good</div>
-                                </div>
-                            </div>
+                        <div className="flex-1 grid grid-cols-2 gap-4">
+                            <MetricCard label="Bounce Rate" value={`${data.bounceRate}%`} trend="down" good={data.bounceRate < 5} />
+                            <MetricCard label="Spam Rate" value={`${data.spamRate}%`} trend="down" good={data.spamRate < 1} />
+                            <MetricCard label="Open Rate" value={`${data.openRate}%`} trend="up" good={data.openRate > 30} />
+                            <MetricCard label="Reply Rate" value={`${data.replyRate}%`} trend="up" good={data.replyRate > 5} />
                         </div>
                     </div>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
 
             {/* Domain Health */}
             <Card className="bg-card border-border">
@@ -207,18 +204,18 @@ export function DeliverabilityDashboard() {
                             <div
                                 key={i}
                                 className={cn(
-                                    "alert shadow-sm border border-[#2a2a2a] py-3",
-                                    issue.type === "error" && "alert-error bg-red-500/10 text-red-500",
-                                    issue.type === "warning" && "alert-warning bg-yellow-500/10 text-yellow-500",
-                                    issue.type === "info" && "alert-info bg-blue-500/10 text-blue-500"
+                                    "flex items-start gap-3 p-3 rounded-lg",
+                                    issue.type === "error" && "bg-red-500/10",
+                                    issue.type === "warning" && "bg-yellow-500/10",
+                                    issue.type === "info" && "bg-blue-500/10"
                                 )}
                             >
-                                {issue.type === "error" && <XCircle className="h-5 w-5" />}
-                                {issue.type === "warning" && <AlertTriangle className="h-5 w-5" />}
-                                {issue.type === "info" && <CheckCircle2 className="h-5 w-5" />}
+                                {issue.type === "error" && <XCircle className="h-5 w-5 text-red-500 flex-shrink-0" />}
+                                {issue.type === "warning" && <AlertTriangle className="h-5 w-5 text-yellow-500 flex-shrink-0" />}
+                                {issue.type === "info" && <CheckCircle2 className="h-5 w-5 text-blue-500 flex-shrink-0" />}
                                 <div className="flex-1">
-                                    <p className="text-sm font-bold">{issue.message}</p>
-                                    <p className="text-[10px] opacity-70 mt-0.5">{issue.timestamp}</p>
+                                    <p className="text-sm font-medium">{issue.message}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{issue.timestamp}</p>
                                 </div>
                             </div>
                         ))

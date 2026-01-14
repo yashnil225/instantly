@@ -1,10 +1,32 @@
 import moment from 'moment-timezone'
 
 interface Schedule {
-    startTime: string | null // "09:00"
-    endTime: string | null   // "17:00"
+    startTime: string | null // "09:00" or "9:00 AM"
+    endTime: string | null   // "17:00" or "5:00 PM"
     timezone: string | null  // "America/New_York"
-    days: string | null      // "Mon,Tue,Wed,Thu,Fri"
+    days: string | null      // "Mon,Tue,Wed,Thu,Fri" or "mon,tue,wed,thu,fri"
+}
+
+// Convert 12-hour format (e.g., "1:30 PM") to 24-hour format (e.g., "13:30")
+function to24Hour(time: string): string {
+    if (!time) return "00:00"
+    
+    // Already in 24-hour format (e.g., "13:30")
+    if (!time.includes('AM') && !time.includes('PM')) {
+        return time
+    }
+    
+    const isPM = time.toUpperCase().includes('PM')
+    const isAM = time.toUpperCase().includes('AM')
+    const timePart = time.replace(/\s*(AM|PM)\s*/i, '').trim()
+    const [hourStr, minuteStr] = timePart.split(':')
+    let hour = parseInt(hourStr, 10)
+    const minute = parseInt(minuteStr || '0', 10)
+    
+    if (isPM && hour !== 12) hour += 12
+    if (isAM && hour === 12) hour = 0
+    
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
 }
 
 export function isCampaignScheduled(schedule: Schedule): boolean {
@@ -15,14 +37,20 @@ export function isCampaignScheduled(schedule: Schedule): boolean {
     }
 
     const now = moment().tz(timezone)
-    const currentDay = now.format('ddd')
+    const currentDay = now.format('ddd').toLowerCase()
     const currentTime = now.format('HH:mm')
 
-    if (!days.includes(currentDay)) {
+    // Normalize days to lowercase for comparison
+    const daysLower = days.toLowerCase()
+    if (!daysLower.includes(currentDay)) {
         return false
     }
 
-    if (currentTime < startTime || currentTime > endTime) {
+    // Convert stored times to 24-hour format
+    const start24 = to24Hour(startTime)
+    const end24 = to24Hour(endTime)
+
+    if (currentTime < start24 || currentTime > end24) {
         return false
     }
 

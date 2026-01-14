@@ -432,130 +432,124 @@ export default function CampaignAnalyticsPage() {
                                 </div>
                             ) : (
                                 <>
-                                    {/* Metric Cards - DaisyUI Stats */}
-                                    <div className="stats shadow bg-[#111] border border-[#2a2a2a] w-full">
+                                    {/* Metric Cards */}
+                                    <div className="grid grid-cols-5 gap-4">
                                         {metricCards.map((metric) => (
-                                            <div key={metric.title} className="stat">
-                                                <div className="stat-figure text-gray-500 pt-1">
+                                            <div
+                                                key={metric.title}
+                                                className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6 hover:border-[#333] transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-sm font-medium text-gray-400">{metric.title}</span>
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
-                                                            <Info className="h-4 w-4 cursor-help hover:text-gray-400 trasition-colors" />
+                                                            <Info className="h-4 w-4 text-gray-600 cursor-help hover:text-gray-400" />
                                                         </TooltipTrigger>
                                                         <TooltipContent className="bg-[#111] border-[#333] text-white">{metric.tooltip}</TooltipContent>
                                                     </Tooltip>
                                                 </div>
-                                                <div className="stat-title text-gray-400 uppercase text-[10px] font-bold tracking-widest">{metric.title}</div>
-                                                <div className="stat-value text-blue-500 text-2xl">{metric.value}</div>
-                                                <div className="stat-desc text-gray-500">Live data</div>
+                                                <div className="text-2xl font-bold text-white tracking-tight">{metric.value}</div>
                                             </div>
                                         ))}
                                     </div>
 
-                                    {/* Chart in DaisyUI Card */}
-                                    <div className="card bg-[#111] border border-[#2a2a2a] shadow-xl">
-                                        <div className="card-body p-6">
-                                            <ResponsiveContainer width="100%" height={300}>
-                                                <LineChart data={data?.chartData || []}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                                                    <XAxis
-                                                        dataKey="date"
-                                                        stroke="#666"
-                                                        style={{ fontSize: '12px' }}
-                                                        axisLine={false}
-                                                        tickLine={false}
-                                                        dy={10}
-                                                    />
-                                                    <YAxis
-                                                        stroke="#666"
-                                                        style={{ fontSize: '12px' }}
-                                                        axisLine={false}
-                                                        tickLine={false}
-                                                        dx={-10}
-                                                    />
-                                                    <RechartsTooltip
-                                                        contentStyle={{
-                                                            backgroundColor: '#0a0a0a',
-                                                            border: '1px solid #333',
-                                                            borderRadius: '8px',
-                                                            color: '#fff',
-                                                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
-                                                        }}
-                                                        cursor={{ stroke: '#333' }}
-                                                    />
-                                                    <Legend
-                                                        wrapperStyle={{ paddingTop: '20px' }}
-                                                        iconType="circle"
-                                                    />
-                                                    <Line type="monotone" dataKey="sent" stroke="#3b82f6" name="Sent" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                    <Line type="monotone" dataKey="totalReplies" stroke="#eab308" name="Total replies" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                    <Line type="monotone" dataKey="uniqueOpens" stroke="#22c55e" name="Unique opens" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                    <Line type="monotone" dataKey="totalClicks" stroke="#6b7280" name="Total clicks" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                    <Line type="monotone" dataKey="uniqueClicks" stroke="#9ca3af" name="Unique clicks" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-                                                </LineChart>
-                                            </ResponsiveContainer>
-                                        </div>
+                                    {/* Chart */}
+                                    <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
+                                        <ResponsiveContainer width="100%" height={300}>
+                                            <LineChart data={data?.chartData || []}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
+                                                <XAxis
+                                                    dataKey="date"
+                                                    stroke="#666"
+                                                    style={{ fontSize: '12px' }}
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    dy={10}
+                                                />
+                                                <YAxis
+                                                    stroke="#666"
+                                                    style={{ fontSize: '12px' }}
+                                                    axisLine={false}
+                                                    tickLine={false}
+                                                    dx={-10}
+                                                />
+                                                <RechartsTooltip
+                                                    contentStyle={{
+                                                        backgroundColor: '#0a0a0a',
+                                                        border: '1px solid #333',
+                                                        borderRadius: '8px',
+                                                        color: '#fff',
+                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                                                    }}
+                                                    cursor={{ stroke: '#333' }}
+                                                />
+                                                <Legend
+                                                    wrapperStyle={{ paddingTop: '20px' }}
+                                                    iconType="circle"
+                                                />
+                                                <Line type="monotone" dataKey="sent" stroke="#3b82f6" name="Sent" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                <Line type="monotone" dataKey="totalReplies" stroke="#eab308" name="Total replies" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                <Line type="monotone" dataKey="uniqueOpens" stroke="#22c55e" name="Unique opens" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                <Line type="monotone" dataKey="totalClicks" stroke="#6b7280" name="Total clicks" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                                <Line type="monotone" dataKey="uniqueClicks" stroke="#9ca3af" name="Unique clicks" strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
+                                            </LineChart>
+                                        </ResponsiveContainer>
                                     </div>
 
-                                    {/* Advanced Analytics Charts in DaisyUI Cards */}
+                                    {/* Advanced Analytics Charts */}
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        <div className="card bg-[#111] border border-[#2a2a2a] shadow-xl">
-                                            <div className="card-body p-6">
-                                                <SendTimeHeatmap data={data?.heatmapData} />
-                                            </div>
+                                        <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
+                                            <SendTimeHeatmap data={data?.heatmapData} />
                                         </div>
-                                        <div className="card bg-[#111] border border-[#2a2a2a] shadow-xl">
-                                            <div className="card-body p-6">
-                                                <ConversionFunnel data={data?.funnelData} />
-                                            </div>
+                                        <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
+                                            <ConversionFunnel data={data?.funnelData} />
                                         </div>
                                     </div>
 
-                                    {/* Step Analytics Table in DaisyUI Card */}
-                                    <div className="card bg-[#111] border border-[#2a2a2a] shadow-xl">
-                                        <div className="card-body p-6">
-                                            <div className="flex items-center gap-8 border-b border-[#2a2a2a] mb-6">
-                                                <button className="pb-3 text-sm font-medium text-blue-500 relative transition-colors">
-                                                    Step Analytics
-                                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
-                                                </button>
-                                                <button className="pb-3 text-sm font-medium text-gray-400 hover:text-white transition-colors">
-                                                    Activity
-                                                </button>
-                                            </div>
-                                            <div className="overflow-x-auto">
-                                                <table className="table table-xs w-full">
-                                                    <thead>
-                                                        <tr className="text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-[#2a2a2a]">
-                                                            <th className="text-left pb-4 pl-4">Step</th>
-                                                            <th className="text-left pb-4">Sent</th>
-                                                            <th className="text-left pb-4">Opened</th>
-                                                            <th className="text-left pb-4">Replied</th>
-                                                            <th className="text-left pb-4">Clicked</th>
-                                                            <th className="text-left pb-4 pr-4">Opportunities</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {data?.stepAnalytics && data.stepAnalytics.length > 0 ? (
-                                                            data.stepAnalytics.map((step, index) => (
-                                                                <tr key={index} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]/50 transition-colors last:border-0">
-                                                                    <td className="py-4 pl-4 text-sm font-medium text-white">{step.step}</td>
-                                                                    <td className="py-4 text-sm text-gray-300">{step.sent}</td>
-                                                                    <td className="py-4 text-sm text-gray-300">{step.opened}</td>
-                                                                    <td className="py-4 text-sm text-gray-300">{step.replied}</td>
-                                                                    <td className="py-4 text-sm text-gray-300">{step.clicked}</td>
-                                                                    <td className="py-4 pr-4 text-sm text-gray-300">{step.opportunities}</td>
-                                                                </tr>
-                                                            ))
-                                                        ) : (
-                                                            <tr>
-                                                                <td colSpan={6} className="py-12 text-center text-gray-500">
-                                                                    No step analytics data available
-                                                                </td>
+                                    {/* Step Analytics Table */}
+                                    <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
+                                        <div className="flex items-center gap-8 border-b border-[#2a2a2a] mb-6">
+                                            <button className="pb-3 text-sm font-medium text-blue-500 relative transition-colors">
+                                                Step Analytics
+                                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                                            </button>
+                                            <button className="pb-3 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                                                Activity
+                                            </button>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead>
+                                                    <tr className="text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-[#2a2a2a]">
+                                                        <th className="text-left pb-4 pl-4">Step</th>
+                                                        <th className="text-left pb-4">Sent</th>
+                                                        <th className="text-left pb-4">Opened</th>
+                                                        <th className="text-left pb-4">Replied</th>
+                                                        <th className="text-left pb-4">Clicked</th>
+                                                        <th className="text-left pb-4 pr-4">Opportunities</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {data?.stepAnalytics && data.stepAnalytics.length > 0 ? (
+                                                        data.stepAnalytics.map((step, index) => (
+                                                            <tr key={index} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]/50 transition-colors last:border-0">
+                                                                <td className="py-4 pl-4 text-sm font-medium text-white">{step.step}</td>
+                                                                <td className="py-4 text-sm text-gray-300">{step.sent}</td>
+                                                                <td className="py-4 text-sm text-gray-300">{step.opened}</td>
+                                                                <td className="py-4 text-sm text-gray-300">{step.replied}</td>
+                                                                <td className="py-4 text-sm text-gray-300">{step.clicked}</td>
+                                                                <td className="py-4 pr-4 text-sm text-gray-300">{step.opportunities}</td>
                                                             </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <tr>
+                                                            <td colSpan={6} className="py-12 text-center text-gray-500">
+                                                                No step analytics data available
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </>

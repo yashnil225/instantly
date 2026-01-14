@@ -579,10 +579,6 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                 </div>
 
                 <div className="flex-1 overflow-y-auto overflow-x-hidden p-6" style={{ maxHeight: 'calc(100vh - 140px)' }}>
-
-
-                    {/* Error Tab removed as per user request */}
-
                     {/* Warmup Tab */}
                     <TabsContent value="warmup" className="space-y-6 mt-0">
                         {/* Status Bar */}
@@ -642,6 +638,87 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                                     </BarChart>
                                 </ResponsiveContainer>
                             </div>
+                        </div>
+
+                        {/* Warmup Settings */}
+                        <div className="pt-6 border-t border-[#2a2a2a]">
+                            <div className="flex items-center gap-2 text-white font-medium mb-6">
+                                <span className="text-gray-500"><Flame className="h-4 w-4" /></span>
+                                Warmup Settings
+                            </div>
+
+                            <div className="space-y-8">
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <Label className="text-white font-medium">Warmup filter tag</Label>
+                                        <Info className="h-3 w-3 text-gray-500" />
+                                    </div>
+                                    <div className="flex gap-2 max-w-md">
+                                        <Input
+                                            placeholder="Custom tag"
+                                            value={warmupTag}
+                                            onChange={(e) => setWarmupTag(e.target.value)}
+                                            className="bg-[#111] border-[#2a2a2a] text-white h-10"
+                                        />
+                                        <Button
+                                            variant="outline"
+                                            className="border-[#2a2a2a] bg-[#111] text-gray-400 hover:bg-[#1a1a1a] hover:text-white px-3"
+                                            onClick={generateWarmupTag}
+                                        >
+                                            <RefreshCw className="h-4 w-4 mr-2" />
+                                            Generate
+                                        </Button>
+                                    </div>
+                                    <div className="text-xs text-gray-500 pl-1">Example: 'golden-pineapples'</div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-x-12 gap-y-8">
+                                    <div className="space-y-2">
+                                        <Label className="text-white font-medium">Increase per day</Label>
+                                        <div className="text-xs text-gray-500 mb-2">Suggested 1</div>
+                                        <Input
+                                            value={warmupDailyIncrease}
+                                            onChange={(e) => setWarmupDailyIncrease(e.target.value)}
+                                            className="bg-[#111] border-[#2a2a2a] text-white w-full h-10"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-white font-medium">Daily warmup limit</Label>
+                                        <div className="text-xs text-gray-500 mb-2">Suggested 10</div>
+                                        <Input
+                                            value={warmupDailyLimit}
+                                            onChange={(e) => setWarmupDailyLimit(e.target.value)}
+                                            className="bg-[#111] border-[#2a2a2a] text-white w-full h-10"
+                                        />
+                                        {parseInt(warmupDailyLimit) > 50 && (
+                                            <p className="text-orange-500 text-xs mt-1">
+                                                <span className="font-semibold">Warning</span> : Warmup limit is too high. It's recommended to keep it below 50.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label className="text-white font-medium">Reply rate %</Label>
+                                    <div className="text-xs text-gray-500 mb-2">Suggested 30</div>
+                                    <Input
+                                        value={warmupReplyRate}
+                                        onChange={(e) => setWarmupReplyRate(e.target.value)}
+                                        className="bg-[#111] border-[#2a2a2a] text-white w-32 h-10"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 border-t border-[#2a2a2a] pb-10">
+                            <Button
+                                className="bg-blue-600 hover:bg-blue-500 text-white w-20 h-10 shadow-lg shadow-blue-900/20"
+                                onClick={saveSettings}
+                                disabled={saving}
+                            >
+                                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                            </Button>
                         </div>
                     </TabsContent>
 
@@ -770,10 +847,7 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                                 </div>
                             </div>
                         </div>
-                    </TabsContent>
 
-                    {/* Settings Tab */}
-                    <TabsContent value="settings" className="space-y-6 mt-0">
                         {/* Connection Settings */}
                         <div className="pt-6 border-t border-[#2a2a2a]">
                             <div className="flex items-center gap-2 text-white font-medium mb-6">
@@ -883,86 +957,7 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                             </div>
                         </div>
 
-                    </TabsContent>
-
-                    {/* Warmup Settings (Continued) */}
-                    <TabsContent value="warmup" className="space-y-6 mt-0">
-                        {/* Warmup Settings */}
-                        <div className="pt-6 border-t border-[#2a2a2a] pb-20">
-                            <div className="flex items-center gap-2 text-white font-medium mb-6">
-                                <span className="text-gray-500"><Flame className="h-4 w-4" /></span>
-                                Warmup Settings
-                            </div>
-
-                            <div className="space-y-8">
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <Label className="text-white font-medium">Warmup filter tag</Label>
-                                        <Info className="h-3 w-3 text-gray-500" />
-                                    </div>
-                                    <div className="flex gap-2 max-w-md">
-                                        <Input
-                                            placeholder="Custom tag"
-                                            value={warmupTag}
-                                            onChange={(e) => setWarmupTag(e.target.value)}
-                                            className="bg-[#111] border-[#2a2a2a] text-white h-10"
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            className="border-[#2a2a2a] bg-[#111] text-gray-400 hover:bg-[#1a1a1a] hover:text-white px-3"
-                                            onClick={generateWarmupTag}
-                                        >
-                                            <RefreshCw className="h-4 w-4 mr-2" />
-                                            Generate
-                                        </Button>
-                                    </div>
-                                    <div className="text-xs text-gray-500 pl-1">Example: 'golden-pineapples'</div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-x-12 gap-y-8">
-                                    <div className="space-y-2">
-                                        <Label className="text-white font-medium">Increase per day</Label>
-                                        <div className="text-xs text-gray-500 mb-2">Suggested 1</div>
-                                        <Input
-                                            value={warmupDailyIncrease}
-                                            onChange={(e) => setWarmupDailyIncrease(e.target.value)}
-                                            className="bg-[#111] border-[#2a2a2a] text-white w-full h-10"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label className="text-white font-medium">Daily warmup limit</Label>
-                                        <div className="text-xs text-gray-500 mb-2">Suggested 10</div>
-                                        <Input
-                                            value={warmupDailyLimit}
-                                            onChange={(e) => setWarmupDailyLimit(e.target.value)}
-                                            className="bg-[#111] border-[#2a2a2a] text-white w-full h-10"
-                                        />
-                                        {parseInt(warmupDailyLimit) > 50 && (
-                                            <p className="text-orange-500 text-xs mt-1">
-                                                <span className="font-semibold">Warning</span> : Warmup limit is too high. It's recommended to keep it below 50.
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-white font-medium">Reply rate %</Label>
-                                    <div className="text-xs text-gray-500 mb-2">Suggested 30</div>
-                                    <Input
-                                        value={warmupReplyRate}
-                                        onChange={(e) => setWarmupReplyRate(e.target.value)}
-                                        className="bg-[#111] border-[#2a2a2a] text-white w-32 h-10"
-                                    />
-                                </div>
-
-                                <Button variant="outline" className="text-gray-300 border-[#2a2a2a] bg-transparent hover:bg-[#1a1a1a] hover:text-white text-xs h-9">
-                                    Show advanced settings <ChevronDown className="ml-2 h-3 w-3" />
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 fixed bottom-6 right-6 z-30">
+                        <div className="pt-8 border-t border-[#2a2a2a] pb-10">
                             <Button
                                 className="bg-blue-600 hover:bg-blue-500 text-white w-20 h-10 shadow-lg shadow-blue-900/20"
                                 onClick={saveSettings}
@@ -974,8 +969,7 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                     </TabsContent>
 
                     {/* Campaigns Tab */}
-                    {/* Campaigns Tab */}
-                    <TabsContent value="campaigns" className="mt-0 pt-2">
+                    <TabsContent value="campaigns" className="mt-0 pt-2 pb-10">
                         <div className="space-y-2">
                             {campaigns.length > 0 ? (
                                 campaigns.map((campaign) => {

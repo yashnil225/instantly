@@ -754,32 +754,25 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                 <Button
                                     onClick={handleUploadWithMapping}
                                     disabled={uploading}
-                                    className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-bold tracking-wide px-12 py-6 rounded-lg shadow-lg shadow-green-900/20 w-48 text-sm relative overflow-hidden"
+                                    className="bg-[#22c55e] hover:bg-[#16a34a] text-white font-bold tracking-wide rounded-lg shadow-lg shadow-green-900/20 w-64 h-14 text-sm relative overflow-hidden flex flex-col justify-center gap-1"
                                 >
                                     {uploading ? (
-                                        <div className="flex flex-col items-center gap-2 w-full">
-                                            <div className="flex items-center gap-2">
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                <span>Uploading...</span>
+                                        <div className="flex flex-col items-center w-full">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                <span className="text-xs">UPLOADING {uploadProgress > 0 ? `${uploadProgress}%` : ''}</span>
                                             </div>
-                                            {/* Animated Progress Bar */}
-                                            <div className="w-full h-1.5 bg-green-900/50 dark:bg-green-900/50 rounded-full overflow-hidden">
+                                            <div className="w-40 h-1 bg-green-900/50 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-foreground rounded-full transition-all duration-300 ease-out"
-                                                    style={{
-                                                        width: uploadProgress > 0 ? `${uploadProgress}%` : '15%',
-                                                        animation: uploadProgress === 0 ? 'pulse-width 1.5s infinite ease-in-out' : 'none'
-                                                    }}
+                                                    className="h-full bg-white rounded-full transition-all duration-300"
+                                                    style={{ width: `${uploadProgress || 10}%` }}
                                                 />
                                             </div>
-                                            {uploadProgress > 0 && (
-                                                <span className="text-[10px] opacity-75">{uploadProgress}%</span>
-                                            )}
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col items-center leading-none gap-1">
-                                            <span>UPLOAD ALL</span>
-                                            <Upload className="h-3 w-3 opacity-80" />
+                                        <div className="flex flex-col items-center leading-none">
+                                            <span className="text-[13px]">UPLOAD ALL</span>
+                                            <Upload className="h-3.5 w-3.5 mt-1 opacity-70" />
                                         </div>
                                     )}
                                 </Button>

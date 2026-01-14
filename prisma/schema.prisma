@@ -157,6 +157,7 @@ model EmailAccount {
   warmupScore         Int     @default(100)   // Reputation score in pool (0-100)
   lastActive          DateTime? // Last warmup activity
   healthScore     Int      @default(100)
+  isFavorite      Boolean  @default(false)
   status          String   @default("active") // active, paused, error
   lastSyncedAt    DateTime?
   bounceCount     Int      @default(0) // For warmup score calculation

@@ -16,22 +16,42 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit
 
     // Build where clause for workspace filtering
-    // Accounts are linked to workspaces through campaigns -> campaignAccounts
-    const whereClause = workspaceId && workspaceId !== 'all'
-        ? {
-            campaignAccounts: {
-                some: {
-                    campaign: {
-                        campaignWorkspaces: {
-                            some: {
-                                workspaceId: workspaceId
-                            }
+    const filter = searchParams.get('filter') || 'all'
+    const search = searchParams.get('search') || ''
+
+    const whereClause: any = {
+        userId: session.user.id
+    }
+
+    if (workspaceId && workspaceId !== 'all') {
+        whereClause.campaignAccounts = {
+            some: {
+                campaign: {
+                    campaignWorkspaces: {
+                        some: {
+                            workspaceId: workspaceId
                         }
                     }
                 }
             }
         }
-        : {}
+    }
+
+    if (filter === 'favorites') {
+        whereClause.isFavorite = true
+    } else if (filter === 'paused') {
+        whereClause.status = 'paused'
+    } else if (filter === 'active') {
+        whereClause.status = 'active'
+    } else if (filter === 'has_errors') {
+        whereClause.status = 'error'
+    } else if (filter === 'warmup_active') {
+        whereClause.warmupEnabled = true
+    }
+
+    if (search) {
+        whereClause.email = { contains: search }
+    }
 
     const [accounts, total] = await Promise.all([
         prisma.emailAccount.findMany({
@@ -57,9 +77,9 @@ export async function GET(request: Request) {
         emailsLimit: acc.dailyLimit || 300,
         warmupEmails: 0, // TODO: Add warmup tracking
         healthScore: acc.healthScore || 100,
-        isFavorite: false, // TODO: Add favorite tracking
+        isFavorite: acc.isFavorite || false,
         hasError: acc.status === 'error',
-        isWarming: false, // TODO: Add warmup status
+        isWarming: acc.warmupEnabled || false,
         isDFY: false, // TODO: Add DFY tracking
         isInCampaign: acc.campaignAccounts.length > 0,
         hasCustomDomain: !!acc.provider,

@@ -269,6 +269,8 @@ function AccountsPage() {
 
     const statusFilters = [
         { name: "All statuses", value: "all", icon: Globe, color: "text-blue-400" },
+        { name: "Active", value: "active", icon: Zap, color: "text-green-400" },
+        { name: "Favorites", value: "favorites", icon: Star, color: "text-yellow-400" },
         { name: "Paused", value: "paused", icon: Pause, color: "text-muted-foreground" },
         { name: "Has errors", value: "has_errors", icon: Heart, color: "text-red-400" },
         { name: "No custom tracking domain", value: "no_domain", icon: Globe, color: "text-blue-400" },
@@ -291,11 +293,13 @@ function AccountsPage() {
 
             // Status filter
             if (activeFilter === "all") return true
+            if (activeFilter === "favorites") return account.isFavorite
+            if (activeFilter === "active") return account.status === "active"
             if (activeFilter === "paused") return account.status === "paused"
             if (activeFilter === "has_errors") return account.hasError
             if (activeFilter === "no_domain") return !account.hasCustomDomain
-            if (activeFilter === "warmup_active") return account.isWarming && account.status === "active"
-            if (activeFilter === "warmup_paused") return account.isWarming && account.status === "paused"
+            if (activeFilter === "warmup_active") return account.isWarming
+            if (activeFilter === "warmup_paused") return !account.isWarming
             if (activeFilter === "warmup_errors") return account.isWarming && account.hasError
             if (activeFilter === "prewarmed") return account.warmupEmails > 100
             if (activeFilter === "dfy") return account.isDFY
@@ -321,20 +325,73 @@ function AccountsPage() {
     }
 
     const toggleFavorite = async (id: string) => {
+        // Optimistic update
+        setAccounts(prev => prev.map(acc =>
+            acc.id === id ? { ...acc, isFavorite: !acc.isFavorite } : acc
+        ))
+
         try {
             const res = await fetch(`/api/accounts/${id}/favorite`, { method: 'PATCH' })
-            if (res.ok) {
-                fetchAccounts()
+            if (!res.ok) {
+                // Rollback
+                setAccounts(prev => prev.map(acc =>
+                    acc.id === id ? { ...acc, isFavorite: !acc.isFavorite } : acc
+                ))
+                toast({ title: "Error", description: "Failed to update favorite", variant: "destructive" })
+            } else {
                 toast({ title: "Success", description: "Favorite updated" })
             }
         } catch (error) {
+            // Rollback
+            setAccounts(prev => prev.map(acc =>
+                acc.id === id ? { ...acc, isFavorite: !acc.isFavorite } : acc
+            ))
             toast({ title: "Error", description: "Failed to update favorite", variant: "destructive" })
         }
     }
 
-    // Toggle account status (active/paused) - Fire icon functionality
+    // Toggle account warmup status (Fire icon)
+    const toggleWarmup = async (id: string, currentIsWarming: boolean) => {
+        const newIsWarming = !currentIsWarming
+        // Optimistic update
+        setAccounts(prev => prev.map(acc =>
+            acc.id === id ? { ...acc, isWarming: newIsWarming } : acc
+        ))
+
+        try {
+            const res = await fetch(`/api/accounts/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ warmupEnabled: newIsWarming })
+            })
+            if (res.ok) {
+                toast({
+                    title: newIsWarming ? "Warmup Started" : "Warmup Paused",
+                    description: `Warmup is now ${newIsWarming ? "enabled" : "disabled"}`
+                })
+            } else {
+                // Rollback
+                setAccounts(prev => prev.map(acc =>
+                    acc.id === id ? { ...acc, isWarming: currentIsWarming } : acc
+                ))
+            }
+        } catch (error) {
+            // Rollback
+            setAccounts(prev => prev.map(acc =>
+                acc.id === id ? { ...acc, isWarming: currentIsWarming } : acc
+            ))
+            toast({ title: "Error", description: "Failed to update warmup status", variant: "destructive" })
+        }
+    }
+
+    // Toggle account sending status (Play/Pause button)
     const toggleAccountStatus = async (id: string, currentStatus: string) => {
         const newStatus = currentStatus === "active" ? "paused" : "active"
+        // Optimistic update
+        setAccounts(prev => prev.map(acc =>
+            acc.id === id ? { ...acc, status: newStatus as any } : acc
+        ))
+
         try {
             const res = await fetch(`/api/accounts/${id}`, {
                 method: 'PATCH',
@@ -342,16 +399,21 @@ function AccountsPage() {
                 body: JSON.stringify({ status: newStatus })
             })
             if (res.ok) {
-                // Optimistic update
-                setAccounts(prev => prev.map(acc =>
-                    acc.id === id ? { ...acc, status: newStatus as any } : acc
-                ))
                 toast({
                     title: newStatus === "active" ? "Account Activated" : "Account Paused",
                     description: `Email sending is now ${newStatus === "active" ? "enabled" : "disabled"}`
                 })
+            } else {
+                // Rollback
+                setAccounts(prev => prev.map(acc =>
+                    acc.id === id ? { ...acc, status: currentStatus as any } : acc
+                ))
             }
         } catch (error) {
+            // Rollback
+            setAccounts(prev => prev.map(acc =>
+                acc.id === id ? { ...acc, status: currentStatus as any } : acc
+            ))
             toast({ title: "Error", description: "Failed to update account status", variant: "destructive" })
         }
     }
@@ -829,6 +891,15 @@ function AccountsPage() {
                                                     />
                                                 </div>
                                                 <div className="flex items-center gap-3 min-w-0">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            toggleFavorite(account.id)
+                                                        }}
+                                                        className="hover:text-yellow-500 transition-colors"
+                                                    >
+                                                        <Star className={cn("h-4 w-4", account.isFavorite ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground")} />
+                                                    </button>
                                                     <span className="text-foreground font-semibold text-sm truncate">{account.email}</span>
                                                     {account.status === "paused" && (
                                                         <span className="px-2.5 py-0.5 bg-muted text-muted-foreground text-[11px] font-medium rounded-md uppercase tracking-wide">
@@ -841,7 +912,7 @@ function AccountsPage() {
                                                         </span>
                                                     )}
                                                     {account.isWarming && (
-                                                        <Flame className="h-4 w-4 text-orange-500 fill-orange-500/20" />
+                                                        <Flame className="h-4 w-4 text-orange-500 fill-orange-500" />
                                                     )}
                                                     <div className="w-px h-3 bg-[#333] mx-1" />
                                                     <Shield className="h-3.5 w-3.5 text-blue-500" />
@@ -854,8 +925,31 @@ function AccountsPage() {
                                                 </div>
                                                 <div className="text-sm text-foreground font-medium">{account.warmupEmails}</div>
                                                 <div className="text-sm font-bold text-foreground">{account.healthScore}%</div>
-                                                <div className="flex justify-end gap-2">
-                                                    {/* Fire icon - toggles account status */}
+                                                <div className="flex justify-end items-center gap-3">
+                                                    {/* Warmup (Fire) toggle */}
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation()
+                                                                    toggleWarmup(account.id, account.isWarming)
+                                                                }}
+                                                                className="h-8 w-8 flex items-center justify-center hover:bg-muted rounded-full transition-colors"
+                                                            >
+                                                                <Flame className={cn(
+                                                                    "h-4 w-4 transition-colors",
+                                                                    account.isWarming
+                                                                        ? "text-orange-500 fill-orange-500/20"
+                                                                        : "text-muted-foreground hover:text-orange-400"
+                                                                )} />
+                                                            </button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="bg-card border-border text-foreground">
+                                                            {account.isWarming ? "Warmup is ON" : "Warmup is OFF"}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+
+                                                    {/* Status (Play/Pause) toggle */}
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <button
@@ -863,18 +957,17 @@ function AccountsPage() {
                                                                     e.stopPropagation()
                                                                     toggleAccountStatus(account.id, account.status)
                                                                 }}
-                                                                className="h-6 w-6 flex items-center justify-center hover:bg-muted rounded transition-colors"
+                                                                className="h-8 w-8 flex items-center justify-center hover:bg-muted rounded-full transition-colors"
                                                             >
-                                                                <Flame className={cn(
-                                                                    "h-4 w-4 transition-colors",
-                                                                    account.status === "active"
-                                                                        ? "text-green-500 fill-green-500/20"
-                                                                        : "text-muted-foreground hover:text-green-400"
-                                                                )} />
+                                                                {account.status === "active" ? (
+                                                                    <Pause className="h-4 w-4 text-green-500" />
+                                                                ) : (
+                                                                    <Zap className="h-4 w-4 text-muted-foreground hover:text-green-500" />
+                                                                )}
                                                             </button>
                                                         </TooltipTrigger>
                                                         <TooltipContent className="bg-card border-border text-foreground">
-                                                            {account.status === "active" ? "Click to pause" : "Click to activate"}
+                                                            {account.status === "active" ? "Pause Email Sending" : "Start Email Sending"}
                                                         </TooltipContent>
                                                     </Tooltip>
                                                     <DropdownMenu>
@@ -970,22 +1063,64 @@ function AccountsPage() {
                                                     onCheckedChange={() => toggleSelectAccount(account.id)}
                                                     className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-[4px] w-4 h-4 mt-1"
                                                 />
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="text-foreground font-semibold text-sm truncate max-w-[150px]">{account.email}</span>
+                                                <div className="flex flex-col gap-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                toggleFavorite(account.id)
+                                                            }}
+                                                            className="hover:text-yellow-500 transition-colors"
+                                                        >
+                                                            <Star className={cn("h-3.5 w-3.5", account.isFavorite ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground")} />
+                                                        </button>
+                                                        <span className="text-foreground font-semibold text-sm truncate max-w-[130px]">{account.email}</span>
+                                                    </div>
                                                     <div className="flex items-center gap-2">
                                                         <Shield className="h-3 w-3 text-blue-500" />
                                                         <span className="text-xs text-blue-500">Connected</span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-6 w-6 text-muted-foreground hover:text-yellow-500 -mt-1 -mr-2"
-                                                onClick={() => toggleFavorite(account.id)}
-                                            >
-                                                <Star className={cn("h-4 w-4", account.isFavorite && "fill-yellow-500 text-yellow-500")} />
-                                            </Button>
+                                            <div className="flex items-center gap-1 -mt-1 -mr-2">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-muted-foreground hover:bg-muted rounded-full"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                toggleWarmup(account.id, account.isWarming)
+                                                            }}
+                                                        >
+                                                            <Flame className={cn("h-4 w-4", account.isWarming ? "text-orange-500 fill-orange-500/20" : "text-muted-foreground")} />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Warmup: {account.isWarming ? "ON" : "OFF"}</TooltipContent>
+                                                </Tooltip>
+
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 text-muted-foreground hover:bg-muted rounded-full"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                toggleAccountStatus(account.id, account.status)
+                                                            }}
+                                                        >
+                                                            {account.status === "active" ? (
+                                                                <Pause className="h-4 w-4 text-green-500" />
+                                                            ) : (
+                                                                <Zap className="h-4 w-4" />
+                                                            )}
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>{account.status === "active" ? "Pause Sending" : "Start Sending"}</TooltipContent>
+                                                </Tooltip>
+                                            </div>
                                         </div>
 
                                         <div className="grid grid-cols-3 gap-2 py-2 border-t border-border border-b">

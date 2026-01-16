@@ -291,40 +291,26 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
                         {/* Theme Section */}
                         <div className="px-4 py-3 pb-2">
                             <p className="text-xs font-medium text-muted-foreground mb-3">Theme</p>
-                            <div className="bg-secondary p-1 rounded-lg border border-border grid grid-cols-3 gap-1">
-                                <button
-                                    onClick={() => setTheme("light")}
-                                    className={cn(
-                                        "flex items-center justify-center py-1.5 rounded-md text-xs font-medium transition-all",
-                                        theme === "light"
-                                            ? "bg-primary text-primary-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    Light
-                                </button>
-                                <button
-                                    onClick={() => setTheme("dark")}
-                                    className={cn(
-                                        "flex items-center justify-center py-1.5 rounded-md text-xs font-medium transition-all",
-                                        theme === "dark"
-                                            ? "bg-primary text-primary-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    Dark
-                                </button>
-                                <button
-                                    onClick={() => setTheme("system")}
-                                    className={cn(
-                                        "flex items-center justify-center py-1.5 rounded-md text-xs font-medium transition-all",
-                                        theme === "system"
-                                            ? "bg-primary text-primary-foreground shadow-sm"
-                                            : "text-muted-foreground hover:text-foreground"
-                                    )}
-                                >
-                                    System
-                                </button>
+                            <div className="bg-secondary rounded-lg border border-border max-h-32 overflow-y-auto">
+                                {[
+                                    "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
+                                    "synthwave", "retro", "cyberpunk", "valentine", "halloween",
+                                    "garden", "forest", "aqua", "lofi", "pastel", "fantasy",
+                                    "wireframe", "black", "luxury", "dracula", "business", "night"
+                                ].map((t) => (
+                                    <button
+                                        key={t}
+                                        onClick={() => setTheme(t)}
+                                        className={cn(
+                                            "w-full text-left px-3 py-1.5 text-xs font-medium transition-all capitalize",
+                                            theme === t
+                                                ? "bg-primary text-primary-foreground"
+                                                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                        )}
+                                    >
+                                        {t}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 

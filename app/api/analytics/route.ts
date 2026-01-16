@@ -183,6 +183,12 @@ export async function GET(request: Request) {
         }))
 
         // Overall deliverability metrics
+        const sent = stats._sum.sent || 0
+        const opened = stats._sum.opened || 0
+        const clicked = stats._sum.clicked || 0
+        const replied = stats._sum.replied || 0
+        const totalSent = sent
+
         const deliverability = {
             overallScore: Math.round(accountStats.reduce((acc, curr) => acc + curr.health, 0) / (accountStats.length || 1)),
             bounceRate: 2.1, // Placeholder for now
@@ -200,11 +206,6 @@ export async function GET(request: Request) {
         }
 
         // Calculate funnel data
-        const sent = stats._sum.sent || 0
-        const opened = stats._sum.opened || 0
-        const clicked = stats._sum.clicked || 0
-        const replied = stats._sum.replied || 0
-
         const funnelData = [
             { stage: "Sent", value: sent, percentage: 100 },
             { stage: "Delivered", value: Math.round(sent * 0.99), percentage: 99 }, // Estimate delivery
@@ -213,7 +214,6 @@ export async function GET(request: Request) {
             { stage: "Replied", value: replied, percentage: sent > 0 ? Math.round((replied / sent) * 100) : 0 }
         ]
 
-        const totalSent = sent
         const result = {
             totalSent,
             opensRate: totalSent > 0 ? Math.round((opened / totalSent) * 100) : 0,

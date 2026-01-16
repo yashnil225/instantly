@@ -5,8 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Check, Mail, AlertCircle, Loader2, Plus } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Check, Mail, AlertCircle, Loader2 } from "lucide-react"
 
 interface ConnectAccountModalProps {
     open: boolean
@@ -254,7 +253,7 @@ export function ConnectAccountModal({ open, onOpenChange, onAccountConnected }: 
                             </div>
                             <div className="flex gap-3">
                                 <span className="flex-shrink-0 font-bold text-white">2.</span>
-                                <div>Click "Configure new app"</div>
+                                <div>Click &quot;Configure new app&quot;</div>
                             </div>
                             <div className="flex gap-3">
                                 <span className="flex-shrink-0 font-bold text-white">3.</span>
@@ -277,14 +276,15 @@ export function ConnectAccountModal({ open, onOpenChange, onAccountConnected }: 
                                 onClick={async () => {
                                     setLoading(true)
                                     try {
-                                        const res = await fetch('/api/auth/google/connect')
+                                        const callbackUrl = window.location.pathname + window.location.search
+                                        const res = await fetch(`/api/auth/google/connect?callbackUrl=${encodeURIComponent(callbackUrl)}`)
                                         const data = await res.json()
                                         if (data.url) {
                                             window.location.href = data.url
                                         } else {
                                             throw new Error("Failed")
                                         }
-                                    } catch (e) {
+                                    } catch {
                                         setError("Failed to start OAuth")
                                         setLoading(false)
                                     }

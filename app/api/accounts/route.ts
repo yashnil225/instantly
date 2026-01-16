@@ -19,22 +19,31 @@ export async function GET(request: Request) {
     const filter = searchParams.get('filter') || 'all'
     const search = searchParams.get('search') || ''
 
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
         userId: session.user.id
     }
 
     if (workspaceId && workspaceId !== 'all') {
-        whereClause.campaignAccounts = {
-            some: {
-                campaign: {
-                    campaignWorkspaces: {
-                        some: {
-                            workspaceId: workspaceId
+        whereClause.OR = [
+            {
+                campaignAccounts: {
+                    some: {
+                        campaign: {
+                            campaignWorkspaces: {
+                                some: {
+                                    workspaceId: workspaceId
+                                }
+                            }
                         }
                     }
                 }
+            },
+            {
+                campaignAccounts: {
+                    none: {}
+                }
             }
-        }
+        ]
     }
 
     if (filter === 'favorites') {
@@ -130,9 +139,10 @@ export async function POST(request: Request) {
 
             await transporter.verify()
             console.log("SMTP Connection Verified")
-        } catch (verifyError: any) {
-            console.error("SMTP Verification Failed", verifyError)
-            return NextResponse.json({ error: `Authentication failed: ${verifyError.message || 'Please verify your email and app password are correct.'}` }, { status: 400 })
+        } catch (verifyError: unknown) {
+            const verr = verifyError as Error;
+            console.error("SMTP Verification Failed", verr)
+            return NextResponse.json({ error: `Authentication failed: ${verr.message || 'Please verify your email and app password are correct.'}` }, { status: 400 })
         }
         // -------------------------
 

@@ -13,13 +13,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
     const error = searchParams.get('error')
+    const callbackUrl = searchParams.get('state') || '/campaigns/accounts'
 
     if (error) {
-        return NextResponse.redirect(new URL(`/campaigns?error=${error}`, request.url))
+        return NextResponse.redirect(new URL(`${callbackUrl}?error=${error}`, request.url))
     }
 
     if (!code) {
-        return NextResponse.redirect(new URL('/campaigns?error=no_code', request.url))
+        return NextResponse.redirect(new URL(`${callbackUrl}?error=no_code`, request.url))
     }
 
     try {
@@ -41,6 +42,20 @@ export async function GET(request: Request) {
         }
 
         // Upsert EmailAccount
+        const updateData: Record<string, string | bigint | boolean | null | number> = {
+            userId: session.user.id,
+            provider: 'google',
+            accessToken: tokens.access_token ?? '',
+            expiresAt: tokens.expiry_date ? BigInt(tokens.expiry_date) : null,
+            scope: tokens.scope ?? '',
+            status: 'active',
+            errorDetail: null // Clear any errors
+        }
+
+        if (tokens.refresh_token) {
+            updateData.refreshToken = tokens.refresh_token
+        }
+
         await prisma.emailAccount.upsert({
             where: {
                 email: userInfo.email
@@ -55,34 +70,32 @@ export async function GET(request: Request) {
                 accessToken: tokens.access_token,
                 expiresAt: tokens.expiry_date ? BigInt(tokens.expiry_date) : null,
                 idToken: tokens.id_token,
-                scope: tokens.scope
-            },
-            update: {
-                userId: session.user.id, // Re-claim if needed
-                provider: 'google',
-                refreshToken: tokens.refresh_token, // Update if we got a new one
-                accessToken: tokens.access_token,
-                expiresAt: tokens.expiry_date ? BigInt(tokens.expiry_date) : null,
                 scope: tokens.scope,
                 status: 'active'
-            }
+            },
+            update: updateData
         })
 
-        return NextResponse.redirect(new URL('/campaigns/accounts?success=connected', request.url))
+        const redirectUrl = new URL(callbackUrl, request.url)
+        redirectUrl.searchParams.set('success', 'connected')
+        return NextResponse.redirect(redirectUrl)
 
-    } catch (error: any) {
-        console.error('Google Connect Error:', error)
-        
+    } catch (error) {
+        const err = error as Error & { message?: string; code?: number }
+        console.error('Google Connect Error:', err)
+
         // Detect specific error types for better user feedback
         let errorType = 'connect_failed'
-        if (error?.message?.includes('invalid_grant') || error?.code === 400) {
+        if (err?.message?.includes('invalid_grant') || err?.code === 400) {
             errorType = 'token_expired'
-        } else if (error?.message?.includes('No email')) {
+        } else if (err?.message?.includes('No email')) {
             errorType = 'no_email'
-        } else if (error?.code === 401) {
+        } else if (err?.code === 401) {
             errorType = 'unauthorized'
         }
-        
-        return NextResponse.redirect(new URL(`/campaigns/accounts?error=${errorType}`, request.url))
+
+        const redirectUrl = new URL(callbackUrl, request.url)
+        redirectUrl.searchParams.set('error', errorType)
+        return NextResponse.redirect(redirectUrl)
     }
 }

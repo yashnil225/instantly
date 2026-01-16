@@ -11,6 +11,9 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const callbackUrl = searchParams.get('callbackUrl') || '/campaigns/accounts'
+
     const oauth2Client = new google.auth.OAuth2(
         process.env.GOOGLE_CLIENT_ID,
         process.env.GOOGLE_CLIENT_SECRET,
@@ -29,7 +32,8 @@ export async function GET(request: Request) {
     const url = oauth2Client.generateAuthUrl({
         access_type: 'offline',
         prompt: 'consent',
-        scope: scopes
+        scope: scopes,
+        state: callbackUrl // Pass the callback URL via state
     })
 
     return NextResponse.json({ url })

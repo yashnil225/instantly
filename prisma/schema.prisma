@@ -331,6 +331,7 @@ model SendingEvent {
   emailAccount   EmailAccount? @relation(fields: [emailAccountId], references: [id])
 
   metadata  String? // JSON for IP, User Agent, Link URL
+  details   String? // Text content for similarity ranking
   createdAt DateTime @default(now())
 }
 

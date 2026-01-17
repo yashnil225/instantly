@@ -113,7 +113,8 @@ export async function POST(request: Request) {
                     subject: subject,
                     isReply: true,
                     bodySnippet: replyBody.substring(0, 100)
-                })
+                }),
+                details: replyBody
             }
         })
 

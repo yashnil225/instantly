@@ -92,7 +92,8 @@ export async function syncReplies(account: EmailAccount) {
                                 subject: parsed.subject,
                                 date: parsed.date,
                                 messageId: parsed.messageId
-                            })
+                            }),
+                            details: parsed.text || parsed.html?.replace(/<[^>]*>?/gm, '') || ""
                         }
                     })
 

@@ -46,9 +46,7 @@ export async function GET(request: Request) {
         ]
     }
 
-    if (filter === 'favorites') {
-        whereClause.isFavorite = true
-    } else if (filter === 'paused') {
+    if (filter === 'paused') {
         whereClause.status = 'paused'
     } else if (filter === 'active') {
         whereClause.status = 'active'
@@ -86,7 +84,6 @@ export async function GET(request: Request) {
         emailsLimit: acc.dailyLimit || 300,
         warmupEmails: 0, // TODO: Add warmup tracking
         healthScore: acc.healthScore || 100,
-        isFavorite: acc.isFavorite || false,
         hasError: acc.status === 'error',
         isWarming: acc.warmupEnabled || false,
         isDFY: false, // TODO: Add DFY tracking

@@ -33,7 +33,6 @@ import {
     Grid3x3,
     List,
     MoreHorizontal,
-    Star,
     Heart,
     Flame,
     AlertTriangle,
@@ -48,13 +47,9 @@ import {
     Mail,
     Check,
     MailPlus,
-    FileSpreadsheet,
     FileText,
-    Keyboard,
-    RefreshCw
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
 import { AccountDetailPanel } from "@/components/accounts/AccountDetailPanel"
 import { EmptyState } from '@/components/ui/empty-state'
@@ -68,7 +63,6 @@ interface EmailAccount {
     emailsLimit: number
     warmupEmails: number
     healthScore: number
-    isFavorite: boolean
     hasError: boolean
     isWarming: boolean
     isDFY: boolean
@@ -103,12 +97,8 @@ function AccountsPage() {
     const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get("page") || "1"))
     const [totalPages, setTotalPages] = useState(1)
 
-    // Export state
-    const [exportProgress, setExportProgress] = useState(0)
-    const [isExporting, setIsExporting] = useState(false)
-
     // Workspace state
-    const [workspaces, setWorkspaces] = useState<any[]>([])
+    const [workspaces, setWorkspaces] = useState<{ id: string, name: string }[]>([])
     const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
     const [workspaceSearch, setWorkspaceSearch] = useState("")
 
@@ -187,24 +177,32 @@ function AccountsPage() {
 
     const itemsPerPage = 20
 
-    // Retry utility function
-    const fetchWithRetry = async (url: string, options?: RequestInit, retries = 3): Promise<Response> => {
-        for (let i = 0; i < retries; i++) {
-            try {
-                const res = await fetch(url, options)
-                if (res.ok) return res
-                if (res.status >= 500 && i < retries - 1) {
-                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000))
-                    continue
-                }
-                return res
-            } catch (error) {
-                if (i === retries - 1) throw error
-                await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000))
+
+    const fetchAccounts = useCallback(async () => {
+        setLoading(true)
+        try {
+            // Find workspace ID - "My Organization" shows all accounts
+            const workspace = workspaces.find((w) => w.name === currentWorkspace)
+            const workspaceId = workspace?.id || 'all'
+
+            let url = `/api/accounts?page=${currentPage}&limit=${itemsPerPage}`
+            if (workspaceId !== 'all') {
+                url += `&workspaceId=${workspaceId}`
             }
+
+            const res = await fetch(url)
+            if (res.ok) {
+                const data = await res.json()
+                setAccounts(data.accounts || [])
+                setTotalPages(Math.ceil((data.total || 0) / itemsPerPage))
+            }
+        } catch (error) {
+            console.error("Failed to fetch accounts:", error)
+            toast({ title: "Error", description: "Failed to load accounts", variant: "destructive" })
+        } finally {
+            setLoading(false)
         }
-        throw new Error("Max retries reached")
-    }
+    }, [currentPage, itemsPerPage, currentWorkspace, workspaces, toast])
 
     // Load workspaces on mount
     useEffect(() => {
@@ -214,7 +212,7 @@ function AccountsPage() {
     // Fetch accounts when workspace changes
     useEffect(() => {
         fetchAccounts()
-    }, [currentPage, debouncedSearch, activeFilter, currentWorkspace, workspaces])
+    }, [currentPage, debouncedSearch, activeFilter, currentWorkspace, workspaces, fetchAccounts])
 
     const loadWorkspaces = async () => {
         try {
@@ -237,40 +235,14 @@ function AccountsPage() {
         localStorage.setItem('activeWorkspace', workspaceName)
     }
 
-    const filteredWorkspaces = workspaces.filter((w: any) =>
+    const filteredWorkspaces = workspaces.filter((w) =>
         w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
     )
 
-    const fetchAccounts = async () => {
-        setLoading(true)
-        try {
-            // Find workspace ID - "My Organization" shows all accounts
-            const workspace = workspaces.find((w: any) => w.name === currentWorkspace)
-            const workspaceId = workspace?.id || 'all'
-
-            let url = `/api/accounts?page=${currentPage}&limit=${itemsPerPage}`
-            if (workspaceId !== 'all') {
-                url += `&workspaceId=${workspaceId}`
-            }
-
-            const res = await fetch(url)
-            if (res.ok) {
-                const data = await res.json()
-                setAccounts(data.accounts || [])
-                setTotalPages(Math.ceil((data.total || 0) / itemsPerPage))
-            }
-        } catch (error) {
-            console.error("Failed to fetch accounts:", error)
-            toast({ title: "Error", description: "Failed to load accounts", variant: "destructive" })
-        } finally {
-            setLoading(false)
-        }
-    }
 
     const statusFilters = [
         { name: "All statuses", value: "all", icon: Globe, color: "text-blue-400" },
         { name: "Active", value: "active", icon: Zap, color: "text-green-400" },
-        { name: "Favorites", value: "favorites", icon: Star, color: "text-yellow-400" },
         { name: "Paused", value: "paused", icon: Pause, color: "text-muted-foreground" },
         { name: "Has errors", value: "has_errors", icon: Heart, color: "text-red-400" },
         { name: "No custom tracking domain", value: "no_domain", icon: Globe, color: "text-blue-400" },
@@ -293,7 +265,6 @@ function AccountsPage() {
 
             // Status filter
             if (activeFilter === "all") return true
-            if (activeFilter === "favorites") return account.isFavorite
             if (activeFilter === "active") return account.status === "active"
             if (activeFilter === "paused") return account.status === "paused"
             if (activeFilter === "has_errors") return account.hasError
@@ -324,31 +295,6 @@ function AccountsPage() {
         )
     }
 
-    const toggleFavorite = async (id: string) => {
-        // Optimistic update
-        setAccounts(prev => prev.map(acc =>
-            acc.id === id ? { ...acc, isFavorite: !acc.isFavorite } : acc
-        ))
-
-        try {
-            const res = await fetch(`/api/accounts/${id}/favorite`, { method: 'PATCH' })
-            if (!res.ok) {
-                // Rollback
-                setAccounts(prev => prev.map(acc =>
-                    acc.id === id ? { ...acc, isFavorite: !acc.isFavorite } : acc
-                ))
-                toast({ title: "Error", description: "Failed to update favorite", variant: "destructive" })
-            } else {
-                toast({ title: "Success", description: "Favorite updated" })
-            }
-        } catch (error) {
-            // Rollback
-            setAccounts(prev => prev.map(acc =>
-                acc.id === id ? { ...acc, isFavorite: !acc.isFavorite } : acc
-            ))
-            toast({ title: "Error", description: "Failed to update favorite", variant: "destructive" })
-        }
-    }
 
     // Toggle account warmup status (Fire icon)
     const toggleWarmup = async (id: string, currentIsWarming: boolean) => {
@@ -389,7 +335,7 @@ function AccountsPage() {
         const newStatus = currentStatus === "active" ? "paused" : "active"
         // Optimistic update
         setAccounts(prev => prev.map(acc =>
-            acc.id === id ? { ...acc, status: newStatus as any } : acc
+            acc.id === id ? { ...acc, status: newStatus as "active" | "paused" | "error" | "warmup" } : acc
         ))
 
         try {
@@ -406,13 +352,13 @@ function AccountsPage() {
             } else {
                 // Rollback
                 setAccounts(prev => prev.map(acc =>
-                    acc.id === id ? { ...acc, status: currentStatus as any } : acc
+                    acc.id === id ? { ...acc, status: currentStatus as "active" | "paused" | "error" | "warmup" } : acc
                 ))
             }
         } catch (error) {
             // Rollback
             setAccounts(prev => prev.map(acc =>
-                acc.id === id ? { ...acc, status: currentStatus as any } : acc
+                acc.id === id ? { ...acc, status: currentStatus as "active" | "paused" | "error" | "warmup" } : acc
             ))
             toast({ title: "Error", description: "Failed to update account status", variant: "destructive" })
         }
@@ -528,22 +474,12 @@ function AccountsPage() {
     }
 
     const handleExportCSV = async () => {
-        setIsExporting(true)
-        setExportProgress(0)
-
         try {
-            // Simulate progress for large datasets
             const total = filteredAccounts.length
-            let processed = 0
-
             const csvRows = [["Email", "Status", "Emails Sent", "Warmup Emails", "Health Score"]]
 
             for (const account of filteredAccounts) {
                 csvRows.push([account.email, account.status, account.emailsSent.toString(), account.warmupEmails.toString(), account.healthScore.toString()])
-                processed++
-                setExportProgress(Math.round((processed / total) * 100))
-                // Small delay to show progress for large lists
-                if (processed % 50 === 0) await new Promise(r => setTimeout(r, 10))
             }
 
             const csv = csvRows.map(row => row.join(",")).join("\n")
@@ -554,59 +490,12 @@ function AccountsPage() {
             a.download = "email-accounts.csv"
             a.click()
             toast({ title: "Success", description: `Exported ${total} accounts to CSV` })
-        } finally {
-            setIsExporting(false)
-            setExportProgress(0)
-        }
-    }
-
-    const handleExportExcel = async () => {
-        setIsExporting(true)
-        setExportProgress(0)
-
-        try {
-            // Dynamic import xlsx library
-            const XLSX = await import('xlsx')
-
-            const total = filteredAccounts.length
-            let processed = 0
-
-            const headers = ["Email", "Status", "Emails Sent", "Email Limit", "Warmup Emails", "Health Score", "Is Favorite", "Has Errors", "Is Warming", "Has Custom Domain"]
-            const rows: (string | number)[][] = [headers]
-
-            for (const account of filteredAccounts) {
-                rows.push([
-                    account.email,
-                    account.status,
-                    account.emailsSent,
-                    account.emailsLimit,
-                    account.warmupEmails,
-                    account.healthScore,
-                    account.isFavorite ? "Yes" : "No",
-                    account.hasError ? "Yes" : "No",
-                    account.isWarming ? "Yes" : "No",
-                    account.hasCustomDomain ? "Yes" : "No"
-                ])
-                processed++
-                setExportProgress(Math.round((processed / total) * 100))
-            }
-
-            // Create workbook and worksheet
-            const ws = XLSX.utils.aoa_to_sheet(rows)
-            const wb = XLSX.utils.book_new()
-            XLSX.utils.book_append_sheet(wb, ws, "Accounts")
-
-            // Generate and download
-            XLSX.writeFile(wb, "email-accounts.xlsx")
-            toast({ title: "Success", description: `Exported ${total} accounts to Excel` })
         } catch (error) {
             console.error("Export error:", error)
-            toast({ title: "Error", description: "Failed to export Excel file", variant: "destructive" })
-        } finally {
-            setIsExporting(false)
-            setExportProgress(0)
+            toast({ title: "Error", description: "Failed to export CSV file", variant: "destructive" })
         }
     }
+
 
     // Legacy export function for backwards compatibility
     const handleExport = handleExportCSV
@@ -890,16 +779,7 @@ function AccountsPage() {
                                                         className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-[4px] w-4 h-4"
                                                     />
                                                 </div>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation()
-                                                            toggleFavorite(account.id)
-                                                        }}
-                                                        className="hover:text-yellow-500 transition-colors"
-                                                    >
-                                                        <Star className={cn("h-4 w-4", account.isFavorite ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground")} />
-                                                    </button>
+                                                <div className="flex items-center gap-3 min-w-0 ml-7">
                                                     <span className="text-foreground font-semibold text-sm truncate">{account.email}</span>
                                                     {account.status === "paused" && (
                                                         <span className="px-2.5 py-0.5 bg-muted text-muted-foreground text-[11px] font-medium rounded-md uppercase tracking-wide">
@@ -1065,15 +945,6 @@ function AccountsPage() {
                                                 />
                                                 <div className="flex flex-col gap-1 min-w-0">
                                                     <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation()
-                                                                toggleFavorite(account.id)
-                                                            }}
-                                                            className="hover:text-yellow-500 transition-colors"
-                                                        >
-                                                            <Star className={cn("h-3.5 w-3.5", account.isFavorite ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground")} />
-                                                        </button>
                                                         <span className="text-foreground font-semibold text-sm truncate max-w-[130px]">{account.email}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2">

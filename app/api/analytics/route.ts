@@ -91,6 +91,12 @@ export async function GET(request: Request) {
             }
         })
 
+        // Overall totals from aggregated stats
+        const totalSent = stats._sum.sent || 0
+        const totalOpened = stats._sum.opened || 0
+        const totalClicked = stats._sum.clicked || 0
+        const totalReplied = stats._sum.replied || 0
+
         const dailyStats = await prisma.campaignStat.findMany({
             where: {
                 date: { gte: startDate },
@@ -183,18 +189,13 @@ export async function GET(request: Request) {
         }))
 
         // Overall deliverability metrics
-        const sent = stats._sum.sent || 0
-        const opened = stats._sum.opened || 0
-        const clicked = stats._sum.clicked || 0
-        const replied = stats._sum.replied || 0
-        const totalSent = sent
 
         const deliverability = {
             overallScore: Math.round(accountStats.reduce((acc, curr) => acc + curr.health, 0) / (accountStats.length || 1)),
             bounceRate: 2.1, // Placeholder for now
             spamRate: 0.4,   // Placeholder for now
-            openRate: totalSent > 0 ? Math.round(((stats._sum.opened || 0) / totalSent) * 100) : 0,
-            replyRate: totalSent > 0 ? Math.round(((stats._sum.replied || 0) / totalSent) * 100) : 0,
+            openRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
+            replyRate: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0,
             domainHealth: Array.from(new Set(accountStats.map(a => a.email.split('@')[1]))).map(domain => ({
                 domain,
                 spf: true,
@@ -207,18 +208,18 @@ export async function GET(request: Request) {
 
         // Calculate funnel data
         const funnelData = [
-            { stage: "Sent", value: sent, percentage: 100 },
-            { stage: "Delivered", value: Math.round(sent * 0.99), percentage: 99 }, // Estimate delivery
-            { stage: "Opened", value: opened, percentage: sent > 0 ? Math.round((opened / sent) * 100) : 0 },
-            { stage: "Clicked", value: clicked, percentage: sent > 0 ? Math.round((clicked / sent) * 100) : 0 },
-            { stage: "Replied", value: replied, percentage: sent > 0 ? Math.round((replied / sent) * 100) : 0 }
+            { stage: "Sent", value: totalSent, percentage: 100 },
+            { stage: "Delivered", value: Math.round(totalSent * 0.99), percentage: 99 }, // Estimate delivery
+            { stage: "Opened", value: totalOpened, percentage: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0 },
+            { stage: "Clicked", value: totalClicked, percentage: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0 },
+            { stage: "Replied", value: totalReplied, percentage: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0 }
         ]
 
         const result = {
             totalSent,
-            opensRate: totalSent > 0 ? Math.round((opened / totalSent) * 100) : 0,
-            clickRate: totalSent > 0 ? Math.round((clicked / totalSent) * 100) : 0,
-            replyRate: totalSent > 0 ? Math.round((replied / totalSent) * 100) : 0,
+            opensRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
+            clickRate: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0,
+            replyRate: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0,
             opportunities: {
                 count: opportunitiesLeads.length,
                 value: opportunitiesLeads.length * opportunityValue
@@ -237,8 +238,17 @@ export async function GET(request: Request) {
     }
 }
 
-function generateChartData(startDate: Date, endDate: Date, dailyStats: any[]) {
+interface DailyStat {
+    date: Date | string;
+    sent?: number;
+    opened?: number;
+    clicked?: number;
+    replied?: number;
+}
+
+function generateChartData(startDate: Date, endDate: Date, dailyStats: DailyStat[]) {
     const data = []
+
     const currentDate = new Date(startDate)
     currentDate.setHours(0, 0, 0, 0)
 

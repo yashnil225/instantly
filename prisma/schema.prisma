@@ -304,6 +304,7 @@ model SequenceVariant {
   
   sequence   Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
   sequenceId String
+  label      String?
 
   subject String?
   body    String

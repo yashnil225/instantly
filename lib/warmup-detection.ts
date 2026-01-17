@@ -1,5 +1,5 @@
 import Imap from 'imap'
-import { simpleParser } from 'mailparser'
+import { simpleParser, AddressObject } from 'mailparser'
 import { prisma } from './prisma'
 
 interface ImapConfig {
@@ -18,6 +18,14 @@ interface WarmupEmail {
     warmupId: string
     date: Date
     folder: string
+}
+
+function getAddressString(address: AddressObject | AddressObject[] | undefined): string {
+    if (!address) return ''
+    if (Array.isArray(address)) {
+        return address.map(a => a.text).join(', ')
+    }
+    return address.text
 }
 
 /**
@@ -64,7 +72,7 @@ async function searchWarmupEmails(imap: Imap, folder: string): Promise<WarmupEma
                 const warmupEmails: WarmupEmail[] = []
                 const fetch = imap.fetch(results, { bodies: 'HEADER', struct: true })
 
-                fetch.on('message', (msg, seqno) => {
+                fetch.on('message', (msg) => {
                     let uid = 0
                     msg.once('attributes', (attrs) => {
                         uid = attrs.uid
@@ -82,8 +90,8 @@ async function searchWarmupEmails(imap: Imap, folder: string): Promise<WarmupEma
                                 if (warmupHeader === 'true' && warmupId) {
                                     warmupEmails.push({
                                         uid,
-                                        from: parsed.from?.text || '',
-                                        to: parsed.to?.text || '',
+                                        from: getAddressString(parsed.from),
+                                        to: getAddressString(parsed.to),
                                         subject: parsed.subject || '',
                                         warmupId: warmupId as string,
                                         date: parsed.date || new Date(),
@@ -143,7 +151,14 @@ async function markAsRead(imap: Imap, uid: number, folder: string): Promise<bool
 /**
  * Detect warmup emails that need replies or spam rescue
  */
-export async function detectWarmupEmails(account: any): Promise<{
+export async function detectWarmupEmails(account: {
+    id: string
+    email: string
+    imapHost?: string | null
+    imapPort?: number | null
+    imapUser?: string | null
+    imapPass?: string | null
+}): Promise<{
     needsReply: WarmupEmail[]
     inSpam: WarmupEmail[]
     totalFound: number
@@ -177,7 +192,7 @@ export async function detectWarmupEmails(account: any): Promise<{
         imap.end()
 
         // Filter inbox emails that haven't been replied to yet
-        const needsReply = inboxEmails.filter(email => {
+        const needsReply = inboxEmails.filter(() => {
             // Check if we've already replied (would need DB tracking)
             return true // For now, mark all as needing reply
         })
@@ -187,15 +202,16 @@ export async function detectWarmupEmails(account: any): Promise<{
             inSpam: spamEmails,
             totalFound: inboxEmails.length + spamEmails.length
         }
-    } catch (error: any) {
-        console.error(`IMAP detection failed for ${account.email}:`, error)
+    } catch (error: unknown) {
+        const err = error as Error
+        console.error(`IMAP detection failed for ${account.email}:`, err)
 
         // Log error to the account to surface in UI
         await prisma.emailAccount.update({
             where: { id: account.id },
             data: {
                 status: 'error',
-                errorDetail: `IMAP Connection failed: ${error.message || 'Unknown IMAP error'}`
+                errorDetail: `IMAP Connection failed: ${err.message || 'Unknown IMAP error'}`
             }
         }).catch(e => console.error('Failed to update account error status', e))
 
@@ -206,7 +222,14 @@ export async function detectWarmupEmails(account: any): Promise<{
 /**
  * rescueFromSpam already has a catch block, let's enhance it too
  */
-export async function rescueFromSpam(account: any): Promise<number> {
+export async function rescueFromSpam(account: {
+    id: string
+    email: string
+    imapHost?: string | null
+    imapPort?: number | null
+    imapUser?: string | null
+    imapPass?: string | null
+}): Promise<number> {
     const config: ImapConfig = {
         host: account.imapHost || 'imap.gmail.com',
         port: account.imapPort || 993,
@@ -249,15 +272,16 @@ export async function rescueFromSpam(account: any): Promise<number> {
 
         imap.end()
         return rescued
-    } catch (error: any) {
-        console.error(`Spam rescue failed for ${account.email}:`, error)
+    } catch (error: unknown) {
+        const err = error as Error
+        console.error(`Spam rescue failed for ${account.email}:`, err)
 
         // Log error to the account to surface in UI
         await prisma.emailAccount.update({
             where: { id: account.id },
             data: {
                 status: 'error',
-                errorDetail: `IMAP Spamshelf failed: ${error.message || 'Unknown IMAP error'}`
+                errorDetail: `IMAP Spamshelf failed: ${err.message || 'Unknown IMAP error'}`
             }
         }).catch(e => console.error('Failed to update account error status', e))
 

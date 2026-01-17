@@ -1,5 +1,5 @@
-import imaps from 'imap-simple'
-import { simpleParser } from 'mailparser'
+import imaps, { MessageBodyPart } from 'imap-simple'
+import { simpleParser, AddressObject } from 'mailparser'
 import { prisma } from './prisma'
 import { dispatchWebhook } from './webhooks'
 
@@ -11,6 +11,14 @@ interface EmailAccount {
     imapUser: string | null
     imapPass: string | null
     lastSyncedAt?: Date | null
+}
+
+function getAddressString(address: AddressObject | AddressObject[] | undefined): string {
+    if (!address) return ''
+    if (Array.isArray(address)) {
+        return address.map(a => a.text).join(', ')
+    }
+    return address.text
 }
 
 export async function syncReplies(account: EmailAccount) {
@@ -48,7 +56,7 @@ export async function syncReplies(account: EmailAccount) {
         console.log(`Found ${messages.length} unread messages for ${account.email}`)
 
         for (const item of messages) {
-            const all = item.parts.find((part: any) => part.which === '')
+            const all = item.parts.find((part: MessageBodyPart) => part.which === '')
             if (!all) continue
 
             const parsed = await simpleParser(all.body)
@@ -88,12 +96,13 @@ export async function syncReplies(account: EmailAccount) {
                             leadId: sentEvent.leadId,
                             campaignId: sentEvent.campaignId,
                             metadata: JSON.stringify({
-                                from: parsed.from?.text,
+                                from: getAddressString(parsed.from),
+                                to: getAddressString(parsed.to),
                                 subject: parsed.subject,
                                 date: parsed.date,
                                 messageId: parsed.messageId
                             }),
-                            details: parsed.text || parsed.html?.replace(/<[^>]*>?/gm, '') || ""
+                            details: parsed.text || (typeof parsed.html === 'string' ? parsed.html.replace(/<[^>]*>?/gm, '') : "")
                         }
                     })
 

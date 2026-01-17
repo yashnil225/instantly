@@ -1,5 +1,5 @@
 import Imap from 'node-imap'
-import { simpleParser } from 'mailparser'
+import { simpleParser, Source } from 'mailparser'
 import { prisma } from '@/lib/prisma'
 import type { EmailAccount } from '@prisma/client'
 
@@ -20,7 +20,7 @@ export async function checkForReplies(account: EmailAccount) {
         let repliesFound = 0
 
         imap.once('ready', () => {
-            imap.openBox('INBOX', false, (err, box) => {
+            imap.openBox('INBOX', false, (err) => {
                 if (err) {
                     console.error(`IMAP error opening inbox for ${account.email}:`, err)
                     imap.end()
@@ -45,9 +45,9 @@ export async function checkForReplies(account: EmailAccount) {
 
                     const fetch = imap.fetch(results, { bodies: '', markSeen: false })
 
-                    fetch.on('message', (msg, seqno) => {
-                        msg.on('body', (stream, info) => {
-                            simpleParser(stream, async (err, parsed) => {
+                    fetch.on('message', (msg) => {
+                        msg.on('body', (stream) => {
+                            simpleParser(stream as unknown as Source, async (err, parsed) => {
                                 if (err) {
                                     console.error('Email parsing error:', err)
                                     return
@@ -55,8 +55,6 @@ export async function checkForReplies(account: EmailAccount) {
 
                                 try {
                                     // Check if this is a reply (has In-Reply-To or References header)
-                                    const inReplyTo = parsed.inReplyTo
-                                    const references = parsed.references
                                     const from = parsed.from?.value[0]?.address
 
                                     if (!from) return
@@ -128,7 +126,7 @@ export async function checkForReplies(account: EmailAccount) {
                                 where: { id: account.id },
                                 data: { lastSyncedAt: new Date() }
                             })
-                        } catch (e) { }
+                        } catch { }
 
                         imap.end()
                         resolve(repliesFound)
@@ -167,7 +165,7 @@ export async function checkForBounces(account: EmailAccount) {
         let bouncesFound = 0
 
         imap.once('ready', () => {
-            imap.openBox('INBOX', false, (err, box) => {
+            imap.openBox('INBOX', false, (err) => {
                 if (err) {
                     console.error(`IMAP error opening inbox for ${account.email}:`, err)
                     imap.end()
@@ -196,9 +194,9 @@ export async function checkForBounces(account: EmailAccount) {
 
                     const fetch = imap.fetch(results, { bodies: '', markSeen: false })
 
-                    fetch.on('message', (msg, seqno) => {
-                        msg.on('body', (stream, info) => {
-                            simpleParser(stream, async (err, parsed) => {
+                    fetch.on('message', (msg) => {
+                        msg.on('body', (stream) => {
+                            simpleParser(stream as unknown as Source, async (err, parsed) => {
                                 if (err) {
                                     console.error('Email parsing error:', err)
                                     return

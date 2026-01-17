@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { JSX } from "react";
 
 // <FAQ> component is a lsit of <Item> component
@@ -33,8 +33,17 @@ const faqList: FAQItemProps[] = [
 ];
 
 const FaqItem = ({ item }: { item: FAQItemProps }) => {
-  const accordion = useRef(null);
+  const accordion = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [height, setHeight] = useState<number | undefined>(0);
+
+  useEffect(() => {
+    const nextHeight = isOpen ? accordion?.current?.scrollHeight : 0;
+    const timeoutId = setTimeout(() => {
+      setHeight(nextHeight);
+    }, 0);
+    return () => clearTimeout(timeoutId);
+  }, [isOpen]);
 
   return (
     <li>
@@ -80,7 +89,7 @@ const FaqItem = ({ item }: { item: FAQItemProps }) => {
         className={`transition-all duration-300 ease-in-out opacity-80 overflow-hidden`}
         style={
           isOpen
-            ? { maxHeight: accordion?.current?.scrollHeight, opacity: 1 }
+            ? { maxHeight: height, opacity: 1 }
             : { maxHeight: 0, opacity: 0 }
         }
       >

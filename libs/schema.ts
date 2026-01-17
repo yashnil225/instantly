@@ -1,148 +1,145 @@
-/* eslint-disable no-unused-vars */
 import { z } from "zod";
 
 import { AssessmentTypeEnum } from "./enums/assessment-type-enum";
 import { validateDate } from "./date";
 
 export const FormDataSchema = z.object({
-  studentId: z.string().min(1, "Aluno é obrigatório"),
+  studentId: z.string().min(1, "Student is required"),
   assessmentType: z.nativeEnum(AssessmentTypeEnum, {
-    required_error: "O tipo de avaliação é obrigatório",
+    message: "Assessment type is required"
   }),
   assessmentMeasures: z.object({
     chest: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     triceps: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     suprailiac: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     thigh: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     abdomen: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     calf: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     axilla: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     subscapular: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     weight: z.number({
-      invalid_type_error: "Insira umn valor numérico",
-      required_error: "O peso é obrigatório",
+      message: "Weight is required and must be a number",
     }),
     height: z.number({
-      invalid_type_error: "Insira umn valor numérico",
-      required_error: "O peso é obrigatório",
+      message: "Height is required and must be a number",
     }),
   }),
   bodyMeasurement: z.object({
     neck: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     shoulder: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     chest: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     waist: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     abdomen: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     hip: z
-      .number({ invalid_type_error: "Insira umn valor numérico" })
+      .number()
       .optional(),
     right: z.object({
       arm: z
-        .number({ invalid_type_error: "Insira umn valor numérico" })
+        .number()
         .optional(),
       forearm: z
-        .number({ invalid_type_error: "Insira umn valor numérico" })
+        .number()
         .optional(),
       thigh: z
-        .number({ invalid_type_error: "Insira umn valor numérico" })
+        .number()
         .optional(),
       calf: z
-        .number({ invalid_type_error: "Insira umn valor numérico" })
+        .number()
         .optional(),
     }),
     left: z.object({
       arm: z
-        .number({ invalid_type_error: "Insira umn valor numérico" })
+        .number()
         .optional(),
       forearm: z
-        .number({ invalid_type_error: "Insira umn valor numérico" })
+        .number()
         .optional(),
       thigh: z
-        .number({ invalid_type_error: "Insira umn valor numérico" })
+        .number()
         .optional(),
       calf: z
-        .number({ invalid_type_error: "Insira umn valor numérico" })
+        .number()
         .optional(),
     }),
   }),
   startDate: z
-    .string({ required_error: "A data de início é obrigatória" })
+    .string()
     .regex(
       /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/,
-      "Por favor, utilize o formato: DD/MM/AAAA"
+      "Please use the format: DD/MM/YYYY"
     ),
   endDate: z
-    .string({ required_error: "A data de início é obrigatória" })
+    .string()
     .regex(
       /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/,
-      "Por favor, utilize o formato: DD/MM/AAAA"
+      "Please use the format: DD/MM/YYYY"
     ),
 });
 
 export const SignInSchema = z.object({
   email: z
-    .string({ required_error: "O email é obrigatório." })
-    .email({ message: "E-mail inválido." }),
+    .string()
+    .email({ message: "Invalid email." }),
   password: z
-    .string({ required_error: "A senha é obrigatória." })
-    .min(6, { message: "O tamanho da senha deve ser no mínimo 6 caracteres." }),
+    .string()
+    .min(6, { message: "Password must be at least 6 characters." }),
 });
 
 export const ResetPasswordSchema = z.object({
   password: z
-    .string({ required_error: "A senha é obrigatória." })
-    .min(6, { message: "O tamanho da senha deve ser no mínimo 6 caracteres." }), // Adjust the validation as needed
+    .string()
+    .min(6, { message: "Password must be at least 6 characters." }),
 });
 
 export const RequestResetPasswordSchema = z.object({
   email: z
-    .string({ required_error: "O email é obrigatório." })
-    .email({ message: "E-mail inválido." }),
+    .string()
+    .email({ message: "Invalid email." }),
 });
 
 export const SignupSchema = z.object({
   name: z
-    .string({ required_error: "O nome é obrigatório." })
-    .min(6, "O nome deve ter pelo menos 6 caracteres."),
+    .string()
+    .min(6, "Name must be at least 6 characters."),
   email: z
-    .string({ required_error: "O email é obrigatório." })
-    .email("E-mail inválido."),
+    .string()
+    .email("Invalid email."),
   password: z
-    .string({ required_error: "A senha é obrigatória." })
-    .min(6, "A senha deve ter pelo menos 6 caracteres."),
+    .string()
+    .min(6, "Password must be at least 6 characters."),
   birthDate: z
-    .string({ required_error: "A data de nascimento é obrigatório." })
+    .string()
     .refine((data) => validateDate(data), {
-      message: "Formato de data inválido. Use DD/MM/YYYY.",
+      message: "Invalid date format. Use DD/MM/YYYY.",
     }),
   phone: z
     .string()
-    .min(10, "O telefone deve ter pelo menos 11 caracteres.")
+    .min(10, "Phone must have at least 11 characters.")
     .optional(),
 });

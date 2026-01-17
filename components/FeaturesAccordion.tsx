@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
 interface Feature {
@@ -60,7 +60,17 @@ const Item = ({
   isOpen: boolean;
   setFeatureSelected: () => void;
 }) => {
-  const accordion = useRef(null);
+  const accordion = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | undefined>(0);
+
+  useEffect(() => {
+    const nextHeight = isOpen ? accordion?.current?.scrollHeight : 0;
+    const timeoutId = setTimeout(() => {
+      setHeight(nextHeight);
+    }, 0);
+    return () => clearTimeout(timeoutId);
+  }, [isOpen]);
+
   const { title, description } = feature;
 
   return (
@@ -109,7 +119,7 @@ const Item = ({
         className={`transition-all duration-300 ease-in-out text-base-content-secondary overflow-hidden`}
         style={
           isOpen
-            ? { maxHeight: accordion?.current?.scrollHeight, opacity: 1 }
+            ? { maxHeight: height, opacity: 1 }
             : { maxHeight: 0, opacity: 0 }
         }
       >
@@ -148,8 +158,8 @@ const Media = ({ feature }: { feature: Feature }) => {
   } else if (type === "image") {
     return (
       <Image
-        src={path}
-        alt={alt}
+        src={path || ""}
+        alt={alt || ""}
         className={`${style} object-cover object-center`}
         width={size.width}
         height={size.height}

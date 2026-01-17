@@ -1,0 +1,26 @@
+﻿components/FeaturesListicle.tsx(499,18): error TS2532: Object is possibly 'undefined'.
+components/FeaturesListicle.tsx(502,16): error TS2532: Object is possibly 'undefined'.
+components/notification-manager.tsx(78,13): error TS2353: Object literal may only specify known properties, and 'duration' does not exist in type 'Toast'.
+components/ui/calendar.tsx(57,17): error TS2353: Object literal may only specify known properties, and 'IconLeft' does not exist in type 'Partial<CustomComponents>'.
+lib/imap-monitor.ts(50,42): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(source: Source, callback: (err: any, mail: ParsedMail) => void): void', gave the following error.
+    Argument of type 'ReadableStream' is not assignable to parameter of type 'Source'.
+      Property 'compose' is missing in type 'ReadableStream' but required in type 'Stream'.
+  Overload 2 of 3, '(source: Source, options?: MailParserOptions | undefined): Promise<ParsedMail>', gave the following error.
+    Argument of type 'ReadableStream' is not assignable to parameter of type 'Source'.
+      Property 'compose' is missing in type 'ReadableStream' but required in type 'Stream'.
+lib/imap-monitor.ts(201,42): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(source: Source, callback: (err: any, mail: ParsedMail) => void): void', gave the following error.
+    Argument of type 'ReadableStream' is not assignable to parameter of type 'Source'.
+      Property 'compose' is missing in type 'ReadableStream' but required in type 'Stream'.
+  Overload 2 of 3, '(source: Source, options?: MailParserOptions | undefined): Promise<ParsedMail>', gave the following error.
+    Argument of type 'ReadableStream' is not assignable to parameter of type 'Source'.
+      Property 'compose' is missing in type 'ReadableStream' but required in type 'Stream'.
+lib/imap-sync.ts(96,66): error TS2339: Property 'replace' does not exist on type 'string | false'.
+  Property 'replace' does not exist on type 'false'.
+lib/warmup-detection.ts(86,56): error TS2339: Property 'text' does not exist on type 'AddressObject | AddressObject[]'.
+  Property 'text' does not exist on type 'AddressObject[]'.
+libs/schema.ts(9,5): error TS2353: Object literal may only specify known properties, and 'errorMap' does not exist in type '{ error?: string | $ZodErrorMap<$ZodIssueInvalidValue<unknown>> | undefined; message?: string | undefined; }'.
+libs/schema.ts(9,25): error TS2694: Namespace '"C:/Users/Yash/OneDrive/Desktop/Workspaces/Instantly.ai/instantly/node_modules/zod/v4/classic/external"' has no exported member 'ZodIssueOptionalMessage'.
+libs/schema.ts(9,57): error TS2694: Namespace '"C:/Users/Yash/OneDrive/Desktop/Workspaces/Instantly.ai/instantly/node_modules/zod/v4/classic/external"' has no exported member 'ErrorMapCtx'.
+libs/schema.ts(10,87): error TS2551: Property 'invalid_enum_value' does not exist on type '{ readonly invalid_type: "invalid_type"; readonly too_big: "too_big"; readonly too_small: "too_small"; readonly invalid_format: "invalid_format"; readonly not_multiple_of: "not_multiple_of"; ... 5 more ...; readonly custom: "custom"; }'. Did you mean 'invalid_value'?

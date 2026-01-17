@@ -1,9 +1,14 @@
 import axios from 'axios';
 
+export type GPTMessage = {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+};
+
 // Use this if you want to make a call to OpenAI GPT-4 for instance. userId is used to identify the user on openAI side.
 export const sendOpenAi = async (
-  messages: any[], // TODO: type this
-  userId: number,
+  messages: GPTMessage[],
+  userId: string | number,
   max = 100,
   temp = 1
 ) => {
@@ -38,18 +43,22 @@ export const sendOpenAi = async (
     console.log('>>> ' + answer);
     console.log(
       'TOKENS USED: ' +
-        usage?.total_tokens +
-        ' (prompt: ' +
-        usage?.prompt_tokens +
-        ' / response: ' +
-        usage?.completion_tokens +
-        ')'
+      usage?.total_tokens +
+      ' (prompt: ' +
+      usage?.prompt_tokens +
+      ' / response: ' +
+      usage?.completion_tokens +
+      ')'
     );
     console.log('\n');
 
     return answer;
-  } catch (e) {
-    console.error('GPT Error: ' + e?.response?.status, e?.response?.data);
+  } catch (e: unknown) {
+    if (axios.isAxiosError(e)) {
+      console.error('GPT Error: ' + e?.response?.status, e?.response?.data);
+    } else {
+      console.error('GPT Error: ', e);
+    }
     return null;
   }
 };

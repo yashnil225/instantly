@@ -35,8 +35,10 @@ const Header = () => {
 
   // setIsOpen(false) when the route changes (i.e: when the user clicks on a link on mobile)
   useEffect(() => {
-    setIsOpen(false);
-  }, [searchParams]);
+    if (isOpen) {
+      setIsOpen(false);
+    }
+  }, [searchParams, isOpen]);
 
   return (
     <header className="bg-base-200">

@@ -2137,6 +2137,21 @@
   resolved "https://registry.npmjs.org/@types/estree/-/estree-1.0.8.tgz"
   integrity sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==
 
+"@types/imap-simple@^4.2.10":
+  version "4.2.10"
+  resolved "https://registry.npmjs.org/@types/imap-simple/-/imap-simple-4.2.10.tgz"
+  integrity sha512-ZLITvpfY4+oPtH3z7axYRGJqOB/9M6cb4ye8eEydOlgXZuJFX0z9l+hxzXgrFDnWKwxH39ZPCT4bGIFUKSJ52g==
+  dependencies:
+    "@types/imap" "*"
+    "@types/node" "*"
+
+"@types/imap@*", "@types/imap@^0.8.43":
+  version "0.8.43"
+  resolved "https://registry.npmjs.org/@types/imap/-/imap-0.8.43.tgz"
+  integrity sha512-POPoqrDax9mxM2N4ITZYCWaFtg1ORVfzJe4S7xwSh9aHawdEb7FwWTJYiAhzIvWp7DM+6BajnzYOwZ1BUrqtow==
+  dependencies:
+    "@types/node" "*"
+
 "@types/json-schema@^7.0.15":
   version "7.0.15"
   resolved "https://registry.npmjs.org/@types/json-schema/-/json-schema-7.0.15.tgz"
@@ -2146,6 +2161,14 @@
   version "0.0.29"
   resolved "https://registry.npmjs.org/@types/json5/-/json5-0.0.29.tgz"
   integrity sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==
+
+"@types/mailparser@^3.4.6":
+  version "3.4.6"
+  resolved "https://registry.npmjs.org/@types/mailparser/-/mailparser-3.4.6.tgz"
+  integrity sha512-wVV3cnIKzxTffaPH8iRnddX1zahbYB1ZEoAxyhoBo3TBCBuK6nZ8M8JYO/RhsCuuBVOw/DEN/t/ENbruwlxn6Q==
+  dependencies:
+    "@types/node" "*"
+    iconv-lite "^0.6.3"
 
 "@types/node-imap@^0.9.3":
   version "0.9.3"
@@ -4061,6 +4084,13 @@ https-proxy-agent@^7.0.1:
   dependencies:
     agent-base "^7.1.2"
     debug "4"
+
+iconv-lite@^0.6.3:
+  version "0.6.3"
+  resolved "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.6.3.tgz"
+  integrity sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==
+  dependencies:
+    safer-buffer ">= 2.1.2 < 3.0.0"
 
 iconv-lite@~0.4.13:
   version "0.4.24"
@@ -6507,7 +6537,7 @@ yocto-queue@^0.1.0:
   resolved "https://registry.npmjs.org/zod-validation-error/-/zod-validation-error-4.0.2.tgz"
   integrity sha512-Q6/nZLe6jxuU80qb/4uJ4t5v2VEZ44lzQjPDhYJNztRQ4wyWc6VF3D3Kb/fAuPetZQnhS3hnajCf9CsWesghLQ==
 
-"zod@^3.25.0 || ^4.0.0":
-  version "4.1.13"
-  resolved "https://registry.npmjs.org/zod/-/zod-4.1.13.tgz"
-  integrity sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==
+"zod@^3.25.0 || ^4.0.0", zod@^4.3.5:
+  version "4.3.5"
+  resolved "https://registry.npmjs.org/zod/-/zod-4.3.5.tgz"
+  integrity sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g==

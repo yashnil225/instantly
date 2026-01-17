@@ -7,9 +7,9 @@ export const maxDuration = 60 // Allow up to 60s for Pro plans
 
 export async function POST(req: NextRequest) {
     // 1. Authenticate
-    const auth = await validateApiKey(req)
-    if (!auth.isValid) {
-        return NextResponse.json({ error: auth.error }, { status: 401 })
+    const auth = await validateApiKey()
+    if (auth.error || !auth.user) {
+        return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: (auth as any).status || 401 })
     }
 
     try {

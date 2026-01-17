@@ -30,6 +30,7 @@ interface Campaign {
     id: string
     name: string
     status: string
+    dailyLimit?: number | null
 }
 
 export default function CampaignLayout({

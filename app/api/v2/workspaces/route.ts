@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { validateApiKey } from "@/lib/api-auth"
 import { prisma } from "@/lib/prisma"
+import { v4 as uuidv4 } from "uuid"
 
 /**
  * GET /api/v2/workspaces
@@ -15,9 +16,9 @@ export async function GET(req: NextRequest) {
     try {
         // Get workspaces where user is the owner
         const ownedWorkspaces = await prisma.workspace.findMany({
-            where: { ownerId: auth.user.id },
+            where: { userId: auth.user.id },
             include: {
-                _count: { select: { campaigns: true } }
+                _count: { select: { campaignWorkspaces: true } }
             }
         })
 
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
             include: {
                 workspace: {
                     include: {
-                        _count: { select: { campaigns: true } }
+                        _count: { select: { campaignWorkspaces: true } }
                     }
                 }
             }
@@ -37,13 +38,13 @@ export async function GET(req: NextRequest) {
             owned: ownedWorkspaces.map(w => ({
                 id: w.id,
                 name: w.name,
-                campaignCount: w._count.campaigns,
+                campaignCount: w._count.campaignWorkspaces,
                 role: "owner"
             })),
             member: memberWorkspaces.map(m => ({
                 id: m.workspace.id,
                 name: m.workspace.name,
-                campaignCount: m.workspace._count.campaigns,
+                campaignCount: m.workspace._count.campaignWorkspaces,
                 role: m.role
             }))
         })
@@ -73,18 +74,20 @@ export async function POST(req: NextRequest) {
         const workspace = await prisma.workspace.create({
             data: {
                 name,
-                ownerId: auth.user.id
+                userId: auth.user.id
             }
         })
 
         // If client email provided, invite them
         if (clientEmail) {
             // Create invitation record (would need email sending in production)
-            await prisma.workspaceInvitation.create({
+            await prisma.invitation.create({
                 data: {
                     workspaceId: workspace.id,
                     email: clientEmail,
                     role: "client",
+                    token: uuidv4(),
+                    inviterId: auth.user.id,
                     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
                 }
             })

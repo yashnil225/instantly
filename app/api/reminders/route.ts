@@ -1,33 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { auth } from '@/auth'
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { auth } from "@/auth"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 export async function GET(request: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     try {
         const reminders = await prisma.reminder.findMany({
             where: {
                 userId: session.user.id,
-                status: 'pending'
+                status: "pending"
             },
             include: {
                 lead: true
             },
             orderBy: {
-                scheduledAt: 'asc'
+                scheduledAt: "asc"
             }
         })
 
         return NextResponse.json(reminders)
     } catch (error) {
-        console.error('Failed to fetch reminders:', error)
-        return NextResponse.json({ error: 'Failed to fetch reminders' }, { status: 500 })
+        console.error("Failed to fetch reminders:", error)
+        return NextResponse.json({ error: "Failed to fetch reminders" }, { status: 500 })
     }
 }
 

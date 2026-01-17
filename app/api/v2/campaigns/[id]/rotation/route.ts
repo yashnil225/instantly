@@ -88,7 +88,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
         const campaign = await prisma.campaign.findFirst({
             where: { id, userId: auth.user.id },
             include: {
-                emailAccounts: {
+                campaignAccounts: {
                     include: {
                         emailAccount: {
                             select: {
@@ -109,7 +109,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
 
         return NextResponse.json({
             campaignId: id,
-            accounts: campaign.emailAccounts.map(ea => ea.emailAccount)
+            accounts: (campaign as any).campaignAccounts.map((ea: any) => ea.emailAccount)
         })
     } catch (error) {
         console.error("API GET /v2/campaigns/[id]/rotation error:", error)

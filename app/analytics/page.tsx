@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -18,7 +18,6 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
     Dialog,
     DialogContent,
@@ -27,13 +26,10 @@ import {
 import {
     Share2,
     Filter,
-    Settings,
     ChevronDown,
     Info,
     Loader2,
-    Search,
     Download,
-    Zap,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -49,8 +45,8 @@ import {
     Legend,
     ResponsiveContainer,
 } from "recharts"
-import { DeliverabilityDashboard } from "@/components/deliverability-dashboard"
-import { SendTimeHeatmap, ConversionFunnel } from "@/components/analytics-charts"
+import { DeliverabilityDashboard } from "@/components/app/deliverability-dashboard"
+import { SendTimeHeatmap, ConversionFunnel } from "@/components/app/analytics-charts"
 
 interface AnalyticsData {
     totalSent: number
@@ -70,8 +66,8 @@ interface AnalyticsData {
         sentClicks: number
         uniqueClicks: number
     }[]
-    heatmapData?: any[]
-    funnelData?: any[]
+    heatmapData?: unknown[]
+    funnelData?: unknown[]
     accountStats?: {
         id: string
         email: string
@@ -83,7 +79,7 @@ interface AnalyticsData {
         openRate: number
         replyRate: number
     }[]
-    deliverability?: any
+    deliverability?: unknown
 }
 
 export default function AnalyticsPage() {
@@ -91,7 +87,7 @@ export default function AnalyticsPage() {
     const [loading, setLoading] = useState(true)
     const [data, setData] = useState<AnalyticsData | null>(null)
     const [dateRange, setDateRange] = useState("last_7_days")
-    const [filterOpen, setFilterOpen] = useState(false)
+    // const [filterOpen, setFilterOpen] = useState(false)
     const [activeTab, setActiveTab] = useState("campaign")
     const [shareOpen, setShareOpen] = useState(false)
     const [customDateOpen, setCustomDateOpen] = useState(false)
@@ -107,17 +103,13 @@ export default function AnalyticsPage() {
     })
 
     // Workspace state
-    const [workspaces, setWorkspaces] = useState<any[]>([])
+    const [workspaces, setWorkspaces] = useState<{ id: string; name: string }[]>([])
     const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
     const [workspaceSearch, setWorkspaceSearch] = useState("")
 
     useEffect(() => {
         loadWorkspaces()
     }, [])
-
-    useEffect(() => {
-        fetchAnalytics()
-    }, [dateRange, currentWorkspace])
 
     const loadWorkspaces = async () => {
         try {
@@ -140,14 +132,14 @@ export default function AnalyticsPage() {
         localStorage.setItem('activeWorkspace', workspaceName)
     }
 
-    const filteredWorkspaces = workspaces.filter((w: any) =>
+    const filteredWorkspaces = workspaces.filter((w) =>
         w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
     )
 
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = React.useCallback(async () => {
         setLoading(true)
         try {
-            const workspace = workspaces.find((w: any) => w.name === currentWorkspace)
+            const workspace = workspaces.find((w) => w.name === currentWorkspace)
             const workspaceId = workspace?.id || 'all'
 
             const params = new URLSearchParams({ range: dateRange })
@@ -165,7 +157,11 @@ export default function AnalyticsPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [dateRange, currentWorkspace, workspaces])
+
+    useEffect(() => {
+        fetchAnalytics()
+    }, [fetchAnalytics])
 
     const handleDateRangeChange = (value: string) => {
         if (value === "custom") {
@@ -542,10 +538,10 @@ export default function AnalyticsPage() {
                                     {activeTab === "campaign" && (
                                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                             <div className="bg-card border border-border rounded-lg p-6">
-                                                <SendTimeHeatmap data={data?.heatmapData} />
+                                                <SendTimeHeatmap data={data?.heatmapData as any} />
                                             </div>
                                             <div className="bg-card border border-border rounded-lg p-6">
-                                                <ConversionFunnel data={data?.funnelData} />
+                                                <ConversionFunnel data={data?.funnelData as any} />
                                             </div>
                                         </div>
                                     )}
@@ -648,7 +644,7 @@ export default function AnalyticsPage() {
                                     {/* Deliverability Dashboard - Show when tab is active */}
                                     {activeTab === "deliverability" && (
                                         <div className="pt-6">
-                                            <DeliverabilityDashboard initialData={data?.deliverability} />
+                                            <DeliverabilityDashboard initialData={data?.deliverability as any} />
                                         </div>
                                     )}
                                 </>

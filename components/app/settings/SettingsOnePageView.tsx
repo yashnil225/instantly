@@ -1,11 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
-import { useSearchParams } from "next/navigation"
-
 // Sections
-import { ProfileSection } from "@/components/settings/ProfileSection"
-import { WorkspaceMembersSection } from "@/components/settings/WorkspaceMembersSection"
+import { ProfileSection } from "@/components/app/settings/ProfileSection"
+import { WorkspaceMembersSection } from "@/components/app/settings/WorkspaceMembersSection"
 import WorkspaceGroupsPage from "@/app/settings/groups/page"
 import LeadLabelsPage from "@/app/settings/labels/page"
 import CustomTagsPage from "@/app/settings/tags/page"
@@ -13,11 +10,15 @@ import AgencyPage from "@/app/settings/agency/page"
 import AuditLogsPage from "@/app/settings/logs/page"
 
 // Icons for section headers (optional, matching sidebar)
-import { User, Users, Building2, Tag, Globe, Shield, ScrollText } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { User, Users, Building2, Tag, Shield, ScrollText } from "lucide-react"
 
 interface SettingsOnePageProps {
-    user: any
+    user: {
+        id: string
+        name?: string | null
+        email?: string | null
+        image?: string | null
+    }
     workspaceId: string | null
 }
 

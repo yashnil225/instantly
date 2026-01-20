@@ -1,13 +1,13 @@
-import { auth } from "@/auth"
-import { SettingsSidebarController } from "@/components/settings/SettingsSidebarController"
-import { SettingsTopNav } from "@/components/settings/SettingsTopNav"
+// import { auth } from "@/auth"
+import { SettingsSidebarController } from "@/components/app/settings/SettingsSidebarController"
+import { SettingsTopNav } from "@/components/app/settings/SettingsTopNav"
 
 export default async function SettingsLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const session = await auth()
+    // const session = await auth()
 
     return (
         <div className="flex flex-col h-screen bg-background">

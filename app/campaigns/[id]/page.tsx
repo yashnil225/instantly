@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,12 +32,10 @@ import {
     Share2,
     Settings,
     Stethoscope,
-    Zap,
-    Filter,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
-import { SendTimeHeatmap, ConversionFunnel } from "@/components/analytics-charts"
+import { SendTimeHeatmap, ConversionFunnel } from "@/components/app/analytics-charts"
 import {
     LineChart,
     Line,
@@ -82,10 +80,10 @@ interface CampaignAnalytics {
         clicked: number
         opportunities: number
     }[]
-    leads?: any[]
-    sequences?: any[]
-    heatmapData?: any[]
-    funnelData?: any[]
+    leads?: { id: string; status: string }[]
+    sequences?: unknown[]
+    heatmapData?: unknown[]
+    funnelData?: unknown[]
     dailyLimit?: number | null
     trackOpens?: boolean
     trackLinks?: boolean
@@ -130,11 +128,7 @@ export default function CampaignAnalyticsPage() {
         { label: "Custom", value: "custom" },
     ]
 
-    useEffect(() => {
-        fetchCampaignAnalytics()
-    }, [campaignId, dateRange])
-
-    const fetchCampaignAnalytics = async () => {
+    const fetchCampaignAnalytics = React.useCallback(async () => {
         setLoading(true)
         try {
             const params = new URLSearchParams({ range: dateRange })
@@ -143,12 +137,18 @@ export default function CampaignAnalyticsPage() {
                 const analyticsData = await res.json()
                 setData(analyticsData)
             }
-        } catch (error) {
-            console.error("Failed to fetch campaign analytics:", error)
+        } catch (err) {
+            console.error("Failed to fetch campaign analytics:", err)
         } finally {
             setLoading(false)
         }
-    }
+    }, [campaignId, dateRange])
+
+    useEffect(() => {
+        fetchCampaignAnalytics()
+    }, [fetchCampaignAnalytics])
+
+
 
     const handleDateRangeChange = (value: string) => {
         if (value === "custom") {
@@ -196,7 +196,8 @@ export default function CampaignAnalyticsPage() {
             } else {
                 toast({ title: "Campaign Diagnostics", description: "Check console for details" })
             }
-        } catch (error) {
+        } catch (err) {
+            console.error("Diagnostics error:", err)
             toast({ title: "Error", description: "Failed to run diagnostics", variant: "destructive" })
         }
     }
@@ -205,10 +206,7 @@ export default function CampaignAnalyticsPage() {
         setShareOpen(true)
     }
 
-    const handleDownloadCSV = () => {
-        // Simple mock download
-        toast({ title: "Success", description: "Analytics downloaded" })
-    }
+
 
     const copyShareLink = () => {
         if (typeof window !== 'undefined') {
@@ -386,31 +384,31 @@ export default function CampaignAnalyticsPage() {
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Completed</div>
                                             <div className="text-lg font-bold text-white">
-                                                {data?.leads?.filter((l: any) => l.status === 'sequence_complete').length || 0}
+                                                {data?.leads?.filter((l) => l.status === 'sequence_complete').length || 0}
                                             </div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">In Progress</div>
                                             <div className="text-lg font-bold text-white">
-                                                {data?.leads?.filter((l: any) => l.status === 'contacted').length || 0}
+                                                {data?.leads?.filter((l) => l.status === 'contacted').length || 0}
                                             </div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Not yet contacted</div>
                                             <div className="text-lg font-bold text-white">
-                                                {data?.leads?.filter((l: any) => l.status === 'new').length || 0}
+                                                {data?.leads?.filter((l) => l.status === 'new').length || 0}
                                             </div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Bounced</div>
                                             <div className="text-lg font-bold text-white">
-                                                {data?.leads?.filter((l: any) => l.status === 'bounced').length || 0}
+                                                {data?.leads?.filter((l) => l.status === 'bounced').length || 0}
                                             </div>
                                         </div>
                                         <div>
                                             <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Unsubscribed</div>
                                             <div className="text-lg font-bold text-white">
-                                                {data?.leads?.filter((l: any) => l.status === 'unsubscribed').length || 0}
+                                                {data?.leads?.filter((l) => l.status === 'unsubscribed').length || 0}
                                             </div>
                                         </div>
                                         <div>
@@ -499,10 +497,10 @@ export default function CampaignAnalyticsPage() {
                                     {/* Advanced Analytics Charts */}
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
-                                            <SendTimeHeatmap data={data?.heatmapData} />
+                                            <SendTimeHeatmap data={data?.heatmapData as any} />
                                         </div>
                                         <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
-                                            <ConversionFunnel data={data?.funnelData} />
+                                            <ConversionFunnel data={data?.funnelData as any} />
                                         </div>
                                     </div>
 
@@ -661,7 +659,7 @@ export default function CampaignAnalyticsPage() {
                             <div className="p-8 space-y-6">
                                 <div className="space-y-2">
                                     <h2 className="text-xl font-semibold text-white">Share Campaign</h2>
-                                    <p className="text-gray-400 text-sm">Share "{data?.name}" with others</p>
+                                    <p className="text-gray-400 text-sm">Share &ldquo;{data?.name}&rdquo; with others</p>
                                 </div>
                                 <div className="space-y-3">
                                     <label className="text-xs font-semibold text-gray-500 uppercase tracking-widest pl-1">Campaign Link</label>

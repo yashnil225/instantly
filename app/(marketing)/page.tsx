@@ -17,38 +17,37 @@ export default function Home() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20">
-                <Zap className="w-4 h-4 text-orange-500" />
-                <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                <Zap className="w-4 h-4 text-indigo-500" />
+                <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
                   Email Tracking Made Simple
                 </span>
               </div>
 
               <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
                 Track Every Click and{" "}
-                <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
                   Open with Ease
                 </span>
               </h1>
 
               <p className="text-xl text-muted-foreground leading-relaxed">
-                Monitor email engagement in real-time with powerful analytics.
-                Know exactly when your emails are opened, clicked, and read.
+                Effortlessly monitor your email performance with our intuitive tracking system.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/signup">
                   <Button
                     size="lg"
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8"
+                    className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-8"
                   >
-                    Get Started Free
+                    Get started free
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Link href="/features">
+                <Link href="/pricing">
                   <Button size="lg" variant="outline">
-                    View Features
+                    View pricing
                   </Button>
                 </Link>
               </div>
@@ -77,7 +76,7 @@ export default function Home() {
                   priority
                 />
               </div>
-              <div className="absolute -top-4 -right-4 w-72 h-72 bg-orange-500/20 rounded-full blur-3xl" />
+              <div className="absolute -top-4 -right-4 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl" />
               <div className="absolute -bottom-4 -left-4 w-72 h-72 bg-green-500/20 rounded-full blur-3xl" />
             </div>
           </div>
@@ -166,7 +165,7 @@ export default function Home() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="text-4xl font-bold text-orange-600">2.8K</div>
+                      <div className="text-4xl font-bold text-indigo-600">2.8K</div>
                       <div className="text-sm text-muted-foreground">Tracking Stats</div>
                     </div>
                   </div>
@@ -205,7 +204,7 @@ export default function Home() {
       >
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 rounded-lg bg-card border border-border">
-            <BarChart3 className="h-8 w-8 text-orange-500 mb-2" />
+            <BarChart3 className="h-8 w-8 text-indigo-500 mb-2" />
             <div className="text-2xl font-bold mb-1">42%</div>
             <div className="text-sm text-muted-foreground">Open Rate</div>
           </div>
@@ -251,8 +250,8 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="p-6 rounded-xl bg-card border border-border">
-              <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4">
-                <Mail className="h-6 w-6 text-orange-600" />
+              <div className="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-4">
+                <Mail className="h-6 w-6 text-indigo-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Spam Protection</h3>
               <p className="text-muted-foreground">

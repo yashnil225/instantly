@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Logo } from "@/components/ui/logo"
-import { Mail, Twitter, Linkedin, Github } from "lucide-react"
+import { Twitter, Linkedin, Github } from "lucide-react"
 
 export function MarketingFooter() {
     return (
@@ -11,12 +11,12 @@ export function MarketingFooter() {
                     <div className="col-span-2">
                         <Link href="/" className="flex items-center gap-2 mb-4">
                             <Logo size="md" />
-                            <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-                                Trackly
+                            <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                                Instantly
                             </span>
                         </Link>
                         <p className="text-sm text-muted-foreground mb-4">
-                            Track every click and open with ease. Built for modern email marketing teams.
+                            Unlimited cold email outreach. Built for modern sales and marketing teams.
                         </p>
                         <div className="flex items-center gap-3">
                             <a href="#" className="p-2 rounded-md hover:bg-accent transition-colors">
@@ -46,12 +46,12 @@ export function MarketingFooter() {
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/integrations" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Integrations
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/changelog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Changelog
                                 </Link>
                             </li>
@@ -63,22 +63,22 @@ export function MarketingFooter() {
                         <h3 className="font-semibold text-sm mb-3">Services</h3>
                         <ul className="space-y-2">
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/email-tracking" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Email Tracking
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/analytics-page" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Analytics
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/automation" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Automation
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/api-access" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     API Access
                                 </Link>
                             </li>
@@ -95,17 +95,17 @@ export function MarketingFooter() {
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/documentation" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Documentation
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/help-center" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Help Center
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/status" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Status
                                 </Link>
                             </li>
@@ -117,12 +117,12 @@ export function MarketingFooter() {
                         <h3 className="font-semibold text-sm mb-3">Company</h3>
                         <ul className="space-y-2">
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Blog
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                <Link href="/careers" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                     Careers
                                 </Link>
                             </li>
@@ -143,7 +143,7 @@ export function MarketingFooter() {
                 {/* Bottom */}
                 <div className="mt-12 pt-8 border-t border-border">
                     <p className="text-sm text-muted-foreground text-center">
-                        © {new Date().getFullYear()} Trackly. All rights reserved.
+                        © {new Date().getFullYear()} Instantly. All rights reserved.
                     </p>
                 </div>
             </div>

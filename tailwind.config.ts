@@ -78,7 +78,7 @@ const config = {
     },
     plugins: [tailwindcssAnimate, daisyui],
     daisyui: {
-        themes: true, // This enables all themes by default
+        themes: ["bumblebee", "emerald", "corporate", "synthwave", "retro", "cyberpunk"],
     },
 } satisfies Config
 

@@ -17,8 +17,8 @@ export function MarketingHeader() {
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2">
                         <Logo size="md" />
-                        <span className="text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-                            Trackly
+                        <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                            Instantly
                         </span>
                     </Link>
 
@@ -61,7 +61,7 @@ export function MarketingHeader() {
                         <Link href="/signup">
                             <Button
                                 size="sm"
-                                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
+                                className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white"
                             >
                                 Get Started
                             </Button>
@@ -121,7 +121,7 @@ export function MarketingHeader() {
                                 </Button>
                             </Link>
                             <Link href="/signup" className="block">
-                                <Button className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+                                <Button className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white">
                                     Get Started
                                 </Button>
                             </Link>

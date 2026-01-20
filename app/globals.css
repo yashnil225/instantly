@@ -41,7 +41,7 @@
   --dropdown-hover: 220 14% 96%;
 }
 
-.dark {
+[data-theme="dark"] {
   /* Dark Mode Colors */
   --background: 240 10% 6.5%;
   /* #0f0f12 */

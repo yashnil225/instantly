@@ -18,7 +18,6 @@ import {
     Link as LinkIcon,
     Code,
     Copy,
-    X,
     ToggleLeft,
     ToggleRight,
     AlertTriangle,
@@ -26,7 +25,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
-import { checkSpamScore, type SpamCheckResult, getGradeColor } from "@/lib/spam-checker"
+import { checkSpamScore, type SpamCheckResult } from "@/lib/spam-checker"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -43,9 +42,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { TemplatesModal } from "@/components/campaigns/TemplatesModal"
+import { TemplatesModal } from "@/components/app/campaigns/TemplatesModal"
 import { RichEditor } from "@/components/ui/rich-editor"
-import { EmailPreviewModal } from "@/components/campaigns/EmailPreviewModal"
+import { EmailPreviewModal } from "@/components/app/campaigns/EmailPreviewModal"
 
 // Types matching backend
 interface SequenceVariant {
@@ -60,6 +59,15 @@ interface SequenceStep {
     day: number
     variants: SequenceVariant[]
     activeVariant?: number // Frontend state
+}
+
+interface Lead {
+    id: string
+    email: string
+    firstName?: string
+    lastName?: string
+    company?: string
+    customFields?: string | Record<string, unknown>
 }
 
 // Core variables that are always available
@@ -89,7 +97,6 @@ export default function SequencesPage() {
 
     // Spam Score State
     const [spamResult, setSpamResult] = useState<SpamCheckResult | null>(null)
-    const [checkingSpam, setCheckingSpam] = useState(false)
 
     // Fetch available variables from campaign leads
     useEffect(() => {
@@ -97,7 +104,7 @@ export default function SequencesPage() {
             try {
                 const res = await fetch(`/api/campaigns/${params.id}/leads?limit=1`)
                 if (res.ok) {
-                    const leads = await res.json()
+                    const leads: Lead[] = await res.json()
                     if (leads.length > 0) {
                         const lead = leads[0]
                         const dynamicVars = [...CORE_VARIABLES]
@@ -142,22 +149,22 @@ export default function SequencesPage() {
             setSpamResult(null)
             return
         }
-        setCheckingSpam(true)
         try {
             const result = await checkSpamScore(subject, body)
             setSpamResult(result)
         } catch (error) {
             console.error('Spam check failed:', error)
         } finally {
-            setCheckingSpam(false)
+            // Success or fail, we're done
         }
     }, [])
 
     // Check spam when active variant changes
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (activeStep) {
-                const variant = activeStep.variants[activeStep.activeVariant || 0]
+            const currentStep = steps[activeStepIndex]
+            if (currentStep) {
+                const variant = currentStep.variants[currentStep.activeVariant || 0]
                 if (variant) {
                     checkSpam(variant.subject || '', variant.body || '')
                 }
@@ -166,17 +173,12 @@ export default function SequencesPage() {
         return () => clearTimeout(timer)
     }, [steps, activeStepIndex, checkSpam])
 
-    // Initial Load
-    useEffect(() => {
-        fetchSequences()
-    }, [params.id])
-
-    const fetchSequences = async () => {
+    const fetchSequences = useCallback(async () => {
         try {
             const res = await fetch(`/api/campaigns/${params.id}/sequence`)
             if (res.ok) {
                 const data = await res.json()
-                const mappedSteps = data.map((seq: any) => ({
+                const mappedSteps = data.map((seq: { id: string, stepNumber: number, dayGap: number, variants: SequenceVariant[] }) => ({
                     id: seq.id,
                     stepNumber: seq.stepNumber,
                     day: seq.dayGap,
@@ -191,7 +193,7 @@ export default function SequencesPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [params.id])
 
     // --- Logic Helpers ---
     const addStep = () => {
@@ -230,10 +232,10 @@ export default function SequencesPage() {
         }
     }
 
-    const updateStep = (index: number, field: 'day' | 'variant', value: any, variantIndex = 0, variantField?: keyof SequenceVariant) => {
+    const updateStep = (index: number, field: 'day' | 'variant', value: string | number | boolean, variantIndex = 0, variantField?: keyof SequenceVariant) => {
         const newSteps = [...steps]
         if (field === 'day') {
-            newSteps[index].day = parseInt(value) || 0
+            newSteps[index].day = parseInt(String(value)) || 0
         } else if (field === 'variant' && variantField) {
             newSteps[index].variants[variantIndex] = {
                 ...newSteps[index].variants[variantIndex],
@@ -307,6 +309,7 @@ export default function SequencesPage() {
             if (res.ok) toast({ title: "Campaign Saved" })
             else throw new Error("Failed to save")
         } catch (error) {
+            console.error("Save failed:", error)
             toast({ title: "Error", description: "Failed to save", variant: "destructive" })
         } finally {
             setSaving(false)
@@ -801,9 +804,9 @@ export default function SequencesPage() {
                                     <AlertDialogHeader>
                                         <AlertDialogTitle className="text-xl font-semibold text-center">Are you sure?</AlertDialogTitle>
                                         <AlertDialogDescription className="text-center text-gray-400">
-                                            You're trying to delete a step for a launched campaign.
+                                            You&apos;re trying to delete a step for a launched campaign.
                                             <br /><br />
-                                            This can cause issues with the campaign's analytics reporting - are you sure you want proceed?
+                                            This can cause issues with the campaign&apos;s analytics reporting - are you sure you want proceed?
                                             <br /><br />
                                             <span className="text-orange-400 font-medium">Warning: This action is irreversible once you save the campaign.</span>
                                         </AlertDialogDescription>

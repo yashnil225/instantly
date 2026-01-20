@@ -28,7 +28,7 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <Providers>
           <ThemeProvider
-            attribute="class"
+            attribute="data-theme"
             defaultTheme="dark"
             enableSystem={true}
             disableTransitionOnChange

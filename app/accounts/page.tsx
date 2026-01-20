@@ -51,7 +51,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
-import { AccountDetailPanel } from "@/components/accounts/AccountDetailPanel"
+import { AccountDetailPanel } from "@/components/app/accounts/AccountDetailPanel"
 import { EmptyState } from '@/components/ui/empty-state'
 
 
@@ -296,6 +296,8 @@ function AccountsPage() {
     }
 
 
+
+
     // Toggle account warmup status (Fire icon)
     const toggleWarmup = async (id: string, currentIsWarming: boolean) => {
         const newIsWarming = !currentIsWarming
@@ -322,6 +324,7 @@ function AccountsPage() {
                 ))
             }
         } catch (error) {
+            console.error("Warmup update failed:", error)
             // Rollback
             setAccounts(prev => prev.map(acc =>
                 acc.id === id ? { ...acc, isWarming: currentIsWarming } : acc
@@ -356,6 +359,7 @@ function AccountsPage() {
                 ))
             }
         } catch (error) {
+            console.error("Status update failed:", error)
             // Rollback
             setAccounts(prev => prev.map(acc =>
                 acc.id === id ? { ...acc, status: currentStatus as "active" | "paused" | "error" | "warmup" } : acc
@@ -388,9 +392,10 @@ function AccountsPage() {
                 toast({ title: "Error", description: error.message || "Failed to reconnect accounts", variant: "destructive" })
             }
         } catch (error) {
+            console.error("Bulk reconnect failed:", error)
             toast({ title: "Error", description: "Failed to reconnect accounts", variant: "destructive" })
         } finally {
-            setIsBulkReconnecting(false)
+            // End
         }
     }
 
@@ -418,9 +423,10 @@ function AccountsPage() {
                 toast({ title: "Error", description: error.message || "Failed to create account", variant: "destructive" })
             }
         } catch (error) {
-            toast({ title: "Error", description: "Failed to create account", variant: "destructive" })
+            console.error("Save failed:", error)
+            toast({ title: "Error", description: "Failed to save", variant: "destructive" })
         } finally {
-            setIsCreating(false)
+            // End
         }
     }
 
@@ -441,6 +447,7 @@ function AccountsPage() {
                 toast({ title: "Success", description: `Deleted ${selectedAccounts.length} accounts` })
             }
         } catch (error) {
+            console.error("Bulk delete failed:", error)
             toast({ title: "Error", description: "Failed to delete accounts", variant: "destructive" })
         }
     }
@@ -456,7 +463,6 @@ function AccountsPage() {
         try {
             const res = await fetch(`/api/accounts/${accountToDelete}`, { method: 'DELETE' })
             if (res.ok) {
-                const accountToDeleteObj = accounts.find(a => a.id === accountToDelete)
                 setAccounts(prev => prev.filter(a => a.id !== accountToDelete))
                 setSelectedAccounts(prev => prev.filter(id => id !== accountToDelete))
                 toast({
@@ -467,6 +473,7 @@ function AccountsPage() {
                 toast({ title: "Error", description: "Failed to delete account", variant: "destructive" })
             }
         } catch (error) {
+            console.error("Account delete failed:", error)
             toast({ title: "Error", description: "Failed to delete account", variant: "destructive" })
         } finally {
             setDeleteOpen(false)
@@ -671,6 +678,8 @@ function AccountsPage() {
                                                 import('@/lib/pdf-export').then(({ generateAccountsReport }) => {
                                                     generateAccountsReport(filteredAccounts)
                                                     toast({ title: "PDF Generated", description: "Report downloaded successfully" })
+                                                }).catch((_err) => {
+                                                    toast({ title: "Error", description: "Failed to generate PDF", variant: "destructive" })
                                                 })
                                             }}
                                         >
@@ -698,25 +707,6 @@ function AccountsPage() {
 
                                 <div className="h-6 w-px bg-[#333] mx-1" />
 
-                                {/* View Toggle */}
-                                <div className="flex items-center bg-card border border-border rounded-lg p-1">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className={cn("h-8 w-8 rounded", viewMode === "list" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")}
-                                        onClick={() => setViewMode("list")}
-                                    >
-                                        <List className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className={cn("h-8 w-8 rounded", viewMode === "grid" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground")}
-                                        onClick={() => setViewMode("grid")}
-                                    >
-                                        <Grid3x3 className="h-4 w-4" />
-                                    </Button>
-                                </div>
 
                                 {/* Add New */}
                                 <Button className="bg-blue-600 hover:bg-blue-500 text-foreground gap-2 h-10 px-6 rounded-lg font-medium ml-2" onClick={() => setAddAccountOpen(true)}>

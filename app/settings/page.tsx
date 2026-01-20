@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { SettingsOnePageView } from "@/components/settings/SettingsOnePageView"
+import { SettingsOnePageView } from "@/components/app/settings/SettingsOnePageView"
 import { prisma } from "@/lib/prisma"
 
 export default async function SettingsPage() {

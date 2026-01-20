@@ -1,5 +1,5 @@
 import { auth } from "@/auth"
-import { ProfileSection } from "@/components/settings/ProfileSection"
+import { ProfileSection } from "@/components/app/settings/ProfileSection"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 

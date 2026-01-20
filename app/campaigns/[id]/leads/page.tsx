@@ -32,7 +32,7 @@ import {
     X,
     RefreshCw,
 } from "lucide-react"
-import { ImportLeadsModal } from "@/components/leads/ImportLeadsModal"
+import { ImportLeadsModal } from "@/components/app/leads/ImportLeadsModal"
 import { cn } from "@/lib/utils"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { InfoDialog } from "@/components/ui/info-dialog"

@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ApiKeysSection } from "@/components/settings/ApiKeysSection"
-import { WebhooksSection } from "@/components/settings/WebhooksSection"
+import { ApiKeysSection } from "@/components/app/settings/ApiKeysSection"
+import { WebhooksSection } from "@/components/app/settings/WebhooksSection"
 import { Globe, ScrollText, Key } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"

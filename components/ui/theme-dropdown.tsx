@@ -1,7 +1,7 @@
 "use client"
 
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+import { useState, useLayoutEffect } from "react"
 
 const themes = [
     { value: "light", label: "Light" },
@@ -33,7 +33,9 @@ export function ThemeDropdown() {
     const { theme, setTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
 
-    useEffect(() => {
+    useLayoutEffect(() => {
+        // Standard Next.js hydration pattern
+        // eslint-disable-next-line
         setMounted(true)
     }, [])
 
@@ -58,11 +60,11 @@ export function ThemeDropdown() {
 
     return (
         <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost btn-sm gap-1">
+            <div tabIndex={0} role="button" className="btn btn-ghost btn-xs gap-1 h-8 min-h-8 px-2">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
+                    width="14"
+                    height="14"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -80,11 +82,11 @@ export function ThemeDropdown() {
                     <path d="m6.34 17.66-1.41 1.41" />
                     <path d="m19.07 4.93-1.41 1.41" />
                 </svg>
-                Theme
+                <span className="text-xs">Theme</span>
                 <svg
-                    width="12px"
-                    height="12px"
-                    className="inline-block h-2 w-2 fill-current opacity-60"
+                    width="10px"
+                    height="10px"
+                    className="inline-block fill-current opacity-60"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 2048 2048"
                 >
@@ -93,12 +95,12 @@ export function ThemeDropdown() {
             </div>
             <ul
                 tabIndex={0}
-                className="dropdown-content bg-base-200 rounded-box z-50 w-52 p-2 shadow-2xl max-h-80 overflow-y-auto"
+                className="dropdown-content bg-base-200 rounded-box z-50 w-40 p-1.5 shadow-2xl max-h-64 overflow-y-auto"
             >
                 {themes.map((t) => (
                     <li key={t.value}>
                         <button
-                            className={`btn btn-sm btn-block btn-ghost justify-start ${theme === t.value ? "btn-active" : ""
+                            className={`btn btn-xs btn-block btn-ghost justify-start text-xs h-7 min-h-7 ${theme === t.value ? "btn-active" : ""
                                 }`}
                             onClick={() => setTheme(t.value)}
                         >

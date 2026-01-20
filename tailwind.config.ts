@@ -1,7 +1,9 @@
 import type { Config } from "tailwindcss"
+import tailwindcssAnimate from "tailwindcss-animate"
+import daisyui from "daisyui"
 
 const config = {
-    darkMode: ["class"],
+    darkMode: ['selector', '[data-theme="dark"]'],
     content: [
         './pages/**/*.{ts,tsx}',
         './components/**/*.{ts,tsx}',
@@ -74,7 +76,7 @@ const config = {
             },
         },
     },
-    plugins: [require("tailwindcss-animate"), require("daisyui")],
+    plugins: [tailwindcssAnimate, daisyui],
     daisyui: {
         themes: true, // This enables all themes by default
     },

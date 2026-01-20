@@ -1,17 +1,16 @@
 "use client"
 
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Sidebar } from "./Sidebar"
 import { useEffect, useState } from "react"
-import { NotificationManager } from "@/components/notification-manager"
-import { MobileNav } from "@/components/mobile-nav"
+import { NotificationManager } from "@/components/app/notification-manager"
+import { MobileNav } from "@/components/app/mobile-nav"
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
-    const router = useRouter()
 
     // Pages that should NOT have the sidebar
-    const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname.startsWith("/unsubscribe") || pathname === "/"
+    const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname.startsWith("/unsubscribe") || pathname === "/" || pathname === "/features" || pathname === "/pricing" || pathname === "/contact"
 
     // We no longer need client-side redirect logic here as middleware handles it.
     // This prevents conflicts between client-side and server-side navigation.
@@ -22,7 +21,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     // Load saved width and detect mobile
     useEffect(() => {
         const saved = localStorage.getItem('sidebar_width')
-        if (saved) setSidebarWidth(parseInt(saved))
+        if (saved) {
+            const width = parseInt(saved)
+            // Use requestAnimationFrame to avoid "setState synchronously within effect" warning
+            requestAnimationFrame(() => {
+                setSidebarWidth(width)
+            })
+        }
 
         // Check if mobile
         const checkMobile = () => setIsMobile(window.innerWidth < 768)

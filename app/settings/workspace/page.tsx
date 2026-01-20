@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { WorkspaceMembersSection } from "@/components/settings/WorkspaceMembersSection"
+import { WorkspaceMembersSection } from "@/components/app/settings/WorkspaceMembersSection"
 import { Loader2 } from "lucide-react"
 
 export default function WorkspaceSettingsPage() {

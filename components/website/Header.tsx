@@ -9,7 +9,7 @@ import Image from "next/image";
 import logo from "@/app/icon.png";
 import config from "@/config";
 
-import ButtonSignIn from "./ButtonSignin";
+import ButtonSignIn from "@/components/app/ButtonSignin";
 
 const links: {
   href: string;
@@ -33,12 +33,10 @@ const Header = () => {
   const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  // setIsOpen(false) when the route changes (i.e: when the user clicks on a link on mobile)
+  // Close mobile menu when route changes
   useEffect(() => {
-    if (isOpen) {
-      setIsOpen(false);
-    }
-  }, [searchParams, isOpen]);
+    setIsOpen(false);
+  }, [searchParams]);
 
   return (
     <header className="bg-base-200">

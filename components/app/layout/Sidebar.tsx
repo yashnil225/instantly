@@ -18,10 +18,7 @@ import {
     LogOut,
     ChevronRight,
     Sun,
-    Moon,
-    Monitor,
-    MoreHorizontal,
-    Flame
+    Moon
 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { cn } from "@/lib/utils"
@@ -291,26 +288,31 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
                         {/* Theme Section */}
                         <div className="px-4 py-3 pb-2">
                             <p className="text-xs font-medium text-muted-foreground mb-3">Theme</p>
-                            <div className="bg-secondary rounded-lg border border-border max-h-32 overflow-y-auto">
-                                {[
-                                    "light", "dark", "cupcake", "bumblebee", "emerald", "corporate",
-                                    "synthwave", "retro", "cyberpunk", "valentine", "halloween",
-                                    "garden", "forest", "aqua", "lofi", "pastel", "fantasy",
-                                    "wireframe", "black", "luxury", "dracula", "business", "night"
-                                ].map((t) => (
-                                    <button
-                                        key={t}
-                                        onClick={() => setTheme(t)}
-                                        className={cn(
-                                            "w-full text-left px-3 py-1.5 text-xs font-medium transition-all capitalize",
-                                            theme === t
-                                                ? "bg-primary text-primary-foreground"
-                                                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                                        )}
-                                    >
-                                        {t}
-                                    </button>
-                                ))}
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setTheme("light")}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition-all",
+                                        theme === "light"
+                                            ? "bg-primary text-primary-foreground border-primary"
+                                            : "bg-secondary text-muted-foreground border-transparent hover:text-foreground"
+                                    )}
+                                >
+                                    <Sun className="h-3.5 w-3.5" />
+                                    Light
+                                </button>
+                                <button
+                                    onClick={() => setTheme("synthwave")}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition-all",
+                                        theme === "synthwave"
+                                            ? "bg-primary text-primary-foreground border-primary"
+                                            : "bg-secondary text-muted-foreground border-transparent hover:text-foreground"
+                                    )}
+                                >
+                                    <Moon className="h-3.5 w-3.5" />
+                                    Dark
+                                </button>
                             </div>
                         </div>
 

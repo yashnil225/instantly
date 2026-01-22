@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { Menu, X } from "lucide-react"
 import { useState } from "react"
 
@@ -52,7 +51,6 @@ export function MarketingHeader() {
 
                     {/* Desktop Actions */}
                     <div className="hidden md:flex items-center gap-3">
-                        <ThemeToggle />
                         <Link href="/login">
                             <Button variant="ghost" size="sm">
                                 Log In

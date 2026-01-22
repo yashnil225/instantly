@@ -15,8 +15,8 @@ export function FeatureCard({
     description,
     icon: Icon,
     items,
-    iconColor = "text-orange-600",
-    iconBgColor = "bg-orange-500/10",
+    iconColor = "text-indigo-600",
+    iconBgColor = "bg-indigo-500/10",
     className = "",
 }: FeatureCardProps) {
     return (

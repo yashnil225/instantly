@@ -6,34 +6,36 @@ import { Button } from "@/components/ui/button"
 import { FeatureCard } from "@/components/website/FeatureCard"
 import { FeatureSection } from "@/components/website/FeatureSection"
 import { CTASection } from "@/components/website/CTASection"
+import { FeatureComparisonTable } from "@/components/website/FeatureComparisonTable"
 export default function FeaturesPage() {
     return (
         <>
             <section className="px-4 sm:px-6 lg:px-8 py-20 md:py-32 bg-gradient-to-b from-background to-muted/20">
                 <div className="max-w-4xl mx-auto text-center space-y-6">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20">
-                        <Zap className="w-4 h-4 text-orange-500" />
-                        <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                        <Zap className="w-4 h-4 text-indigo-500" />
+                        <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
                             Powerful Features
                         </span>
                     </div>
 
                     <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
                         Everything You Need to{" "}
-                        <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
                             Track Emails
                         </span>
                     </h1>
 
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                        Comprehensive email tracking and analytics tools designed to help you understand
-                        and improve your email engagement.
+                        Comprehensive email tracking and analytics tools designed to help you understand,
+                        optimize, and improve your email engagement. From real-time notifications to detailed
+                        analytics, we provide everything you need to maximize your email ROI.
                     </p>
 
                     <Link href="/signup">
                         <Button
                             size="lg"
-                            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-8"
+                            className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-8"
                         >
                             Start Free Trial
                             <ArrowRight className="ml-2 h-5 w-5" />
@@ -48,12 +50,15 @@ export default function FeaturesPage() {
                     <div className="text-center mb-16">
                         <h2 className="text-3xl md:text-4xl font-bold mb-4">Core Tracking Features</h2>
                         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                            Track every aspect of your email campaigns with our comprehensive suite of tools.
+                            Track every aspect of your email campaigns with our comprehensive suite of powerful,
+                            enterprise-grade tools. From opens and clicks to downloads and engagement patterns,
+                            gain complete visibility into how recipients interact with your emails.
                         </p>
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                         <FeatureCard
+                            className="hover:scale-105 transition-all duration-300"
                             title="Email Open Tracking"
                             description="Know exactly when your emails are opened with real-time notifications and detailed timestamps."
                             icon={Eye}
@@ -196,11 +201,24 @@ export default function FeaturesPage() {
                 </div>
             </section>
 
+            {/* Feature Comparison */}
+            <section className="px-4 sm:px-6 lg:px-8 py-20 bg-muted/30">
+                <div className="max-w-7xl mx-auto">
+                    <div className="text-center mb-16">
+                        <h2 className="text-3xl md:text-4xl font-bold mb-4">Compare Our Plans</h2>
+                        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                            Choose the roadmap that fits your growth. Detailed feature breakdown for every stage of your business.
+                        </p>
+                    </div>
+                    <FeatureComparisonTable />
+                </div>
+            </section>
+
             {/* CTA Section */}
             <CTASection
-                title="Ready to Start Tracking?"
-                description="Join thousands of users who trust Trackly for their email tracking needs."
-                buttonText="Start Free Trial"
+                title="Ready to Transform Your Email Strategy?"
+                description="Join over 50,000 users who trust Instantly for their email tracking needs. Start making data-driven decisions with real-time insights and comprehensive analytics."
+                buttonText="Start Tracking Emails Free"
             />
         </>
     )

@@ -30,22 +30,23 @@ export default function ContactPage() {
             {/* Hero Section */}
             <section className="px-4 sm:px-6 lg:px-8 py-20 md:py-32 bg-gradient-to-b from-background to-muted/20">
                 <div className="max-w-4xl mx-auto text-center space-y-6">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20">
-                        <Mail className="w-4 h-4 text-orange-500" />
-                        <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                        <Mail className="w-4 h-4 text-indigo-500" />
+                        <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
                             Get in Touch
                         </span>
                     </div>
 
                     <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
                         We&apos;d Love to{" "}
-                        <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
                             Hear From You
                         </span>
                     </h1>
 
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                        Have questions? Need help? Want to learn more? Our team is here to assist you.
+                        Have questions about email tracking? Need help getting started? Want to learn more about our features?
+                        Our dedicated support team is here to assist you every step of the way.
                     </p>
                 </div>
             </section>
@@ -71,7 +72,7 @@ export default function ContactPage() {
                                                 value={formData.name}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                 placeholder="John Doe"
                                             />
                                         </div>
@@ -86,7 +87,7 @@ export default function ContactPage() {
                                                 value={formData.email}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                                 placeholder="john@example.com"
                                             />
                                         </div>
@@ -127,7 +128,7 @@ export default function ContactPage() {
                                     <Button
                                         type="submit"
                                         size="lg"
-                                        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
+                                        className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white"
                                     >
                                         Send Message
                                         <Send className="ml-2 h-5 w-5" />
@@ -140,8 +141,8 @@ export default function ContactPage() {
                         <div className="space-y-6">
                             <div className="bg-card border border-border rounded-2xl p-6">
                                 <div className="flex items-start gap-4">
-                                    <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
-                                        <Mail className="h-6 w-6 text-orange-600" />
+                                    <div className="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center flex-shrink-0">
+                                        <Mail className="h-6 w-6 text-indigo-600" />
                                     </div>
                                     <div>
                                         <h3 className="font-semibold mb-1">Email Us</h3>
@@ -149,10 +150,10 @@ export default function ContactPage() {
                                             Our team typically responds within 24 hours.
                                         </p>
                                         <a
-                                            href="mailto:support@trackly.com"
-                                            className="text-sm text-orange-600 hover:text-orange-700"
+                                            href="mailto:yashnilshukla1@gmail.com"
+                                            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                                         >
-                                            support@trackly.com
+                                            yashnilshukla1@gmail.com
                                         </a>
                                     </div>
                                 </div>
@@ -166,42 +167,26 @@ export default function ContactPage() {
                                     <div>
                                         <h3 className="font-semibold mb-1">Call Us</h3>
                                         <p className="text-sm text-muted-foreground mb-2">
-                                            Mon-Fri from 9am to 6pm EST
+                                            Available for support calls.
                                         </p>
                                         <a
-                                            href="tel:+1234567890"
-                                            className="text-sm text-green-600 hover:text-green-700"
+                                            href="tel:+918169582368"
+                                            className="text-sm text-green-600 hover:text-green-700 font-medium"
                                         >
-                                            +1 (234) 567-890
+                                            +91 8169582368
                                         </a>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-card border border-border rounded-2xl p-6">
-                                <div className="flex items-start gap-4">
-                                    <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                                        <MapPin className="h-6 w-6 text-blue-600" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold mb-1">Visit Us</h3>
-                                        <p className="text-sm text-muted-foreground">
-                                            123 Business Street<br />
-                                            San Francisco, CA 94102<br />
-                                            United States
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 text-white">
+                            <div className="bg-gradient-to-br from-indigo-600 to-blue-600 rounded-2xl p-6 text-white shadow-lg">
                                 <h3 className="font-semibold mb-2">Need immediate help?</h3>
-                                <p className="text-sm text-orange-50 mb-4">
-                                    Check out our comprehensive documentation and help center.
+                                <p className="text-sm text-indigo-50 mb-4 opacity-90">
+                                    Check out our comprehensive documentation and help center for quick answers.
                                 </p>
                                 <Button
                                     variant="secondary"
-                                    className="w-full bg-white text-orange-600 hover:bg-orange-50"
+                                    className="w-full bg-white text-indigo-600 hover:bg-slate-100 border-none transition-all"
                                 >
                                     Visit Help Center
                                 </Button>
@@ -223,8 +208,8 @@ export default function ContactPage() {
 
                     <div className="grid md:grid-cols-3 gap-8">
                         <div className="p-6 rounded-xl bg-card border border-border text-center">
-                            <div className="w-16 h-16 rounded-full bg-orange-500/10 flex items-center justify-center mx-auto mb-4">
-                                <Mail className="h-8 w-8 text-orange-600" />
+                            <div className="w-16 h-16 rounded-full bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
+                                <Mail className="h-8 w-8 text-indigo-600" />
                             </div>
                             <h3 className="text-lg font-semibold mb-2">Live Chat</h3>
                             <p className="text-sm text-muted-foreground mb-4">
@@ -266,9 +251,9 @@ export default function ContactPage() {
 
             {/* CTA Section */}
             <CTASection
-                title="Ready to Start Tracking?"
-                description="Join thousands of users who trust Trackly for their email tracking needs."
-                buttonText="Start Free Trial"
+                title="Ready to Transform Your Email Engagement?"
+                description="Join over 50,000 users who love Instantly for their email tracking needs. Start tracking emails today and never miss an important engagement."
+                buttonText="Start Tracking Free Today"
             />
         </>
     )

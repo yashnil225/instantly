@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Logo } from "@/components/ui/logo"
-import { Twitter, Linkedin, Github } from "lucide-react"
+
 
 export function MarketingFooter() {
     return (
@@ -18,17 +18,7 @@ export function MarketingFooter() {
                         <p className="text-sm text-muted-foreground mb-4">
                             Unlimited cold email outreach. Built for modern sales and marketing teams.
                         </p>
-                        <div className="flex items-center gap-3">
-                            <a href="#" className="p-2 rounded-md hover:bg-accent transition-colors">
-                                <Twitter className="h-4 w-4" />
-                            </a>
-                            <a href="#" className="p-2 rounded-md hover:bg-accent transition-colors">
-                                <Linkedin className="h-4 w-4" />
-                            </a>
-                            <a href="#" className="p-2 rounded-md hover:bg-accent transition-colors">
-                                <Github className="h-4 w-4" />
-                            </a>
-                        </div>
+
                     </div>
 
                     {/* Product */}

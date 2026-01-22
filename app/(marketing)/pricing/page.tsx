@@ -10,22 +10,22 @@ export default function PricingPage() {
             {/* Hero Section */}
             <section className="px-4 sm:px-6 lg:px-8 py-20 md:py-32 bg-gradient-to-b from-background to-muted/20">
                 <div className="max-w-4xl mx-auto text-center space-y-6">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/20">
-                        <TrendingUp className="w-4 h-4 text-orange-500" />
-                        <span className="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 border border-indigo-500/20">
+                        <TrendingUp className="w-4 h-4 text-indigo-500" />
+                        <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
                             Simple, Transparent Pricing
                         </span>
                     </div>
 
                     <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
                         Choose the{" "}
-                        <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
                             Perfect Plan
                         </span>
                     </h1>
 
                     <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                        Start free and scale as you grow. No hidden fees, no surprises.
+                        Start free and scale as you grow. No hidden fees, no surprises, no credit card required.
                     </p>
                 </div>
             </section>

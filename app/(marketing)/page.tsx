@@ -29,7 +29,7 @@ export default function Home() {
                 <Link href="/signup">
                   <Button
                     size="lg"
-                    className="bg-[#ff6b35] hover:bg-[#ff8c5a] text-white px-8 text-base rounded-full transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-[#ff6b35]/20"
+                    className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white px-8 text-base rounded-full transition-all duration-300 hover:scale-105 active:scale-95 shadow-lg hover:shadow-indigo-500/20"
                   >
                     Get started now
                   </Button>
@@ -168,7 +168,7 @@ export default function Home() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="text-4xl font-bold text-orange-600">10M+</div>
+                      <div className="text-4xl font-bold text-indigo-600">10M+</div>
                       <div className="text-sm text-muted-foreground">Emails Tracked</div>
                     </div>
                   </div>
@@ -259,8 +259,8 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-8">
             <div className="p-6 rounded-xl bg-card border border-border">
-              <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-4">
-                <Mail className="h-6 w-6 text-orange-600" />
+              <div className="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center mb-4">
+                <Mail className="h-6 w-6 text-indigo-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Advanced Spam Protection</h3>
               <p className="text-muted-foreground">
@@ -316,6 +316,7 @@ export default function Home() {
         title="Never Miss an Important Email Engagement"
         description="Stay on top of every email interaction with instant notifications and real-time tracking. Know exactly when your prospects are engaging so you can follow up at the perfect moment and close more deals."
         buttonText="Start Tracking Free Today"
+        href="/signup"
       />
     </>
   )

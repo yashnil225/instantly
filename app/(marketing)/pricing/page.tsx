@@ -94,7 +94,7 @@ export default function PricingPage() {
                         </div>
 
                         {/* Professional Plan */}
-                        <div className="p-8 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 text-white relative overflow-hidden">
+                        <div className="p-8 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white relative overflow-hidden shadow-xl ring-2 ring-indigo-500/20">
                             <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-white/20 text-xs font-semibold">
                                 MOST POPULAR
                             </div>
@@ -102,19 +102,19 @@ export default function PricingPage() {
                                 <TrendingUp className="h-5 w-5" />
                                 <h3 className="text-2xl font-bold">Professional</h3>
                             </div>
-                            <p className="text-orange-50 mb-6">
+                            <p className="text-indigo-100 mb-6 font-medium">
                                 For growing teams and businesses that need more power.
                             </p>
                             <div className="mb-6">
                                 <div className="flex items-baseline gap-2">
                                     <span className="text-4xl font-bold">$29</span>
-                                    <span className="text-orange-50">/month</span>
+                                    <span className="text-indigo-100">/month</span>
                                 </div>
-                                <p className="text-sm text-orange-50 mt-1">Billed monthly</p>
+                                <p className="text-sm text-indigo-100 mt-1">Billed monthly</p>
                             </div>
 
                             <Link href="/signup" className="block mb-6">
-                                <Button className="w-full bg-white text-orange-600 hover:bg-orange-50" size="lg">
+                                <Button className="w-full bg-white text-indigo-600 hover:bg-indigo-50 font-bold" size="lg">
                                     Start Free Trial
                                     <ArrowRight className="ml-2 h-5 w-5" />
                                 </Button>
@@ -273,8 +273,9 @@ export default function PricingPage() {
             {/* CTA Section */}
             <CTASection
                 title="Ready to Get Started?"
-                description="Join thousands of users tracking their emails with Trackly."
+                description="Join thousands of users tracking their emails with Instantly."
                 buttonText="Start Free Trial"
+                href="/signup"
             />
         </>
     )

@@ -104,7 +104,7 @@ export default function ContactPage() {
                                             value={formData.subject}
                                             onChange={handleChange}
                                             required
-                                            className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                            className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                             placeholder="How can we help?"
                                         />
                                     </div>
@@ -120,7 +120,7 @@ export default function ContactPage() {
                                             onChange={handleChange}
                                             required
                                             rows={6}
-                                            className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                                            className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                                             placeholder="Tell us more about your inquiry..."
                                         />
                                     </div>
@@ -254,6 +254,7 @@ export default function ContactPage() {
                 title="Ready to Transform Your Email Engagement?"
                 description="Join over 50,000 users who love Instantly for their email tracking needs. Start tracking emails today and never miss an important engagement."
                 buttonText="Start Tracking Free Today"
+                href="/signup"
             />
         </>
     )

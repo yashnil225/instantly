@@ -175,7 +175,7 @@ export default function FeaturesPage() {
 
                     <div className="grid md:grid-cols-3 gap-8">
                         <div className="p-6 rounded-xl bg-card border border-border text-center">
-                            <Globe className="h-12 w-12 mx-auto mb-4 text-orange-500" />
+                            <Globe className="h-12 w-12 mx-auto mb-4 text-indigo-500" />
                             <h3 className="text-lg font-semibold mb-2">Email Clients</h3>
                             <p className="text-sm text-muted-foreground">
                                 Gmail, Outlook, Apple Mail, and more
@@ -219,6 +219,7 @@ export default function FeaturesPage() {
                 title="Ready to Transform Your Email Strategy?"
                 description="Join over 50,000 users who trust Instantly for their email tracking needs. Start making data-driven decisions with real-time insights and comprehensive analytics."
                 buttonText="Start Tracking Emails Free"
+                href="/signup"
             />
         </>
     )

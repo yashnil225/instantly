@@ -1,5 +1,5 @@
 import { CTASection } from "@/components/website/CTASection"
-import { Shield, Zap, Lock, Globe, Mail, MessageSquare, Database, Calendar, ArrowRight } from "lucide-react"
+import { Shield, Zap, Globe, Mail, MessageSquare, Database, ArrowRight } from "lucide-react"
 
 const integrations = [
     { name: "Gmail", icon: Mail, desc: "Seamless integration with Google Workspace and personal Gmail accounts.", color: "text-red-500", bg: "bg-red-500/10" },
@@ -47,6 +47,7 @@ export default function IntegrationsPage() {
                 title="Don't see your favorite tool?"
                 description="We&apos;re constantly adding new integrations. Check our API documentation or request a custom integration for your enterprise needs."
                 buttonText="View API Docs"
+                href="/signup"
             />
         </div>
     )

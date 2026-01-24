@@ -53,9 +53,16 @@ export async function GET(
             clickRate = sentCount > 0 ? Math.round((clickCount / sentCount) * 100) + '%' : '0%'
         }
 
-        // Calculate opportunities and conversions from leads
-        const opportunities = campaign.leads.filter((l: any) => l.aiLabel === 'opportunity')
-        const conversions = campaign.leads.filter((l: any) => l.status === 'converted')
+        // Get workspace for opportunity value
+        const campaignWithWorkspace = await prisma.campaignWorkspace.findFirst({
+            where: { campaignId },
+            include: { workspace: true }
+        })
+        const opportunityValue = campaignWithWorkspace?.workspace?.opportunityValue || 5000
+
+        // Opportunities = reply count (actual conversions from outreach)
+        const opportunitiesCount = replyCount
+        const conversions = campaign.leads.filter((l: any) => l.status === 'converted' || l.status === 'won')
 
         // Fetch real daily stats
         const dailyStats = await prisma.campaignStat.findMany({
@@ -119,13 +126,18 @@ export async function GET(
             }
         }
 
-        // Calculate funnel data for this specific campaign
+        // Calculate funnel data for this specific campaign with actual bounce count
+        const bounceEvents = allEvents.filter(e => e.type === 'bounce').length
+        const delivered = sentCount - bounceEvents - (campaign.bounceCount || 0)
+        const deliveredPercentage = sentCount > 0 ? Math.round((delivered / sentCount) * 100) : 0
+
         const funnelData = [
             { stage: "Sent", value: sentCount, percentage: 100 },
-            { stage: "Delivered", value: Math.round(sentCount * 0.99), percentage: 99 },
-            { stage: "Opened", value: openCount, percentage: sentCount > 0 ? Math.round((openCount / sentCount) * 100) : 0 },
-            { stage: "Clicked", value: clickCount, percentage: sentCount > 0 ? Math.round((clickCount / sentCount) * 100) : 0 },
-            { stage: "Replied", value: replyCount, percentage: sentCount > 0 ? Math.round((replyCount / sentCount) * 100) : 0 }
+            { stage: "Delivered", value: Math.max(0, delivered), percentage: Math.max(0, deliveredPercentage) },
+            { stage: "Opened", value: openCount, percentage: sentCount > 0 ? Math.min(Math.round((openCount / sentCount) * 100), 100) : 0 },
+            { stage: "Clicked", value: clickCount, percentage: sentCount > 0 ? Math.min(Math.round((clickCount / sentCount) * 100), 100) : 0 },
+            { stage: "Replied", value: replyCount, percentage: sentCount > 0 ? Math.min(Math.round((replyCount / sentCount) * 100), 100) : 0 },
+            { stage: "Converted", value: conversions.length, percentage: sentCount > 0 ? Math.min(Math.round((conversions.length / sentCount) * 100), 100) : 0 }
         ]
 
         const analyticsData = {
@@ -137,8 +149,8 @@ export async function GET(
             openRate,
             clickRate,
             opportunities: {
-                count: opportunities.length,
-                value: 0
+                count: opportunitiesCount,
+                value: opportunitiesCount * opportunityValue
             },
             conversions: {
                 count: conversions.length,

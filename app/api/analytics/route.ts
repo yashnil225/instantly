@@ -65,8 +65,26 @@ export async function GET(request: Request) {
             }
         })
 
-        // Filter leads that are "opportunities" (replied or labeled)
-        const opportunitiesLeads = leads.filter(l => l.status === 'replied' || (l.aiLabel && l.aiLabel !== 'interested'))
+        // Opportunities = leads that have received replies (actual reply events from the campaign)
+        // Count reply events, not just status, for accurate opportunity calculation
+        const replyEvents = await prisma.sendingEvent.count({
+            where: {
+                type: 'reply',
+                createdAt: { gte: startDate },
+                ...(workspaceId && workspaceId !== 'all' ? {
+                    campaign: {
+                        campaignWorkspaces: {
+                            some: { workspaceId }
+                        }
+                    }
+                } : {
+                    campaign: {
+                        userId: session.user.id
+                    }
+                })
+            }
+        })
+        const opportunitiesCount = replyEvents
 
         const stats = await prisma.campaignStat.aggregate({
             where: {
@@ -183,8 +201,8 @@ export async function GET(request: Request) {
                 sent,
                 opens: opened,
                 replies: replied,
-                openRate: sent > 0 ? Math.round((opened / sent) * 100) : 0,
-                replyRate: sent > 0 ? Math.round((replied / sent) * 100) : 0
+                openRate: sent > 0 ? Math.min(Math.round((opened / sent) * 100), 100) : 0,
+                replyRate: sent > 0 ? Math.min(Math.round((replied / sent) * 100), 100) : 0
             }
         }))
 
@@ -206,13 +224,30 @@ export async function GET(request: Request) {
             recentIssues: []
         }
 
-        // Calculate funnel data
+        // Get bounce count for accurate delivery calculation
+        const bounceCount = stats._sum.bounced || (await prisma.sendingEvent.count({
+            where: {
+                type: 'bounce',
+                createdAt: { gte: startDate },
+                ...(workspaceId && workspaceId !== 'all' ? {
+                    campaign: { campaignWorkspaces: { some: { workspaceId } } }
+                } : {
+                    campaign: { userId: session.user.id }
+                })
+            }
+        }) || 0)
+
+        const delivered = totalSent - bounceCount
+        const deliveredPercentage = totalSent > 0 ? Math.round((delivered / totalSent) * 100) : 0
+
+        // Calculate funnel data with actual values
         const funnelData = [
             { stage: "Sent", value: totalSent, percentage: 100 },
-            { stage: "Delivered", value: Math.round(totalSent * 0.99), percentage: 99 }, // Estimate delivery
-            { stage: "Opened", value: totalOpened, percentage: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0 },
-            { stage: "Clicked", value: totalClicked, percentage: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0 },
-            { stage: "Replied", value: totalReplied, percentage: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0 }
+            { stage: "Delivered", value: delivered, percentage: deliveredPercentage },
+            { stage: "Opened", value: totalOpened, percentage: totalSent > 0 ? Math.min(Math.round((totalOpened / totalSent) * 100), 100) : 0 },
+            { stage: "Clicked", value: totalClicked, percentage: totalSent > 0 ? Math.min(Math.round((totalClicked / totalSent) * 100), 100) : 0 },
+            { stage: "Replied", value: totalReplied, percentage: totalSent > 0 ? Math.min(Math.round((totalReplied / totalSent) * 100), 100) : 0 },
+            { stage: "Converted", value: leads.filter(l => l.status === 'converted' || l.status === 'won').length, percentage: totalSent > 0 ? Math.min(Math.round((leads.filter(l => l.status === 'converted' || l.status === 'won').length / totalSent) * 100), 100) : 0 }
         ]
 
         const result = {
@@ -221,8 +256,8 @@ export async function GET(request: Request) {
             clickRate: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0,
             replyRate: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0,
             opportunities: {
-                count: opportunitiesLeads.length,
-                value: opportunitiesLeads.length * opportunityValue
+                count: opportunitiesCount,
+                value: opportunitiesCount * opportunityValue
             },
             chartData: generateChartData(startDate, now, dailyStats),
             heatmapData,

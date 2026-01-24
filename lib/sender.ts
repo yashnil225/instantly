@@ -283,9 +283,36 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
                 if (!subject && !body) continue
 
-                // Replace Variables
-                subject = subject.replace(/{{firstName}}/g, lead.firstName || '').replace(/{{company}}/g, lead.company || '')
-                body = body.replace(/{{firstName}}/g, lead.firstName || '').replace(/{{company}}/g, lead.company || '')
+                // Replace Variables - Core fields
+                const replaceVariables = (text: string) => {
+                    let result = text
+                    result = result.replace(/{{firstName}}/gi, lead.firstName || '')
+                    result = result.replace(/{{lastName}}/gi, lead.lastName || '')
+                    result = result.replace(/{{email}}/gi, lead.email || '')
+                    result = result.replace(/{{company}}/gi, lead.company || '')
+
+                    // Replace custom fields from lead.customFields
+                    if (lead.customFields) {
+                        try {
+                            const customFields = typeof lead.customFields === 'string'
+                                ? JSON.parse(lead.customFields)
+                                : lead.customFields
+                            for (const [key, value] of Object.entries(customFields)) {
+                                const regex = new RegExp(`{{${key}}}`, 'gi')
+                                result = result.replace(regex, String(value || ''))
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse custom fields for variable replacement:', e)
+                        }
+                    }
+
+                    // Remove any remaining unmatched variables
+                    result = result.replace(/{{[^}]+}}/g, '')
+                    return result
+                }
+
+                subject = replaceVariables(subject)
+                body = replaceVariables(body)
 
                 // Create Sending Event
                 const sentEvent = await prisma.sendingEvent.create({

@@ -36,6 +36,24 @@ export async function GET(request: NextRequest) {
         if (campaignId) where.campaignId = campaignId
         if (aiLabel) where.aiLabel = aiLabel
         if (filter === "unread") where.isRead = false
+        if (emailAccountId) {
+            where.events = {
+                ...where.events,
+                some: {
+                    ...where.events?.some,
+                    emailAccountId: emailAccountId
+                }
+            }
+        }
+
+        // Primary/Others tab filtering
+        if (tab === "primary") {
+            // Primary: Human replies (exclude auto-replies like OOO)
+            where.aiLabel = { notIn: ["out_of_office", "auto_reply", "unsubscribed"] }
+        } else if (tab === "others") {
+            // Others: Auto-replies and system-generated responses
+            where.aiLabel = { in: ["out_of_office", "auto_reply", "unsubscribed"] }
+        }
 
         // Filter by workspace(s) through campaign
         if (workspaceIds && workspaceIds.length > 0) {
@@ -90,13 +108,21 @@ export async function GET(request: NextRequest) {
             const replyEvent = lead.events.find(e => e.type === "reply")
             const sentEvent = lead.events.find(e => e.type === "sent")
 
+            // Get preview from reply content if available - show full content
+            let preview = "Waiting for response"
+            if (replyEvent?.details) {
+                preview = replyEvent.details.trim()
+            } else if (replyEvent) {
+                preview = "Replied to your email"
+            }
+
             return {
                 id: lead.id,
                 from: lead.email,
                 fromName: `${lead.firstName || ""} ${lead.lastName || ""}`.trim() || lead.email,
                 company: lead.company,
                 subject: replyEvent ? "Re: " + (sentEvent?.metadata ? JSON.parse(sentEvent.metadata).subject : "Follow up") : (sentEvent?.metadata ? JSON.parse(sentEvent.metadata).subject : "Follow up"),
-                preview: replyEvent ? "Replied to your email" : "Waiting for response",
+                preview,
                 timestamp: lead.updatedAt,
                 isRead: lead.isRead,
                 status: lead.status,

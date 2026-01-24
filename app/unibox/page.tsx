@@ -148,6 +148,14 @@ function UniboxPage() {
     const [activeStatus, setActiveStatus] = useState<string | null>(null)
     const [listWidth, setListWidth] = useState(0) // Will be calculated on mount
 
+    // Bulk selection state
+    const [selectedEmails, setSelectedEmails] = useState<Set<string>>(new Set())
+    const [searchQuery, setSearchQuery] = useState("")
+
+    // File attachment state
+    const [attachments, setAttachments] = useState<File[]>([])
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+
     const startResizing = (mouseDownEvent: React.MouseEvent) => {
         const startX = mouseDownEvent.clientX
         const startWidth = listWidth
@@ -854,6 +862,107 @@ Instantly`,
         }
     }
 
+    // Bulk Actions
+    const toggleEmailSelection = (emailId: string) => {
+        const newSelected = new Set(selectedEmails)
+        if (newSelected.has(emailId)) {
+            newSelected.delete(emailId)
+        } else {
+            newSelected.add(emailId)
+        }
+        setSelectedEmails(newSelected)
+    }
+
+    const selectAll = () => {
+        setSelectedEmails(new Set(emails.map(e => e.id)))
+    }
+
+    const selectFirstTen = () => {
+        setSelectedEmails(new Set(emails.slice(0, 10).map(e => e.id)))
+    }
+
+    const selectUnread = () => {
+        setSelectedEmails(new Set(emails.filter(e => !e.isRead).map(e => e.id)))
+    }
+
+    const clearSelection = () => {
+        setSelectedEmails(new Set())
+    }
+
+    const massMarkAsRead = async () => {
+        const ids = Array.from(selectedEmails)
+        for (const id of ids) {
+            await handleMarkAsRead(id, true)
+        }
+        clearSelection()
+        toast({ title: "Success", description: `Marked ${ids.length} emails as read` })
+    }
+
+    const massDelete = async () => {
+        const ids = Array.from(selectedEmails)
+        for (const id of ids) {
+            await handleDeleteEmail(id)
+        }
+        clearSelection()
+        toast({ title: "Success", description: `Deleted ${ids.length} emails` })
+    }
+
+    const massLabel = async (label: string) => {
+        const ids = Array.from(selectedEmails)
+        for (const id of ids) {
+            await fetch(`/api/leads/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ aiLabel: label })
+            })
+        }
+        setEmails(emails.map(e => selectedEmails.has(e.id) ? { ...e, aiLabel: label } : e))
+        clearSelection()
+        toast({ title: "Success", description: `Labeled ${ids.length} emails as ${label}` })
+    }
+
+    // File Attachment Handlers
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || [])
+        const MAX_SIZE = 25 * 1024 * 1024 // 25MB
+
+        const validFiles: File[] = []
+        const oversizedFiles: string[] = []
+
+        files.forEach(file => {
+            if (file.size > MAX_SIZE) {
+                oversizedFiles.push(file.name)
+            } else {
+                validFiles.push(file)
+            }
+        })
+
+        if (oversizedFiles.length > 0) {
+            toast({
+                title: "File size limit exceeded",
+                description: `The following files exceed 25MB and were not added: ${oversizedFiles.join(', ')}. Please use a file sharing service for large files.`,
+                variant: "destructive"
+            })
+        }
+
+        if (validFiles.length > 0) {
+            setAttachments([...attachments, ...validFiles])
+            toast({
+                title: "Files attached",
+                description: `Added ${validFiles.length} file(s)`
+            })
+        }
+    }
+
+    const removeAttachment = (index: number) => {
+        setAttachments(attachments.filter((_, i) => i !== index))
+    }
+
+    const insertEmoji = (emoji: string) => {
+        setReplyBody(replyBody + emoji)
+        setShowEmojiPicker(false)
+    }
+
     return (
         <div className="flex h-screen bg-background text-[#a1a1aa] font-sans">
             {/* Collapsible Sidebar */}
@@ -1449,8 +1558,36 @@ Instantly`,
 
                             {/* Detail Body */}
                             <div className="flex-1 overflow-y-auto p-8 bg-background">
-                                <div className="prose prose-invert max-w-none text-[#a1a1aa] whitespace-pre-wrap leading-relaxed text-sm">
-                                    {selectedEmail.body || selectedEmail.preview}
+                                <div
+                                    className="prose prose-invert max-w-none text-foreground leading-relaxed"
+                                    style={{
+                                        fontSize: '14px',
+                                        lineHeight: '1.6',
+                                        color: '#e4e4e7'
+                                    }}
+                                >
+                                    {selectedEmail.body ? (
+                                        // Check if body contains HTML tags
+                                        selectedEmail.body.includes('<') && selectedEmail.body.includes('>') ? (
+                                            <div
+                                                dangerouslySetInnerHTML={{ __html: selectedEmail.body }}
+                                                className="email-content"
+                                                style={{
+                                                    fontFamily: 'system-ui, -apple-system, sans-serif',
+                                                    wordWrap: 'break-word',
+                                                    overflowWrap: 'break-word'
+                                                }}
+                                            />
+                                        ) : (
+                                            <div style={{ whiteSpace: 'pre-wrap' }}>
+                                                {selectedEmail.body}
+                                            </div>
+                                        )
+                                    ) : (
+                                        <div style={{ whiteSpace: 'pre-wrap', color: '#a1a1aa' }}>
+                                            {selectedEmail.preview}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -1521,12 +1658,28 @@ Instantly`,
                                                 autoFocus={replyMode !== 'forward'}
                                             />
                                         </div>
-                                        <div className="p-3 flex items-center justify-between border-t border-[#2a2a35] bg-[#272730]/30 mr-2">
+                                        <div className="p-3 flex items-center justify-between border-t border-[#2a2a35] bg-[#272730]/30 mr-2 relative">
                                             <div className="flex gap-2">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#a1a1aa] hover:text-foreground">
-                                                    <Paperclip className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-[#a1a1aa] hover:text-foreground">
+                                                <input
+                                                    type="file"
+                                                    id="file-upload"
+                                                    multiple
+                                                    onChange={handleFileSelect}
+                                                    className="hidden"
+                                                />
+                                                <label htmlFor="file-upload">
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-[#a1a1aa] hover:text-foreground" asChild>
+                                                        <span className="cursor-pointer">
+                                                            <Paperclip className="h-4 w-4" />
+                                                        </span>
+                                                    </Button>
+                                                </label>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-[#a1a1aa] hover:text-foreground"
+                                                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                                                >
                                                     <Smile className="h-4 w-4" />
                                                 </Button>
                                             </div>

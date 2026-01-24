@@ -806,7 +806,7 @@ function CampaignsPage() {
                 {/* Campaigns Table */}
                 <div className="space-y-4">
                     {/* Header Row */}
-                    <div className="grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-3 text-[11px] font-bold text-[#666666] uppercase tracking-wider">
+                    <div className="grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-3 text-[11px] font-bold text-[#666666] uppercase tracking-wider">
                         <div className="flex items-center">
                             <Checkbox
                                 checked={campaigns.length > 0 && selectedIds.length === campaigns.length}
@@ -818,6 +818,7 @@ function CampaignsPage() {
                         <div>Status</div>
                         <div>Progress</div>
                         <div>Sent</div>
+                        <div>Open</div>
                         <div>Click</div>
                         <div>Replied</div>
                         <div>Opportunities</div>
@@ -844,7 +845,7 @@ function CampaignsPage() {
                                 key={campaign.id}
                                 onClick={(e) => handleRowClick(e, campaign.id)}
                                 className={cn(
-                                    "group grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 bg-card border border-border rounded-xl items-center hover:border-[#333333] transition-all cursor-pointer",
+                                    "group grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 bg-card border border-border rounded-xl items-center hover:border-[#333333] transition-all cursor-pointer",
                                     selectedIds.includes(campaign.id) && "border-blue-900 bg-blue-900/10"
                                 )}
                             >
@@ -901,8 +902,9 @@ function CampaignsPage() {
                                 </div>
 
                                 <div className="text-muted-foreground text-sm font-medium">{campaign.sentCount || "-"}</div>
-                                <div className="text-muted-foreground text-sm font-medium">{campaign.clickCount ? `${campaign.clickCount}%` : "-"}</div>
-                                <div className="text-muted-foreground text-sm font-medium">{campaign.replyCount ? `${campaign.replyCount}%` : "-"}</div>
+                                <div className="text-muted-foreground text-sm font-medium">{campaign.openRate ? `${campaign.openRate}%` : "-"}</div>
+                                <div className="text-muted-foreground text-sm font-medium">{campaign.clickRate ? `${campaign.clickRate}%` : "-"}</div>
+                                <div className="text-muted-foreground text-sm font-medium">{campaign.replyRate ? `${campaign.replyRate}%` : "-"}</div>
                                 <div className="text-muted-foreground text-sm font-medium">{campaign.opportunities || "-"}</div>
 
                                 <div className="flex justify-end items-center gap-1" onClick={(e) => e.stopPropagation()}>

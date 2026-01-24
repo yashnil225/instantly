@@ -41,7 +41,23 @@ export async function GET(request: Request) {
             orderBy: { createdAt: 'desc' }
         })
 
-        return NextResponse.json(campaigns)
+        // Calculate rates and opportunities for each campaign
+        const campaignsWithAnalytics = campaigns.map(campaign => {
+            const sentCount = campaign.sentCount || 0
+            const openCount = campaign.openCount || 0
+            const clickCount = campaign.clickCount || 0
+            const replyCount = campaign.replyCount || 0
+
+            return {
+                ...campaign,
+                openRate: sentCount > 0 ? Math.min(Math.round((openCount / sentCount) * 100), 100) : 0,
+                clickRate: sentCount > 0 ? Math.min(Math.round((clickCount / sentCount) * 100), 100) : 0,
+                replyRate: sentCount > 0 ? Math.min(Math.round((replyCount / sentCount) * 100), 100) : 0,
+                opportunities: replyCount // Opportunities = Replies
+            }
+        })
+
+        return NextResponse.json(campaignsWithAnalytics)
     } catch (error) {
         console.error("Failed to fetch campaigns:", error)
         return NextResponse.json({ error: "Internal server error" }, { status: 500 })

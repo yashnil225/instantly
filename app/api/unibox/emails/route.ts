@@ -36,6 +36,23 @@ export async function GET(request: NextRequest) {
         if (campaignId) where.campaignId = campaignId
         if (aiLabel) where.aiLabel = aiLabel
         if (filter === "unread") where.isRead = false
+        if (filter === "starred") where.isStarred = true
+        // Snooze Logic
+        if (filter === "snoozed") {
+            where.snoozedUntil = { not: null, gt: new Date() } // Show future snoozed
+        } else if (filter === "archived") {
+            where.isArchived = true
+        } else {
+            // Default Inbox view: Not archived AND (Not snoozed OR Snooze expired)
+            where.isArchived = false
+            where.OR = [
+                { snoozedUntil: null },
+                { snoozedUntil: { lte: new Date() } }
+            ]
+        }
+
+
+
         if (emailAccountId) {
             where.events = {
                 ...where.events,
@@ -67,13 +84,115 @@ export async function GET(request: NextRequest) {
                 }
             }
         }
+        // Parse search query for operators
         if (search) {
-            where.OR = [
-                { email: { contains: search } },
-                { firstName: { contains: search } },
-                { lastName: { contains: search } },
-                { company: { contains: search } }
-            ]
+            const operators: any = {}
+            let plainTextSearch = search
+
+            // Extract operators
+            const fromMatch = search.match(/from:(\S+)/i)
+            const subjectMatch = search.match(/subject:(\S+)/i)
+            const hasAttachmentMatch = search.match(/has:attachment/i)
+
+            // Date operators
+            const afterMatch = search.match(/after:(\d{4}\/\d{2}\/\d{2})/i) // YYYY/MM/DD
+            const beforeMatch = search.match(/before:(\d{4}\/\d{2}\/\d{2})/i)
+
+            // Status operators
+            const isUnreadMatch = search.match(/is:unread/i)
+            const isReadMatch = search.match(/is:read/i)
+            const isStarredMatch = search.match(/is:starred/i)
+            const inArchivedMatch = search.match(/(in:archived|is:archived)/i)
+
+            if (fromMatch) {
+                operators.email = fromMatch[1]
+                plainTextSearch = plainTextSearch.replace(/from:\S+/gi, '').trim()
+            }
+
+            if (subjectMatch) {
+                operators.subject = subjectMatch[1]
+                plainTextSearch = plainTextSearch.replace(/subject:\S+/gi, '').trim()
+            }
+
+            if (hasAttachmentMatch) {
+                operators.hasAttachment = true
+                plainTextSearch = plainTextSearch.replace(/has:attachment/gi, '').trim()
+            }
+
+            if (afterMatch) {
+                where.updatedAt = { ...where.updatedAt, gte: new Date(afterMatch[1]) }
+                plainTextSearch = plainTextSearch.replace(/after:\S+/gi, '').trim()
+            }
+
+            if (beforeMatch) {
+                where.updatedAt = { ...where.updatedAt, lte: new Date(beforeMatch[1]) }
+                plainTextSearch = plainTextSearch.replace(/before:\S+/gi, '').trim()
+            }
+
+            if (isUnreadMatch) {
+                where.isRead = false
+                plainTextSearch = plainTextSearch.replace(/is:unread/gi, '').trim()
+            }
+
+            if (isReadMatch) {
+                where.isRead = true
+                plainTextSearch = plainTextSearch.replace(/is:read/gi, '').trim()
+            }
+
+            if (isStarredMatch) {
+                where.isStarred = true
+                plainTextSearch = plainTextSearch.replace(/is:starred/gi, '').trim()
+            }
+
+            if (inArchivedMatch) {
+                where.isArchived = true
+                plainTextSearch = plainTextSearch.replace(/(in:archived|is:archived)/gi, '').trim()
+            }
+
+            // Build search conditions
+            const searchConditions: any[] = []
+
+            // Apply operator filters
+            if (operators.email) {
+                searchConditions.push({ email: { contains: operators.email, mode: 'insensitive' } })
+            }
+
+            if (operators.subject) {
+                // Filter by subject in event metadata
+                where.events = {
+                    ...where.events,
+                    some: {
+                        ...where.events?.some,
+                        metadata: { contains: `"subject":"${operators.subject}`, mode: 'insensitive' }
+                    }
+                }
+            }
+
+            if (operators.hasAttachment) {
+                // Filter by attachment presence
+                where.events = {
+                    ...where.events,
+                    some: {
+                        ...where.events?.some,
+                        hasAttachment: true
+                    }
+                }
+            }
+
+            // Add plain text search if any remains
+            if (plainTextSearch) {
+                searchConditions.push(
+                    { email: { contains: plainTextSearch, mode: 'insensitive' } },
+                    { firstName: { contains: plainTextSearch, mode: 'insensitive' } },
+                    { lastName: { contains: plainTextSearch, mode: 'insensitive' } },
+                    { company: { contains: plainTextSearch, mode: 'insensitive' } }
+                )
+            }
+
+            // Apply search conditions
+            if (searchConditions.length > 0) {
+                where.OR = searchConditions
+            }
         }
 
         // Fetch leads with their latest events
@@ -87,8 +206,8 @@ export async function GET(request: NextRequest) {
                     }
                 },
                 events: {
-                    orderBy: { createdAt: "desc" },
-                    take: 5,
+                    orderBy: { createdAt: "asc" }, // Ascending for threaded view
+                    take: 100,
                     include: {
                         emailAccount: {
                             select: {
@@ -116,6 +235,9 @@ export async function GET(request: NextRequest) {
                 preview = "Replied to your email"
             }
 
+            // Check if any event has attachments
+            const hasAttachment = lead.events.some(e => e.hasAttachment)
+
             return {
                 id: lead.id,
                 from: lead.email,
@@ -125,11 +247,25 @@ export async function GET(request: NextRequest) {
                 preview,
                 timestamp: lead.updatedAt,
                 isRead: lead.isRead,
+                isStarred: lead.isStarred,
+                isArchived: lead.isArchived,
+                snoozedUntil: lead.snoozedUntil,
                 status: lead.status,
                 aiLabel: lead.aiLabel,
                 campaign: lead.campaign,
                 hasReply: !!replyEvent,
-                sentFrom: lastEvent?.emailAccount?.email
+                hasAttachment,
+                sentFrom: lastEvent?.emailAccount?.email,
+                messages: lead.events.map(e => ({
+                    id: e.id,
+                    type: e.type,
+                    subject: e.metadata ? JSON.parse(e.metadata).subject : "",
+                    body: e.details || "", // Use details for body content
+                    timestamp: e.createdAt,
+                    from: e.type === 'sent' ? e.emailAccount?.email : lead.email,
+                    to: e.type === 'sent' ? lead.email : e.emailAccount?.email,
+                    isMe: e.type === 'sent'
+                }))
             }
         })
 
@@ -150,14 +286,17 @@ export async function PATCH(request: NextRequest) {
 
 
         const body = await request.json()
-        const { leadId, isRead, aiLabel, status } = body
+        const { leadId, isRead, aiLabel, status, isStarred, isArchived, snoozedUntil } = body
 
         const updated = await prisma.lead.update({
             where: { id: leadId },
             data: {
                 ...(typeof isRead === "boolean" && { isRead }),
                 ...(aiLabel !== undefined && { aiLabel }),
-                ...(status && { status })
+                ...(status && { status }),
+                ...(typeof isStarred === "boolean" && { isStarred }),
+                ...(typeof isArchived === "boolean" && { isArchived }),
+                ...(snoozedUntil !== undefined && { snoozedUntil: snoozedUntil ? new Date(snoozedUntil) : null })
             }
         })
 

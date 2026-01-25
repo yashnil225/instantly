@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
     try {
         const body = await request.json()
-        const { emailId, body: emailBody, replyAll } = body
+        const { emailId, body: emailBody } = body
 
         if (!emailId || !emailBody) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -70,47 +70,84 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Lead or Email not found' }, { status: 404 })
         }
 
-        // 2. Select Sending Account (Logic: Use same account if known, or first available from campaign)
-        // For simplicity, pick the first connected account
+        // 2. Find the last message sent to this lead to enable threading
+        const lastSentEvent = await prisma.sendingEvent.findFirst({
+            where: {
+                leadId: lead.id,
+                type: 'sent'
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        })
+
+        // 3. Select Sending Account
         const sendingAccount = lead.campaign?.campaignAccounts?.[0]?.emailAccount
 
         if (!sendingAccount) {
             return NextResponse.json({ error: 'No email account connected to this campaign' }, { status: 400 })
         }
 
-        // 3. Send Email
+        // 4. Prepare Threading Headers
+        const inReplyTo = lastSentEvent?.messageId || undefined
+        const references = lastSentEvent?.messageId ? [lastSentEvent.messageId] : undefined
+
+        // Attempt to get original subject
+        let originalSubject = "Follow up"
+        if (lastSentEvent?.metadata) {
+            try {
+                const metadata = JSON.parse(lastSentEvent.metadata)
+                if (metadata.subject) originalSubject = metadata.subject
+            } catch (e) {
+                console.error("Failed to parse metadata subject", e)
+            }
+        }
+
+        const subject = originalSubject.toLowerCase().startsWith('re:')
+            ? originalSubject
+            : `Re: ${originalSubject}`
+
+        // 5. Send Email
         const info = await sendEmail({
             config: {
                 host: sendingAccount.smtpHost || '',
                 port: sendingAccount.smtpPort || 587,
                 user: sendingAccount.smtpUser || '',
-                pass: sendingAccount.smtpPass || '' // detailed decryption needed in real app
+                pass: sendingAccount.smtpPass || '',
+                provider: sendingAccount.provider,
+                refreshToken: sendingAccount.refreshToken || undefined,
+                inReplyTo,
+                references
             },
             to: lead.email,
-            subject: `Re: ${"Follow up"}`, // Should fetch original subject
+            subject,
             html: emailBody,
             fromName: sendingAccount.firstName ? `${sendingAccount.firstName} ${sendingAccount.lastName}` : sendingAccount.email,
             fromEmail: sendingAccount.email
         })
 
-        // 4. Log the Reply
+        // 6. Log the Reply
         await prisma.sendingEvent.create({
             data: {
                 type: 'reply_sent',
                 leadId: lead.id,
                 campaignId: lead.campaignId,
                 emailAccountId: sendingAccount.id,
-                metadata: JSON.stringify(info)
+                messageId: info.messageId, // Store the new message ID
+                metadata: JSON.stringify({
+                    ...info,
+                    subject
+                })
             }
         })
 
-        // 5. Update Lead Status
+        // 7. Update Lead Status
         await prisma.lead.update({
             where: { id: lead.id },
-            data: { status: 'replied' } // Or 'contacted'
+            data: { status: 'replied' }
         })
 
-        return NextResponse.json({ success: true })
+        return NextResponse.json({ success: true, messageId: info.messageId })
 
     } catch (error) {
         console.error('Failed to send reply:', error)

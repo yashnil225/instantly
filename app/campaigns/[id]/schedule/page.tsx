@@ -10,6 +10,9 @@ import { Calendar as CalendarIcon, Plus, Save, Loader2, Check, Trash2, ToggleLef
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { CallyCalendar } from "@/components/ui/cally-calendar"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
 const DAYS = [
@@ -304,22 +307,56 @@ export default function SchedulePage() {
                         <Label className="text-gray-400 text-xs uppercase tracking-wider flex items-center gap-2">
                             <CalendarIcon className="h-3 w-3" /> Start Date
                         </Label>
-                        <CallyCalendar
-                            value={startDate ? new Date(startDate) : null}
-                            onChange={(date) => setStartDate(date ? date.toISOString() : null)}
-                            placeholder="Pick a start date"
-                        />
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal bg-[#111] border-[#222] text-white hover:bg-[#1a1a1a] hover:text-white",
+                                        !startDate && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {startDate ? format(new Date(startDate), "PPP") : <span>Pick a start date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-[#2a2a2a]" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={startDate ? new Date(startDate) : undefined}
+                                    onSelect={(date) => setStartDate(date ? date.toISOString() : null)}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <div className="space-y-2">
                         <Label className="text-gray-400 text-xs uppercase tracking-wider flex items-center gap-2">
                             <CalendarIcon className="h-3 w-3" /> End Date
                         </Label>
-                        <CallyCalendar
-                            value={endDate ? new Date(endDate) : null}
-                            onChange={(date) => setEndDate(date ? date.toISOString() : null)}
-                            placeholder="Pick an end date"
-                        />
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal bg-[#111] border-[#222] text-white hover:bg-[#1a1a1a] hover:text-white",
+                                        !endDate && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {endDate ? format(new Date(endDate), "PPP") : <span>Pick an end date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0 bg-[#1a1a1a] border-[#2a2a2a]" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={endDate ? new Date(endDate) : undefined}
+                                    onSelect={(date) => setEndDate(date ? date.toISOString() : null)}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
 
                     <Button onClick={handleSave} disabled={saving} className="w-full bg-blue-600 hover:bg-blue-700 text-white">

@@ -89,6 +89,7 @@ export async function GET(request: Request) {
         isDFY: false, // TODO: Add DFY tracking
         isInCampaign: acc.campaignAccounts.length > 0,
         hasCustomDomain: !!acc.provider,
+        signature: acc.signature,
         tags: [] // TODO: Add tags
     }))
 

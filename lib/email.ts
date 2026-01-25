@@ -7,6 +7,9 @@ interface EmailConfig {
     pass: string
     provider?: string
     refreshToken?: string
+    messageId?: string
+    inReplyTo?: string
+    references?: string | string[]
 }
 
 export async function createTransporter(config: EmailConfig) {
@@ -50,12 +53,16 @@ export async function sendEmail({
     fromEmail: string
 }) {
     const transporter = await createTransporter(config)
+    const { inReplyTo, references, messageId } = config
 
     const info = await transporter.sendMail({
         from: `"${fromName}" <${fromEmail}>`,
         to,
         subject,
         html,
+        messageId,
+        inReplyTo,
+        references,
     })
 
     return info

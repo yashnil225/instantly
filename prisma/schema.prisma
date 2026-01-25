@@ -255,8 +255,11 @@ model Lead {
   nextSendAt DateTime? // Exact time for next email send
   
   // Unibox
-  aiLabel    String?  // "out_of_office", "wrong_person", "not_interested", "lost", or custom
-  isRead     Boolean  @default(false)
+  aiLabel       String?   // "out_of_office", "wrong_person", "not_interested", "lost", or custom
+  isRead        Boolean   @default(false)
+  isStarred     Boolean   @default(false) // Star/Important marking
+  isArchived    Boolean   @default(false) // Archive (remove from inbox)
+  snoozedUntil  DateTime? // Snooze until this time
   
   unsubscribeToken String?  @unique
   
@@ -331,9 +334,10 @@ model SendingEvent {
 
   emailAccount   EmailAccount? @relation(fields: [emailAccountId], references: [id])
 
-  metadata  String? // JSON for IP, User Agent, Link URL
-  details   String? // Text content for similarity ranking
-  createdAt DateTime @default(now())
+  metadata      String?  // JSON for IP, User Agent, Link URL
+  details       String?  // Text content for similarity ranking
+  hasAttachment Boolean  @default(false) // Track if email has attachments
+  createdAt     DateTime @default(now())
 }
 
 model CampaignStat {

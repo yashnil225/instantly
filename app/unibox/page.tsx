@@ -743,13 +743,14 @@ Instantly`,
     }
     const currentEmail = selectedEmail
     if (!currentEmail) return
+    const leadId = currentEmail.id
 
     // Optimistic update
     const previousLabel = currentEmail.aiLabel
     const previousStatus = currentEmail.status
 
     setEmails(emails.map(e =>
-        e.id === currentEmail.id ? { ...e, aiLabel: status } : e
+        e.id === leadId ? { ...e, aiLabel: status } : e
     ))
     setSelectedEmail(prev => prev ? { ...prev, aiLabel: status } : null)
 
@@ -757,7 +758,7 @@ Instantly`,
     toast({ title: "Status updated", description: `Lead marked as ${statusName}` })
 
     try {
-        const res = await fetch(`/api/leads/${currentEmail.id}`, {
+        const res = await fetch(`/api/leads/${leadId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ aiLabel: status })
@@ -766,7 +767,7 @@ Instantly`,
         if (!res.ok) {
             // Revert
             setEmails(emails.map(e =>
-                e.id === currentEmail.id ? { ...e, aiLabel: previousLabel } : e
+                e.id === leadId ? { ...e, aiLabel: previousLabel } : e
             ))
             setSelectedEmail(prev => prev ? { ...prev, aiLabel: previousLabel } : null)
             toast({ title: "Error", description: "Failed to update status", variant: "destructive" })

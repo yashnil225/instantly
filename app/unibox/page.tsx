@@ -741,9 +741,10 @@ Instantly`,
             setEmails(originalEmails)
         }
     }
-    const currentEmail = selectedEmail
-    if (!currentEmail) return
-    const leadId = currentEmail.id
+    const handleUpdateStatus = async (status: string) => {
+        const currentEmail = selectedEmail
+        if (!currentEmail) return
+        const leadId = currentEmail.id
 
     // Optimistic update
     const previousLabel = currentEmail.aiLabel

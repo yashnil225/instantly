@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import nodemailer from 'nodemailer'
+
 
 export async function POST(
     request: Request,
@@ -23,6 +23,7 @@ export async function POST(
         }
 
         // Create Transporter using saved credentials
+        const nodemailer = (await import('nodemailer')).default
         const transporter = nodemailer.createTransport({
             host: account.smtpHost!,
             port: account.smtpPort!,

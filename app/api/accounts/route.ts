@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-import nodemailer from 'nodemailer'
+
 
 export async function GET(request: Request) {
     const session = await auth()
@@ -125,6 +125,7 @@ export async function POST(request: Request) {
 
         // --- SMTP VERIFICATION ---
         try {
+            const nodemailer = (await import('nodemailer')).default
             const transporter = nodemailer.createTransport({
                 host: smtpHost,
                 port: parseInt(smtpPort) || 587,

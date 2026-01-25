@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import nodemailer from 'nodemailer'
+
 import { auth } from '@/auth'
 
 export async function POST(request: Request) {
@@ -83,6 +83,7 @@ export async function POST(request: Request) {
         }
 
         // 3. Send Reply
+        const nodemailer = (await import('nodemailer')).default
         const transporter = nodemailer.createTransport({
             host: account.smtpHost!,
             port: account.smtpPort!,

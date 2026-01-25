@@ -24,10 +24,10 @@ export async function GET(request: Request) {
                     userId: session.user.id
                 },
                 OR: [
-                    { email: { contains: query, mode: 'insensitive' } },
-                    { firstName: { contains: query, mode: 'insensitive' } },
-                    { lastName: { contains: query, mode: 'insensitive' } },
-                    { company: { contains: query, mode: 'insensitive' } }
+                    { email: { contains: query } },
+                    { firstName: { contains: query } },
+                    { lastName: { contains: query } },
+                    { company: { contains: query } }
                 ],
                 status: {
                     not: 'new' // Only show leads that have been contacted

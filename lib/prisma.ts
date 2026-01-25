@@ -14,7 +14,7 @@ if (isTursoEnabled) {
         authToken: process.env.TURSO_AUTH_TOKEN!,
     })
     const adapter = new PrismaLibSQL(libsql)
-    prismaInstance = new PrismaClient({ adapter })
+    prismaInstance = new PrismaClient({ adapter: adapter as any })
 } else {
     prismaInstance = new PrismaClient()
 }

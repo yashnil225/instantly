@@ -106,6 +106,7 @@ export async function GET(request: Request) {
                 opened: true,
                 clicked: true,
                 replied: true,
+                bounced: true, // Added bounced: true
             }
         })
 

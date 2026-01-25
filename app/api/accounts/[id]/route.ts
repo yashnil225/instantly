@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import nodemailer from 'nodemailer'
+
 
 // GET - Fetch single account with warmup stats
 export async function GET(
@@ -147,6 +147,7 @@ export async function PATCH(
                 const pass = body.smtpPass
                 const secure = port === 465
 
+                const nodemailer = (await import('nodemailer')).default
                 const transporter = nodemailer.createTransport({
                     host,
                     port,

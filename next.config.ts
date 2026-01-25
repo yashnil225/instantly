@@ -18,6 +18,19 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  webpack: (config, { isServer }) => {
+    // Mark native modules as external to prevent bundling issues
+    if (isServer) {
+      config.externals.push(
+        '@libsql/client',
+        '@libsql/client/web',
+        '@libsql/client/sqlite3',
+        'libsql',
+        'better-sqlite3'
+      )
+    }
+    return config
+  },
 };
 
 export default nextConfig;

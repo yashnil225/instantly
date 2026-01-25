@@ -2364,7 +2364,6 @@ ${selectedEmail.body || selectedEmail.preview}
         </Dialog>
 
         <KeyboardShortcutsHelp open={shortcutsModalOpen} onOpenChange={setShortcutsModalOpen} />
-    </div >
     </>
     )
 }

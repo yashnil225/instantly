@@ -758,7 +758,7 @@ Instantly`,
     toast({ title: "Status updated", description: `Lead marked as ${statusName}` })
 
     try {
-        const res = await fetch(`/api/leads/${leadId}`, {
+        const res = await fetch('/api/leads/' + leadId, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ aiLabel: status })
@@ -775,7 +775,7 @@ Instantly`,
     } catch (error) {
         // Revert
         setEmails(emails.map(e =>
-            e.id === selectedEmail.id ? { ...e, aiLabel: previousLabel } : e
+            e.id === leadId ? { ...e, aiLabel: previousLabel } : e
         ))
         setSelectedEmail(prev => prev ? { ...prev, aiLabel: previousLabel } : null)
         console.error('Failed to update status:', error)

@@ -6,8 +6,9 @@ export const authConfig = {
         newUser: '/signup',
     },
     callbacks: {
-        authorized({ auth, request: nextUrl }) {
+        authorized({ auth, request }) {
             const isLoggedIn = !!auth?.user
+            const nextUrl = request.nextUrl
             const isAuthPage = nextUrl.pathname.startsWith("/login") ||
                 nextUrl.pathname.startsWith("/signup")
             const isPublicPage = nextUrl.pathname === "/" ||

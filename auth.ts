@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { authConfig } from "./auth.config"
 
 const providers: any[] = [
     CredentialsProvider({
@@ -60,13 +61,10 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+    ...authConfig,
     adapter: PrismaAdapter(prisma),
     session: { strategy: "jwt" },
     secret: process.env.NEXTAUTH_SECRET || "secret",
-    pages: {
-        signIn: '/login',
-        newUser: '/signup',
-    },
     providers,
     events: {
         async createUser({ user }) {
@@ -92,43 +90,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     console.error(`[NextAuth] Failed to create workspace for new user ${user.id}:`, error)
                 }
             }
-        }
-    },
-    callbacks: {
-        async signIn({ user, account, profile }) {
-            // If user exists and is signing in with Google, we allow it.
-            // allowDangerousEmailAccountLinking: true handles the linking automatically.
-            return true
-        },
-        async jwt({ token, user, account, trigger }) {
-            if (user) {
-                token.id = user.id
-            }
-            if (account) {
-                token.accessToken = account.access_token
-            }
-            // Check if this is a new session (first login indicator)
-            if (trigger === 'signIn') {
-                token.isNewLogin = true
-            }
-            return token
-        },
-        async session({ session, token }) {
-            if (session.user) {
-                session.user.id = token.id as string
-                    // Pass access token to client for Google Picker
-                    ; (session as any).accessToken = token.accessToken
-                    ; (session as any).isNewLogin = token.isNewLogin || false
-            }
-            // Clear the flag after first session
-            token.isNewLogin = false
-            return session
-        },
-        async redirect({ url, baseUrl }) {
-            // Respect callback URLs or default to /campaigns
-            if (url.startsWith(baseUrl)) return url
-            if (url.startsWith("/")) return `${baseUrl}${url}`
-            return `${baseUrl}/campaigns`
         }
     }
 })

@@ -1,5 +1,7 @@
-import { auth } from "@/auth"
-import { NextResponse } from "next/server"
+import NextAuth from "next-auth"
+import { authConfig } from "./auth.config"
+
+const { auth } = NextAuth(authConfig)
 
 export default auth((req) => {
     const isLoggedIn = !!req.auth
@@ -14,17 +16,15 @@ export default auth((req) => {
         // Store the current URL so we can redirect back after login
         const callbackUrl = encodeURIComponent(req.nextUrl.pathname + req.nextUrl.search)
         // Redirect to /login instead of /signup to avoid loops and confusion
-        return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url))
+        return Response.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url))
     }
 
     if (isLoggedIn && isAuthPage) {
         // Redirect to callbackUrl if provided, otherwise to /campaigns
         const callbackUrl = req.nextUrl.searchParams.get("callbackUrl")
         const redirectTo = callbackUrl ? decodeURIComponent(callbackUrl) : "/campaigns"
-        return NextResponse.redirect(new URL(redirectTo, req.url))
+        return Response.redirect(new URL(redirectTo, req.url))
     }
-
-    return NextResponse.next()
 })
 
 export const config = {

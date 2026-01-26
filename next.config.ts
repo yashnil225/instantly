@@ -5,15 +5,6 @@ const nextConfig: NextConfig = {
     // Dev mode works perfectly; skip strict type checking for production build
     ignoreBuildErrors: true,
   },
-  turbopack: {
-    resolveAlias: {
-      '@libsql/client': false,
-      '@libsql/client/web': false,
-      '@libsql/client/sqlite3': false,
-      'libsql': false,
-      'better-sqlite3': false,
-    }
-  },
   async headers() {
     return [
       {

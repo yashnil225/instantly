@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss"
 import tailwindcssAnimate from "tailwindcss-animate"
-import daisyui from "daisyui"
+
 
 const config = {
     darkMode: ['selector', '[data-theme="dark"]'],
@@ -76,10 +76,7 @@ const config = {
             },
         },
     },
-    plugins: [tailwindcssAnimate, daisyui],
-    daisyui: {
-        themes: ["light", "synthwave"], // Light and Dark themes only
-    },
+    plugins: [tailwindcssAnimate],
 } satisfies Config
 
 export default config

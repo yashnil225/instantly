@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 // A simple error boundary to show a nice error page if something goes wrong (Error Boundary)
 // Users can go to the main page or try to reset/refresh to fix the error
@@ -137,7 +138,7 @@ export default function Error({
         <p className="text-red-500">{error?.message}</p>
 
         <div className="flex flex-wrap gap-4 justify-center">
-          <button className="btn btn-sm" onClick={reset}>
+          <Button size="sm" onClick={reset} className="gap-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -151,21 +152,23 @@ export default function Error({
               />
             </svg>
             Refresh
-          </button>
-          <Link href="/" className="btn btn-sm">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="w-5 h-5"
-            >
-              <path
-                fillRule="evenodd"
-                d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Home
+          </Button>
+          <Link href="/">
+            <Button size="sm" variant="secondary" className="gap-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9.293 2.293a1 1 0 011.414 0l7 7A1 1 0 0117 11h-1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-6H3a1 1 0 01-.707-1.707l7-7z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              Home
+            </Button>
           </Link>
         </div>
       </div>

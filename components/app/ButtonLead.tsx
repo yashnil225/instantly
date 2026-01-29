@@ -46,24 +46,24 @@ const ButtonLead = ({ extraStyle }: { extraStyle?: string }) => {
         ref={inputRef}
         autoComplete="email"
         placeholder="tom@cruise.com"
-        className="input input-bordered w-full placeholder:opacity-60"
+        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         onChange={(e) => setEmail(e.target.value)}
       />
 
       <button
-        className="btn btn-primary btn-block"
+        className="w-full inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-blue-600 text-white hover:bg-blue-700 h-10 py-2 px-4"
         type="submit"
         disabled={isDisabled}
       >
         Join waitlist
         {isLoading ? (
-          <span className="loading loading-spinner loading-xs"></span>
+          <span className="animate-spin ml-2 h-4 w-4 border-2 border-white/20 border-r-white rounded-full"></span>
         ) : (
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
-            className="w-5 h-5"
+            className="w-5 h-5 ml-2"
           >
             <path
               fillRule="evenodd"

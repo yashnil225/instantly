@@ -67,90 +67,34 @@ export async function GET(request: Request) {
 
         // Opportunities = leads that have received replies (actual reply events from the campaign)
         // Count reply events, not just status, for accurate opportunity calculation
-        const replyEvents = await prisma.sendingEvent.count({
-            where: {
-                type: 'reply',
-                createdAt: { gte: startDate },
-                ...(workspaceId && workspaceId !== 'all' ? {
-                    campaign: {
-                        campaignWorkspaces: {
-                            some: { workspaceId }
-                        }
-                    }
-                } : {
-                    campaign: {
-                        userId: session.user.id
-                    }
-                })
-            }
-        })
-        const opportunitiesCount = replyEvents
-
-        const stats = await prisma.campaignStat.aggregate({
-            where: {
-                date: { gte: startDate },
-                ...(workspaceId && workspaceId !== 'all' ? {
-                    campaign: {
-                        campaignWorkspaces: {
-                            some: { workspaceId }
-                        }
-                    }
-                } : {
-                    campaign: {
-                        userId: session.user.id
-                    }
-                })
-            },
-            _sum: {
-                sent: true,
-                opened: true,
-                clicked: true,
-                replied: true,
-                bounced: true, // Added bounced: true
-            }
-        })
-
-        // Overall totals from aggregated stats
-        const totalSent = stats._sum.sent || 0
-        const totalOpened = stats._sum.opened || 0
-        const totalClicked = stats._sum.clicked || 0
-        const totalReplied = stats._sum.replied || 0
-
-        const dailyStats = await prisma.campaignStat.findMany({
-            where: {
-                date: { gte: startDate },
-                ...(workspaceId && workspaceId !== 'all' ? {
-                    campaign: {
-                        campaignWorkspaces: {
-                            some: { workspaceId }
-                        }
-                    }
-                } : {
-                    campaign: {
-                        userId: session.user.id
-                    }
-                })
-            },
-            orderBy: { date: 'asc' }
-        })
-
-        // Fetch events for heatmap and funnel
+        // Fetch events for accurate real-time stats (replacing CampaignStat aggregation)
+        // We fetch ALL events for the filtered scope to ensure 100% accuracy and real-time updates
         const events = await prisma.sendingEvent.findMany({
             where: {
                 createdAt: { gte: startDate },
                 ...(workspaceId && workspaceId !== 'all' ? {
                     campaign: {
-                        campaignWorkspaces: {
-                            some: { workspaceId }
-                        }
+                        campaignWorkspaces: { some: { workspaceId } }
                     }
                 } : {
-                    campaign: {
-                        userId: session.user.id
-                    }
+                    campaign: { userId: session.user.id }
                 })
             }
         })
+
+        // Calculate totals from events
+        const totalSent = events.filter(e => e.type === 'sent').length
+        const totalOpened = events.filter(e => e.type === 'open').length
+        const totalClicked = events.filter(e => e.type === 'click').length
+        const totalReplied = events.filter(e => e.type === 'reply').length
+        const totalBounced = events.filter(e => e.type === 'bounce').length
+
+        // Opportunities = replies
+        const opportunitiesCount = totalReplied
+        const totalOpportunityValue = opportunitiesCount * (opportunityValue || 0)
+
+        // Calculate rates
+        const bounceRate = totalSent > 0 ? Math.round((totalBounced / totalSent) * 100) : 0
 
         // Calculate heatmap data
         const heatmapData = []
@@ -211,7 +155,7 @@ export async function GET(request: Request) {
 
         const deliverability = {
             overallScore: Math.round(accountStats.reduce((acc, curr) => acc + curr.health, 0) / (accountStats.length || 1)),
-            bounceRate: 2.1, // Placeholder for now
+            bounceRate,
             spamRate: 0.4,   // Placeholder for now
             openRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
             replyRate: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0,
@@ -225,18 +169,7 @@ export async function GET(request: Request) {
             recentIssues: []
         }
 
-        // Get bounce count for accurate delivery calculation
-        const bounceCount = stats._sum.bounced || (await prisma.sendingEvent.count({
-            where: {
-                type: 'bounce',
-                createdAt: { gte: startDate },
-                ...(workspaceId && workspaceId !== 'all' ? {
-                    campaign: { campaignWorkspaces: { some: { workspaceId } } }
-                } : {
-                    campaign: { userId: session.user.id }
-                })
-            }
-        }) || 0)
+        const bounceCount = totalBounced
 
         const delivered = totalSent - bounceCount
         const deliveredPercentage = totalSent > 0 ? Math.round((delivered / totalSent) * 100) : 0
@@ -260,7 +193,7 @@ export async function GET(request: Request) {
                 count: opportunitiesCount,
                 value: opportunitiesCount * opportunityValue
             },
-            chartData: generateChartData(startDate, now, dailyStats),
+            chartData: generateChartData(startDate, now, events),
             heatmapData,
             funnelData,
             accountStats,
@@ -282,29 +215,35 @@ interface DailyStat {
     replied?: number;
 }
 
-function generateChartData(startDate: Date, endDate: Date, dailyStats: DailyStat[]) {
+function generateChartData(startDate: Date, endDate: Date, events: any[]) {
     const data = []
-
     const currentDate = new Date(startDate)
     currentDate.setHours(0, 0, 0, 0)
 
     while (currentDate <= endDate) {
         const dateStr = currentDate.toISOString().split('T')[0]
 
-        // Aggregate stats for this specific day across all campaigns
-        const dayStats = dailyStats.filter(s => {
-            const sDate = new Date(s.date).toISOString().split('T')[0]
-            return sDate === dateStr
+        // Filter events for this day
+        const dayEvents = events.filter(e => {
+            const eDate = new Date(e.createdAt).toISOString().split('T')[0]
+            return eDate === dateStr
         })
+
+        const sent = dayEvents.filter(e => e.type === 'sent').length
+        const totalOpens = dayEvents.filter(e => e.type === 'open').length
+        const totalReplies = dayEvents.filter(e => e.type === 'reply').length
+        const totalClicks = dayEvents.filter(e => e.type === 'click').length
+        const uniqueOpens = new Set(dayEvents.filter(e => e.type === 'open').map(e => e.leadId)).size
+        const uniqueClicks = new Set(dayEvents.filter(e => e.type === 'click').map(e => e.leadId)).size
 
         data.push({
             date: currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            sent: dayStats.reduce((sum, s) => sum + (s.sent || 0), 0),
-            totalOpens: dayStats.reduce((sum, s) => sum + (s.opened || 0), 0),
-            uniqueOpens: dayStats.reduce((sum, s) => sum + (s.opened || 0), 0),
-            totalReplies: dayStats.reduce((sum, s) => sum + (s.replied || 0), 0),
-            sentClicks: dayStats.reduce((sum, s) => sum + (s.clicked || 0), 0),
-            uniqueClicks: dayStats.reduce((sum, s) => sum + (s.clicked || 0), 0)
+            sent,
+            totalOpens,
+            uniqueOpens,
+            totalReplies,
+            sentClicks: totalClicks,
+            uniqueClicks
         })
         currentDate.setDate(currentDate.getDate() + 1)
     }

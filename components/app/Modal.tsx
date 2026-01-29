@@ -32,7 +32,7 @@ const Modal = ({ isModalOpen, setIsModalOpen, title = "I'm a modal", isStatic = 
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-neutral-focus bg-opacity-50" />
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
@@ -46,7 +46,7 @@ const Modal = ({ isModalOpen, setIsModalOpen, title = "I'm a modal", isStatic = 
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="relative w-full max-w-3xl h-full overflow-visible transform text-left align-middle shadow-xl transition-all rounded-xl bg-base-100 p-6 md:p-8">
+              <Dialog.Panel className="relative w-full max-w-3xl h-full overflow-visible transform text-left align-middle shadow-xl transition-all rounded-xl bg-background border p-6 md:p-8">
                 <div className="flex justify-between items-center mb-4">
                   <Dialog.Title as="h2" className="font-semibold">
                     {title}
@@ -54,7 +54,7 @@ const Modal = ({ isModalOpen, setIsModalOpen, title = "I'm a modal", isStatic = 
                   {
                     isStatic ? null : (
                       <button
-                        className="btn btn-square btn-ghost btn-sm"
+                        className="rounded-md p-1 hover:bg-muted text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                         onClick={() => setIsModalOpen(false)}
                       >
                         <svg

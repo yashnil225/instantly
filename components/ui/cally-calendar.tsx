@@ -79,9 +79,8 @@ export function CallyCalendar({ value, onChange, className, placeholder = "Pick 
                 ref={buttonRef}
                 {...{ popovertarget: popoverId.current } as React.HTMLAttributes<HTMLButtonElement>}
                 className={cn(
-                    "btn btn-outline justify-start text-left font-normal w-full",
-                    "bg-base-100 border-base-300 hover:bg-base-200",
-                    !value && "text-base-content/50",
+                    "inline-flex items-center justify-start whitespace-nowrap rounded-md text-sm font-medium border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-full text-left font-normal",
+                    !value && "text-muted-foreground",
                     className
                 )}
                 style={{ anchorName: `--${popoverId.current}` } as React.CSSProperties}
@@ -97,11 +96,11 @@ export function CallyCalendar({ value, onChange, className, placeholder = "Pick 
             <div
                 {...{ popover: "auto" } as React.HTMLAttributes<HTMLDivElement>}
                 id={popoverId.current}
-                className="dropdown bg-base-100 rounded-box shadow-lg border border-base-300 p-2"
+                className="z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md p-2"
                 style={{ positionAnchor: `--${popoverId.current}` } as React.CSSProperties}
                 dangerouslySetInnerHTML={{
                     __html: `
-                        <calendar-date class="cally bg-base-100" id="${popoverId.current}-cal">
+                        <calendar-date class="cally bg-background text-foreground" id="${popoverId.current}-cal">
                             <svg aria-label="Previous" class="fill-current size-4" slot="previous" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M15.75 19.5 8.25 12l7.5-7.5"></path></svg>
                             <svg aria-label="Next" class="fill-current size-4" slot="next" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m8.25 4.5 7.5 7.5-7.5 7.5"></path></svg>
                             <calendar-month></calendar-month>
@@ -170,7 +169,7 @@ export function CallyCalendarStandalone({ value, onChange, className }: CallyCal
             className={cn("inline-block", className)}
             dangerouslySetInnerHTML={{
                 __html: `
-                    <calendar-date class="cally bg-base-100 border border-base-300 shadow-lg rounded-box">
+                    <calendar-date class="cally bg-background text-foreground border border-border shadow-lg rounded-xl">
                         <svg aria-label="Previous" class="fill-current size-4" slot="previous" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M15.75 19.5 8.25 12l7.5-7.5"></path></svg>
                         <svg aria-label="Next" class="fill-current size-4" slot="next" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="m8.25 4.5 7.5 7.5-7.5 7.5"></path></svg>
                         <calendar-month></calendar-month>

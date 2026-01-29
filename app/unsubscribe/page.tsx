@@ -12,16 +12,6 @@ function UnsubscribeContent() {
     const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
     const [message, setMessage] = useState("")
 
-    useEffect(() => {
-        if (!token) {
-            setStatus("error")
-            setMessage("Invalid unsubscribe link")
-            return
-        }
-
-        handleUnsubscribe()
-    }, [token])
-
     const handleUnsubscribe = async () => {
         try {
             const res = await fetch(`/api/unsubscribe?token=${token}`, {
@@ -42,6 +32,16 @@ function UnsubscribeContent() {
             setMessage("An error occurred. Please try again.")
         }
     }
+
+    useEffect(() => {
+        if (!token) {
+            setStatus("error")
+            setMessage("Invalid unsubscribe link")
+            return
+        }
+
+        handleUnsubscribe()
+    }, [token])
 
     return (
         <Card className="w-full max-w-md p-8 space-y-6 text-center">

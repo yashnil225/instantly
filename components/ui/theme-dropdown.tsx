@@ -24,13 +24,13 @@ export function ThemeDropdown() {
 
     if (!mounted) {
         return (
-            <div className="dropdown">
-                <div tabIndex={0} role="button" className="btn btn-ghost btn-sm">
+            <div className="relative inline-block text-left">
+                <div tabIndex={0} role="button" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-9 px-3">
                     Theme
                     <svg
                         width="12px"
                         height="12px"
-                        className="inline-block h-2 w-2 fill-current opacity-60"
+                        className="inline-block h-2 w-2 fill-current opacity-60 ml-1"
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 2048 2048"
                     >
@@ -42,8 +42,8 @@ export function ThemeDropdown() {
     }
 
     return (
-        <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost btn-xs gap-1 h-8 min-h-8 px-2">
+        <div className="relative inline-block text-left">
+            <div tabIndex={0} role="button" className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background hover:bg-accent hover:text-accent-foreground h-8 min-h-8 px-2 gap-1">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="14"
@@ -78,12 +78,12 @@ export function ThemeDropdown() {
             </div>
             <ul
                 tabIndex={0}
-                className="dropdown-content bg-base-200 rounded-box z-50 w-40 p-1.5 shadow-2xl max-h-64 overflow-y-auto"
+                className="absolute right-0 z-50 mt-1 min-w-[8rem] w-40 p-1.5 overflow-y-auto rounded-md border bg-popover text-popover-foreground shadow-md max-h-64"
             >
                 {themes.map((t) => (
                     <li key={t.value}>
                         <button
-                            className={`btn btn-xs btn-block btn-ghost justify-start text-xs h-7 min-h-7 ${theme === t.value ? "btn-active" : ""
+                            className={`flex w-full select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 h-7 min-h-7 ${theme === t.value ? "bg-accent/50" : "hover:bg-accent/50"
                                 }`}
                             onClick={() => setTheme(t.value)}
                         >

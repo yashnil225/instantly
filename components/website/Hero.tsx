@@ -12,7 +12,7 @@ const Hero = () => {
           Maximize o potencial dos seus alunos com ferramentas inteligentes de planejamento e acompanhamento
         </p>
 
-        <Link href={`/#pricing`} className="btn btn-primary btn-wide">
+        <Link href={`/#pricing`} className="inline-flex items-center justify-center px-8 py-3 text-base font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 md:py-4 md:text-lg md:px-10 min-w-[12rem] transition-colors">
           Planos Disponíveis
         </Link>
       </div>

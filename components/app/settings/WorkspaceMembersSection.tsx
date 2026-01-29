@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
@@ -39,6 +40,7 @@ interface Invitation {
 
 export function WorkspaceMembersSection({ workspaceId }: { workspaceId: string }) {
     const { toast } = useToast()
+    const router = useRouter()
     const [loading, setLoading] = useState(true)
     const [workspaceName, setWorkspaceName] = useState("")
     const [members, setMembers] = useState<WorkspaceMember[]>([])
@@ -99,8 +101,7 @@ export function WorkspaceMembersSection({ workspaceId }: { workspaceId: string }
             })
             if (res.ok) {
                 toast({ title: "Success", description: "Workspace name updated" })
-                // Force a refresh of global state if we had one, for now just local toast
-                window.location.reload() // Brute force to update sidebar name
+                router.refresh()
             } else {
                 throw new Error("Failed to update")
             }

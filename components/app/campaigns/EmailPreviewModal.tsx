@@ -4,8 +4,17 @@ import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronDown, Send, ShieldCheck, Mail, X, Loader2, Check } from "lucide-react"
+import { Send, ShieldCheck, Mail, X, Loader2, Check } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+
+interface Lead {
+    id: string
+    email: string
+    firstName?: string
+    lastName?: string
+    company?: string
+    customFields?: string | Record<string, unknown>
+}
 
 interface EmailPreviewModalProps {
     open: boolean
@@ -14,11 +23,14 @@ interface EmailPreviewModalProps {
     body: string
     variables?: { label: string, value: string }[]
     campaignId?: string
+    sampleLead?: Lead | null
 }
 
-export function EmailPreviewModal({ open, onOpenChange, subject, body, variables = [], campaignId }: EmailPreviewModalProps) {
+// Removed unused variables variables and campaignId from destructuring if they are not used
+export function EmailPreviewModal({ open, onOpenChange, subject, body, sampleLead }: EmailPreviewModalProps) {
     const { toast } = useToast()
     const [testEmail, setTestEmail] = useState("")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [accounts, setAccounts] = useState<any[]>([])
     const [selectedAccountId, setSelectedAccountId] = useState("")
     const [sending, setSending] = useState(false)
@@ -40,6 +52,7 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, variables
                 const accs = Array.isArray(data.accounts) ? data.accounts : []
                 setAccounts(accs)
                 // Auto-select first active account
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const activeAcc = accs.find((a: any) => a.status === 'active')
                 if (activeAcc) {
                     setSelectedAccountId(activeAcc.id)
@@ -84,10 +97,11 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, variables
                     variant: "destructive"
                 })
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Failed to send test email"
             toast({
                 title: "Error",
-                description: error.message || "Failed to send test email",
+                description: message,
                 variant: "destructive"
             })
         } finally {
@@ -96,6 +110,43 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, variables
     }
 
     const selectedAccount = accounts.find(a => a.id === selectedAccountId)
+
+    const replaceVariables = (text: string) => {
+        if (!text) return ""
+        let processed = text
+
+        // Default mock data if no sample lead
+        const data = sampleLead || {
+            firstName: "",
+            lastName: "",
+            email: "",
+            company: "",
+            customFields: {}
+        }
+
+        processed = processed.replace(/{{firstName}}/gi, (data.firstName || "").replace(/<[^>]*>/g, '').trim())
+        processed = processed.replace(/{{lastName}}/gi, (data.lastName || "").replace(/<[^>]*>/g, '').trim())
+        processed = processed.replace(/{{email}}/gi, (data.email || "").replace(/<[^>]*>/g, '').trim())
+        processed = processed.replace(/{{company}}/gi, (data.company || "").replace(/<[^>]*>/g, '').trim())
+
+        // Handle custom fields
+        if (data.customFields) {
+            const customFields = typeof data.customFields === 'string'
+                ? JSON.parse(data.customFields)
+                : data.customFields
+
+            Object.entries(customFields).forEach(([key, value]) => {
+                const regex = new RegExp(`{{${key}}}`, 'gi')
+                const cleanValue = String(value).replace(/<[^>]*>/g, '').trim()
+                processed = processed.replace(regex, cleanValue)
+            })
+        }
+
+        return processed
+    }
+
+    const previewBody = replaceVariables(body)
+    const previewSubject = replaceVariables(subject)
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -197,7 +248,7 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, variables
                                 </div>
                                 <div className="grid grid-cols-[80px_1fr] items-center border-b border-gray-100 pb-2">
                                     <span className="text-gray-400">Subject:</span>
-                                    <span className="font-medium text-gray-800">{subject || <span className="text-gray-400 font-normal">No subject</span>}</span>
+                                    <span className="font-medium text-gray-800">{previewSubject || <span className="text-gray-400 font-normal">No subject</span>}</span>
                                 </div>
                             </div>
                         </div>
@@ -206,7 +257,7 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, variables
                         <div className="flex-1 p-8 overflow-y-auto bg-[#1a1a1a]">
                             <div
                                 className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap font-sans max-w-3xl"
-                                dangerouslySetInnerHTML={{ __html: body || "Your email content will appear here..." }}
+                                dangerouslySetInnerHTML={{ __html: previewBody || "Your email content will appear here..." }}
                             />
                         </div>
 

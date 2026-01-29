@@ -3,6 +3,7 @@ import { prisma } from './prisma'
 import { sendEmail } from './email'
 import { canSendNow, getNextSendTime } from './scheduler'
 import { selectVariant } from './ab-testing'
+import { replaceVariables } from './variables'
 
 const getRedisConnection = () => {
     const redisUrl = process.env.REDIS_URL
@@ -137,43 +138,8 @@ export const startWorker = () => {
                 }
 
                 // 5. Personalize Email - Replace ALL lead variables dynamically
-                const replaceVariables = (text: string) => {
-                    let result = text
-
-                    // Core lead fields
-                    if (lead.firstName) result = result.replace(/\{\{firstName\}\}/g, lead.firstName)
-                    if (lead.lastName) result = result.replace(/\{\{lastName\}\}/g, lead.lastName)
-                    if (lead.company) result = result.replace(/\{\{company\}\}/g, lead.company)
-                    if (lead.email) result = result.replace(/\{\{email\}\}/g, lead.email)
-
-                    // Parse customFields if they exist (stored as JSON)
-                    let customFields: Record<string, string> = {}
-                    const leadWithCustom = lead as any
-                    if (leadWithCustom.customFields) {
-                        try {
-                            customFields = typeof leadWithCustom.customFields === 'string'
-                                ? JSON.parse(leadWithCustom.customFields)
-                                : leadWithCustom.customFields
-                        } catch (e) {
-                            console.error('Failed to parse custom fields:', e)
-                        }
-                    }
-
-                    // Replace custom field variables (e.g., {{website}}, {{location}}, {{phone}}, etc.)
-                    for (const [key, value] of Object.entries(customFields)) {
-                        if (value) {
-                            result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value)
-                        }
-                    }
-
-                    // Remove any remaining empty/unused variables (clean up)
-                    result = result.replace(/\{\{[^}]+\}\}/g, '')
-
-                    return result
-                }
-
-                finalSubject = replaceVariables(finalSubject)
-                finalBody = replaceVariables(finalBody)
+                finalSubject = replaceVariables(finalSubject, lead)
+                finalBody = replaceVariables(finalBody, lead)
 
                 // 6. Prepare Email Content with Tracking
                 const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'

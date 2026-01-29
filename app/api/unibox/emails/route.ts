@@ -64,12 +64,34 @@ export async function GET(request: NextRequest) {
         }
 
         // Primary/Others tab filtering
+        // Primary/Others tab filtering
         if (tab === "primary") {
             // Primary: Human replies (exclude auto-replies like OOO)
-            where.aiLabel = { notIn: ["out_of_office", "auto_reply", "unsubscribed"] }
+            // Use AND to combine with existing aiLabel filter if present
+            const tabCondition = { notIn: ["out_of_office", "auto_reply", "unsubscribed"] }
+            if (where.aiLabel) {
+                where.AND = [
+                    ...(where.AND || []),
+                    { aiLabel: where.aiLabel },
+                    { aiLabel: tabCondition }
+                ]
+                delete where.aiLabel
+            } else {
+                where.aiLabel = tabCondition
+            }
         } else if (tab === "others") {
             // Others: Auto-replies and system-generated responses
-            where.aiLabel = { in: ["out_of_office", "auto_reply", "unsubscribed"] }
+            const tabCondition = { in: ["out_of_office", "auto_reply", "unsubscribed"] }
+            if (where.aiLabel) {
+                where.AND = [
+                    ...(where.AND || []),
+                    { aiLabel: where.aiLabel },
+                    { aiLabel: tabCondition }
+                ]
+                delete where.aiLabel
+            } else {
+                where.aiLabel = tabCondition
+            }
         }
 
         // Filter by workspace(s) through campaign

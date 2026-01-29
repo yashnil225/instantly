@@ -61,6 +61,22 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
         workspace: true
     })
 
+    // Recovery useEffect: If we have parsedData but no headers (e.g. from Sheets or potential race condition), recover them
+    useEffect(() => {
+        if (step === 'mapping' && csvHeaders.length === 0 && parsedData.length > 0) {
+            const firstRow = parsedData[0] || {}
+            const extractedHeaders = Object.keys(firstRow).filter(k => k && k.trim().length > 0)
+            if (extractedHeaders.length > 0) {
+                setCsvHeaders(extractedHeaders)
+                // Only run automap if we haven't already mapped
+                if (Object.keys(columnMapping).length === 0) {
+                    autoMap(extractedHeaders)
+                }
+            }
+        }
+    }, [step, csvHeaders.length, parsedData, columnMapping])
+
+
     // Upload progress for animated progress bar
     const [uploadProgress, setUploadProgress] = useState(0)
 
@@ -160,12 +176,14 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                             // Get headers from meta.fields (preferred) or from first data row
                             let headers = results.meta.fields || []
 
-                            // Filter out empty headers
-                            headers = headers.filter(h => h && h.trim().length > 0)
+                            // Filter out empty headers and potential junk
+                            headers = headers.filter(h => h && typeof h === 'string' && h.trim().length > 0)
 
-                            // If meta.fields failed, try extracting from first row of data
+                            // If meta.fields failed or was empty, try extracting from first row of data
                             if (headers.length === 0 && results.data.length > 0) {
+                                console.log('Meta fields empty, extracting from first row')
                                 const firstRow = results.data[0] as any
+                                // Ensure we get keys even if it's not a standard object
                                 headers = Object.keys(firstRow).filter(k => k && k.trim().length > 0)
                             }
 
@@ -187,10 +205,6 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                 })
                             })
 
-                            // If filtering removed too many (more than 50% discrepancy), fallback to raw data length warning or use raw
-                            // But usually invalid rows are just empty lines. 620 vs 850 is huge.
-                            // Maybe the user has rows with different columns? 
-                            // PapaParse handling of malformed CSVs might be the cause, but 'greedy' skip helps.
 
                             if (validData.length > 0) {
                                 // Store first 4 rows for sample display
@@ -610,44 +624,32 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                 <div className="text-white font-medium text-center max-w-lg mb-6 text-lg">
                                     {file?.name}
                                 </div>
-                                <div className="flex items-center gap-2 text-green-500 text-sm font-medium">
-                                    <div className="bg-green-500/10 rounded-full p-1"><Check className="h-3 w-3" /></div>
-                                    File processed
-                                </div>
+                                <div className="bg-green-500/10 rounded-full p-1"><Check className="h-3 w-3" /></div>
+                                File processed
                             </div>
-
-                            {/* Column Headers */}
-                            <div className="grid grid-cols-12 gap-8 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">
-                                <div className="col-span-3">Column Name</div>
-                                <div className="col-span-4">Select Type</div>
-                                <div className="col-span-5">Samples</div>
+                            <div className="text-[10px] text-gray-600 font-mono mt-1">
+                                Debug: {csvHeaders.length} cols, {parsedData.length} rows
                             </div>
                         </div>
+
+
+                        {/* Column Headers */}
+                        <div className="grid grid-cols-12 gap-8 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 mb-2">
+                            <div className="col-span-3">Column Name</div>
+                            <div className="col-span-4">Select Type</div>
+                            <div className="col-span-5">Samples</div>
+                        </div>
+                        {/* Removed premature closing div */}
 
                         {/* Scrollable Mapping List */}
                         <div className="flex-1 overflow-y-auto px-8 min-h-0">
                             <div className="space-y-4 pb-4">
-                                {/* Fallback: if csvHeaders is empty but we have parsedData, extract headers from it */}
-                                {csvHeaders.length === 0 && parsedData.length > 0 && (() => {
-                                    // Try to extract headers from first parsed row
-                                    const firstRow = parsedData[0] || {}
-                                    const extractedHeaders = Object.keys(firstRow).filter(k => k && k.trim().length > 0)
-                                    if (extractedHeaders.length > 0) {
-                                        // Side effect: update csvHeaders state
-                                        // Use setTimeout to avoid render-cycle error
-                                        setTimeout(() => {
-                                            setCsvHeaders(extractedHeaders)
-                                            // Only run automap if we haven't already mapped
-                                            if (Object.keys(columnMapping).length === 0) {
-                                                autoMap(extractedHeaders)
-                                            }
-                                        }, 0)
-                                    }
-                                    return null
-                                })()}
 
 
-                                {csvHeaders.length === 0 && parsedData.length === 0 && (
+
+
+
+                                {csvHeaders.length === 0 && (
                                     <div className="text-center py-8 text-gray-400">
                                         <div className="text-yellow-500 mb-2">⚠️ No columns detected</div>
                                         <p className="text-sm mb-4">Could not detect columns from your file. Please ensure your CSV has a header row.</p>

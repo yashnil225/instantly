@@ -36,12 +36,19 @@ export async function GET(
 
         // Use campaign aggregate counts
         const totalLeads = campaign.leads.length
-        const sentCount = campaign.sentCount || 0
-        const openCount = campaign.openCount || 0
-        const clickCount = campaign.clickCount || 0
-        const replyCount = campaign.replyCount || 0
 
-        // Calculate rates
+        // Fetch all events for this campaign to calculate accurate step analytics
+        const allEvents = await prisma.sendingEvent.findMany({
+            where: { campaignId: campaignId }
+        })
+
+        // Calculate real-time stats from events for accuracy
+        const sentCount = allEvents.filter(e => e.type === 'sent').length
+        const openCount = allEvents.filter(e => e.type === 'open').length
+        const clickCount = allEvents.filter(e => e.type === 'click').length
+        const replyCount = allEvents.filter(e => e.type === 'reply').length
+        const bounceCount = allEvents.filter(e => e.type === 'bounce').length
+
         // Calculate rates based on tracking settings and sent count
         let openRate = 'Disabled'
         if (campaign.trackOpens) {
@@ -52,6 +59,9 @@ export async function GET(
         if (campaign.trackLinks) {
             clickRate = sentCount > 0 ? Math.round((clickCount / sentCount) * 100) + '%' : '0%'
         }
+
+        const replyRate = sentCount > 0 ? Math.round((replyCount / sentCount) * 100) + '%' : '0%'
+        const bounceRate = sentCount > 0 ? Math.round((bounceCount / sentCount) * 100) + '%' : '0%'
 
         // Get workspace for opportunity value
         const campaignWithWorkspace = await prisma.campaignWorkspace.findFirst({
@@ -64,22 +74,9 @@ export async function GET(
         const opportunitiesCount = replyCount
         const conversions = campaign.leads.filter((l: any) => l.status === 'converted' || l.status === 'won')
 
-        // Fetch real daily stats
-        const dailyStats = await prisma.campaignStat.findMany({
-            where: {
-                campaignId: campaignId,
-                date: { gte: getStartDate(range) }
-            },
-            orderBy: { date: 'asc' }
-        })
 
-        // Fetch all events for this campaign to calculate accurate step analytics
-        const allEvents = await prisma.sendingEvent.findMany({
-            where: { campaignId: campaignId }
-        })
-
-        // Generate chart data using real stats
-        const chartData = generateChartData(range, dailyStats)
+        // Generate chart data using real stats form events
+        const chartData = generateChartData(range, allEvents)
 
         // Generate accurate step analytics from events
         const stepAnalytics = campaign.sequences.map((seq: any) => {
@@ -148,6 +145,8 @@ export async function GET(
             sequenceStarted: sentCount,
             openRate,
             clickRate,
+            replyRate,
+            bounceRate,
             opportunities: {
                 count: opportunitiesCount,
                 value: opportunitiesCount * opportunityValue
@@ -174,20 +173,9 @@ export async function GET(
     }
 }
 
-function getStartDate(range: string) {
-    const now = new Date()
-    const startDate = new Date()
-    const days = range === 'last_7_days' ? 7 :
-        range === 'last_4_weeks' ? 28 :
-            range === 'last_3_months' ? 90 :
-                range === 'last_6_months' ? 180 :
-                    range === 'last_12_months' ? 365 : 30
-    startDate.setDate(now.getDate() - days)
-    startDate.setHours(0, 0, 0, 0)
-    return startDate
-}
 
-function generateChartData(range: string, dailyStats: any[]) {
+
+function generateChartData(range: string, events: any[]) {
     const data = []
     const days = range === 'last_7_days' ? 7 :
         range === 'last_4_weeks' ? 28 :
@@ -200,19 +188,29 @@ function generateChartData(range: string, dailyStats: any[]) {
         date.setDate(date.getDate() - i)
         const dateStr = date.toISOString().split('T')[0]
 
-        const dayStat = dailyStats.find(s => {
-            const sDate = new Date(s.date).toISOString().split('T')[0]
-            return sDate === dateStr
+        // Filter events for this day
+        const dayEvents = events.filter(e => {
+            const eDate = new Date(e.createdAt).toISOString().split('T')[0]
+            return eDate === dateStr
         })
+
+        const sent = dayEvents.filter(e => e.type === 'sent').length
+        const totalReplies = dayEvents.filter(e => e.type === 'reply').length
+        const totalClicks = dayEvents.filter(e => e.type === 'click').length
+        const totalOpens = dayEvents.filter(e => e.type === 'open').length
+
+        // Unique counts per lead
+        const uniqueOpens = new Set(dayEvents.filter(e => e.type === 'open').map(e => e.leadId)).size
+        const uniqueClicks = new Set(dayEvents.filter(e => e.type === 'click').map(e => e.leadId)).size
 
         data.push({
             date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            sent: dayStat?.sent || 0,
-            totalOpens: dayStat?.opened || 0,
-            uniqueOpens: dayStat?.opened || 0,
-            totalReplies: dayStat?.replied || 0,
-            totalClicks: dayStat?.clicked || 0,
-            uniqueClicks: dayStat?.clicked || 0
+            sent,
+            totalOpens,
+            uniqueOpens,
+            totalReplies,
+            totalClicks,
+            uniqueClicks
         })
     }
 

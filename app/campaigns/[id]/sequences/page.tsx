@@ -88,6 +88,7 @@ export default function SequencesPage() {
 
     // Dynamic variables from leads
     const [availableVariables, setAvailableVariables] = useState(CORE_VARIABLES)
+    const [sampleLead, setSampleLead] = useState<Lead | null>(null)
 
     // UI State
     const [variableMenuOpen, setVariableMenuOpen] = useState(false)
@@ -131,6 +132,8 @@ export default function SequencesPage() {
                         }
 
                         setAvailableVariables(dynamicVars)
+                        setSampleLead(lead)
+
                     }
                 }
             } catch (error) {
@@ -194,6 +197,13 @@ export default function SequencesPage() {
             setLoading(false)
         }
     }, [params.id])
+
+    // Load sequences on mount
+    useEffect(() => {
+        if (params.id) {
+            fetchSequences()
+        }
+    }, [params.id, fetchSequences])
 
     // --- Logic Helpers ---
     const addStep = () => {
@@ -788,6 +798,7 @@ export default function SequencesPage() {
                                 onOpenChange={setPreviewOpen}
                                 subject={activeVariant.subject}
                                 body={activeVariant.body}
+                                sampleLead={sampleLead}
                             />
 
 

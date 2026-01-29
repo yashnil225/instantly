@@ -46,6 +46,26 @@ async function sync() {
         }
     }
 
+    const leadColumnsToAdd = [
+        { name: "isStarred", type: "BOOLEAN", default: "0" },
+        { name: "isArchived", type: "BOOLEAN", default: "0" }
+    ];
+
+    for (const column of leadColumnsToAdd) {
+        try {
+            console.log(`Adding column ${column.name} to Lead...`);
+            // SQLite uses integer 0/1 for booleans. DEFAULT 0 is false.
+            await client.execute(`ALTER TABLE Lead ADD COLUMN ${column.name} ${column.type} DEFAULT ${column.default}`);
+            console.log(`✅ Column ${column.name} added to Lead.`);
+        } catch (error: any) {
+            if (error.message.includes("duplicate column name")) {
+                console.log(`ℹ️ Column ${column.name} already exists in Lead. Skipping.`);
+            } else {
+                console.warn(`⚠️ Error adding column ${column.name} to Lead: ${error.message}`);
+            }
+        }
+    }
+
     console.log("🏁 Sync completed.");
 }
 

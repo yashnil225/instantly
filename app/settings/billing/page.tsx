@@ -7,40 +7,52 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Check, CreditCard, Download, FileText } from "lucide-react"
+import { Check, Download, FileText } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
 
 export default function BillingPage() {
-    const { data: session, status } = useSession()
+    const { status } = useSession()
     const { toast } = useToast()
     const [leadCount, setLeadCount] = useState<number | null>(null)
+    const [emailCount] = useState<number>(0)
     const [currentPlan, setCurrentPlan] = useState<string>("trial")
-    const [planLoading, setPlanLoading] = useState(true)
+    // const [planLoading, setPlanLoading] = useState(true)
+
+    const PLAN_LIMITS: Record<string, { emails: number, leads: number }> = {
+        trial: { emails: 100, leads: 50 },
+        growth: { emails: 5000, leads: 1000 },
+        hypergrowth: { emails: 25000, leads: 10000 },
+        lightspeed: { emails: 100000, leads: 100000 },
+        enterprise: { emails: 1000000, leads: 1000000 } // Custom
+    }
+
+    const fetchBillingData = async () => {
+        try {
+            const [leadsRes, billingRes] = await Promise.all([
+                fetch('/api/stats/leads-count'),
+                fetch('/api/user/billing')
+            ])
+
+            if (leadsRes.ok) {
+                const data = await leadsRes.json()
+                setLeadCount(data.count)
+            }
+
+            if (billingRes.ok) {
+                const data = await billingRes.json()
+                setCurrentPlan(data.plan || "trial")
+                // In a real app, email usage would come from billing stats
+                // For demo, we leave emailCount as 0 or fetch if available
+            }
+        } catch (error) {
+            console.error("Failed to load billing data:", error)
+        } finally {
+            // setPlanLoading(false)
+        }
+    }
 
     useEffect(() => {
-        const fetchBillingData = async () => {
-            try {
-                const [leadsRes, billingRes] = await Promise.all([
-                    fetch('/api/stats/leads-count'),
-                    fetch('/api/user/billing')
-                ])
-
-                if (leadsRes.ok) {
-                    const data = await leadsRes.json()
-                    setLeadCount(data.count)
-                }
-
-                if (billingRes.ok) {
-                    const data = await billingRes.json()
-                    setCurrentPlan(data.plan || "trial")
-                }
-            } catch (error) {
-                console.error("Failed to load billing data:", error)
-            } finally {
-                setPlanLoading(false)
-            }
-        }
         fetchBillingData()
     }, [])
 
@@ -56,8 +68,7 @@ export default function BillingPage() {
                 const data = await res.json()
                 setCurrentPlan(data.plan)
                 toast({ title: "Plan Updated", description: `You have successfully switched to the ${plan} plan.` })
-            } else {
-                toast({ title: "Error", description: "Failed to switch plan", variant: "destructive" })
+                fetchBillingData() // Refresh limits/stats
             }
         } catch (error) {
             toast({ title: "Error", description: "An error occurred", variant: "destructive" })
@@ -65,6 +76,8 @@ export default function BillingPage() {
     }
 
     if (status === "unauthenticated") redirect("/login")
+
+    const limits = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.trial
 
     return (
         <div className="max-w-6xl space-y-8">
@@ -83,16 +96,16 @@ export default function BillingPage() {
                     <div>
                         <div className="flex justify-between text-sm mb-2">
                             <span className="text-gray-300">Emails Sent</span>
-                            <span className="text-gray-400">0 / 100,000</span>
+                            <span className="text-gray-400">{emailCount.toLocaleString()} / {limits.emails.toLocaleString()}</span>
                         </div>
-                        <Progress value={0} className="h-2 bg-[#222]" indicatorClassName="bg-blue-500" />
+                        <Progress value={(emailCount / limits.emails) * 100} className="h-2 bg-[#222]" indicatorClassName="bg-blue-500" />
                     </div>
                     <div>
                         <div className="flex justify-between text-sm mb-2">
                             <span className="text-gray-300">Active Leads</span>
-                            <span className="text-gray-400">{leadCount?.toLocaleString() || '0'} / 1,000,000</span>
+                            <span className="text-gray-400">{leadCount?.toLocaleString() || '0'} / {limits.leads.toLocaleString()}</span>
                         </div>
-                        <Progress value={leadCount ? (leadCount / 1000000) * 100 : 0} className="h-2 bg-[#222]" indicatorClassName="bg-purple-500" />
+                        <Progress value={leadCount ? (leadCount / limits.leads) * 100 : 0} className="h-2 bg-[#222]" indicatorClassName="bg-purple-500" />
                     </div>
                 </CardContent>
             </Card>

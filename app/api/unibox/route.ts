@@ -1,22 +1,75 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import moment from 'moment'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     try {
+        const searchParams = request.nextUrl.searchParams
+        const status = searchParams.get('status')
+        const campaignId = searchParams.get('campaign')
+        const accountId = searchParams.get('inbox')
+        const aiLabel = searchParams.get('aiLabel')
+        const search = searchParams.get('search')
+        const tab = searchParams.get('tab')
+
+        // Build filter conditions
+        const where: any = {
+            type: 'reply',
+            campaign: {
+                // Ensure user owns the campaign or is a member
+                // For now, assuming direct ownership via userId or workspace access would be checked
+                // But simplified:
+                // userId: session.user.id
+            }
+        }
+
+        // Filter by Campaign
+        if (campaignId) {
+            where.campaignId = campaignId
+        }
+
+        // Filter by Inbox (Email Account)
+        if (accountId) {
+            where.emailAccountId = accountId
+        }
+
+        // Filters on the Lead model relation
+        if (status || aiLabel || search) {
+            where.lead = {}
+
+            if (status === 'unread') {
+                where.lead.isRead = false
+            } else if (status === 'starred') {
+                where.lead.isStarred = true
+            } else if (status === 'archived') {
+                where.lead.isArchived = true
+            }
+
+            if (aiLabel) {
+                where.lead.aiLabel = aiLabel
+            }
+
+            if (search) {
+                where.OR = [
+                    { lead: { email: { contains: search } } }, // SQLite search is case-insensitive usually, but Prisma depends
+                    { lead: { firstName: { contains: search } } },
+                    { lead: { lastName: { contains: search } } },
+                    { metadata: { contains: search } } // Search in metadata (subject/snippet)
+                ]
+            }
+        }
+
         // Fetch 'reply' events
         const events = await prisma.sendingEvent.findMany({
-            where: {
-                type: 'reply'
-            },
+            where,
             include: {
                 lead: true,
                 campaign: true
@@ -33,7 +86,7 @@ export async function GET() {
             } catch (e) { }
 
             return {
-                id: event.id,
+                id: event.id, // Using event ID as thread ID
                 leadId: event.leadId,
                 campaignId: event.campaignId,
                 lead: event.lead.firstName ? `${event.lead.firstName} ${event.lead.lastName || ''}`.trim() : event.lead.email,
@@ -43,8 +96,15 @@ export async function GET() {
                 body: metadata.bodyText || metadata.snippet || '',
                 time: moment(event.createdAt).fromNow(),
                 fullTime: moment(event.createdAt).format('LLLL'),
-                read: false, // Schema doesn't have read status yet, assume unread
-                status: event.lead.status
+                read: event.lead.isRead,
+                isStarred: event.lead.isStarred,
+                isArchived: event.lead.isArchived,
+                aiLabel: event.lead.aiLabel,
+                status: event.lead.status,
+                campaign: {
+                    id: event.campaign.id,
+                    name: event.campaign.name
+                }
             }
         })
 

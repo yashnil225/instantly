@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
 import { Loader2, Crown, Zap } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 interface ProfileSectionProps {
     user: {
@@ -19,6 +20,7 @@ interface ProfileSectionProps {
 
 export function ProfileSection({ user }: ProfileSectionProps) {
     const { toast } = useToast()
+    const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
     const [formData, setFormData] = useState({
         firstName: user.name?.split(' ')[0] || '',
@@ -43,6 +45,7 @@ export function ProfileSection({ user }: ProfileSectionProps) {
 
             setFormData(prev => ({ ...prev, password: '' }))
             toast({ title: "Success", description: "Profile updated successfully" })
+            router.refresh()
         } catch (error) {
             toast({ title: "Error", description: "Failed to update profile", variant: "destructive" })
         } finally {

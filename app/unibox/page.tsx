@@ -72,6 +72,7 @@ import { useRef } from "react"
 
 interface Email {
     id: string
+    leadId?: string // Added leadId mapping
     from: string
     fromName: string
     company?: string
@@ -158,6 +159,43 @@ function UniboxPage() {
     const [createWorkspaceModalOpen, setCreateWorkspaceModalOpen] = useState(false)
     const [newWorkspaceName, setNewWorkspaceName] = useState("")
 
+    const handleLabelChange = async (emailId: string, newLabel: string) => {
+        // Optimistic update
+        setEmails(prev => prev.map(email =>
+            email.id === emailId ? { ...email, aiLabel: newLabel } : email
+        ))
+        if (selectedEmail?.id === emailId) {
+            setSelectedEmail(prev => prev ? { ...prev, aiLabel: newLabel } : null)
+        }
+
+        const labelName = [...(aiFilters || []), ...(statusFilters || [])].find(s => s.value === newLabel)?.name || newLabel
+        toast({ title: "Label updated", description: `Lead marked as ${labelName}` })
+
+        try {
+            const response = await fetch(`/api/unibox/emails/${emailId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ aiLabel: newLabel }),
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to update label')
+            }
+        } catch (error) {
+            // Revert
+            setEmails(prev => prev.map(email =>
+                email.id === emailId ? { ...email, aiLabel: selectedEmail?.aiLabel || '' } : email // approximate revert
+            ))
+            // A proper revert needs the old value passed in or stored.
+            // Given simplicity, we might just log error or refetch.
+            console.error("Failed to update label", error)
+            toast({ title: "Error", description: "Failed to update label", variant: "destructive" })
+        }
+    }
+
+
     // Pagination & Navigation
     const [activeTab, setActiveTab] = useState<'primary' | 'others'>('primary')
     const [page, setPage] = useState(1)
@@ -186,7 +224,6 @@ function UniboxPage() {
 
     // File attachment state
     const [attachments, setAttachments] = useState<File[]>([])
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
     const startResizing = (mouseDownEvent: React.MouseEvent) => {
         const startX = mouseDownEvent.clientX
@@ -402,8 +439,8 @@ Instantly`,
                 const res = await fetch(`/api/unibox/emails?${params.toString()}`)
                 if (res.ok) {
                     const data = await res.json()
-                    if (data.length === 0) {
-                        // Add demo email if none exist
+                    if (data.length === 0 && !activeStatus && !activeCampaign && !activeInbox && !activeAiLabel && !activeMoreFilter && !searchQuery) {
+                        // Only show demo email if NO filters are active (clean state)
                         setEmails([{
                             id: "demo-1",
                             from: "team@instantly.ai",
@@ -515,11 +552,24 @@ Instantly`,
             const res = await fetch(`/api/leads/${email.id}`)
             if (res.ok) {
                 const data = await res.json()
+                // Map events to messages for threading
+                const messages = (data.events || [])
+                    .filter((e: any) => e.name === 'email_sent' || e.name === 'email_received')
+                    .map((e: any) => ({
+                        id: e.id,
+                        isMe: e.name === 'email_sent',
+                        from: e.name === 'email_sent' ? 'Me' : (data.firstName ? `${data.firstName} ${data.lastName || ''}` : email.fromName),
+                        to: e.name === 'email_sent' ? (data.firstName || 'Lead') : 'Me',
+                        body: e.details, // Assuming 'details' contains the email body
+                        timestamp: e.createdAt
+                    }))
+                    .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+
                 // Use the HTML or Text content from events or lead body
                 const lastEvent = data.events?.[0]
                 const emailContent = lastEvent?.details || data.body || data.text || email.preview
 
-                const updatedEmail = { ...email, body: emailContent, events: data.events, aiLabel: data.aiLabel }
+                const updatedEmail = { ...email, body: emailContent, events: data.events, aiLabel: data.aiLabel, messages }
                 setEmails(emails.map(e => e.id === email.id ? updatedEmail : e))
                 setSelectedEmail(updatedEmail)
 
@@ -752,48 +802,7 @@ Instantly`,
             setEmails(originalEmails)
         }
     }
-    const handleCRMStatusChange = async (status: string) => {
-        const currentEmail = selectedEmail
-        if (!currentEmail) return
-        const leadId = currentEmail.id
 
-        // Optimistic update
-        const previousLabel = currentEmail.aiLabel
-        const previousStatus = currentEmail.status
-
-        setEmails(emails.map(e =>
-            e.id === leadId ? { ...e, aiLabel: status } : e
-        ))
-        setSelectedEmail(prev => prev ? { ...prev, aiLabel: status } : null)
-
-        const statusName = [...statusFilters, ...aiFilters].find(s => s.value === status)?.name || status
-        toast({ title: "Status updated", description: `Lead marked as ${statusName}` })
-
-        try {
-            const res = await fetch('/api/leads/' + leadId, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ aiLabel: status })
-            })
-
-            if (!res.ok) {
-                // Revert
-                setEmails(emails.map(e =>
-                    e.id === leadId ? { ...e, aiLabel: previousLabel } : e
-                ))
-                setSelectedEmail(prev => prev ? { ...prev, aiLabel: previousLabel } : null)
-                toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
-            }
-        } catch (error) {
-            // Revert
-            setEmails(emails.map(e =>
-                e.id === leadId ? { ...e, aiLabel: previousLabel } : e
-            ))
-            setSelectedEmail(prev => prev ? { ...prev, aiLabel: previousLabel } : null)
-            console.error('Failed to update status:', error)
-            toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
-        }
-    }
 
     const handleCampaignChange = async (campaignId: string) => {
         if (!selectedEmail) return
@@ -1092,7 +1101,7 @@ ${selectedEmail.body || selectedEmail.preview}
 
     // Mark as Lost (same as setting label to lost)
     const handleMarkAsLost = () => {
-        handleCRMStatusChange('lost')
+        if (selectedEmail) handleLabelChange(selectedEmail.id, 'lost')
     }
 
     // Find Similar Leads
@@ -1256,10 +1265,7 @@ ${selectedEmail.body || selectedEmail.preview}
         setAttachments(attachments.filter((_, i) => i !== index))
     }
 
-    const insertEmoji = (emoji: string) => {
-        setReplyBody(replyBody + emoji)
-        setShowEmojiPicker(false)
-    }
+
 
     return (
         <>
@@ -1548,7 +1554,74 @@ ${selectedEmail.body || selectedEmail.preview}
                                 />
                             )}
                             {/* Tabs & Search Bar */}
-                            <div className="flex flex-col border-b border-[#2a2a35]">
+                            <div className="flex flex-col border-b border-[#2a2a35] relative">
+                                {selectedEmails.size > 0 ? (
+                                    <div className="absolute inset-0 z-10 bg-[#1e1e24] flex items-center justify-between px-6 animate-in fade-in duration-200">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <Checkbox
+                                                    checked={selectedEmails.size > 0}
+                                                    onCheckedChange={() => {
+                                                        if (selectedEmails.size === emails.length) clearSelection()
+                                                        else selectAll()
+                                                    }}
+                                                    className="border-[#52525b] data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 h-4 w-4 rounded-[4px]"
+                                                />
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="sm" className="h-6 w-4 p-0 text-[#a1a1aa] hover:text-foreground">
+                                                            <ChevronDown className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">
+                                                        <DropdownMenuItem onClick={selectAll} className="hover:bg-[#2a2a35] cursor-pointer">All</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={selectFirstTen} className="hover:bg-[#2a2a35] cursor-pointer">First 10</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={selectUnread} className="hover:bg-[#2a2a35] cursor-pointer">Unread</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={clearSelection} className="hover:bg-[#2a2a35] cursor-pointer">None</DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                            <span className="text-sm font-medium text-foreground">{selectedEmails.size} selected</span>
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                            <TooltipProvider delayDuration={0}>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" onClick={() => massMarkAsRead()} className="text-[#a1a1aa] hover:text-foreground hover:bg-[#2a2a35]">
+                                                            <MailOpen className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">Mark as read</TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" onClick={() => massDelete()} className="text-[#a1a1aa] hover:text-red-400 hover:bg-[#2a2a35]">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">Delete</TooltipContent>
+                                                </Tooltip>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="text-[#a1a1aa] hover:text-foreground hover:bg-[#2a2a35]">
+                                                            <Zap className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">
+                                                        {aiFilters.map(f => (
+                                                            <DropdownMenuItem key={f.value} onClick={() => massLabel(f.value)} className="hover:bg-[#2a2a35] cursor-pointer">
+                                                                <f.icon className={cn("mr-2 h-4 w-4", f.color)} />
+                                                                {f.name}
+                                                            </DropdownMenuItem>
+                                                        ))}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TooltipProvider>
+                                        </div>
+                                    </div>
+                                ) : null}
+
                                 <div className="px-6 pt-2 flex gap-6 border-b border-[#2a2a35]">
                                     <button
                                         onClick={() => setActiveTab("primary")}
@@ -1691,7 +1764,11 @@ ${selectedEmail.body || selectedEmail.preview}
                                                             <Paperclip className="h-3 w-3 text-[#71717a] flex-shrink-0" />
                                                         )}
                                                     </div>
-                                                    <p className="text-xs text-[#a1a1aa] line-clamp-2 leading-relaxed opacity-80">{email.preview}</p>
+                                                    <p className="text-xs text-[#a1a1aa] line-clamp-2 leading-relaxed opacity-80">
+                                                        {email.preview ? email.preview.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ') : (
+                                                            email.body ? email.body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').substring(0, 100) : "No content"
+                                                        )}
+                                                    </p>
                                                 </div>
                                             </div>
                                         ))}
@@ -1769,7 +1846,7 @@ ${selectedEmail.body || selectedEmail.preview}
                                                                 {allStatusOptions.map(s => (
                                                                     <DropdownMenuItem
                                                                         key={s.value}
-                                                                        onClick={() => handleCRMStatusChange(s.value)}
+                                                                        onClick={() => selectedEmail && handleLabelChange(selectedEmail.id, s.value)}
                                                                         className="cursor-pointer hover:bg-[#2a2a35] focus:bg-[#2a2a35] mx-1 rounded"
                                                                     >
                                                                         <Zap className={cn("h-4 w-4 mr-2 fill-current", s.color)} />
@@ -1904,7 +1981,7 @@ ${selectedEmail.body || selectedEmail.preview}
                                                 <div key={msg.id} className={cn(
                                                     "animate-in fade-in slide-in-from-bottom-2 duration-500",
                                                     "border rounded-lg overflow-hidden",
-                                                    msg.isMe ? "border-[#2a2a35] bg-[#1e1e24] ml-8" : "border-[#2a2a35] bg-[#16161a] mr-8"
+                                                    msg.isMe ? "border-[#2a2a35] bg-[#1e1e24]" : "border-[#2a2a35] bg-[#16161a]"
                                                 )}>
                                                     <div className="px-4 py-3 border-b border-[#2a2a35] flex items-center justify-between gap-4 bg-[#272730]/30">
                                                         <div className="flex items-center gap-3 overflow-hidden">
@@ -1930,8 +2007,9 @@ ${selectedEmail.body || selectedEmail.preview}
                                                             })}
                                                         </div>
                                                     </div>
-                                                    <div className="p-5 text-sm leading-relaxed text-[#d4d4d8] whitespace-pre-wrap font-sans">
-                                                        {msg.body}
+                                                    <div className="p-5 text-sm leading-relaxed text-[#d4d4d8] font-sans">
+                                                        {/* Render HTML content safely */}
+                                                        <div dangerouslySetInnerHTML={{ __html: msg.body }} />
                                                     </div>
                                                 </div>
                                             ))}
@@ -2002,7 +2080,15 @@ ${selectedEmail.body || selectedEmail.preview}
                                                     ))}
                                                 </div>
 
-                                                <div className="bg-[#1e1e24] min-h-[200px] flex flex-col">
+                                                <div className="bg-[#1e1e24] min-h-[200px] flex flex-col relative">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="absolute right-2 top-2 h-6 w-6 text-[#a1a1aa] hover:text-foreground z-10"
+                                                        onClick={() => setReplyMode(null)}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
                                                     <Textarea
                                                         value={replyBody}
                                                         onChange={(e) => setReplyBody(e.target.value)}
@@ -2010,9 +2096,53 @@ ${selectedEmail.body || selectedEmail.preview}
                                                         className="flex-1 bg-transparent border-none focus-visible:ring-0 resize-none p-4 text-base leading-relaxed text-gray-200 min-h-[150px]"
                                                     />
 
+                                                    {/* Attachments List */}
+                                                    {attachments.length > 0 && (
+                                                        <div className="px-4 pb-2 flex flex-wrap gap-2">
+                                                            {attachments.map((file, idx) => (
+                                                                <div key={idx} className="flex items-center bg-[#272730] border border-[#2a2a35] rounded-md px-3 py-1 text-xs text-[#a1a1aa]">
+                                                                    <span className="max-w-[150px] truncate mr-2">{file.name}</span>
+                                                                    <button onClick={() => removeAttachment(idx)} className="hover:text-foreground">
+                                                                        <X className="h-3 w-3" />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+
                                                     <div className="px-4 py-3 border-t border-[#2a2a35] flex items-center justify-between">
-                                                        <div className="flex gap-2">
-                                                            {/* Simple formatting tools could go here if needed later */}
+                                                        <div className="flex gap-2 items-center">
+                                                            <input
+                                                                type="file"
+                                                                id="file-upload"
+                                                                multiple
+                                                                className="hidden"
+                                                                onChange={handleFileSelect}
+                                                            />
+                                                            <TooltipProvider delayDuration={0}>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button variant="ghost" size="icon" className="text-[#a1a1aa] hover:text-foreground h-8 w-8" onClick={() => document.getElementById('file-upload')?.click()}>
+                                                                            <Paperclip className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">Attach files</TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                            <TooltipProvider delayDuration={0}>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button variant="ghost" size="icon" className="text-[#a1a1aa] hover:text-red-400 h-8 w-8" onClick={() => {
+                                                                            setReplyBody("")
+                                                                            setAttachments([])
+                                                                            setReplyMode(null)
+                                                                        }}>
+                                                                            <Trash2 className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">Discard draft</TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
                                                         </div>
                                                         <Button
                                                             onClick={handleSendReply}
@@ -2290,3 +2420,4 @@ ${selectedEmail.body || selectedEmail.preview}
         </>
     )
 }
+

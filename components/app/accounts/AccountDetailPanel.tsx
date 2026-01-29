@@ -386,6 +386,7 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
             if (res.ok) {
                 toast({ title: "Settings Saved", description: "Account settings updated successfully" })
                 onUpdate?.({ ...account, firstName, lastName })
+                router.refresh() // Ensure server components update
                 setShowLargeLimitWarning(false)
                 setLargeLimitAcknowledged(false)
             } else {

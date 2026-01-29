@@ -4,6 +4,7 @@ import { dispatchWebhook } from './webhooks'
 import { calculateWarmupLimit } from './warmup'
 import nodemailer from 'nodemailer'
 import { AutomationFilter } from './replies'
+import { replaceVariables } from './variables'
 
 // Helper to rewrite links
 function injectTracking(html: string, eventId: string, baseUrl: string) {
@@ -283,36 +284,9 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
                 if (!subject && !body) continue
 
-                // Replace Variables - Core fields
-                const replaceVariables = (text: string) => {
-                    let result = text
-                    result = result.replace(/{{firstName}}/gi, lead.firstName || '')
-                    result = result.replace(/{{lastName}}/gi, lead.lastName || '')
-                    result = result.replace(/{{email}}/gi, lead.email || '')
-                    result = result.replace(/{{company}}/gi, lead.company || '')
-
-                    // Replace custom fields from lead.customFields
-                    if (lead.customFields) {
-                        try {
-                            const customFields = typeof lead.customFields === 'string'
-                                ? JSON.parse(lead.customFields)
-                                : lead.customFields
-                            for (const [key, value] of Object.entries(customFields)) {
-                                const regex = new RegExp(`{{${key}}}`, 'gi')
-                                result = result.replace(regex, String(value || ''))
-                            }
-                        } catch (e) {
-                            console.error('Failed to parse custom fields for variable replacement:', e)
-                        }
-                    }
-
-                    // Remove any remaining unmatched variables
-                    result = result.replace(/{{[^}]+}}/g, '')
-                    return result
-                }
-
-                subject = replaceVariables(subject)
-                body = replaceVariables(body)
+                // Replace Variables
+                subject = replaceVariables(subject, lead)
+                body = replaceVariables(body, lead)
 
                 // Create Sending Event
                 const sentEvent = await prisma.sendingEvent.create({
@@ -326,16 +300,18 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 })
 
                 // Construct Email Body (Text vs HTML)
-                let finalHtml: string | undefined = `<div style="white-space: pre-wrap;">${body}</div>`
+                let finalHtml: string | undefined = `${body}`
                 let finalText: string | undefined = undefined
 
                 // Check Text-Only Settings
                 const isTextOnly = settings.sendAsTextOnly || (settings.sendFirstAsText && nextStepNumber === 1)
 
                 if (isTextOnly) {
-                    finalText = body // Use raw body as text
+                    finalText = body.replace(/<[^>]*>/g, '') // Strip HTML tags for text-only mode
+
                     finalHtml = undefined // No HTML
                 } else {
+
                     // Inject Tracking if HTML
                     if (campaign.trackOpens || campaign.trackLinks) {
                         finalHtml = injectTracking(finalHtml!, sentEvent.id, BASE_URL)

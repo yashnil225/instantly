@@ -7,9 +7,20 @@ export default async function SettingsPage() {
     const session = await auth()
     if (!session?.user?.id) return redirect("/login")
 
-    // Fetch user with preferences if needed, or just pass session user
-    // We also need to fetch the active workspace ID if we want to server render it
-    // But for now, we'll let the component handle client-side workspace fetching or pass null
+    // Fetch fresh user data to ensure plan is up to date
+    const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            plan: true,
+            planExpiresAt: true
+        }
+    })
+
+    if (!user) return redirect("/login")
 
     // Attempt to find the first workspace for the user (similar to WorkspacePage logic)
     const firstWorkspace = await prisma.workspace.findFirst({
@@ -20,5 +31,5 @@ export default async function SettingsPage() {
         }
     })
 
-    return <SettingsOnePageView user={session.user} workspaceId={firstWorkspace?.id || null} />
+    return <SettingsOnePageView user={user} workspaceId={firstWorkspace?.id || null} />
 }

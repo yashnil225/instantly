@@ -55,6 +55,8 @@ interface CampaignAnalytics {
     sequenceStarted: number
     openRate: string
     clickRate: string
+    replyRate?: string
+    positiveReplyRate?: string
     opportunities: {
         count: number
         value: number
@@ -234,6 +236,18 @@ export default function CampaignAnalyticsPage() {
             value: data?.clickRate || "0%",
             tooltip: "Percentage of emails clicked",
             show: filters.showClickRate,
+        },
+        {
+            title: "Reply rate",
+            value: data?.replyRate || "0%",
+            tooltip: "Percentage of emails replied to",
+            show: filters.showReplyRate,
+        },
+        {
+            title: "Positive Reply Rate",
+            value: data?.positiveReplyRate || "0%",
+            tooltip: "Percentage of positive replies",
+            show: filters.showPositiveReplyRate,
         },
         {
             title: "Opportunities",

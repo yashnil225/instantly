@@ -86,7 +86,6 @@ export default function LoginPage() {
                 {/* Logo */}
                 <div className="flex items-center justify-center gap-2 mb-12">
                     <Logo size="lg" />
-                    <span className="text-xl font-semibold text-blue-500">Instantly</span>
                 </div>
 
                 {/* Login Card */}

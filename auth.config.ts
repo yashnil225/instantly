@@ -29,9 +29,10 @@ export const authConfig = {
 
             return true
         },
-        async jwt({ token, user, account, trigger }) {
+        async jwt({ token, user, account, trigger, session }) {
             if (user) {
                 token.id = user.id
+                token.plan = (user as any).plan // Add plan to token
             }
             if (account) {
                 token.accessToken = account.access_token
@@ -39,6 +40,10 @@ export const authConfig = {
             // Check if this is a new session (first login indicator)
             if (trigger === 'signIn') {
                 token.isNewLogin = true
+            }
+            // Support session update trigger
+            if (trigger === 'update' && session?.plan) {
+                token.plan = session.plan
             }
             return token
         },
@@ -48,6 +53,7 @@ export const authConfig = {
                     // Pass access token to client for Google Picker
                     ; (session as any).accessToken = token.accessToken
                     ; (session as any).isNewLogin = token.isNewLogin || false
+                    ; (session.user as any).plan = token.plan // Add plan to session
             }
             return session
         },

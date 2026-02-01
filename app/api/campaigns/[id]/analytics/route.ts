@@ -146,6 +146,7 @@ export async function GET(
             openRate,
             clickRate,
             replyRate,
+            positiveReplyRate: '0%',
             bounceRate,
             opportunities: {
                 count: opportunitiesCount,

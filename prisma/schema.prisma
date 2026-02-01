@@ -168,6 +168,7 @@ model EmailAccount {
   campaignAccounts CampaignEmailAccount[]
   sendingEvents    SendingEvent[]
   warmupLogs       WarmupLog[]
+  tags             EmailAccountTag[]
 }
 
 model Campaign {
@@ -213,6 +214,7 @@ model Campaign {
   sequences          Sequence[]
   events             SendingEvent[]
   stats              CampaignStat[]
+  tags               CampaignTag[]
 }
 
 // Junction table for many-to-many Campaign <-> Workspace
@@ -635,6 +637,8 @@ model Tag {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   leads     LeadTag[]
+  campaigns CampaignTag[]
+  accounts  EmailAccountTag[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -649,6 +653,26 @@ model LeadTag {
   tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([leadId, tagId])
+}
+
+model CampaignTag {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  tagId      String
+  tag        Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, tagId])
+}
+
+model EmailAccountTag {
+  id             String       @id @default(cuid())
+  emailAccountId String
+  emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
+  tagId          String
+  tag            Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([emailAccountId, tagId])
 }
 
 model AutoReplyRule {

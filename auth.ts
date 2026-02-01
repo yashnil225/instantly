@@ -39,6 +39,7 @@ const providers: any[] = [
                 id: user.id,
                 email: user.email,
                 name: user.name,
+                plan: user.plan,
             }
         }
     })

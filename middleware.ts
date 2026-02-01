@@ -22,7 +22,7 @@ export default auth((req) => {
     if (isLoggedIn && isAuthPage) {
         // Redirect to callbackUrl if provided, otherwise to /campaigns
         const callbackUrl = req.nextUrl.searchParams.get("callbackUrl")
-        const redirectTo = callbackUrl ? decodeURIComponent(callbackUrl) : "/campaigns"
+        const redirectTo = callbackUrl ? decodeURIComponent(callbackUrl) : "/analytics"
         return Response.redirect(new URL(redirectTo, req.url))
     }
 })

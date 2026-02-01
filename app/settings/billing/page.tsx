@@ -12,7 +12,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
 
 export default function BillingPage() {
-    const { status } = useSession()
+    const { status, update } = useSession()
     const { toast } = useToast()
     const [leadCount, setLeadCount] = useState<number | null>(null)
     const [emailCount] = useState<number>(0)
@@ -68,6 +68,9 @@ export default function BillingPage() {
                 const data = await res.json()
                 setCurrentPlan(data.plan)
                 toast({ title: "Plan Updated", description: `You have successfully switched to the ${plan} plan.` })
+                // Refresh session to persist plan across app
+                await update({ plan: data.plan })
+                // Note: We need to make sure update is destructured from useSession
                 fetchBillingData() // Refresh limits/stats
             }
         } catch (error) {

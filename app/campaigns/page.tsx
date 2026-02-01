@@ -28,9 +28,12 @@ import {
     DialogContent,
     DialogTrigger,
     DialogTitle,
-    DialogHeader, // Added
+    DialogTitle,
+    DialogHeader,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label" // Added
+import { Label } from "@/components/ui/label"
+import { FilterBar } from "@/components/common/FilterBar"
+import { TagManager } from "@/components/common/TagManager"
 
 import { useToast } from "@/components/ui/use-toast"
 
@@ -54,6 +57,7 @@ function CampaignsPage() {
     const [newCampaignName, setNewCampaignName] = useState("My Campaign")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
     const [isCreating, setIsCreating] = useState(false)
+    const [selectedTags, setSelectedTags] = useState<string[]>([])
 
     // URL state persistence
     const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "")
@@ -168,7 +172,7 @@ function CampaignsPage() {
         fetchCampaigns()
         const interval = setInterval(fetchCampaigns, 10000)
         return () => clearInterval(interval)
-    }, [currentWorkspaceId, workspaces])
+    }, [currentWorkspaceId, workspaces, selectedTags])
 
     const loadWorkspaces = async () => {
         try {
@@ -199,9 +203,13 @@ function CampaignsPage() {
     const fetchCampaigns = async () => {
         try {
             // Use workspace ID directly - null means show all
-            const url = currentWorkspaceId
-                ? `/api/campaigns?workspaceId=${currentWorkspaceId}`
-                : '/api/campaigns'
+            let url = `/api/campaigns?t=${Date.now()}`
+            if (currentWorkspaceId) {
+                url += `&workspaceId=${currentWorkspaceId}`
+            }
+            if (selectedTags.length > 0) {
+                url += `&tags=${selectedTags.join(',')}`
+            }
 
             const res = await fetch(url)
             if (res.ok) {
@@ -252,6 +260,12 @@ function CampaignsPage() {
         const isCurrentlyActive = currentStatus.toLowerCase() === 'active'
         const newStatus = isCurrentlyActive ? 'paused' : 'active'
 
+        // Always redirect to launch page for activation to perform checks
+        if (newStatus === 'active') {
+            router.push(`/campaigns/${id}/launch`)
+            return
+        }
+
         try {
             const res = await fetch(`/api/campaigns/${id}`, {
                 method: 'PATCH',
@@ -259,8 +273,14 @@ function CampaignsPage() {
                 body: JSON.stringify({ status: newStatus })
             })
             if (res.ok) {
-                fetchCampaigns()
+                // Refresh list
+                const updatedCampaigns = campaigns.map(c =>
+                    c.id === id ? { ...c, status: newStatus } : c
+                )
+                setCampaigns(updatedCampaigns)
                 toast({ title: "Status updated", description: `Campaign is now ${newStatus}` })
+            } else {
+                throw new Error("Failed to update status")
             }
         } catch (error) {
             toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
@@ -639,16 +659,27 @@ function CampaignsPage() {
                     </div>
                 </div>
 
+                {/* Filter Toolbar */}
+                <FilterBar
+                    onSearchChange={setSearchQuery}
+                    onTagsChange={setSelectedTags}
+                    className="w-full"
+                    placeholder="Search campaigns..."
+                />
+
                 {/* Toolbar */}
+
                 <div className="flex items-center justify-between">
-                    <div className="relative w-[320px]">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            placeholder="Search..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 bg-card border-border text-foreground focus:border-border h-10 rounded-lg focus-visible:ring-0"
-                        />
+                    <div className="hidden"> {/* Hidden because FilterBar handles search now */}
+                        <div className="relative w-[320px]">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                                placeholder="Search..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-10 bg-card border-border text-foreground focus:border-border h-10 rounded-lg focus-visible:ring-0"
+                            />
+                        </div>
                     </div>
                     <div className="flex items-center gap-3">
                         {/* Status Filter Dropdown */}
@@ -857,8 +888,19 @@ function CampaignsPage() {
                                     />
                                 </div>
 
-                                <div className="font-semibold text-foreground/90 text-sm truncate">
-                                    {campaign.name}
+                                <div className="flex flex-col gap-2 min-w-0">
+                                    <div className="font-semibold text-foreground/90 text-sm truncate" title={campaign.name}>
+                                        {campaign.name}
+                                    </div>
+                                    <div onClick={e => e.stopPropagation()}>
+                                        <TagManager
+                                            entityId={campaign.id}
+                                            entityType="campaign"
+                                            assignedTags={campaign.tags || []}
+                                            onTagsChange={() => fetchCampaigns()}
+                                            readOnly={false}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div>

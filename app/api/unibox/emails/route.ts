@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
         const filter = searchParams.get("filter") // "unread", "reminders", "scheduled", "sent"
         const search = searchParams.get("search")
         const workspaceIds = searchParams.get("workspaceIds")?.split(',').filter(Boolean)
+        const tags = searchParams.get("tags")?.split(',').filter(Boolean) || []
 
         // Build where clause
         const where: any = {
@@ -37,6 +38,15 @@ export async function GET(request: NextRequest) {
         if (aiLabel) where.aiLabel = aiLabel
         if (filter === "unread") where.isRead = false
         if (filter === "starred") where.isStarred = true
+
+        if (tags.length > 0) {
+            where.tags = {
+                some: {
+                    tagId: { in: tags }
+                }
+            }
+        }
+
         // Snooze Logic
         if (filter === "snoozed") {
             where.snoozedUntil = { not: null, gt: new Date() } // Show future snoozed
@@ -237,6 +247,11 @@ export async function GET(request: NextRequest) {
                             }
                         }
                     }
+                },
+                tags: {
+                    include: {
+                        tag: true
+                    }
                 }
             },
             orderBy: { updatedAt: "desc" },
@@ -262,7 +277,7 @@ export async function GET(request: NextRequest) {
 
             return {
                 id: lead.id,
-                from: lead.email,
+
                 fromName: `${lead.firstName || ""} ${lead.lastName || ""}`.trim() || lead.email,
                 company: lead.company,
                 subject: replyEvent ? "Re: " + (sentEvent?.metadata ? JSON.parse(sentEvent.metadata).subject : "Follow up") : (sentEvent?.metadata ? JSON.parse(sentEvent.metadata).subject : "Follow up"),
@@ -278,16 +293,10 @@ export async function GET(request: NextRequest) {
                 hasReply: !!replyEvent,
                 hasAttachment,
                 sentFrom: lastEvent?.emailAccount?.email,
-                messages: lead.events.map(e => ({
-                    id: e.id,
-                    type: e.type,
-                    subject: e.metadata ? JSON.parse(e.metadata).subject : "",
-                    body: e.details || "", // Use details for body content
-                    timestamp: e.createdAt,
-                    from: e.type === 'sent' ? e.emailAccount?.email : lead.email,
-                    to: e.type === 'sent' ? lead.email : e.emailAccount?.email,
-                    isMe: e.type === 'sent'
-                }))
+                from: lastEvent?.type === 'sent' ? lastEvent.emailAccount?.email : lead.email,
+                to: lastEvent?.type === 'sent' ? lead.email : lastEvent?.emailAccount?.email,
+                isMe: lastEvent?.type === 'sent',
+                tags: lead.tags.map(t => t.tag)
             }
         })
 

@@ -132,12 +132,15 @@ export default function CampaignOptionsPage() {
             })
             if (res.ok) {
                 toast({ title: "Saved successfully" })
+                return true
             } else {
                 toast({ title: "Error", description: "Failed to save options", variant: "destructive" })
+                return false
             }
         } catch (error) {
             console.error("Error saving options:", error)
             toast({ title: "Error", description: "Failed to save options", variant: "destructive" })
+            return false
         } finally {
             setSaving(false)
         }
@@ -280,9 +283,6 @@ export default function CampaignOptionsPage() {
                                 ))}
                             </DropdownMenuContent>
                         </DropdownMenu>
-                        <span className="text-red-500 text-xs font-medium whitespace-nowrap">
-                            {accounts.filter(a => selectedAccounts.includes(a.id) && a.status === 'error').length} Inactive
-                        </span>
                     </div>
                 </div>
 
@@ -543,11 +543,15 @@ export default function CampaignOptionsPage() {
                     </Button>
                 ) : (
                     <Button
-                        onClick={async () => {
+                        onClick={async (e) => {
+                            e.preventDefault()
                             // Auto-save before launching
-                            await handleSave()
-                            router.push(`/campaigns/${campaignId}/launch`)
+                            const success = await handleSave()
+                            if (success) {
+                                router.push(`/campaigns/${campaignId}/launch`)
+                            }
                         }}
+                        type="button"
                         disabled={saving || selectedAccounts.length === 0}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 h-9 text-xs font-bold"
                         title={selectedAccounts.length === 0 ? "Please select at least one email account" : ""}

@@ -17,12 +17,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
-        // Handle Demo Email Case
-        if (emailId.startsWith('demo-')) {
-            // Simulate delay
-            await new Promise(resolve => setTimeout(resolve, 1000))
-            return NextResponse.json({ success: true, message: 'Demo reply sent' })
-        }
+
 
         // 1. Resolve Lead/Email context
         // Try to find if emailId is a Lead ID (common in Unibox for thread view)

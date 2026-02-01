@@ -5,6 +5,7 @@ import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Menu, X } from "lucide-react"
 import { useState } from "react"
+import { ThemeSwitcher } from "@/components/ui/theme-switcher"
 
 export function MarketingHeader() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -51,6 +52,7 @@ export function MarketingHeader() {
 
                     {/* Desktop Actions */}
                     <div className="hidden md:flex items-center gap-3">
+                        <ThemeSwitcher />
                         <Link href="/login">
                             <Button variant="ghost" size="sm">
                                 Log In
@@ -113,6 +115,10 @@ export function MarketingHeader() {
                             Contact
                         </Link>
                         <div className="pt-4 space-y-2">
+                            <div className="flex items-center justify-between px-1 mb-4">
+                                <span className="text-sm font-medium">Theme</span>
+                                <ThemeSwitcher />
+                            </div>
                             <Link href="/login" className="block">
                                 <Button variant="outline" className="w-full">
                                     Log In

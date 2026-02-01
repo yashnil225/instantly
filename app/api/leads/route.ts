@@ -22,6 +22,11 @@ export async function GET(request: Request) {
         const sortField = searchParams.get('sortField') || 'createdAt'
         const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc'
 
+        // New filters
+        const status = searchParams.get('status')
+        const tagsParam = searchParams.get('tags')
+        const tagIds = tagsParam ? tagsParam.split(',') : []
+
         const where: any = {}
 
         if (workspaceId && workspaceId !== 'all') {
@@ -53,6 +58,18 @@ export async function GET(request: Request) {
             where.aiLabel = { in: aiLabels }
         }
 
+        if (status && status !== 'all') {
+            where.status = status
+        }
+
+        if (tagIds.length > 0) {
+            where.tags = {
+                some: {
+                    tagId: { in: tagIds }
+                }
+            }
+        }
+
         const leads = await prisma.lead.findMany({
             take: limit,
             skip: offset,
@@ -61,13 +78,24 @@ export async function GET(request: Request) {
             include: {
                 campaign: {
                     select: { name: true }
+                },
+                tags: {
+                    include: {
+                        tag: true
+                    }
                 }
             }
         })
 
+        // Transform leads to include flattened tags
+        const leadsWithTags = leads.map(lead => ({
+            ...lead,
+            tags: lead.tags.map(t => t.tag)
+        }))
+
         const count = await prisma.lead.count({ where })
 
-        return NextResponse.json({ leads, total: count })
+        return NextResponse.json({ leads: leadsWithTags, total: count })
     } catch (error) {
         console.error("Fetch leads error:", error)
         return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 })

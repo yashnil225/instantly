@@ -18,6 +18,8 @@ interface SettingsOnePageProps {
         name?: string | null
         email?: string | null
         image?: string | null
+        plan?: string | null
+        planExpiresAt?: Date | null
     }
     workspaceId: string | null
 }

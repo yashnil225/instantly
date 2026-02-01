@@ -172,7 +172,12 @@ export default function CampaignLayout({
             })
             if (res.ok) {
                 setCampaign({ ...campaign, status: 'active' })
+                toast({ title: "Campaign Launched", description: "Campaign is now active." })
+            } else {
+                 toast({ title: "Error", description: "Failed to launch campaign", variant: "destructive" })
             }
+        } catch (error) {
+             toast({ title: "Error", description: "Failed to launch campaign", variant: "destructive" })
         } finally {
             setUpdating(false)
         }

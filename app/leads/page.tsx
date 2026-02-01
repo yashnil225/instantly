@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Filter, Mail, Building2, Download, Loader2, Zap, ChevronDown } from "lucide-react"
+import { Search, Filter, Mail, Building2, Download, Loader2, Zap, ChevronDown, CheckSquare, MessageCircle, XCircle } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,6 +13,9 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { FilterBar } from "@/components/common/FilterBar"
+import { TagManager } from "@/components/common/TagManager"
+import { toast } from "@/components/ui/use-toast"
 
 interface Lead {
     id: string
@@ -22,9 +25,10 @@ interface Lead {
     company?: string
     status: string
     createdAt: string
-    campaign: {
+    campaign?: {
         name: string
     }
+    tags: any[]
 }
 
 export default function GlobalLeadsPage() {
@@ -37,13 +41,26 @@ export default function GlobalLeadsPage() {
     const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
     const [workspaceSearch, setWorkspaceSearch] = useState("")
 
+    // Filter state
+    const [searchQuery, setSearchQuery] = useState("")
+    const [debouncedSearch, setDebouncedSearch] = useState("")
+    const [selectedTags, setSelectedTags] = useState<string[]>([])
+    const [statusFilter, setStatusFilter] = useState("all")
+
     useEffect(() => {
         loadWorkspaces()
     }, [])
 
     useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery)
+        }, 300)
+        return () => clearTimeout(timer)
+    }, [searchQuery])
+
+    useEffect(() => {
         fetchLeads()
-    }, [currentWorkspace])
+    }, [currentWorkspace, debouncedSearch, selectedTags, statusFilter])
 
     const loadWorkspaces = async () => {
         try {
@@ -79,6 +96,15 @@ export default function GlobalLeadsPage() {
             const params = new URLSearchParams({ limit: '100' })
             if (workspaceId !== 'all') {
                 params.append('workspaceId', workspaceId)
+            }
+            if (debouncedSearch) {
+                params.append('search', debouncedSearch)
+            }
+            if (selectedTags.length > 0) {
+                params.append('tags', selectedTags.join(','))
+            }
+            if (statusFilter !== 'all') {
+                params.append('status', statusFilter)
             }
 
             const res = await fetch(`/api/leads?${params.toString()}`)
@@ -132,10 +158,11 @@ export default function GlobalLeadsPage() {
         a.download = `all-leads-export-${new Date().toISOString().split('T')[0]}.csv`
         a.click()
         URL.revokeObjectURL(url)
+        toast({ title: "Export Started", description: `Exporting ${leads.length} leads...` })
     }
 
     return (
-        <div className="flex bg-[#0a0a0a] min-h-screen text-white">
+        <div className="flex bg-[#0a0a0a] min-h-screen text-white font-sans">
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 <header className="h-16 border-b border-[#222222] flex items-center px-6 justify-between shrink-0 bg-[#0a0a0a]">
                     <div className="flex items-center gap-4">
@@ -185,19 +212,50 @@ export default function GlobalLeadsPage() {
                     </div>
                 </header>
 
-                <div className="flex-1 flex flex-col p-6 overflow-hidden">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="relative w-[300px]">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                            <Input
-                                placeholder="Search all leads..."
-                                className="pl-10 bg-[#111111] border-[#222222] text-gray-300 focus:border-[#333333] h-9"
-                            />
-                        </div>
-                        <Button variant="outline" className="border-[#222] bg-[#111] text-gray-400 hover:text-white h-9">
-                            <Filter className="h-4 w-4 mr-2" />
-                            Filters
-                        </Button>
+                <div className="flex-1 flex flex-col p-6 overflow-hidden space-y-4">
+
+                    {/* Filter Toolbar */}
+                    <div className="flex items-center gap-4">
+                        <FilterBar
+                            onSearchChange={setSearchQuery}
+                            onTagsChange={setSelectedTags}
+                            className="flex-1"
+                            placeholder="Search leads..."
+                        />
+
+                        {/* Status Filter */}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="h-10 border-[#222] bg-[#111] text-gray-300 hover:text-white hover:bg-[#1a1a1a] gap-2 min-w-[140px] justify-between">
+                                    <span className="flex items-center gap-2">
+                                        <Filter className="h-4 w-4 text-gray-500" />
+                                        {statusFilter === 'all' ? 'All Statuses' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
+                                    </span>
+                                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-56 bg-[#1a1a1a] border-[#2a2a2a] text-white">
+                                <DropdownMenuItem onClick={() => setStatusFilter('all')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'all' && "bg-blue-500/20 text-blue-400")}>
+                                    All Statuses
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator className="bg-[#2a2a2a]" />
+                                <DropdownMenuItem onClick={() => setStatusFilter('new')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'new' && "bg-blue-500/20 text-blue-400")}>
+                                    New
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setStatusFilter('contacted')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'contacted' && "bg-blue-500/20 text-blue-400")}>
+                                    <CheckSquare className="h-4 w-4 mr-2 text-blue-500" /> Contacted
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setStatusFilter('replied')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'replied' && "bg-blue-500/20 text-blue-400")}>
+                                    <MessageCircle className="h-4 w-4 mr-2 text-purple-500" /> Replied
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setStatusFilter('completed')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'completed' && "bg-blue-500/20 text-blue-400")}>
+                                    <CheckSquare className="h-4 w-4 mr-2 text-green-500" /> Completed
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setStatusFilter('bounced')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'bounced' && "bg-blue-500/20 text-blue-400")}>
+                                    <XCircle className="h-4 w-4 mr-2 text-red-500" /> Bounced
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
 
                     <div className="flex-1 border border-[#222] rounded-lg bg-[#111111] overflow-hidden flex flex-col">
@@ -215,17 +273,27 @@ export default function GlobalLeadsPage() {
                                 </div>
                             ) : leads.length === 0 ? (
                                 <div className="flex flex-col items-center justify-center h-full text-gray-500 space-y-4">
-                                    <p>No leads found.</p>
+                                    <p>No leads found matching your criteria.</p>
                                 </div>
                             ) : (
                                 leads.map((lead) => (
                                     <div key={lead.id} className="grid grid-cols-[2fr_1.5fr_1.5fr_1fr] gap-4 px-4 py-3 border-b border-[#222] items-center hover:bg-[#151515] transition-colors group">
-                                        <div>
+                                        <div className="min-w-0">
                                             <div className="flex items-center gap-2 font-medium text-gray-200">
                                                 {lead.firstName || lead.lastName ? `${lead.firstName || ''} ${lead.lastName || ''}`.trim() : '-'}
                                             </div>
                                             <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
                                                 <Mail className="h-3 w-3" /> {lead.email}
+                                            </div>
+                                            {/* Tag Manager */}
+                                            <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                                                <TagManager
+                                                    entityId={lead.id}
+                                                    entityType="lead"
+                                                    assignedTags={lead.tags || []}
+                                                    onTagsChange={fetchLeads}
+                                                    readOnly={false}
+                                                />
                                             </div>
                                         </div>
                                         <div className="text-sm text-gray-400 flex items-center gap-2">

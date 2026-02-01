@@ -9,8 +9,8 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const singleWorkspaceId = searchParams.get('workspaceId')
-    const multipleWorkspaceIds = searchParams.get('workspaceIds')?.split(',').filter(Boolean) || []
+    const tagsParam = searchParams.get('tags')
+    const tagIds = tagsParam ? tagsParam.split(',') : []
 
     // Support both single and multiple workspace IDs
     const workspaceIds = singleWorkspaceId && singleWorkspaceId !== 'all'
@@ -27,10 +27,22 @@ export async function GET(request: Request) {
                             workspaceId: { in: workspaceIds }
                         }
                     }
+                } : {}),
+                ...(tagIds.length > 0 ? {
+                    tags: {
+                        some: {
+                            tagId: { in: tagIds }
+                        }
+                    }
                 } : {})
             },
             include: {
                 campaignWorkspaces: true,
+                tags: {
+                    include: {
+                        tag: true
+                    }
+                },
                 _count: {
                     select: {
                         leads: true,

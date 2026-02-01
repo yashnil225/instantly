@@ -19,8 +19,18 @@ export async function GET(request: Request) {
     const filter = searchParams.get('filter') || 'all'
     const search = searchParams.get('search') || ''
 
+    const tags = searchParams.get('tags')?.split(',').filter(Boolean) || []
+
     const whereClause: Record<string, unknown> = {
         userId: session.user.id
+    }
+
+    if (tags.length > 0) {
+        whereClause.tags = {
+            some: {
+                tagId: { in: tags }
+            }
+        }
     }
 
     if (workspaceId && workspaceId !== 'all') {
@@ -69,6 +79,11 @@ export async function GET(request: Request) {
             include: {
                 campaignAccounts: {
                     take: 1
+                },
+                tags: {
+                    include: {
+                        tag: true
+                    }
                 }
             }
         }),
@@ -90,7 +105,7 @@ export async function GET(request: Request) {
         isInCampaign: acc.campaignAccounts.length > 0,
         hasCustomDomain: !!acc.provider,
         signature: acc.signature,
-        tags: [] // TODO: Add tags
+        tags: acc.tags.map(t => t.tag) // Flatten relation
     }))
 
     return NextResponse.json({

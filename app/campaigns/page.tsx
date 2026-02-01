@@ -28,7 +28,6 @@ import {
     DialogContent,
     DialogTrigger,
     DialogTitle,
-    DialogTitle,
     DialogHeader,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"

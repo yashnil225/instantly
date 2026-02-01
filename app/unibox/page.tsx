@@ -1341,7 +1341,7 @@ ${selectedEmail.body || selectedEmail.preview}
 
 
         return (
-            <>
+            <TooltipProvider>
                 <div className="flex h-screen bg-background text-[#a1a1aa] font-sans">
                     {/* Collapsible Sidebar */}
                     <div
@@ -2521,9 +2521,7 @@ ${selectedEmail.body || selectedEmail.preview}
                 </Dialog>
 
                 <KeyboardShortcutsHelp open={shortcutsModalOpen} onOpenChange={setShortcutsModalOpen} />
-            </>
+            </TooltipProvider>
         )
     }
-
-
-
+```

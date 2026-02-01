@@ -2523,6 +2523,7 @@ ${selectedEmail.body || selectedEmail.preview}
                 <KeyboardShortcutsHelp open={shortcutsModalOpen} onOpenChange={setShortcutsModalOpen} />
             </>
         )
+    }
 
 
 

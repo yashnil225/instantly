@@ -219,9 +219,7 @@ export default function GlobalLeadsPage() {
                         <FilterBar
                             onSearchChange={setSearchQuery}
                             onTagsChange={setSelectedTags}
-                            className="flex-1"
-                            placeholder="Search leads..."
-                        />
+                        selectedTags={selectedTags}
 
                         {/* Status Filter */}
                         <DropdownMenu>

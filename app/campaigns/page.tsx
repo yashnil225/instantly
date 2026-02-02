@@ -662,6 +662,7 @@ function CampaignsPage() {
                 <FilterBar
                     onSearchChange={setSearchQuery}
                     onTagsChange={setSelectedTags}
+                    selectedTags={selectedTags}
                     className="w-full"
                     placeholder="Search campaigns..."
                 />

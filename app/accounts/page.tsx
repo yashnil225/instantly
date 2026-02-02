@@ -809,7 +809,7 @@ function AccountsPage() {
                                                 <div className="ml-7 mt-1" onClick={e => e.stopPropagation()}>
                                                     <TagManager
                                                         entityId={account.id}
-                                                        entityType="email_account"
+                                                        entityType="account"
                                                         assignedTags={account.tags || []}
                                                         onTagsChange={() => fetchAccounts()}
                                                         readOnly={false}

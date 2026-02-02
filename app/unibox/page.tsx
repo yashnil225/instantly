@@ -104,8 +104,6 @@ interface Email {
         from?: string | null
         to?: string | null
         isMe: boolean
-        to?: string | null
-        isMe: boolean
     }[]
     tags?: { id: string; name: string; color: string }[]
 }
@@ -171,6 +169,169 @@ function UniboxPage() {
     const [createWorkspaceModalOpen, setCreateWorkspaceModalOpen] = useState(false)
     const [newWorkspaceName, setNewWorkspaceName] = useState("")
 
+    // ============ HELPER FUNCTIONS ============
+
+    const loadWorkspaces = async () => {
+        try {
+            const res = await fetch('/api/workspaces')
+            if (res.ok) {
+                const data = await res.json()
+                setWorkspaces(Array.isArray(data) ? data : [])
+            }
+        } catch (error) {
+            console.error("Failed to load workspaces:", error)
+            setWorkspaces([])
+        } finally {
+            setWorkspaceLoading(false)
+        }
+    }
+
+    const loadCampaigns = async () => {
+        try {
+            const activeWorkspace = workspaces.find((w: any) => w.name === currentWorkspace)
+            const workspaceId = activeWorkspace?.id || 'all'
+
+            const url = workspaceId === 'all'
+                ? '/api/campaigns'
+                : `/api/campaigns?workspaceId=${workspaceId}`
+
+            const res = await fetch(url)
+            if (res.ok) {
+                const data = await res.json()
+                setCampaigns(Array.isArray(data) ? data : [])
+            }
+        } catch (error) {
+            console.error("Failed to load campaigns:", error)
+            setCampaigns([])
+        }
+    }
+
+    const loadAccounts = async () => {
+        try {
+            const res = await fetch('/api/accounts')
+            if (res.ok) {
+                const data = await res.json()
+                setAccounts(Array.isArray(data) ? data : [])
+            }
+        } catch (error) {
+            console.error("Failed to load accounts:", error)
+            setAccounts([])
+        }
+    }
+
+    const loadTags = async () => {
+        try {
+            const res = await fetch('/api/tags')
+            if (res.ok) {
+                const data = await res.json()
+                setTags(Array.isArray(data) ? data : [])
+            }
+        } catch (error) {
+            console.error("Failed to load tags:", error)
+            setTags([])
+        }
+    }
+
+    const loadEmails = async () => {
+        setLoading(true)
+        try {
+            const params = new URLSearchParams()
+            if (activeStatus) params.append("status", activeStatus)
+            if (activeCampaign) params.append("campaignId", activeCampaign)
+            if (activeInbox) params.append("emailAccountId", activeInbox)
+            if (activeAiLabel) params.append("aiLabel", activeAiLabel)
+            if (activeMoreFilter) params.append("filter", activeMoreFilter)
+            if (activeTag) params.append("tags", activeTag)
+            if (searchQuery) params.append("search", searchQuery)
+
+            const res = await fetch(`/api/unibox/emails?${params.toString()}`)
+            if (res.ok) {
+                const data = await res.json()
+                if (data.length === 0 && !activeStatus && !activeCampaign && !activeInbox && !activeAiLabel && !activeMoreFilter && !activeTag && !searchQuery) {
+                    setEmails([{
+                        id: "demo-1",
+                        from: "team@instantly.ai",
+                        fromName: "Instantly Team",
+                        subject: "Welcome to Instantly! 👋",
+                        preview: "This is a demo email to help you get started with the Unibox. You'll see your real email replies here once your campaigns are active.",
+                        timestamp: new Date(),
+                        isRead: false,
+                        status: "interested",
+                        aiLabel: "interested",
+                        campaign: { id: "demo-camp", name: "Onboarding" },
+                        hasReply: false,
+                        body: "Welcome to Instantly!\n\nThe Unibox is where you can manage all your email replies from all your accounts in one place.\n\nHappy sending!"
+                    }])
+                } else {
+                    setEmails(data)
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load emails:", error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const createLabel = async () => {
+        if (!newLabelName.trim()) return
+
+        try {
+            const res = await fetch('/api/unibox/labels', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newLabelName })
+            })
+
+            if (res.ok) {
+                setLabelModalOpen(false)
+                setNewLabelName("")
+                toast({ title: "Success", description: `Label "${newLabelName}" created` })
+            }
+        } catch (error) {
+            console.error("Failed to create label:", error)
+        }
+    }
+
+    const clearFilters = () => {
+        setActiveStatus(null)
+        setActiveCampaign(null)
+        setActiveInbox(null)
+        setActiveAiLabel(null)
+        setActiveMoreFilter(null)
+        setActiveTag(null)
+        setSearchQuery("")
+    }
+
+    const createWorkspace = async () => {
+        if (!newWorkspaceName.trim()) return
+
+        try {
+            const res = await fetch('/api/workspaces', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newWorkspaceName })
+            })
+
+            if (res.ok) {
+                const newWorkspace = await res.json()
+                setWorkspaces([...workspaces, newWorkspace])
+                setCurrentWorkspace(newWorkspace.name)
+                localStorage.setItem('activeWorkspace', newWorkspace.name)
+                setCreateWorkspaceModalOpen(false)
+                setNewWorkspaceName("")
+                toast({ title: "Success", description: "Workspace created successfully!" })
+            }
+        } catch (error) {
+            console.error("Failed to create workspace:", error)
+        }
+    }
+
+    const switchWorkspace = (workspaceName: string) => {
+        setCurrentWorkspace(workspaceName)
+        localStorage.setItem('activeWorkspace', workspaceName)
+    }
+
     const handleLabelChange = async (emailId: string, newLabel: string) => {
         // Optimistic update
         setEmails(prev => prev.map(email =>
@@ -196,12 +357,9 @@ function UniboxPage() {
                 throw new Error('Failed to update label')
             }
         } catch (error) {
-            // Revert
             setEmails(prev => prev.map(email =>
-                email.id === emailId ? { ...email, aiLabel: selectedEmail?.aiLabel || '' } : email // approximate revert
+                email.id === emailId ? { ...email, aiLabel: selectedEmail?.aiLabel || '' } : email
             ))
-            // A proper revert needs the old value passed in or stored.
-            // Given simplicity, we might just log error or refetch.
             console.error("Failed to update label", error)
             toast({ title: "Error", description: "Failed to update label", variant: "destructive" })
         }
@@ -349,9 +507,6 @@ Instantly`,
         window.addEventListener('resize', handleResize)
 
         loadWorkspaces()
-        loadCampaigns()
-        loadWorkspaces()
-        loadCampaigns()
         loadAccounts()
         loadTags()
 
@@ -364,7 +519,7 @@ Instantly`,
         return () => {
             window.removeEventListener('resize', handleResize)
         }
-    }, [])
+    }, [session])
 
     useEffect(() => {
         const leadId = searchParams.get("leadId")
@@ -372,776 +527,93 @@ Instantly`,
             const foundEmail = emails.find(e => e.id === leadId)
             if (foundEmail) {
                 loadEmailBody(foundEmail)
-            } else {
-                // If not loaded yet, wait or fetch specifically (for now we rely on list)
-                // Optionally we could fetch single lead if not in list
             }
         }
     }, [searchParams, emails])
 
+    // Load emails when filters change
     useEffect(() => {
         setPage(1)
         loadEmails()
-        loadCampaigns() // Reload campaigns when workspace changes
-        useEffect(() => {
-            setPage(1)
-            loadEmails()
-            loadCampaigns() // Reload campaigns when workspace changes
-        }, [activeStatus, activeCampaign, activeInbox, activeAiLabel, activeMoreFilter, activeTag, searchQuery, currentWorkspace])
+    }, [activeStatus, activeCampaign, activeInbox, activeAiLabel, activeMoreFilter, activeTag, searchQuery])
 
-        const loadWorkspaces = async () => {
-            try {
-                const res = await fetch('/api/workspaces')
-                if (res.ok) {
-                    const data = await res.json()
-                    // Ensure data is an array
-                    setWorkspaces(Array.isArray(data) ? data : [])
+    // Load campaigns when workspace changes
+    useEffect(() => {
+        loadCampaigns()
+    }, [currentWorkspace, workspaces])
+
+    // Helper calculations
+    const filteredCampaigns = campaigns.filter((c: any) =>
+        c.name.toLowerCase().includes(campaignSearch.toLowerCase())
+    )
+
+    const filteredAccounts = accounts.filter((a: any) =>
+        a.email.toLowerCase().includes(inboxSearch.toLowerCase())
+    )
+
+    const filteredWorkspaces = workspaces.filter((w: any) =>
+        w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
+    )
+
+    const campaignsForModal = campaigns.filter((c: any) =>
+        c.name.toLowerCase().includes(campaignModalSearch.toLowerCase()) &&
+        c.id !== selectedEmail?.campaign?.id
+    )
+
+    const hasActiveFilters = activeStatus || activeCampaign || activeInbox || activeAiLabel || activeMoreFilter
+
+    // Update currentIndex when an email is selected manually
+    useEffect(() => {
+        if (selectedEmail) {
+            const index = emails.findIndex(e => e.id === selectedEmail.id)
+            if (index !== -1) setCurrentIndex(index)
+        }
+    }, [selectedEmail, emails])
+
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't trigger if user is typing in an input or editor
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) {
+                // Ctrl+Enter to send
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    if (replyMode) handleSendReply()
                 }
-            } catch (error) {
-                console.error("Failed to load workspaces:", error)
-                setWorkspaces([])
-            } finally {
-                setWorkspaceLoading(false)
-            }
-        }
-
-        const loadCampaigns = async () => {
-            try {
-                // Get workspace ID from current workspace name
-                const activeWorkspace = workspaces.find((w: any) => w.name === currentWorkspace)
-                const workspaceId = activeWorkspace?.id || 'all'
-
-                const url = workspaceId === 'all'
-                    ? '/api/campaigns'
-                    : `/api/campaigns?workspaceId=${workspaceId}`
-
-                const res = await fetch(url)
-                if (res.ok) {
-                    const data = await res.json()
-                    // Ensure data is an array
-                    setCampaigns(Array.isArray(data) ? data : [])
-                }
-            } catch (error) {
-                console.error("Failed to load campaigns:", error)
-                setCampaigns([])
-            }
-        }
-
-        const loadAccounts = async () => {
-            try {
-                const res = await fetch('/api/accounts')
-                if (res.ok) {
-                    const data = await res.json()
-                    // Ensure data is an array
-                    setAccounts(Array.isArray(data) ? data : [])
-                }
-            } catch (error) {
-                console.error("Failed to load accounts:", error)
-                setAccounts([])
-            }
-        }
-
-        const loadTags = async () => {
-            try {
-                const res = await fetch('/api/tags')
-                if (res.ok) {
-                    const data = await res.json()
-                    setTags(Array.isArray(data) ? data : [])
-                }
-            } catch (error) {
-                console.error("Failed to load tags:", error)
-                setTags([])
-            }
-        }
-
-        const loadEmails = async () => {
-            setLoading(true)
-            try {
-                const params = new URLSearchParams()
-                if (activeStatus) params.append("status", activeStatus)
-                if (activeCampaign) params.append("campaignId", activeCampaign)
-                if (activeInbox) params.append("emailAccountId", activeInbox)
-                if (activeAiLabel) params.append("aiLabel", activeAiLabel)
-                if (activeMoreFilter) params.append("filter", activeMoreFilter)
-                if (activeTag) params.append("tags", activeTag)
-                if (searchQuery) params.append("search", searchQuery)
-
-
-                const res = await fetch(`/api/unibox/emails?${params.toString()}`)
-                if (res.ok) {
-                    const data = await res.json()
-                    if (data.length === 0 && !activeStatus && !activeCampaign && !activeInbox && !activeAiLabel && !activeMoreFilter && !activeTag && !searchQuery) {
-                        // Only show demo email if NO filters are active (clean state)
-                        setEmails([{
-                            id: "demo-1",
-                            from: "team@instantly.ai",
-                            fromName: "Instantly Team",
-                            subject: "Welcome to Instantly! 👋",
-                            preview: "This is a demo email to help you get started with the Unibox. You'll see your real email replies here once your campaigns are active.",
-                            timestamp: new Date(),
-                            isRead: false,
-                            status: "interested",
-                            aiLabel: "interested",
-                            campaign: { id: "demo-camp", name: "Onboarding" },
-                            hasReply: false,
-                            body: "Welcome to Instantly!\n\nThe Unibox is where you can manage all your email replies from all your accounts in one place.\n\nHappy sending!"
-                        }])
-                    } else {
-                        // Backend handles search filtering now
-                        setEmails(data)
-                    }
-                }
-            } catch (error) {
-                console.error("Failed to load emails:", error)
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        const createLabel = async () => {
-            if (!newLabelName.trim()) return
-
-            try {
-                const res = await fetch('/api/unibox/labels', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: newLabelName })
-                })
-
-                if (res.ok) {
-                    setLabelModalOpen(false)
-                    setNewLabelName("")
-                    toast({ title: "Success", description: `Label "${newLabelName}" created` })
-                }
-            } catch (error) {
-                console.error("Failed to create label:", error)
-            }
-        }
-
-        const clearFilters = () => {
-            setActiveStatus(null)
-            setActiveCampaign(null)
-            setActiveInbox(null)
-            setActiveAiLabel(null)
-            setActiveAiLabel(null)
-            setActiveMoreFilter(null)
-            setActiveTag(null)
-            setSearchQuery("")
-        }
-
-        const createWorkspace = async () => {
-            if (!newWorkspaceName.trim()) return
-
-            try {
-                const res = await fetch('/api/workspaces', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: newWorkspaceName })
-                })
-
-                if (res.ok) {
-                    const newWorkspace = await res.json()
-                    setWorkspaces([...workspaces, newWorkspace])
-                    setCurrentWorkspace(newWorkspace.name)
-                    localStorage.setItem('activeWorkspace', newWorkspace.name)
-                    setCreateWorkspaceModalOpen(false)
-                    setNewWorkspaceName("")
-                    toast({ title: "Success", description: "Workspace created successfully!" })
-                }
-            } catch (error) {
-                console.error("Failed to create workspace:", error)
-            }
-        }
-
-        const switchWorkspace = (workspaceName: string) => {
-            setCurrentWorkspace(workspaceName)
-            localStorage.setItem('activeWorkspace', workspaceName)
-        }
-
-        const handleMarkAsRead = async (emailId: string, isRead: boolean) => {
-            // Optimistic update
-            const originalEmails = [...emails]
-            const originalSelected = selectedEmail
-
-            setEmails(prev => prev.map(e => e.id === emailId ? { ...e, isRead } : e))
-            if (selectedEmail?.id === emailId) {
-                setSelectedEmail(prev => prev ? { ...prev, isRead } : null)
-            }
-            try {
-                await fetch(`/api/leads/${emailId}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ isRead })
-                })
-
-                if (!isRead) {
-                    toast({
-                        title: "Conversation marked as unread",
-                        action: (
-                            <div onClick={async () => {
-                                // UNDO Mark as Unread
-                                setEmails(originalEmails)
-                                if (originalSelected?.id === emailId) setSelectedEmail(originalSelected)
-                                // Revert API
-                                await fetch(`/api/leads/${emailId}`, {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ isRead: true })
-                                })
-                                toast({ title: "Action undone" })
-                            }} className="bg-white text-black hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors shadow-sm border">
-                                Undo
-                            </div>
-                        ),
-                        duration: 5000,
-                    })
-                }
-            } catch (error) {
-                console.error("Failed to mark as read", error)
-                setEmails(originalEmails)
-                if (originalSelected) setSelectedEmail(originalSelected)
-            }
-        }
-
-        const loadEmailBody = async (email: Email) => {
-            setSelectedEmail(email)
-            setReplyMode(null)
-            setReplyBody("")
-
-            try {
-                const res = await fetch(`/api/leads/${email.id}`)
-                if (res.ok) {
-                    const data = await res.json()
-                    // Map events to messages for threading
-                    const messages = (data.events || [])
-                        .filter((e: any) => e.name === 'email_sent' || e.name === 'email_received')
-                        .map((e: any) => ({
-                            id: e.id,
-                            isMe: e.name === 'email_sent',
-                            from: e.name === 'email_sent' ? 'Me' : (data.firstName ? `${data.firstName} ${data.lastName || ''}` : email.fromName),
-                            to: e.name === 'email_sent' ? (data.firstName || 'Lead') : 'Me',
-                            body: e.details, // Assuming 'details' contains the email body
-                            timestamp: e.createdAt
-                        }))
-                        .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-
-                    // Use the HTML or Text content from events or lead body
-                    const lastEvent = data.events?.[0]
-                    const emailContent = lastEvent?.details || data.body || data.text || email.preview
-
-                    const updatedEmail = { ...email, body: emailContent, events: data.events, aiLabel: data.aiLabel, messages }
-                    setEmails(emails.map(e => e.id === email.id ? updatedEmail : e))
-                    setSelectedEmail(updatedEmail)
-
-                    // Mark as read
-                    if (!email.isRead) {
-                        handleMarkAsRead(email.id, true)
-                    }
-
-                    // AI: Auto-analyze if label is missing or default
-                    if (!data.aiLabel || data.aiLabel === 'interested') {
-                        analyzeLead(email.id)
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to load email body:', error)
-            }
-
-            if (window.innerWidth < 1024) {
-                setSidebarOpen(false)
-            }
-        }
-
-        // Trigger AI Analysis
-        const analyzeLead = async (leadId: string) => {
-            try {
-                const res = await fetch(`/api/leads/${leadId}/analyze`, { method: 'POST' })
-                if (res.ok) {
-                    const data = await res.json()
-                    // Update local status with the fresh AI label
-                    setEmails(prev => prev.map(e => e.id === leadId ? { ...e, aiLabel: data.label } : e))
-                    if (selectedEmail?.id === leadId) {
-                        setSelectedEmail(prev => prev ? { ...prev, aiLabel: data.label } : null)
-                    }
-                }
-            } catch (err) {
-                console.error("AI Analysis failed", err)
-            }
-        }
-
-        const handleToggleStar = async (emailId: string, currentStatus: boolean, e?: React.MouseEvent) => {
-            if (e) e.stopPropagation()
-
-            // Optimistic update
-            const newStatus = !currentStatus
-            setEmails(emails.map(email =>
-                email.id === emailId ? { ...email, isStarred: newStatus } : email
-            ))
-            // also update if selected
-            if (selectedEmail?.id === emailId) {
-                setSelectedEmail(prev => prev ? { ...prev, isStarred: newStatus } : null)
-            }
-
-            try {
-                // Immediate API call for Star (usually low risk)
-                // Or should we allow Undo? Star is easily togglable back. 
-                // Gmail allows Undo for "Conversation starred" but it's less critical.
-                // Let's just do immediate for Star but show simple feedback?
-                // User asked for "any action... done there should be an notification like gmail gives with an undo button".
-                // So we'll add Undo for Star too.
-
-                const res = await fetch('/api/unibox/star', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ leadId: emailId, isStarred: newStatus })
-                })
-
-                toast({
-                    title: newStatus ? "Conversation marked as important" : "Conversation unmarked as important",
-                    action: (
-                        <div onClick={async () => {
-                            // Custom Undo for Star
-                            setEmails(prev => prev.map(email => email.id === emailId ? { ...email, isStarred: currentStatus } : email))
-                            if (selectedEmail?.id === emailId) setSelectedEmail(prev => prev ? { ...prev, isStarred: currentStatus } : null)
-                            // Revert API
-                            const undoRes = await fetch('/api/unibox/star', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ leadId: emailId, isStarred: currentStatus })
-                            })
-                            toast({ title: "Action undone" })
-                        }} className="bg-white text-black hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors">
-                            Undo
-                        </div>
-                    )
-                })
-
-            } catch (error) {
-                console.error("Star failed", error)
-                // Revert
-                setEmails(emails.map(email => email.id === emailId ? { ...email, isStarred: currentStatus } : email))
-            }
-        }
-
-        const handleArchive = async (emailId: string, currentStatus?: boolean, e?: React.MouseEvent) => {
-            if (e) e.stopPropagation()
-
-            const email = emails.find(em => em.id === emailId)
-            if (!email) return
-
-            const actualCurrentStatus = currentStatus !== undefined ? currentStatus : (email.isArchived || false)
-            const newStatus = !actualCurrentStatus
-
-            // Optimistic update
-            const originalEmails = [...emails]
-            const originalSelected = selectedEmail
-
-            // Hide from current list (standard Archive behavior)
-            setEmails(prev => prev.filter(em => em.id !== emailId))
-            if (selectedEmail?.id === emailId) setSelectedEmail(null)
-
-            try {
-                await fetch('/api/unibox/archive', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ leadId: emailId, isArchived: newStatus })
-                })
-
-                toast({
-                    title: newStatus ? "Conversation archived" : "Conversation moved to Inbox",
-                    description: "3.. 2.. 1..",
-                    action: (
-                        <div onClick={async () => {
-                            // UNDO Archive
-                            setEmails(prev => [email, ...prev]) // Simply put back to top or resort?
-                            // Better: Restore original state including list position
-                            setEmails(originalEmails) // This is safer for consistency
-                            if (originalSelected?.id === emailId) setSelectedEmail(originalSelected)
-                            // Revert API
-                            await fetch('/api/unibox/archive', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ leadId: emailId, isArchived: actualCurrentStatus })
-                            })
-                            toast({ title: "Action undone" })
-                        }} className="bg-white text-black hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors shadow-sm border">
-                            Undo
-                        </div>
-                    ),
-                    duration: 5000,
-                })
-            } catch (error) {
-                console.error("Archive failed", error)
-                setEmails(originalEmails)
-                if (originalSelected) setSelectedEmail(originalSelected)
-            }
-        }
-
-        const handleDeleteEmail = async (emailId: string, e?: React.MouseEvent) => {
-            if (e) e.stopPropagation()
-
-            const emailToDelete = emails.find(em => em.id === emailId)
-            if (!emailToDelete) return
-
-            // Optimistically remove
-            const originalEmails = [...emails]
-            const originalSelected = selectedEmail
-            setEmails(prev => prev.filter(em => em.id !== emailId))
-
-            if (selectedEmail?.id === emailId) setSelectedEmail(null)
-
-            // Set pending timeout for actual deletion (Undo support)
-            const timerId = setTimeout(async () => {
-                try {
-                    // Try deleting via /api/emails first, fallback to /api/leads
-                    const res = await fetch(`/api/emails/${emailId}`, { method: 'DELETE' })
-                    if (!res.ok) {
-                        await fetch(`/api/leads/${emailId}`, { method: 'DELETE' })
-                    }
-                } catch (err) {
-                    console.error("Delete failed", err)
-                }
-            }, 5000)
-
-            toast({
-                title: "Conversation deleted",
-                description: "This action can be undone",
-                action: (
-                    <div onClick={() => {
-                        // UNDO Delete
-                        clearTimeout(timerId)
-                        setEmails(originalEmails)
-                        if (originalSelected?.id === emailId) setSelectedEmail(originalSelected)
-                        toast({ title: "Deletion undone" })
-                    }} className="bg-white text-black hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors shadow-sm border">
-                        Undo
-                    </div>
-                ),
-                duration: 5000,
-            })
-        }
-
-        const handleSnooze = async (id: string, snoozeUntil: Date) => {
-            const emailToSnooze = emails.find(e => e.id === id)
-            if (!emailToSnooze) return
-
-            // Optimistic update - remove from list
-            const originalEmails = [...emails]
-            setEmails(emails.filter(e => e.id !== id))
-            if (selectedEmail?.id === id) setSelectedEmail(null)
-
-            toast({
-                title: "Email snoozed",
-                description: `Email will reappear on ${snoozeUntil.toLocaleString()}`,
-                action: (
-                    <div onClick={async () => {
-                        // UNDO Snooze
-                        setEmails(originalEmails)
-                        if (selectedEmail?.id === id) setSelectedEmail(emailToSnooze)
-
-                        try {
-                            // Revert by setting snoozedUntil to null or past?
-                            // Schema says String or DateTime. Usually null to unsnooze.
-                            await fetch(`/api/leads/${id}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ snoozedUntil: null })
-                            })
-                            toast({ title: "Snooze undone" })
-                        } catch (err) {
-                            console.error("Undo snooze failed", err)
-                        }
-                    }} className="bg-white text-black hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors">
-                        Undo
-                    </div>
-                )
-            })
-
-            try {
-                await fetch(`/api/leads/${id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ snoozedUntil: snoozeUntil.toISOString() })
-                })
-            } catch (error) {
-                console.error('Failed to snooze:', error)
-                setEmails(originalEmails)
-            }
-        }
-
-
-        const handleCampaignChange = async (campaignId: string) => {
-            if (!selectedEmail) return
-
-            // Don't allow moving to the same campaign
-            if (selectedEmail.campaign?.id === campaignId) {
-                toast({ title: "Already in campaign", description: "This lead is already in the selected campaign" })
                 return
             }
 
-            // Optimistic update
-            const emailToMove = selectedEmail
-            const previousCampaignId = selectedEmail.campaign?.id
-
-            setEmails(emails.filter(e => e.id !== selectedEmail.id))
-            setSelectedEmail(null)
-
-            const campaignName = campaigns.find(c => c.id === campaignId)?.name
-            toast({
-                title: "Lead moved",
-                description: `Lead moved to campaign "${campaignName}"`,
-                action: (
-                    <div
-                        className="cursor-pointer font-medium hover:underline"
-                        onClick={async () => {
-                            // Real Backend Undo
-                            setEmails(prev => [emailToMove, ...prev])
-                            setSelectedEmail(emailToMove)
-
-                            try {
-                                await fetch(`/api/leads/${emailToMove.id}`, {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ campaignId: previousCampaignId })
-                                })
-                                toast({ title: "Undo successful", description: "Lead moved back to original campaign" })
-                            } catch (err) {
-                                toast({ title: "Undo failed", description: "Could not revert changes", variant: "destructive" })
-                            }
-                        }}
-                    >
-                        Undo
-                    </div>
-                )
-            })
-
-            try {
-                const res = await fetch(`/api/leads/${emailToMove.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ campaignId })
-                })
-
-                if (!res.ok) {
-                    // If the API call fails, the optimistic update is already done,
-                    // and the undo action in the toast is the primary way to revert.
-                    // We still show an error toast here.
-                    toast({ title: "Error", description: "Failed to move lead", variant: "destructive" })
-                }
-            } catch (error) {
-                // If the API call fails, the optimistic update is already done,
-                // and the undo action in the toast is the primary way to revert.
-                // We still show an error toast here.
-                console.error('Failed to move lead:', error)
-                toast({ title: "Error", description: "Failed to move lead", variant: "destructive" })
-            }
-        }
-
-
-
-        const filteredCampaigns = campaigns.filter((c: any) =>
-            c.name.toLowerCase().includes(campaignSearch.toLowerCase())
-        )
-
-        const filteredAccounts = accounts.filter((a: any) =>
-            a.email.toLowerCase().includes(inboxSearch.toLowerCase())
-        )
-
-        const filteredWorkspaces = workspaces.filter((w: any) =>
-            w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
-        )
-
-        // Filtered campaigns for modal (excludes current campaign)
-        const campaignsForModal = campaigns.filter((c: any) =>
-            c.name.toLowerCase().includes(campaignModalSearch.toLowerCase()) &&
-            c.id !== selectedEmail?.campaign?.id
-        )
-
-        const hasActiveFilters = activeStatus || activeCampaign || activeInbox || activeAiLabel || activeMoreFilter
-
-
-
-        // Keyboard Shortcuts
-
-        // Update currentIndex when an email is selected manually
-        useEffect(() => {
-            if (selectedEmail) {
-                const index = emails.findIndex(e => e.id === selectedEmail.id)
-                if (index !== -1) setCurrentIndex(index)
-            }
-        }, [selectedEmail, emails])
-
-
-
-        // Undo Send Logic
-        const handleSendReply = async () => {
-            if (!selectedEmail || !replyBody.trim()) return
-
-            // 1. Set as pending
-            pendingReplyRef.current = { emailId: selectedEmail.id, body: replyBody, mode: replyMode, forwardTo, forwardSubject }
-            setIsUndoVisible(true)
-            setReplyMode(null) // Close reply box immediately
-
-            // 2. Start timer
-            if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
-            undoTimerRef.current = setTimeout(() => {
-                executeSend()
-            }, 5000)
-
-            toast({
-                title: "Sending...",
-                description: "Email will be sent in 5 seconds",
-                action: (
-                    <Button variant="outline" size="sm" onClick={handleUndo}>
-                        Undo
-                    </Button>
-                ),
-            })
-        }
-
-        const handleUndo = () => {
-            if (undoTimerRef.current) {
-                clearTimeout(undoTimerRef.current)
-                undoTimerRef.current = null
-                setIsUndoVisible(false)
-                if (pendingReplyRef.current) {
-                    setReplyMode(pendingReplyRef.current.mode)
-                    setReplyBody(pendingReplyRef.current.body)
-                    setForwardTo(pendingReplyRef.current.forwardTo || "")
-                    setForwardSubject(pendingReplyRef.current.forwardSubject || "")
-                }
-                toast({ title: "Send cancelled", description: "Your message has been restored" })
-            }
-        }
-
-        const executeSend = async () => {
-            const params = pendingReplyRef.current
-            if (!params) return
-
-            setSendingReply(true)
-            setIsUndoVisible(false)
-            try {
-                let res
-                if (params.mode === 'forward') {
-                    res = await fetch('/api/emails/forward', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            emailId: params.emailId,
-                            to: params.forwardTo,
-                            subject: params.forwardSubject,
-                            body: params.body
-                        })
-                    })
-                } else {
-                    res = await fetch('/api/emails/reply', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            emailId: params.emailId,
-                            body: params.body,
-                            replyAll: params.mode === 'reply-all'
-                        })
-                    })
-                }
-
-                if (res.ok) {
-                    toast({
-                        title: "Email sent",
-                        description: params.mode === 'forward'
-                            ? `Forwarded to ${params.forwardTo}`
-                            : `Reply sent successfully`
-                    })
-                    setReplyBody("")
-                    setForwardTo("")
-                    setForwardSubject("")
-                } else {
-                    toast({ title: "Error", description: "Failed to send email. Please try again.", variant: "destructive" })
-                }
-            } catch (error) {
-                console.error('Failed to send email:', error)
-                toast({ title: "Error", description: "Failed to send email", variant: "destructive" })
-            } finally {
-                setSendingReply(false)
-                pendingReplyRef.current = null
-            }
-        }
-
-        // Delete Lead (add to blocklist)
-        const handleDeleteLead = async () => {
-            if (!selectedEmail) return
-
-            // Optimistic update
-            const leadToDelete = selectedEmail
-            setEmails(emails.filter(e => e.id !== selectedEmail.id))
-            setSelectedEmail(null)
-
-            toast({ title: "Lead deleted", description: "Lead has been blocked and removed" })
-
-            try {
-                const res = await fetch(`/api/leads/${leadToDelete.id}`, {
-                    method: 'DELETE'
-                })
-
-                if (!res.ok) {
-                    // Revert
-                    setEmails(prev => [leadToDelete, ...prev])
-                    if (!selectedEmail) setSelectedEmail(leadToDelete)
-                    toast({ title: "Error", description: "Failed to delete lead", variant: "destructive" })
-                }
-            } catch (error) {
-                // Revert
-                setEmails(prev => [leadToDelete, ...prev])
-                if (!selectedEmail) setSelectedEmail(leadToDelete)
-                console.error('Failed to delete lead:', error)
-                toast({ title: "Error", description: "Failed to delete lead", variant: "destructive" })
-            }
-        }
-
-        // Keyboard Shortcuts
-        useEffect(() => {
-            const handleKeyDown = (e: KeyboardEvent) => {
-                // Don't trigger if user is typing in an input or editor
-                if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || (e.target as HTMLElement).isContentEditable) {
-                    // Ctrl+Enter to send
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                        if (replyMode) handleSendReply()
+            switch (e.key.toLowerCase()) {
+                case '?':
+                    if (e.shiftKey) setShortcutsModalOpen(true)
+                    break
+                case 's': // Star
+                    if (selectedEmail) handleToggleStar(selectedEmail.id, selectedEmail.isStarred || false)
+                    break
+                case 'u': // Unselect / Back
+                    setSelectedEmail(null)
+                    break
+                case 'j': // Next email
+                    if (currentIndex < emails.length - 1) {
+                        const next = currentIndex + 1
+                        setCurrentIndex(next)
+                        loadEmailBody(emails[next])
                     }
-                    return
-                }
-
-                switch (e.key.toLowerCase()) {
-                    case '?':
-                        if (e.shiftKey) setShortcutsModalOpen(true)
-                        break
-                    case 's': // Star
-                        if (selectedEmail) handleToggleStar(selectedEmail.id, selectedEmail.isStarred || false)
-                        break
-                    case 'u': // Unselect / Back
-                        setSelectedEmail(null)
-                        break
-                    case 'j': // Next email
-                        if (currentIndex < emails.length - 1) {
-                            const next = currentIndex + 1
-                            setCurrentIndex(next)
-                            loadEmailBody(emails[next])
-                        }
-                        break
-                    case 'k': // Previous email
-                        if (currentIndex > 0) {
-                            const prev = currentIndex - 1
-                            setCurrentIndex(prev)
-                            loadEmailBody(emails[prev])
-                        }
-                        break
-                    case 'r': // Reply
-                        if (selectedEmail) setReplyMode('reply')
-                        break
-                    case 'f': // Forward
-                        if (selectedEmail) {
-                            setReplyMode('forward')
-                            setForwardSubject(`Fwd: ${selectedEmail.subject}`)
-                            setReplyBody(`
+                    break
+                case 'k': // Previous email
+                    if (currentIndex > 0) {
+                        const prev = currentIndex - 1
+                        setCurrentIndex(prev)
+                        loadEmailBody(emails[prev])
+                    }
+                    break
+                case 'r': // Reply
+                    if (selectedEmail) setReplyMode('reply')
+                    break
+                case 'f': // Forward
+                    if (selectedEmail) {
+                        setReplyMode('forward')
+                        setForwardSubject(`Fwd: ${selectedEmail.subject}`)
+                        setReplyBody(`
 ---------- Forwarded message ----------
 From: ${selectedEmail.fromName} <${selectedEmail.from}>
 Date: ${new Date(selectedEmail.timestamp).toLocaleString()}
@@ -1150,196 +622,591 @@ To: ${selectedEmail.recipient || "User"} <${selectedEmail.recipientEmail || "use
 
 ${selectedEmail.body || selectedEmail.preview}
                                 `.trim())
-                        }
-                        break
-                    case 'e': // Archive
-                        if (selectedEmail) handleArchive(selectedEmail.id)
-                        break
-                    case '#': // Delete
-                        if (selectedEmail) handleDeleteEmail(selectedEmail.id)
-                        break
-                    case '/': // Search
-                        e.preventDefault()
-                        const searchInput = document.querySelector('input[placeholder="Search mail"]') as HTMLInputElement
-                        searchInput?.focus()
-                        break
-                }
-            }
-
-            window.addEventListener('keydown', handleKeyDown)
-            return () => window.removeEventListener('keydown', handleKeyDown)
-        }, [currentIndex, emails, selectedEmail, replyMode, handleSendReply, handleArchive, handleToggleStar])
-
-        // Mark as Lost (same as setting label to lost)
-        const handleMarkAsLost = () => {
-            if (selectedEmail) handleLabelChange(selectedEmail.id, 'lost')
-        }
-
-        // Find Similar Leads
-        const handleFindSimilar = async () => {
-            if (!selectedEmail) return
-
-            toast({ title: "Analyzing leads...", description: "AI is finding similar responses..." })
-            setLoading(true)
-
-            try {
-                const res = await fetch(`/api/leads/similar?leadId=${selectedEmail.id}`)
-                if (res.ok) {
-                    const similar = await res.json()
-                    if (Array.isArray(similar) && similar.length > 0) {
-                        // Filter out the selected one if returned (shouldn't be, but safe check)
-                        const filteredSimilar = similar.filter(e => e.id !== selectedEmail.id)
-                        setEmails([selectedEmail, ...filteredSimilar])
-                        toast({ title: "Analysis complete", description: `Found ${filteredSimilar.length} similar leads` })
-                    } else {
-                        toast({ title: "Analysis complete", description: "No similar leads found" })
                     }
-                } else {
-                    toast({ title: "Error", description: "Failed to find similar leads", variant: "destructive" })
-                }
-            } catch (error) {
-                console.error("Failed to find similar leads:", error)
-                toast({ title: "Error", description: "Failed to find similar leads", variant: "destructive" })
-            } finally {
-                setLoading(false)
+                    break
+                case 'e': // Archive
+                    if (selectedEmail) handleArchive(selectedEmail.id)
+                    break
+                case '#': // Delete
+                    if (selectedEmail) handleDeleteEmail(selectedEmail.id)
+                    break
+                case '/': // Search
+                    e.preventDefault()
+                    const searchInput = document.querySelector('input[placeholder="Search mail"]') as HTMLInputElement
+                    searchInput?.focus()
+                    break
             }
         }
 
-        // Set Reminder
-        const handleSetReminder = () => {
-            setReminderModalOpen(true)
+        window.addEventListener('keydown', handleKeyDown)
+        return () => window.removeEventListener('keydown', handleKeyDown)
+    }, [currentIndex, emails, selectedEmail, replyMode])
+
+    const handleMarkAsRead = async (emailId: string, isRead: boolean) => {
+        const originalEmails = [...emails]
+        const originalSelected = selectedEmail
+
+        setEmails(prev => prev.map(e => e.id === emailId ? { ...e, isRead } : e))
+        if (selectedEmail?.id === emailId) {
+            setSelectedEmail(prev => prev ? { ...prev, isRead } : null)
+        }
+        try {
+            await fetch(`/api/leads/${emailId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isRead })
+            })
+
+            if (!isRead) {
+                toast({
+                    title: "Conversation marked as unread",
+                    action: (
+                        <div onClick={async () => {
+                            setEmails(originalEmails)
+                            if (originalSelected?.id === emailId) setSelectedEmail(originalSelected)
+                            await fetch(`/api/leads/${emailId}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ isRead: true })
+                            })
+                            toast({ title: "Action undone" })
+                        }} className="bg-white text-black hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors shadow-sm border">
+                            Undo
+                        </div>
+                    ),
+                })
+            }
+        } catch (error) {
+            console.error("Failed to mark as read", error)
+            setEmails(originalEmails)
+            if (originalSelected) setSelectedEmail(originalSelected)
+        }
+    }
+
+    const analyzeLead = async (leadId: string) => {
+        try {
+            const res = await fetch(`/api/leads/${leadId}/analyze`, { method: 'POST' })
+            if (res.ok) {
+                const data = await res.json()
+                setEmails(prev => prev.map(e => e.id === leadId ? { ...e, aiLabel: data.label } : e))
+                if (selectedEmail?.id === leadId) {
+                    setSelectedEmail(prev => prev ? { ...prev, aiLabel: data.label } : null)
+                }
+            }
+        } catch (err) {
+            console.error("AI Analysis failed", err)
+        }
+    }
+
+    const loadEmailBody = async (email: Email) => {
+        setSelectedEmail(email)
+        setReplyMode(null)
+        setReplyBody("")
+
+        try {
+            const res = await fetch(`/api/leads/${email.id}`)
+            if (res.ok) {
+                const data = await res.json()
+                const messages = (data.events || [])
+                    .filter((e: any) => e.name === 'email_sent' || e.name === 'email_received')
+                    .map((e: any) => ({
+                        id: e.id,
+                        isMe: e.name === 'email_sent',
+                        from: e.name === 'email_sent' ? 'Me' : (data.firstName ? `${data.firstName} ${data.lastName || ''}` : email.fromName),
+                        to: e.name === 'email_sent' ? (data.firstName || 'Lead') : 'Me',
+                        body: e.details,
+                        timestamp: e.createdAt
+                    }))
+                    .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+
+                const lastEvent = data.events?.[0]
+                const emailContent = lastEvent?.details || data.body || data.text || email.preview
+
+                const updatedEmail = { ...email, body: emailContent, events: data.events, aiLabel: data.aiLabel, messages }
+                setEmails(emails.map(e => e.id === email.id ? updatedEmail : e))
+                setSelectedEmail(updatedEmail)
+
+                if (!email.isRead) {
+                    handleMarkAsRead(email.id, true)
+                }
+
+                if (!data.aiLabel || data.aiLabel === 'interested') {
+                    analyzeLead(email.id)
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load email body:', error)
         }
 
-        const saveReminder = async () => {
-            if (!reminderDate || !selectedEmail) return
+        if (window.innerWidth < 1024) {
+            setSidebarOpen(false)
+        }
+    }
 
-            try {
-                const res = await fetch('/api/reminders', {
+    const handleSendReply = async () => {
+        if (!selectedEmail || !replyBody.trim()) return
+
+        pendingReplyRef.current = { emailId: selectedEmail.id, body: replyBody, mode: replyMode, forwardTo, forwardSubject }
+        setIsUndoVisible(true)
+        setReplyMode(null)
+
+        if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+        undoTimerRef.current = setTimeout(() => {
+            executeSend()
+        }, 5000)
+
+        toast({
+            title: "Sending...",
+            description: "Email will be sent in 5 seconds",
+            action: (
+                <Button variant="outline" size="sm" onClick={handleUndo}>
+                    Undo
+                </Button>
+            ),
+        })
+    }
+
+    const handleUndo = () => {
+        if (undoTimerRef.current) {
+            clearTimeout(undoTimerRef.current)
+            undoTimerRef.current = null
+            setIsUndoVisible(false)
+            if (pendingReplyRef.current) {
+                setReplyMode(pendingReplyRef.current.mode)
+                setReplyBody(pendingReplyRef.current.body)
+                setForwardTo(pendingReplyRef.current.forwardTo || "")
+                setForwardSubject(pendingReplyRef.current.forwardSubject || "")
+            }
+            toast({ title: "Send cancelled", description: "Your message has been restored" })
+        }
+    }
+
+    const executeSend = async () => {
+        const params = pendingReplyRef.current
+        if (!params) return
+
+        setSendingReply(true)
+        setIsUndoVisible(false)
+        try {
+            let res
+            if (params.mode === 'forward') {
+                res = await fetch('/api/emails/forward', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        leadId: selectedEmail.id,
-                        scheduledAt: reminderDate,
-                        message: reminderMessage
+                        emailId: params.emailId,
+                        to: params.forwardTo,
+                        subject: params.forwardSubject,
+                        body: params.body
                     })
                 })
-
-                if (res.ok) {
-                    toast({
-                        title: "Reminder Set",
-                        description: `We'll remind you on ${new Date(reminderDate).toLocaleString()}`
-                    })
-                    setReminderModalOpen(false)
-                    setReminderDate("")
-                    setReminderMessage("")
-                } else {
-                    toast({ title: "Error", description: "Failed to set reminder", variant: "destructive" })
-                }
-            } catch (error) {
-                toast({ title: "Error", description: "Failed to set reminder", variant: "destructive" })
-            }
-        }
-
-        // Bulk Actions
-        const toggleEmailSelection = (emailId: string) => {
-            const newSelected = new Set(selectedEmails)
-            if (newSelected.has(emailId)) {
-                newSelected.delete(emailId)
             } else {
-                newSelected.add(emailId)
-            }
-            setSelectedEmails(newSelected)
-        }
-
-        const selectAll = () => {
-            setSelectedEmails(new Set(emails.map(e => e.id)))
-        }
-
-        const selectFirstTen = () => {
-            setSelectedEmails(new Set(emails.slice(0, 10).map(e => e.id)))
-        }
-
-        const selectUnread = () => {
-            setSelectedEmails(new Set(emails.filter(e => !e.isRead).map(e => e.id)))
-        }
-
-        const clearSelection = () => {
-            setSelectedEmails(new Set())
-        }
-
-        const massMarkAsRead = async () => {
-            const ids = Array.from(selectedEmails)
-            for (const id of ids) {
-                await handleMarkAsRead(id, true)
-            }
-            clearSelection()
-            toast({ title: "Success", description: `Marked ${ids.length} emails as read` })
-        }
-
-        const massDelete = async () => {
-            const ids = Array.from(selectedEmails)
-            for (const id of ids) {
-                await handleDeleteEmail(id)
-            }
-            clearSelection()
-            toast({ title: "Success", description: `Deleted ${ids.length} emails` })
-        }
-
-        const massLabel = async (label: string) => {
-            const ids = Array.from(selectedEmails)
-            for (const id of ids) {
-                await fetch(`/api/leads/${id}`, {
-                    method: 'PATCH',
+                res = await fetch('/api/emails/reply', {
+                    method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ aiLabel: label })
+                    body: JSON.stringify({
+                        emailId: params.emailId,
+                        body: params.body,
+                        replyAll: params.mode === 'reply-all'
+                    })
                 })
             }
-            setEmails(emails.map(e => selectedEmails.has(e.id) ? { ...e, aiLabel: label } : e))
-            clearSelection()
-            toast({ title: "Success", description: `Labeled ${ids.length} emails as ${label}` })
+
+            if (res.ok) {
+                toast({
+                    title: "Email sent",
+                    description: params.mode === 'forward'
+                        ? `Forwarded to ${params.forwardTo}`
+                        : `Reply sent successfully`
+                })
+                setReplyBody("")
+                setForwardTo("")
+                setForwardSubject("")
+            } else {
+                toast({ title: "Error", description: "Failed to send email. Please try again.", variant: "destructive" })
+            }
+        } catch (error) {
+            console.error('Failed to send email:', error)
+            toast({ title: "Error", description: "Failed to send email", variant: "destructive" })
+        } finally {
+            setSendingReply(false)
+            pendingReplyRef.current = null
+        }
+    }
+
+    const handleToggleStar = async (emailId: string, currentStatus: boolean, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation()
+
+        const newStatus = !currentStatus
+        setEmails(emails.map(email =>
+            email.id === emailId ? { ...email, isStarred: newStatus } : email
+        ))
+        if (selectedEmail?.id === emailId) {
+            setSelectedEmail(prev => prev ? { ...prev, isStarred: newStatus } : null)
         }
 
-        // File Attachment Handlers
-        const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-            const files = Array.from(e.target.files || [])
-            const MAX_SIZE = 25 * 1024 * 1024 // 25MB
-
-            const validFiles: File[] = []
-            const oversizedFiles: string[] = []
-
-            files.forEach(file => {
-                if (file.size > MAX_SIZE) {
-                    oversizedFiles.push(file.name)
-                } else {
-                    validFiles.push(file)
-                }
+        try {
+            const res = await fetch('/api/unibox/star', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ leadId: emailId, isStarred: newStatus })
             })
 
-            if (oversizedFiles.length > 0) {
-                toast({
-                    title: "File size limit exceeded",
-                    description: `The following files exceed 25MB and were not added: ${oversizedFiles.join(', ')}. Please use a file sharing service for large files.`,
-                    variant: "destructive"
-                })
-            }
+            toast({
+                title: newStatus ? "Conversation marked as important" : "Conversation unmarked as important",
+                action: (
+                    <div onClick={async () => {
+                        setEmails(prev => prev.map(email => email.id === emailId ? { ...email, isStarred: currentStatus } : email))
+                        if (selectedEmail?.id === emailId) setSelectedEmail(prev => prev ? { ...prev, isStarred: currentStatus } : null)
+                        const undoRes = await fetch('/api/unibox/star', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ leadId: emailId, isStarred: currentStatus })
+                        })
+                        toast({ title: "Action undone" })
+                    }} className="bg-white text-black hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors">
+                        Undo
+                    </div>
+                )
+            })
+        } catch (error) {
+            console.error("Star failed", error)
+            setEmails(emails.map(email => email.id === emailId ? { ...email, isStarred: currentStatus } : email))
+        }
+    }
 
-            if (validFiles.length > 0) {
-                setAttachments([...attachments, ...validFiles])
-                toast({
-                    title: "Files attached",
-                    description: `Added ${validFiles.length} file(s)`
-                })
+    const handleArchive = async (emailId: string, currentStatus?: boolean, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation()
+
+        const email = emails.find(em => em.id === emailId)
+        if (!email) return
+
+        const actualCurrentStatus = currentStatus !== undefined ? currentStatus : (email.isArchived || false)
+        const newStatus = !actualCurrentStatus
+
+        const originalEmails = [...emails]
+        const originalSelected = selectedEmail
+
+        setEmails(prev => prev.filter(em => em.id !== emailId))
+        if (selectedEmail?.id === emailId) setSelectedEmail(null)
+
+        try {
+            await fetch('/api/unibox/archive', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ leadId: emailId, isArchived: newStatus })
+            })
+
+            toast({
+                title: newStatus ? "Conversation archived" : "Conversation moved to Inbox",
+                description: "3.. 2.. 1..",
+                action: (
+                    <div onClick={async () => {
+                        setEmails(originalEmails)
+                        if (originalSelected?.id === emailId) setSelectedEmail(originalSelected)
+                        await fetch('/api/unibox/archive', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ leadId: emailId, isArchived: actualCurrentStatus })
+                        })
+                        toast({ title: "Action undone" })
+                    }} className="bg-white text-black hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors shadow-sm border">
+                        Undo
+                    </div>
+                )
+            })
+        } catch (error) {
+            console.error("Archive failed", error)
+            setEmails(originalEmails)
+            if (originalSelected) setSelectedEmail(originalSelected)
+        }
+    }
+
+    const handleDeleteEmail = async (emailId: string, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation()
+
+        const emailToDelete = emails.find(em => em.id === emailId)
+        if (!emailToDelete) return
+
+        const originalEmails = [...emails]
+        const originalSelected = selectedEmail
+        setEmails(prev => prev.filter(em => em.id !== emailId))
+        if (selectedEmail?.id === emailId) setSelectedEmail(null)
+
+        const timerId = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/emails/${emailId}`, { method: 'DELETE' })
+                if (!res.ok) {
+                    await fetch(`/api/leads/${emailId}`, { method: 'DELETE' })
+                }
+            } catch (err) {
+                console.error("Delete failed", err)
             }
+        }, 5000)
+
+        toast({
+            title: "Conversation deleted",
+            description: "This action can be undone",
+            action: (
+                <div onClick={() => {
+                    clearTimeout(timerId)
+                    setEmails(originalEmails)
+                    if (originalSelected?.id === emailId) setSelectedEmail(originalSelected)
+                    toast({ title: "Deletion undone" })
+                }} className="bg-white text-black hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium cursor-pointer transition-colors shadow-sm border">
+                    Undo
+                </div>
+            )
+        })
+    }
+
+    const handleDeleteLead = async () => {
+        if (!selectedEmail) return
+
+        const leadToDelete = selectedEmail
+        setEmails(emails.filter(e => e.id !== selectedEmail.id))
+        setSelectedEmail(null)
+
+        toast({ title: "Lead deleted", description: "Lead has been blocked and removed" })
+
+        try {
+            const res = await fetch(`/api/leads/${leadToDelete.id}`, {
+                method: 'DELETE'
+            })
+
+            if (!res.ok) {
+                setEmails(prev => [leadToDelete, ...prev])
+                if (!selectedEmail) setSelectedEmail(leadToDelete)
+                toast({ title: "Error", description: "Failed to delete lead", variant: "destructive" })
+            }
+        } catch (error) {
+            setEmails(prev => [leadToDelete, ...prev])
+            if (!selectedEmail) setSelectedEmail(leadToDelete)
+            console.error('Failed to delete lead:', error)
+            toast({ title: "Error", description: "Failed to delete lead", variant: "destructive" })
+        }
+    }
+
+    const handleCampaignChange = async (campaignId: string) => {
+        if (!selectedEmail) return
+
+        if (selectedEmail.campaign?.id === campaignId) {
+            toast({ title: "Already in campaign", description: "This lead is already in the selected campaign" })
+            return
         }
 
-        const removeAttachment = (index: number) => {
-            setAttachments(attachments.filter((_, i) => i !== index))
+        const emailToMove = selectedEmail
+        const previousCampaignId = selectedEmail.campaign?.id
+
+        setEmails(emails.filter(e => e.id !== selectedEmail.id))
+        setSelectedEmail(null)
+
+        const campaignName = campaigns.find(c => c.id === campaignId)?.name
+        toast({
+            title: "Lead moved",
+            description: `Lead moved to campaign "${campaignName}"`,
+            action: (
+                <div
+                    className="cursor-pointer font-medium hover:underline"
+                    onClick={async () => {
+                        setEmails(prev => [emailToMove, ...prev])
+                        setSelectedEmail(emailToMove)
+
+                        try {
+                            await fetch(`/api/leads/${emailToMove.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ campaignId: previousCampaignId })
+                            })
+                            toast({ title: "Undo successful", description: "Lead moved back to original campaign" })
+                        } catch (err) {
+                            toast({ title: "Undo failed", description: "Could not revert changes", variant: "destructive" })
+                        }
+                    }}
+                >
+                    Undo
+                </div>
+            )
+        })
+
+        try {
+            const res = await fetch(`/api/leads/${emailToMove.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ campaignId })
+            })
+
+            if (!res.ok) {
+                toast({ title: "Error", description: "Failed to move lead", variant: "destructive" })
+            }
+        } catch (error) {
+            console.error('Failed to move lead:', error)
+            toast({ title: "Error", description: "Failed to move lead", variant: "destructive" })
+        }
+    }
+    const handleMarkAsLost = () => {
+        if (selectedEmail) handleLabelChange(selectedEmail.id, 'lost')
+    }
+
+    // Find Similar Leads
+    const handleFindSimilar = async () => {
+        if (!selectedEmail) return
+
+        toast({ title: "Analyzing leads...", description: "AI is finding similar responses..." })
+        setLoading(true)
+
+        try {
+            const res = await fetch(`/api/leads/similar?leadId=${selectedEmail.id}`)
+            if (res.ok) {
+                const similar = await res.json()
+                if (Array.isArray(similar) && similar.length > 0) {
+                    const filteredSimilar = similar.filter(e => e.id !== selectedEmail.id)
+                    setEmails([selectedEmail, ...filteredSimilar])
+                    toast({ title: "Analysis complete", description: `Found ${filteredSimilar.length} similar leads` })
+                } else {
+                    toast({ title: "Analysis complete", description: "No similar leads found" })
+                }
+            } else {
+                toast({ title: "Error", description: "Failed to find similar leads", variant: "destructive" })
+            }
+        } catch (error) {
+            console.error("Failed to find similar leads:", error)
+            toast({ title: "Error", description: "Failed to find similar leads", variant: "destructive" })
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSetReminder = () => {
+        setReminderModalOpen(true)
+    }
+
+    const saveReminder = async () => {
+        if (!reminderDate || !selectedEmail) return
+
+        try {
+            const res = await fetch('/api/reminders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    leadId: selectedEmail.id,
+                    scheduledAt: reminderDate,
+                    message: reminderMessage
+                })
+            })
+
+            if (res.ok) {
+                toast({
+                    title: "Reminder Set",
+                    description: `We'll remind you on ${new Date(reminderDate).toLocaleString()}`
+                })
+                setReminderModalOpen(false)
+                setReminderDate("")
+                setReminderMessage("")
+            } else {
+                toast({ title: "Error", description: "Failed to set reminder", variant: "destructive" })
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to set reminder", variant: "destructive" })
+        }
+    }
+
+    const toggleEmailSelection = (emailId: string) => {
+        const newSelected = new Set(selectedEmails)
+        if (newSelected.has(emailId)) {
+            newSelected.delete(emailId)
+        } else {
+            newSelected.add(emailId)
+        }
+        setSelectedEmails(newSelected)
+    }
+
+    const selectAll = () => {
+        setSelectedEmails(new Set(emails.map(e => e.id)))
+    }
+
+    const selectFirstTen = () => {
+        setSelectedEmails(new Set(emails.slice(0, 10).map(e => e.id)))
+    }
+
+    const selectUnread = () => {
+        setSelectedEmails(new Set(emails.filter(e => !e.isRead).map(e => e.id)))
+    }
+
+    const clearSelection = () => {
+        setSelectedEmails(new Set())
+    }
+
+    const massMarkAsRead = async () => {
+        const ids = Array.from(selectedEmails)
+        for (const id of ids) {
+            await handleMarkAsRead(id, true)
+        }
+        clearSelection()
+        toast({ title: "Success", description: `Marked ${ids.length} emails as read` })
+    }
+
+    const massDelete = async () => {
+        const ids = Array.from(selectedEmails)
+        for (const id of ids) {
+            await handleDeleteEmail(id)
+        }
+        clearSelection()
+        toast({ title: "Success", description: `Deleted ${ids.length} emails` })
+    }
+
+    const massLabel = async (label: string) => {
+        const ids = Array.from(selectedEmails)
+        for (const id of ids) {
+            await fetch(`/api/leads/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ aiLabel: label })
+            })
+        }
+        setEmails(emails.map(e => selectedEmails.has(e.id) ? { ...e, aiLabel: label } : e))
+        clearSelection()
+        toast({ title: "Success", description: `Labeled ${ids.length} emails as ${label}` })
+    }
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || [])
+        const MAX_SIZE = 25 * 1024 * 1024
+
+        const validFiles: File[] = []
+        const oversizedFiles: string[] = []
+
+        files.forEach(file => {
+            if (file.size > MAX_SIZE) {
+                oversizedFiles.push(file.name)
+            } else {
+                validFiles.push(file)
+            }
+        })
+
+        if (oversizedFiles.length > 0) {
+            toast({
+                title: "File size limit exceeded",
+                description: `The following files exceed 25MB and were not added: ${oversizedFiles.join(', ')}. Please use a file sharing service for large files.`,
+                variant: "destructive"
+            })
         }
 
+        if (validFiles.length > 0) {
+            setAttachments([...attachments, ...validFiles])
+            toast({
+                title: "Files attached",
+                description: `Added ${validFiles.length} file(s)`
+            })
+        }
+    }
 
+    const removeAttachment = (index: number) => {
+        setAttachments(attachments.filter((_, i) => i !== index))
+    }
 
-        return (
-            <TooltipProvider>
+    return (
+        <TooltipProvider>
                 <div className="flex h-screen bg-background text-[#a1a1aa] font-sans">
                     {/* Collapsible Sidebar */}
                     <div
@@ -2068,9 +1935,7 @@ ${selectedEmail.body || selectedEmail.preview}
                                             <TagManager
                                                 entityId={selectedEmail.id}
                                                 entityType="lead"
-                                                assignedTags={selectedEmail.tags || []}
                                                 onTagsChange={loadEmails}
-                                                readOnly={false}
                                             />
                                         </div>
                                     </div>
@@ -2521,5 +2386,4 @@ ${selectedEmail.body || selectedEmail.preview}
                 <KeyboardShortcutsHelp open={shortcutsModalOpen} onOpenChange={setShortcutsModalOpen} />
             </TooltipProvider>
         )
-    }
-} 
+    } 

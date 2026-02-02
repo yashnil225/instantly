@@ -896,6 +896,7 @@ function CampaignsPage() {
                                         <TagManager
                                             entityId={campaign.id}
                                             entityType="campaign"
+                                            selectedTags={campaign.tags?.map((t: any) => t.tag) || []}
                                             onTagsChange={() => fetchCampaigns()}
                                         />
                                     </div>

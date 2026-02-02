@@ -13,7 +13,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog"
 import { FilterBar } from "@/components/common/FilterBar"
-import { TagManager, Tag } from "@/components/common/TagManager"
+import { TagManager, Tag as TagType } from "@/components/common/TagManager"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -70,7 +70,7 @@ interface EmailAccount {
     isDFY: boolean
     isInCampaign: boolean
     hasCustomDomain: boolean
-    tags: Tag[]
+    tags: TagType[]
 }
 
 // Wrapper component with Suspense for useSearchParams

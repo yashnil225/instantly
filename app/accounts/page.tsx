@@ -610,6 +610,7 @@ function AccountsPage() {
                     <FilterBar
                         onSearchChange={setSearchQuery}
                         onTagsChange={setSelectedTags}
+                        selectedTags={selectedTags}
                         className="px-8 pb-4 w-full"
                         placeholder="Search accounts..."
                     />

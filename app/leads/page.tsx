@@ -290,9 +290,7 @@ export default function GlobalLeadsPage() {
                                                 <TagManager
                                                     entityId={lead.id}
                                                     entityType="lead"
-                                                    assignedTags={lead.tags || []}
                                                     onTagsChange={fetchLeads}
-                                                    readOnly={false}
                                                 />
                                             </div>
                                         </div>

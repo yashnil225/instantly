@@ -810,9 +810,7 @@ function AccountsPage() {
                                                     <TagManager
                                                         entityId={account.id}
                                                         entityType="account"
-                                                        selectedTags={account.tags || []}
                                                         onTagsChange={() => fetchAccounts()}
-                                                        readOnly={false}
                                                     />
                                                 </div>
                                                 <div className="text-sm text-foreground font-medium">

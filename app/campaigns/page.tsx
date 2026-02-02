@@ -895,9 +895,7 @@ function CampaignsPage() {
                                         <TagManager
                                             entityId={campaign.id}
                                             entityType="campaign"
-                                            assignedTags={campaign.tags || []}
                                             onTagsChange={() => fetchCampaigns()}
-                                            readOnly={false}
                                         />
                                     </div>
                                 </div>

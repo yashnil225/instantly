@@ -1935,6 +1935,7 @@ ${selectedEmail.body || selectedEmail.preview}
                                             <TagManager
                                                 entityId={selectedEmail.id}
                                                 entityType="lead"
+                                                selectedTags={selectedEmail.tags || []}
                                                 onTagsChange={loadEmails}
                                             />
                                         </div>

@@ -60,8 +60,6 @@ import {
     Loader2,
     Sun,
     ArrowRight,
-    Sun,
-    ArrowRight,
     Star,
     Tag,
     Hash
@@ -2524,4 +2522,4 @@ ${selectedEmail.body || selectedEmail.preview}
             </TooltipProvider>
         )
     }
-}
+} 

@@ -810,6 +810,7 @@ function AccountsPage() {
                                                     <TagManager
                                                         entityId={account.id}
                                                         entityType="account"
+                                                        selectedTags={account.tags || []}
                                                         onTagsChange={() => fetchAccounts()}
                                                     />
                                                 </div>

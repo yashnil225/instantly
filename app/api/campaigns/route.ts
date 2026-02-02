@@ -13,6 +13,10 @@ export async function GET(request: Request) {
     const tagIds = tagsParam ? tagsParam.split(',') : []
 
     // Support both single and multiple workspace IDs
+    const singleWorkspaceId = searchParams.get('workspaceId')
+    const multipleWorkspaceIdsParam = searchParams.get('workspaceIds')
+    const multipleWorkspaceIds = multipleWorkspaceIdsParam ? multipleWorkspaceIdsParam.split(',') : []
+    
     const workspaceIds = singleWorkspaceId && singleWorkspaceId !== 'all'
         ? [singleWorkspaceId]
         : multipleWorkspaceIds

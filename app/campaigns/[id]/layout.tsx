@@ -6,6 +6,7 @@ import { usePathname, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Play, Pause, MoreHorizontal, Zap, ChevronDown, AlertTriangle } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 import { cn } from "@/lib/utils"
 import {
@@ -40,6 +41,7 @@ export default function CampaignLayout({
 }) {
     const pathname = usePathname()
     const params = useParams()
+    const { toast } = useToast()
     const campaignId = params.id as string
     const baseUrl = `/campaigns/${campaignId}`
 

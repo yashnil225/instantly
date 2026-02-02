@@ -1,4 +1,4 @@
-"use client"
+b"use client"
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -219,7 +219,8 @@ export default function GlobalLeadsPage() {
                         <FilterBar
                             onSearchChange={setSearchQuery}
                             onTagsChange={setSelectedTags}
-                        selectedTags={selectedTags}
+                            selectedTags={selectedTags}
+                        />
 
                         {/* Status Filter */}
                         <DropdownMenu>
@@ -288,6 +289,7 @@ export default function GlobalLeadsPage() {
                                                 <TagManager
                                                     entityId={lead.id}
                                                     entityType="lead"
+                                                    selectedTags={lead.tags || []}
                                                     onTagsChange={fetchLeads}
                                                 />
                                             </div>

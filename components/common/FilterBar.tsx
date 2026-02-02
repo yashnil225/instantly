@@ -20,9 +20,10 @@ interface FilterBarProps {
     onTagsChange: (tags: string[]) => void // Array of tag IDs
     selectedTags: string[]
     placeholder?: string
+    className?: string
 }
 
-export function FilterBar({ onSearchChange, onTagsChange, selectedTags, placeholder = "Search..." }: FilterBarProps) {
+export function FilterBar({ onSearchChange, onTagsChange, selectedTags, placeholder = "Search...", className }: FilterBarProps) {
     const [allTags, setAllTags] = useState<Tag[]>([])
     const [search, setSearch] = useState("")
 
@@ -47,7 +48,7 @@ export function FilterBar({ onSearchChange, onTagsChange, selectedTags, placehol
     }
 
     return (
-        <div className="flex items-center gap-2 mb-4">
+        <div className={cn("flex items-center gap-2 mb-4", className)}>
             <div className="relative flex-1 max-w-sm">
                 <Input
                     placeholder={placeholder}

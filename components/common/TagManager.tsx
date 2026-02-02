@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Plus, X, Tag as TagIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-interface Tag {
+export interface Tag {
     id: string
     name: string
     color: string

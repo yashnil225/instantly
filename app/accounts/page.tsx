@@ -13,7 +13,7 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog"
 import { FilterBar } from "@/components/common/FilterBar"
-import { TagManager } from "@/components/common/TagManager"
+import { TagManager, Tag } from "@/components/common/TagManager"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -70,7 +70,7 @@ interface EmailAccount {
     isDFY: boolean
     isInCampaign: boolean
     hasCustomDomain: boolean
-    tags: string[]
+    tags: Tag[]
 }
 
 // Wrapper component with Suspense for useSearchParams
@@ -810,7 +810,7 @@ function AccountsPage() {
                                                     <TagManager
                                                         entityId={account.id}
                                                         entityType="account"
-                                                        assignedTags={account.tags || []}
+                                                        selectedTags={account.tags || []}
                                                         onTagsChange={() => fetchAccounts()}
                                                         readOnly={false}
                                                     />

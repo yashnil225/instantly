@@ -617,18 +617,7 @@ function AccountsPage() {
 
                     {/* Toolbar */}
                     <div className="px-8 pb-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                            {/* Search - Hidden as FilterBar handles it */}
-                            <div className="hidden relative w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-10 bg-card border-border text-foreground focus-visible:ring-blue-600/50 h-10 rounded-lg"
-                                />
-                            </div>
-
+                        <div className="flex w-full items-center justify-end gap-4 p-4">
                             <div className="flex items-center gap-3">
                                 {/* Status Filter */}
                                 <DropdownMenu>

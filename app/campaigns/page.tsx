@@ -669,18 +669,7 @@ function CampaignsPage() {
 
                 {/* Toolbar */}
 
-                <div className="flex items-center justify-between">
-                    <div className="hidden"> {/* Hidden because FilterBar handles search now */}
-                        <div className="relative w-[320px]">
-                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                placeholder="Search..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 bg-card border-border text-foreground focus:border-border h-10 rounded-lg focus-visible:ring-0"
-                            />
-                        </div>
-                    </div>
+                <div className="flex w-full items-center justify-end gap-4 p-4">
                     <div className="flex items-center gap-3">
                         {/* Status Filter Dropdown */}
                         <DropdownMenu>

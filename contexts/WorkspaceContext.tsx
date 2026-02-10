@@ -7,6 +7,19 @@ interface Workspace {
     name: string
     isDefault?: boolean
     opportunityValue?: number
+    _count?: {
+        campaignWorkspaces: number
+    }
+    members?: Array<{
+        id: string
+        userId: string
+        role: string
+        user: {
+            id: string
+            name?: string
+            email: string
+        }
+    }>
 }
 
 interface WorkspaceContextType {
@@ -41,7 +54,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             const res = await fetch('/api/workspaces', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     name: name.trim(),
                     opportunityValue: opportunityValue || 5000
                 })
@@ -63,11 +76,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }, [refreshWorkspaces])
 
     return (
-        <WorkspaceContext.Provider value={{ 
-            workspaces, 
-            isLoading, 
-            refreshWorkspaces, 
-            createWorkspace 
+        <WorkspaceContext.Provider value={{
+            workspaces,
+            isLoading,
+            refreshWorkspaces,
+            createWorkspace
         }}>
             {children}
         </WorkspaceContext.Provider>

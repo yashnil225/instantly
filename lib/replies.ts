@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import imaps from 'imap-simple'
 import { simpleParser } from 'mailparser'
+import { classifyEmailStatus } from './ai-service'
 
 export interface AutomationFilter {
     campaignId?: string;
@@ -134,6 +135,55 @@ export async function checkReplies(options: { filter?: AutomationFilter } = {}) 
                             })
                         }
                     })
+
+                    // 1.5 Classify Reply with AI (with retry logic)
+                    if (eventType === 'reply') {
+                        try {
+                            let classification = null
+                            let retries = 0
+                            const maxRetries = 1
+
+                            while (retries <= maxRetries && !classification) {
+                                try {
+                                    classification = await classifyEmailStatus(subject, bodyText)
+                                } catch (error) {
+                                    retries++
+                                    if (retries <= maxRetries) {
+                                        console.log(`Classification failed for ${fromEmail}, retrying in 5s... (${retries}/${maxRetries})`)
+                                        await new Promise(resolve => setTimeout(resolve, 5000))
+                                    } else {
+                                        console.log(`Classification failed after retries for ${fromEmail}, using fallback`)
+                                        // Use fallback classification
+                                        const text = (subject + " " + bodyText).toLowerCase()
+                                        if (text.includes("out of office") || text.includes("away until") || text.includes("vacation")) {
+                                            classification = "out_of_office"
+                                        } else if (text.includes("meeting") || text.includes("calendar") || text.includes("schedule a call")) {
+                                            classification = "meeting_booked"
+                                        } else if (text.includes("interested") || text.includes("sounds good") || text.includes("tell me more") || text.includes("send over")) {
+                                            classification = "interested"
+                                        } else if (text.includes("not interested") || text.includes("no thanks") || text.includes("remove me")) {
+                                            classification = "not_interested"
+                                        } else if (text.includes("wrong person") || text.includes("not the right contact")) {
+                                            classification = "wrong_person"
+                                        } else if (text.includes("fuck") || text.includes("stop") || text.includes("scam") || text.includes("don't email")) {
+                                            classification = "lost"
+                                        } else {
+                                            classification = "interested" // Default
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Update lead with classification
+                            await prisma.lead.update({
+                                where: { id: lead.id },
+                                data: { aiLabel: classification }
+                            })
+                            console.log(`Classified reply from ${fromEmail} as: ${classification}`)
+                        } catch (error) {
+                            console.error(`Failed to classify reply from ${fromEmail}:`, error)
+                        }
+                    }
 
                     // 2. Update Lead Status
                     if (lead.status !== 'replied' && lead.status !== 'bounced') {

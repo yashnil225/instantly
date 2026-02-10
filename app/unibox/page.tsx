@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react"
 import { useSession } from "next-auth/react"
+import { useWorkspaces } from "@/contexts/WorkspaceContext"
 import { useSearchParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -68,6 +69,7 @@ import { TagManager } from "@/components/common/TagManager"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
 import { Logo } from "@/components/ui/logo"
+import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Textarea } from "@/components/ui/textarea"
 import { KeyboardShortcutsHelp } from "@/components/ui/keyboard-shortcuts-help"
@@ -162,29 +164,13 @@ function UniboxPage() {
     const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false)
 
     // Workspace state
-    const [workspaces, setWorkspaces] = useState<any[]>([])
+    const { workspaces, refreshWorkspaces } = useWorkspaces()
     const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [workspaceLoading, setWorkspaceLoading] = useState(true)
     const [createWorkspaceModalOpen, setCreateWorkspaceModalOpen] = useState(false)
-    const [newWorkspaceName, setNewWorkspaceName] = useState("")
 
     // ============ HELPER FUNCTIONS ============
-
-    const loadWorkspaces = async () => {
-        try {
-            const res = await fetch('/api/workspaces')
-            if (res.ok) {
-                const data = await res.json()
-                setWorkspaces(Array.isArray(data) ? data : [])
-            }
-        } catch (error) {
-            console.error("Failed to load workspaces:", error)
-            setWorkspaces([])
-        } finally {
-            setWorkspaceLoading(false)
-        }
-    }
 
     const loadCampaigns = async () => {
         try {
@@ -303,29 +289,6 @@ function UniboxPage() {
         setSearchQuery("")
     }
 
-    const createWorkspace = async () => {
-        if (!newWorkspaceName.trim()) return
-
-        try {
-            const res = await fetch('/api/workspaces', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newWorkspaceName })
-            })
-
-            if (res.ok) {
-                const newWorkspace = await res.json()
-                setWorkspaces([...workspaces, newWorkspace])
-                setCurrentWorkspace(newWorkspace.name)
-                localStorage.setItem('activeWorkspace', newWorkspace.name)
-                setCreateWorkspaceModalOpen(false)
-                setNewWorkspaceName("")
-                toast({ title: "Success", description: "Workspace created successfully!" })
-            }
-        } catch (error) {
-            console.error("Failed to create workspace:", error)
-        }
-    }
 
     const switchWorkspace = (workspaceName: string) => {
         setCurrentWorkspace(workspaceName)
@@ -506,7 +469,6 @@ Instantly`,
         const handleResize = () => setListWidth(calculateListWidth())
         window.addEventListener('resize', handleResize)
 
-        loadWorkspaces()
         loadAccounts()
         loadTags()
 
@@ -2195,56 +2157,11 @@ ${selectedEmail.body || selectedEmail.preview}
                 </div>
 
                 {/* Create Workspace Modal */}
-                <Dialog open={createWorkspaceModalOpen} onOpenChange={setCreateWorkspaceModalOpen}>
-                    <DialogContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground max-w-2xl p-0 overflow-hidden shadow-2xl">
-                        <div className="flex flex-col items-center justify-center min-h-[400px] px-12 py-16">
-                            <div className="w-full max-w-md space-y-8">
-                                <div className="text-center space-y-2">
-                                    <h2 className="text-2xl font-bold text-foreground tracking-tight">
-                                        Let's create a new workspace
-                                    </h2>
-                                    <p className="text-sm text-blue-400 font-medium">
-                                        What would you like to name it?
-                                    </p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-sm text-[#a1a1aa]">Workspace Name</Label>
-                                    <Input
-                                        value={newWorkspaceName}
-                                        onChange={(e) => setNewWorkspaceName(e.target.value)}
-                                        placeholder="My Workspace"
-                                        className="bg-background border-[#2a2a35] text-foreground text-lg h-12 focus-visible:ring-blue-500 placeholder:text-[#52525b]"
-                                        autoFocus
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') createWorkspace()
-                                        }}
-                                    />
-                                </div>
-
-                                <div className="flex gap-3 justify-center pt-4">
-                                    <Button
-                                        variant="ghost"
-                                        onClick={() => {
-                                            setCreateWorkspaceModalOpen(false)
-                                            setNewWorkspaceName("")
-                                        }}
-                                        className="text-[#a1a1aa] hover:text-foreground hover:bg-[#272730]"
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button
-                                        onClick={createWorkspace}
-                                        className="bg-blue-600 hover:bg-blue-700 text-foreground min-w-[100px] font-medium"
-                                        disabled={!newWorkspaceName.trim()}
-                                    >
-                                        Create
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    </DialogContent>
-                </Dialog>
+                <CreateWorkspaceModal
+                    open={createWorkspaceModalOpen}
+                    onOpenChange={setCreateWorkspaceModalOpen}
+                    onWorkspaceCreated={refreshWorkspaces}
+                />
 
                 {/* Move to Campaign Modal */}
                 <Dialog open={campaignModalOpen} onOpenChange={setCampaignModalOpen}>

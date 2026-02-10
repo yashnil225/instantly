@@ -23,19 +23,19 @@ export function InfoDialog({
 }: InfoDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="bg-[#1a1a1a] border-[#333] text-white max-w-md">
+            <DialogContent className="bg-popover border-border text-popover-foreground max-w-md">
                 <DialogHeader>
-                    <DialogTitle className="text-white">{title}</DialogTitle>
+                    <DialogTitle className="text-popover-foreground">{title}</DialogTitle>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="absolute right-4 top-4 text-gray-400 hover:text-white"
+                        className="absolute right-4 top-4 text-muted-foreground hover:text-foreground"
                         onClick={() => onOpenChange(false)}
                     >
                         <X className="h-4 w-4" />
                     </Button>
                 </DialogHeader>
-                <div className="text-gray-300 space-y-2">
+                <div className="text-popover-foreground/80 space-y-2">
                     {children}
                 </div>
             </DialogContent>

@@ -33,6 +33,8 @@ import {
 import { Label } from "@/components/ui/label"
 import { FilterBar } from "@/components/common/FilterBar"
 import { TagManager } from "@/components/common/TagManager"
+import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
+import { useWorkspaces } from "@/contexts/WorkspaceContext"
 
 import { useToast } from "@/components/ui/use-toast"
 
@@ -144,14 +146,19 @@ function CampaignsPage() {
 
 
 
-    // Workspace state
-    const [workspaces, setWorkspaces] = useState<any[]>([])
+    // Workspace state - using global context
+    const { workspaces, refreshWorkspaces } = useWorkspaces()
     const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null) // null = show all (Organization)
     const [workspaceSearch, setWorkspaceSearch] = useState("")
+    const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
 
     useEffect(() => {
-        loadWorkspaces()
-    }, [])
+        // Restore saved workspace ID from global workspaces
+        const savedWorkspaceId = localStorage.getItem('activeWorkspaceId')
+        if (savedWorkspaceId && workspaces.some((w: any) => w.id === savedWorkspaceId)) {
+            setCurrentWorkspaceId(savedWorkspaceId)
+        }
+    }, [workspaces])
 
     useEffect(() => {
         if (searchParams.get("welcome")) {
@@ -172,23 +179,6 @@ function CampaignsPage() {
         const interval = setInterval(fetchCampaigns, 10000)
         return () => clearInterval(interval)
     }, [currentWorkspaceId, workspaces, selectedTags])
-
-    const loadWorkspaces = async () => {
-        try {
-            const res = await fetch('/api/workspaces')
-            if (res.ok) {
-                const data = await res.json()
-                setWorkspaces(data)
-                // Restore saved workspace ID
-                const savedWorkspaceId = localStorage.getItem('activeWorkspaceId')
-                if (savedWorkspaceId && data.some((w: any) => w.id === savedWorkspaceId)) {
-                    setCurrentWorkspaceId(savedWorkspaceId)
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load workspaces:", error)
-        }
-    }
 
     const switchWorkspace = (workspaceId: string | null) => {
         setCurrentWorkspaceId(workspaceId)
@@ -585,28 +575,28 @@ function CampaignsPage() {
     const handleExport = handleExportCSV
 
     return (
-        <div className="min-h-screen bg-background p-8 text-foreground font-sans">
-            <div className="max-w-[1600px] mx-auto space-y-8">
+        <div className="min-h-screen bg-background text-foreground font-sans">
+            <div className="flex-1 flex flex-col min-h-0">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-bold tracking-tight">Campaigns</h1>
+                <div className="px-8 py-6 flex items-center justify-between bg-background">
+                    <h1 className="text-2xl font-bold text-foreground tracking-tight">Campaigns</h1>
                     <div className="flex items-center gap-4">
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="border-border bg-secondary text-foreground hover:text-foreground hover:bg-muted gap-2">
+                                <Button variant="outline" className="border-border bg-card text-foreground hover:text-foreground hover:bg-secondary h-9 gap-2">
                                     <Logo variant="icon" size="sm" />
                                     {currentWorkspaceId ? (workspaces.find(w => w.id === currentWorkspaceId)?.name || 'Workspace') : 'My Organization'}
-                                    <ChevronDown className="h-4 w-4" />
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64 bg-secondary border-border text-foreground">
+                            <DropdownMenuContent align="end" className="w-56 bg-card border-border text-foreground">
                                 <div className="p-2">
                                     <Input
-                                        placeholder="Search"
+                                        placeholder="Search workspaces..."
                                         value={workspaceSearch}
                                         onChange={(e) => setWorkspaceSearch(e.target.value)}
-                                        className="bg-background border-border text-foreground text-sm h-8 mb-2"
+                                        className="bg-background border-border h-8 text-sm"
                                     />
                                 </div>
                                 <DropdownMenuSeparator className="bg-muted" />
@@ -614,11 +604,11 @@ function CampaignsPage() {
                                 <DropdownMenuItem
                                     onClick={() => switchWorkspace(null)}
                                     className={cn(
-                                        "cursor-pointer focus:bg-muted focus:text-foreground",
+                                        "cursor-pointer focus:bg-secondary focus:text-foreground",
                                         currentWorkspaceId === null && "bg-blue-500/20 text-blue-400"
                                     )}
                                 >
-                                    <Logo variant="icon" size="sm" className="mr-2" />
+                                    <Logo variant="icon" size="sm" className="mr-2 text-blue-500" />
                                     My Organization
                                 </DropdownMenuItem>
                                 {filteredWorkspaces.filter(w => !w.isDefault).map((workspace) => (
@@ -626,35 +616,27 @@ function CampaignsPage() {
                                         key={workspace.id}
                                         onClick={() => switchWorkspace(workspace.id)}
                                         className={cn(
-                                            "cursor-pointer focus:bg-muted focus:text-foreground",
+                                            "cursor-pointer focus:bg-secondary focus:text-foreground",
                                             currentWorkspaceId === workspace.id && "bg-blue-500/20 text-blue-400"
                                         )}
                                     >
-                                        <Logo variant="icon" size="sm" className="mr-2" />
+                                        <Logo variant="icon" size="sm" className="mr-2 text-blue-500" />
                                         {workspace.name}
                                     </DropdownMenuItem>
                                 ))}
                                 <DropdownMenuSeparator className="bg-muted" />
-                                <DropdownMenuItem onClick={() => router.push('/settings/workspaces')} className="cursor-pointer focus:bg-muted focus:text-foreground text-blue-400">
+                                <DropdownMenuItem onClick={() => setCreateWorkspaceOpen(true)} className="cursor-pointer focus:bg-secondary focus:text-blue-400 text-blue-400">
                                     <Plus className="h-4 w-4 mr-2" />
                                     Add Workspace
                                 </DropdownMenuItem>
-                                <DropdownMenuSeparator className="bg-muted" />
-                                <DropdownMenuItem onClick={() => router.push('/settings/profile')} className="cursor-pointer focus:bg-muted focus:text-foreground">Settings</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push('/settings/billing')} className="cursor-pointer focus:bg-muted focus:text-foreground">Billing</DropdownMenuItem>
-                                <DropdownMenuSeparator className="bg-muted" />
-                                <DropdownMenuItem
-                                    className="text-red-400 focus:text-red-400 focus:bg-red-900/10 cursor-pointer"
-                                    onClick={() => {
-                                        import("next-auth/react").then(({ signOut }) => {
-                                            signOut({ callbackUrl: "/login" })
-                                        })
-                                    }}
-                                >
-                                    Logout
-                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <CreateWorkspaceModal
+                            open={createWorkspaceOpen}
+                            onOpenChange={setCreateWorkspaceOpen}
+                            onWorkspaceCreated={refreshWorkspaces}
+                        />
                     </div>
                 </div>
 
@@ -663,13 +645,13 @@ function CampaignsPage() {
                     onSearchChange={setSearchQuery}
                     onTagsChange={setSelectedTags}
                     selectedTags={selectedTags}
-                    className="w-full"
+                    className="px-8 pb-4 w-full"
                     placeholder="Search campaigns..."
                 />
 
                 {/* Toolbar */}
-
-                <div className="flex w-full items-center justify-end gap-4 p-4">
+                <div className="px-8 pb-6 space-y-4">
+                    <div className="flex w-full items-center justify-end gap-4 p-4">
                     <div className="flex items-center gap-3">
                         {/* Status Filter Dropdown */}
                         <DropdownMenu>
@@ -999,6 +981,7 @@ function CampaignsPage() {
                             </div>
                         ))
                     )}
+                </div>
                 </div>
             </div>
 

@@ -14,13 +14,14 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog"
+import { useWorkspaces } from "@/contexts/WorkspaceContext"
+import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
 
 export default function WorkspacesPage() {
-    const [workspaces, setWorkspaces] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
-    const [newWorkspaceName, setNewWorkspaceName] = useState("")
+    const { workspaces, isLoading: loading, refreshWorkspaces } = useWorkspaces()
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editValue, setEditValue] = useState<string>("")
+    const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
     const { toast } = useToast()
 
     // Rename dialog state
@@ -36,40 +37,9 @@ export default function WorkspacesPage() {
     const [deleting, setDeleting] = useState(false)
 
     useEffect(() => {
-        fetchWorkspaces()
-    }, [])
+        refreshWorkspaces()
+    }, [refreshWorkspaces])
 
-    const fetchWorkspaces = async () => {
-        try {
-            const res = await fetch("/api/workspaces")
-            const data = await res.json()
-            setWorkspaces(data)
-        } catch (error) {
-            console.error("Failed to fetch workspaces:", error)
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const handleCreateWorkspace = async () => {
-        if (!newWorkspaceName.trim()) return
-
-        try {
-            const res = await fetch("/api/workspaces", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: newWorkspaceName })
-            })
-
-            if (res.ok) {
-                toast({ title: "Workspace created", description: "Your new workspace is ready." })
-                setNewWorkspaceName("")
-                fetchWorkspaces()
-            }
-        } catch (error) {
-            toast({ title: "Error", description: "Failed to create workspace", variant: "destructive" })
-        }
-    }
 
     const handleUpdateValue = async (id: string, value: string) => {
         try {
@@ -152,24 +122,6 @@ export default function WorkspacesPage() {
                 <p className="text-muted-foreground text-sm">Manage your organizations and set their pipeline values.</p>
             </div>
 
-            {/* Create New Workspace */}
-            <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
-                <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
-                    <Plus className="h-4 w-4 text-primary" />
-                    Add New Workspace
-                </h3>
-                <div className="flex gap-3">
-                    <Input
-                        placeholder="Organization Name (e.g. Acme Corp)"
-                        value={newWorkspaceName}
-                        onChange={(e) => setNewWorkspaceName(e.target.value)}
-                        className="bg-background border-border"
-                    />
-                    <Button onClick={handleCreateWorkspace} disabled={!newWorkspaceName.trim()}>
-                        Create
-                    </Button>
-                </div>
-            </div>
 
             {/* Workspace List */}
             <div className="space-y-4">
@@ -184,7 +136,7 @@ export default function WorkspacesPage() {
                     </div>
                 ) : workspaces.length === 0 ? (
                     <div className="bg-card border border-border rounded-xl p-12 text-center">
-                        <p className="text-muted-foreground italic text-sm">No workspaces found. Create one above!</p>
+                        <p className="text-muted-foreground italic text-sm">No workspaces found. Create one from any page using the workspace dropdown.</p>
                     </div>
                 ) : (
                     <div className="grid gap-4">
@@ -273,6 +225,24 @@ export default function WorkspacesPage() {
                         ))}
                     </div>
                 )}
+
+                {/* Add New Workspace Button */}
+                <div className="pt-4">
+                    <Button
+                        onClick={() => setCreateWorkspaceOpen(true)}
+                        variant="outline"
+                        className="w-full h-12 border-dashed border-2 border-border hover:border-primary hover:bg-primary/5 transition-all"
+                    >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add New Workspace
+                    </Button>
+                </div>
+
+                <CreateWorkspaceModal
+                    open={createWorkspaceOpen}
+                    onOpenChange={setCreateWorkspaceOpen}
+                    onWorkspaceCreated={refreshWorkspaces}
+                />
             </div>
 
             {/* Rename Dialog */}

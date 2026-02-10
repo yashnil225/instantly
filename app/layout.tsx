@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Providers } from "@/components/providers";
 import { AppLayout } from "@/components/app/layout/AppLayout";
 import { Toaster } from "@/components/ui/toaster";
+import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -33,9 +34,11 @@ export default function RootLayout({
             enableSystem={true}
             disableTransitionOnChange
           >
-            <AppLayout>
-              {children}
-            </AppLayout>
+            <WorkspaceProvider>
+              <AppLayout>
+                {children}
+              </AppLayout>
+            </WorkspaceProvider>
             <Toaster />
           </ThemeProvider>
         </Providers>

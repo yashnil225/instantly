@@ -214,24 +214,24 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
                                     sideOffset={10}
                                     alignOffset={-5}
                                 >
-                                    <div className="px-4 py-3 border-b border-[#2a2a2a] flex justify-between items-center bg-[#0f0f0f]">
-                                        <span className="text-sm font-medium text-white">Notifications</span>
-                                        <Link href="/notifications" className="text-xs text-blue-500 hover:text-blue-400 font-medium">View all</Link>
+                                    <div className="px-4 py-3 border-b border-border flex justify-between items-center bg-popover">
+                                        <span className="text-sm font-medium text-popover-foreground">Notifications</span>
+                                        <Link href="/notifications" className="text-xs text-primary hover:text-primary/80 font-medium">View all</Link>
                                     </div>
                                     <div className="max-h-[300px] overflow-y-auto">
                                         {notifications.length === 0 ? (
                                             <div className="p-8 text-center" style={{ minHeight: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <span className="text-gray-500 text-sm">You don't have any new notifications at this time.</span>
+                                                <span className="text-muted-foreground text-sm">You don't have any new notifications at this time.</span>
                                             </div>
                                         ) : (
                                             notifications.map((n) => (
-                                                <div key={n.id} className="p-3 border-b border-[#222] hover:bg-[#1f1f1f] transition-colors cursor-pointer group">
+                                                <div key={n.id} className="p-3 border-b border-border hover:bg-secondary transition-colors cursor-pointer group">
                                                     <div className="flex justify-between items-start mb-1">
-                                                        <div className="font-medium text-white text-sm">{n.title}</div>
-                                                        {!n.read && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 mt-1" />}
+                                                        <div className="font-medium text-popover-foreground text-sm">{n.title}</div>
+                                                        {!n.read && <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1" />}
                                                     </div>
-                                                    <div className="text-xs text-gray-400 line-clamp-2 group-hover:text-gray-300 transition-colors">{n.message}</div>
-                                                    <div className="text-[10px] text-gray-600 mt-2 flex justify-between items-center">
+                                                    <div className="text-xs text-muted-foreground line-clamp-2 group-hover:text-foreground transition-colors">{n.message}</div>
+                                                    <div className="text-[10px] text-muted-foreground/60 mt-2 flex justify-between items-center">
                                                         <span>{new Date(n.createdAt).toLocaleDateString()}</span>
                                                     </div>
                                                 </div>
@@ -241,24 +241,24 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
                                 </DropdownMenuSubContent>
                             </DropdownMenuSub>
                             <DropdownMenuItem asChild>
-                                <Link href="/help" className="flex items-center justify-between px-3 py-2 cursor-pointer focus:bg-[#2a2a2a] focus:text-white rounded-lg w-full">
+                                <Link href="/help" className="flex items-center justify-between px-3 py-2 cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg w-full">
                                     <div className="flex items-center gap-3">
-                                        <HelpCircle className="h-4 w-4 text-gray-400" />
+                                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
                                         <span className="text-sm">Help Center</span>
                                     </div>
-                                    <ChevronRight className="h-3 w-3 text-gray-600" />
+                                    <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSub>
-                                <DropdownMenuSubTrigger className="flex items-center justify-between px-3 py-2 cursor-pointer focus:bg-[#2a2a2a] focus:text-white rounded-lg w-full outline-none hover:bg-[#2a2a2a] data-[state=open]:bg-[#2a2a2a] data-[state=open]:text-white">
+                                <DropdownMenuSubTrigger className="flex items-center justify-between px-3 py-2 cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg w-full outline-none hover:bg-secondary data-[state=open]:bg-secondary data-[state=open]:text-foreground">
                                     <div className="flex items-center gap-3">
-                                        <Globe className="h-4 w-4 text-gray-400" />
+                                        <Globe className="h-4 w-4 text-muted-foreground" />
                                         <span className="text-sm">Language</span>
                                     </div>
-                                    <ChevronRight className="h-3 w-3 text-gray-600" />
+                                    <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
                                 </DropdownMenuSubTrigger>
                                 <DropdownMenuSubContent
-                                    className="w-[180px] bg-[#161616] border-[#2a2a2a] text-gray-300 p-1 overflow-hidden shadow-2xl ml-2 rounded-xl"
+                                    className="w-[180px] bg-popover border-border text-popover-foreground p-1 overflow-hidden shadow-2xl ml-2 rounded-xl"
                                     sideOffset={10}
                                     alignOffset={-5}
                                 >
@@ -271,12 +271,12 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
                                     ].map((lang) => (
                                         <DropdownMenuItem
                                             key={lang.id}
-                                            className="cursor-pointer hover:bg-[#2a2a2a] rounded-lg px-3 py-2 text-sm text-gray-300 focus:bg-[#2a2a2a] focus:text-white flex justify-between items-center group"
+                                            className="cursor-pointer hover:bg-secondary rounded-lg px-3 py-2 text-sm text-popover-foreground focus:bg-secondary focus:text-foreground flex justify-between items-center group"
                                             onClick={() => { /* Placeholder for language switch */ }}
                                         >
                                             {lang.name}
                                             {/* Simulate 'English' being selected by default for UI correctness */}
-                                            {lang.id === 'en' && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
+                                            {lang.id === 'en' && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
                                         </DropdownMenuItem>
                                     ))}
                                 </DropdownMenuSubContent>
@@ -302,10 +302,10 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
                                     Light
                                 </button>
                                 <button
-                                    onClick={() => setTheme("synthwave")}
+                                    onClick={() => setTheme("dark")}
                                     className={cn(
                                         "flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition-all",
-                                        theme === "synthwave"
+                                        theme === "dark"
                                             ? "bg-primary text-primary-foreground border-primary"
                                             : "bg-secondary text-muted-foreground border-transparent hover:text-foreground"
                                     )}

@@ -90,6 +90,8 @@ interface CampaignAnalytics {
     trackOpens?: boolean
     trackLinks?: boolean
     stopOnReply?: boolean
+    _needsClassification?: boolean
+    _unclassifiedCount?: number
 }
 
 export default function CampaignAnalyticsPage() {
@@ -108,6 +110,8 @@ export default function CampaignAnalyticsPage() {
     const [customStartDate, setCustomStartDate] = useState("")
     const [customEndDate, setCustomEndDate] = useState("")
     const [searchQuery, setSearchQuery] = useState("")
+    const [isClassifying, setIsClassifying] = useState(false)
+    const [classifyingProgress, setClassifyingProgress] = useState(0)
 
     const [filters, setFilters] = useState({
         includeAutoReplies: false,
@@ -133,22 +137,79 @@ export default function CampaignAnalyticsPage() {
     const fetchCampaignAnalytics = React.useCallback(async () => {
         setLoading(true)
         try {
-            const params = new URLSearchParams({ range: dateRange })
+            const params = new URLSearchParams({ 
+                range: dateRange,
+                includeAutoReplies: filters.includeAutoReplies.toString()
+            })
             const res = await fetch(`/api/campaigns/${campaignId}/analytics?${params.toString()}`)
             if (res.ok) {
                 const analyticsData = await res.json()
                 setData(analyticsData)
+                
+                // Trigger background classification if needed
+                if (analyticsData._needsClassification && !isClassifying) {
+                    classifyRepliesInBackground(analyticsData._unclassifiedCount || 0)
+                }
             }
         } catch (err) {
             console.error("Failed to fetch campaign analytics:", err)
         } finally {
             setLoading(false)
         }
-    }, [campaignId, dateRange])
+    }, [campaignId, dateRange, filters.includeAutoReplies, isClassifying])
+
+    // Background classification with polling
+    const classifyRepliesInBackground = async (totalUnclassified: number) => {
+        setIsClassifying(true)
+        setClassifyingProgress(0)
+        
+        try {
+            // Start classification
+            await fetch(`/api/campaigns/${campaignId}/classify-replies`, { method: 'POST' })
+            
+            // Poll every 3 seconds until complete
+            const pollInterval = setInterval(async () => {
+                const params = new URLSearchParams({ 
+                    range: dateRange,
+                    includeAutoReplies: filters.includeAutoReplies.toString()
+                })
+                const res = await fetch(`/api/campaigns/${campaignId}/analytics?${params.toString()}`)
+                if (res.ok) {
+                    const analyticsData = await res.json()
+                    setData(analyticsData)
+                    
+                    // Update progress
+                    const classified = totalUnclassified - (analyticsData._unclassifiedCount || 0)
+                    setClassifyingProgress(Math.round((classified / totalUnclassified) * 100))
+                    
+                    // Stop polling when complete
+                    if (!analyticsData._needsClassification) {
+                        clearInterval(pollInterval)
+                        setIsClassifying(false)
+                    }
+                }
+            }, 3000)
+            
+            // Cleanup after 2 minutes max
+            setTimeout(() => {
+                clearInterval(pollInterval)
+                setIsClassifying(false)
+            }, 120000)
+            
+        } catch (err) {
+            console.error("Classification failed:", err)
+            setIsClassifying(false)
+        }
+    }
 
     useEffect(() => {
         fetchCampaignAnalytics()
     }, [fetchCampaignAnalytics])
+
+    // Re-fetch when includeAutoReplies changes
+    useEffect(() => {
+        fetchCampaignAnalytics()
+    }, [filters.includeAutoReplies])
 
 
 
@@ -224,42 +285,49 @@ export default function CampaignAnalyticsPage() {
             value: data?.sequenceStarted || 0,
             tooltip: "Number of leads who started the sequence",
             show: filters.showSequenceStarted,
+            isCalculating: false,
         },
         {
             title: "Open rate",
             value: data?.openRate || "0%",
             tooltip: "Percentage of emails opened",
             show: filters.showOpenRate,
+            isCalculating: false,
         },
         {
             title: "Click rate",
             value: data?.clickRate || "0%",
             tooltip: "Percentage of emails clicked",
             show: filters.showClickRate,
+            isCalculating: false,
         },
         {
             title: "Reply rate",
             value: data?.replyRate || "0%",
             tooltip: "Percentage of emails replied to",
             show: filters.showReplyRate,
+            isCalculating: false,
         },
         {
             title: "Positive Reply Rate",
             value: data?.positiveReplyRate || "0%",
-            tooltip: "Percentage of positive replies",
+            tooltip: "Percentage of positive replies (interested or meeting booked)",
             show: filters.showPositiveReplyRate,
+            isCalculating: data?.positiveReplyRate === 'calculating...',
         },
         {
             title: "Opportunities",
-            value: `${data?.opportunities?.count || 0} | $${data?.opportunities?.value || 0}`,
+            value: `${data?.opportunities?.count || 0} | $${(data?.opportunities?.value || 0).toLocaleString()}`,
             tooltip: "Number and value of opportunities",
             show: filters.showOpportunities,
+            isCalculating: false,
         },
         {
             title: "Conversions",
-            value: `${data?.conversions?.count || 0} | $${data?.conversions?.value || 0}`,
+            value: `${data?.conversions?.count || 0} | $${(data?.conversions?.value || 0).toLocaleString()}`,
             tooltip: "Number and value of conversions",
             show: filters.showConversions,
+            isCalculating: false,
         },
     ].filter(card => card.show)
 
@@ -460,7 +528,23 @@ export default function CampaignAnalyticsPage() {
                                                         <TooltipContent className="bg-[#111] border-[#333] text-white">{metric.tooltip}</TooltipContent>
                                                     </Tooltip>
                                                 </div>
-                                                <div className="text-2xl font-bold text-white tracking-tight">{metric.value}</div>
+                                                {metric.isCalculating ? (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                                            <span className="text-sm text-gray-400">Calculating...</span>
+                                                        </div>
+                                                        <div className="w-full h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                                                            <div 
+                                                                className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                                                style={{ width: `${classifyingProgress}%` }}
+                                                            />
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">{classifyingProgress}% complete</div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-2xl font-bold text-white tracking-tight">{metric.value}</div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>

@@ -81,7 +81,7 @@ export function RichEditor({ value, onChange, placeholder, leftActions }: RichEd
             <div className="flex-1 overflow-y-auto relative min-h-[300px] outline-none">
                 {isCodeView ? (
                     <textarea
-                        className="w-full h-full bg-[#0a0a0a] text-gray-300 font-mono text-sm p-6 resize-none outline-none border-none"
+                        className="w-full h-full bg-background text-foreground font-mono text-sm p-6 resize-none outline-none border-none"
                         value={value}
                         onChange={(e) => onChange(e.target.value)}
                     />
@@ -89,7 +89,7 @@ export function RichEditor({ value, onChange, placeholder, leftActions }: RichEd
                     <div
                         ref={editorRef}
                         contentEditable
-                        className="w-full h-full text-gray-300 p-6 outline-none focus:outline-none whitespace-pre-wrap font-sans text-base leading-relaxed"
+                        className="w-full h-full text-foreground p-6 outline-none focus:outline-none whitespace-pre-wrap font-sans text-base leading-relaxed"
                         onInput={handleChange}
                         onBlur={handleChange}
                         style={{ minHeight: '100%' }}
@@ -100,19 +100,19 @@ export function RichEditor({ value, onChange, placeholder, leftActions }: RichEd
 
             {/* Formatting Toolbar (Conditional) */}
             {showFormatting && (
-                <div className="px-4 py-2 border-t border-[#222] bg-[#0f0f0f] flex items-center gap-1 overflow-x-auto select-none animate-in slide-in-from-bottom-2 duration-200">
+                <div className="px-4 py-2 border-t border-border bg-card flex items-center gap-1 overflow-x-auto select-none animate-in slide-in-from-bottom-2 duration-200">
                     <ToolbarBtn icon={Bold} onClick={() => exec('bold')} tooltip="Bold (Ctrl+B)" />
                     <ToolbarBtn icon={Italic} onClick={() => exec('italic')} tooltip="Italic (Ctrl+I)" />
                     <ToolbarBtn icon={Underline} onClick={() => exec('underline')} tooltip="Underline (Ctrl+U)" />
                     <ToolbarBtn icon={Strikethrough} onClick={() => exec('strikeThrough')} tooltip="Strikethrough" />
 
-                    <div className="w-[1px] h-5 bg-[#333] mx-2" />
+                    <div className="w-[1px] h-5 bg-border mx-2" />
                     
                     <ToolbarBtn icon={AlignLeft} onClick={() => exec('justifyLeft')} tooltip="Align Left" />
                     <ToolbarBtn icon={AlignCenter} onClick={() => exec('justifyCenter')} tooltip="Align Center" />
                     <ToolbarBtn icon={AlignRight} onClick={() => exec('justifyRight')} tooltip="Align Right" />
 
-                    <div className="w-[1px] h-5 bg-[#333] mx-2" />
+                    <div className="w-[1px] h-5 bg-border mx-2" />
 
                     <ToolbarBtn icon={List} onClick={() => exec('insertUnorderedList')} tooltip="Bullet List" />
                     <ToolbarBtn icon={ListOrdered} onClick={() => exec('insertOrderedList')} tooltip="Ordered List" />
@@ -120,12 +120,12 @@ export function RichEditor({ value, onChange, placeholder, leftActions }: RichEd
             )}
 
             {/* Main Action Bar */}
-            <div className="px-4 py-3 border-t border-[#222] bg-[#0a0a0a] flex items-center justify-between gap-2 overflow-x-auto select-none">
+            <div className="px-4 py-3 border-t border-border bg-background flex items-center justify-between gap-2 overflow-x-auto select-none">
                 {/* Left Actions & Formatting Toggle */}
                 <div className="flex items-center gap-3">
                     {leftActions}
                     
-                    <div className="w-[1px] h-5 bg-[#333] mx-1" />
+                    <div className="w-[1px] h-5 bg-border mx-1" />
                     
                     <ToolbarBtn 
                         icon={ALargeSmall} 
@@ -153,7 +153,7 @@ export function RichEditor({ value, onChange, placeholder, leftActions }: RichEd
                         insertHtml('<a href="{{unsubscribe}}">Unsubscribe</a>')
                     }} tooltip="Insert unsubscribe link" />
 
-                    <div className="w-[1px] h-5 bg-[#333] mx-2" />
+                    <div className="w-[1px] h-5 bg-border mx-2" />
 
                     <ToolbarBtn
                         icon={Code}
@@ -175,15 +175,15 @@ function ToolbarBtn({ icon: Icon, onClick, tooltip, active }: { icon: any, onCli
                     <button
                         onClick={onClick}
                         className={cn(
-                            "p-2 rounded hover:bg-[#222] text-gray-400 hover:text-white transition-colors",
-                            active && "bg-[#222] text-white"
+                            "p-2 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors",
+                            active && "bg-secondary text-foreground"
                         )}
                         type="button"
                     >
                         <Icon className="h-4 w-4" />
                     </button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-black border border-[#333] text-gray-300 text-xs shadow-xl">
+                <TooltipContent className="bg-popover border border-border text-popover-foreground text-xs shadow-xl">
                     <p>{tooltip}</p>
                 </TooltipContent>
             </Tooltip>

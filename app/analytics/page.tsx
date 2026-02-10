@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
+import { useWorkspaces } from "@/contexts/WorkspaceContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -30,6 +31,7 @@ import {
     Info,
     Loader2,
     Download,
+    Plus,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -47,13 +49,19 @@ import {
 } from "recharts"
 import { DeliverabilityDashboard } from "@/components/app/deliverability-dashboard"
 import { SendTimeHeatmap, ConversionFunnel } from "@/components/app/analytics-charts"
+import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
 
 interface AnalyticsData {
     totalSent: number
     opensRate: number
     clickRate: number
     replyRate: number
+    positiveReplyRate?: string
     opportunities: {
+        count: number
+        value: number
+    }
+    conversions?: {
         count: number
         value: number
     }
@@ -80,6 +88,8 @@ interface AnalyticsData {
         replyRate: number
     }[]
     deliverability?: unknown
+    _needsClassification?: boolean
+    _unclassifiedCount?: number
 }
 
 export default function AnalyticsPage() {
@@ -99,33 +109,25 @@ export default function AnalyticsPage() {
         showOpensRate: true,
         showClickRate: true,
         showReplyRate: true,
+        showPositiveReplyRate: false,
         showOpportunities: true,
+        showConversions: false,
     })
+    const [isClassifying, setIsClassifying] = useState(false)
+    const [classifyingProgress, setClassifyingProgress] = useState(0)
 
     // Workspace state
-    const [workspaces, setWorkspaces] = useState<{ id: string; name: string }[]>([])
+    const { workspaces, refreshWorkspaces } = useWorkspaces()
     const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
     const [workspaceSearch, setWorkspaceSearch] = useState("")
+    const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
 
     useEffect(() => {
-        loadWorkspaces()
-    }, [])
-
-    const loadWorkspaces = async () => {
-        try {
-            const res = await fetch('/api/workspaces')
-            if (res.ok) {
-                const data = await res.json()
-                setWorkspaces(data)
-                const savedWorkspace = localStorage.getItem('activeWorkspace')
-                if (savedWorkspace) {
-                    setCurrentWorkspace(savedWorkspace)
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load workspaces:", error)
+        const savedWorkspace = localStorage.getItem('activeWorkspace')
+        if (savedWorkspace) {
+            setCurrentWorkspace(savedWorkspace)
         }
-    }
+    }, [])
 
     const switchWorkspace = (workspaceName: string) => {
         setCurrentWorkspace(workspaceName)
@@ -136,13 +138,64 @@ export default function AnalyticsPage() {
         w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
     )
 
+    // Background classification with polling
+    const classifyRepliesInBackground = async (totalUnclassified: number, workspaceId: string) => {
+        setIsClassifying(true)
+        setClassifyingProgress(0)
+        
+        try {
+            // Note: For global analytics, we'll classify across all campaigns
+            // This is a simplified version - in production you might want a dedicated endpoint
+            console.log(`Classifying ${totalUnclassified} replies across all campaigns...`)
+            
+            // Poll every 3 seconds until complete
+            const pollInterval = setInterval(async () => {
+                const params = new URLSearchParams({ 
+                    range: dateRange,
+                    includeAutoReplies: filters.includeAutoReplies.toString()
+                })
+                if (workspaceId !== 'all') {
+                    params.append('workspaceId', workspaceId)
+                }
+                const res = await fetch(`/api/analytics?${params.toString()}`)
+                if (res.ok) {
+                    const analyticsData = await res.json()
+                    setData(analyticsData)
+                    
+                    // Update progress
+                    const classified = totalUnclassified - (analyticsData._unclassifiedCount || 0)
+                    setClassifyingProgress(Math.round((classified / totalUnclassified) * 100))
+                    
+                    // Stop polling when complete
+                    if (!analyticsData._needsClassification) {
+                        clearInterval(pollInterval)
+                        setIsClassifying(false)
+                    }
+                }
+            }, 3000)
+            
+            // Cleanup after 2 minutes max
+            setTimeout(() => {
+                clearInterval(pollInterval)
+                setIsClassifying(false)
+            }, 120000)
+            
+        } catch (err) {
+            console.error("Classification failed:", err)
+            setIsClassifying(false)
+        }
+    }
+
     const fetchAnalytics = React.useCallback(async () => {
         setLoading(true)
         try {
             const workspace = workspaces.find((w) => w.name === currentWorkspace)
             const workspaceId = workspace?.id || 'all'
 
-            const params = new URLSearchParams({ range: dateRange })
+            const params = new URLSearchParams({ 
+                range: dateRange,
+                includeAutoReplies: filters.includeAutoReplies.toString()
+            })
             if (workspaceId !== 'all') {
                 params.append('workspaceId', workspaceId)
             }
@@ -151,17 +204,27 @@ export default function AnalyticsPage() {
             if (res.ok) {
                 const analyticsData = await res.json()
                 setData(analyticsData)
+                
+                // Trigger background classification if needed
+                if (analyticsData._needsClassification && !isClassifying) {
+                    classifyRepliesInBackground(analyticsData._unclassifiedCount || 0, workspaceId)
+                }
             }
         } catch (error) {
             console.error("Failed to fetch analytics:", error)
         } finally {
             setLoading(false)
         }
-    }, [dateRange, currentWorkspace, workspaces])
+    }, [dateRange, currentWorkspace, workspaces, filters.includeAutoReplies, isClassifying])
 
     useEffect(() => {
         fetchAnalytics()
     }, [fetchAnalytics])
+
+    // Re-fetch when includeAutoReplies changes
+    useEffect(() => {
+        fetchAnalytics()
+    }, [filters.includeAutoReplies])
 
     const handleDateRangeChange = (value: string) => {
         if (value === "custom") {
@@ -209,24 +272,35 @@ export default function AnalyticsPage() {
             value: data?.totalSent || 0,
             tooltip: "Total number of emails sent",
             show: filters.showTotalSent,
+            isCalculating: false,
         },
         {
             title: "Opens rate",
-            value: data?.opensRate || 0,
+            value: `${data?.opensRate || 0}%`,
             tooltip: "Percentage of emails opened",
             show: filters.showOpensRate,
+            isCalculating: false,
         },
         {
             title: "Click rate",
-            value: data?.clickRate || 0,
+            value: `${data?.clickRate || 0}%`,
             tooltip: "Percentage of emails clicked",
             show: filters.showClickRate,
+            isCalculating: false,
         },
         {
             title: "Reply rate",
-            value: data?.replyRate || 0,
+            value: `${data?.replyRate || 0}%`,
             tooltip: "Percentage of emails replied to",
             show: filters.showReplyRate,
+            isCalculating: false,
+        },
+        {
+            title: "Positive Reply Rate",
+            value: data?.positiveReplyRate || "0%",
+            tooltip: "Percentage of positive replies (interested or meeting booked)",
+            show: filters.showPositiveReplyRate,
+            isCalculating: data?.positiveReplyRate === 'calculating...',
         },
     ].filter(card => card.show)
 
@@ -284,13 +358,24 @@ export default function AnalyticsPage() {
                                 <DropdownMenuContent align="end" className="w-64 bg-card border-border text-foreground p-1">
                                     <div className="p-2">
                                         <Input
-                                            placeholder="Search"
+                                            placeholder="Search workspaces..."
                                             value={workspaceSearch}
                                             onChange={(e) => setWorkspaceSearch(e.target.value)}
                                             className="bg-secondary border-border text-foreground text-sm h-8 mb-2 focus-visible:ring-blue-600/50"
                                         />
                                     </div>
                                     <DropdownMenuSeparator className="bg-muted" />
+                                    {/* My Organization option (show all) */}
+                                    <DropdownMenuItem
+                                        onClick={() => switchWorkspace("My Organization")}
+                                        className={cn(
+                                            "cursor-pointer rounded-md focus:bg-secondary focus:text-foreground my-0.5",
+                                            currentWorkspace === "My Organization" && "bg-blue-600/10 text-blue-400"
+                                        )}
+                                    >
+                                        <Logo variant="icon" size="sm" className="mr-2 text-blue-500" />
+                                        My Organization
+                                    </DropdownMenuItem>
                                     {filteredWorkspaces.map((workspace) => (
                                         <DropdownMenuItem
                                             key={workspace.id || workspace.name}
@@ -300,26 +385,23 @@ export default function AnalyticsPage() {
                                                 currentWorkspace === workspace.name && "bg-blue-600/10 text-blue-400"
                                             )}
                                         >
-                                            <Logo variant="icon" size="sm" className="mr-2" />
+                                            <Logo variant="icon" size="sm" className="mr-2 text-blue-500" />
                                             {workspace.name}
                                         </DropdownMenuItem>
                                     ))}
                                     <DropdownMenuSeparator className="bg-muted" />
-                                    <DropdownMenuItem className="focus:bg-secondary">Settings</DropdownMenuItem>
-                                    <DropdownMenuItem className="focus:bg-secondary">Billing</DropdownMenuItem>
-                                    <DropdownMenuSeparator className="bg-muted" />
-                                    <DropdownMenuItem
-                                        className="text-red-400 focus:text-red-400 focus:bg-red-900/10"
-                                        onClick={() => {
-                                            import("next-auth/react").then(({ signOut }) => {
-                                                signOut({ callbackUrl: "/login" })
-                                            })
-                                        }}
-                                    >
-                                        Logout
+                                    <DropdownMenuItem onClick={() => setCreateWorkspaceOpen(true)} className="cursor-pointer focus:bg-secondary focus:text-blue-400 text-blue-400">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Workspace
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+
+                            <CreateWorkspaceModal
+                                open={createWorkspaceOpen}
+                                onOpenChange={setCreateWorkspaceOpen}
+                                onWorkspaceCreated={refreshWorkspaces}
+                            />
                         </div>
                     </div>
 

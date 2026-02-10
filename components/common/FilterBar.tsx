@@ -48,101 +48,103 @@ export function FilterBar({ onSearchChange, onTagsChange, selectedTags, placehol
     }
 
     return (
-        <div className={cn("flex items-center gap-2 mb-4", className)}>
-            <div className="relative flex-1 max-w-sm">
-                <Input
-                    placeholder={placeholder}
-                    value={search}
-                    onChange={(e) => {
-                        setSearch(e.target.value)
-                        onSearchChange(e.target.value)
-                    }}
-                    className="h-9"
-                />
-            </div>
+        <div className={cn("flex items-center justify-between gap-2 mb-4", className)}>
+            <div className="flex items-center gap-2">
+                <div className="relative w-[320px]">
+                    <Input
+                        placeholder={placeholder}
+                        value={search}
+                        onChange={(e) => {
+                            setSearch(e.target.value)
+                            onSearchChange(e.target.value)
+                        }}
+                        className="h-9"
+                    />
+                </div>
 
-            <Popover>
-                <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground hover:text-foreground">
-                        <Filter className="w-4 h-4 mr-2" />
-                        Tags
-                        {selectedTags.length > 0 && (
-                            <>
-                                <Separator orientation="vertical" className="mx-2 h-4" />
-                                <Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
-                                    {selectedTags.length}
-                                </Badge>
-                                <div className="hidden space-x-1 lg:flex">
-                                    {selectedTags.length > 2 ? (
-                                        <Badge variant="secondary" className="rounded-sm px-1 font-normal">
-                                            {selectedTags.length} selected
-                                        </Badge>
-                                    ) : (
-                                        allTags
-                                            .filter(tag => selectedTags.includes(tag.id))
-                                            .map(tag => (
-                                                <Badge
-                                                    variant="secondary"
-                                                    key={tag.id}
-                                                    className="rounded-sm px-1 font-normal"
-                                                    style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-                                                >
-                                                    {tag.name}
-                                                </Badge>
-                                            ))
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[200px] p-0" align="start">
-                    <div className="p-2 border-b">
-                        <span className="text-xs font-medium text-muted-foreground">Filter by tag</span>
-                    </div>
-                    <div className="p-1 max-h-[300px] overflow-auto">
-                        {allTags.length === 0 ? (
-                            <div className="py-6 text-center text-sm text-muted-foreground">
-                                No tags found
-                            </div>
-                        ) : (
-                            allTags.map((tag) => {
-                                const isSelected = selectedTags.includes(tag.id)
-                                return (
-                                    <div
-                                        key={tag.id}
-                                        className={cn(
-                                            "flex items-center px-2 py-2 cursor-pointer gap-2 rounded-sm hover:bg-accent",
-                                            isSelected && "bg-accent"
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground hover:text-foreground">
+                            <Filter className="w-4 h-4 mr-2" />
+                            Tags
+                            {selectedTags.length > 0 && (
+                                <>
+                                    <Separator orientation="vertical" className="mx-2 h-4" />
+                                    <Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+                                        {selectedTags.length}
+                                    </Badge>
+                                    <div className="hidden space-x-1 lg:flex">
+                                        {selectedTags.length > 2 ? (
+                                            <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+                                                {selectedTags.length} selected
+                                            </Badge>
+                                        ) : (
+                                            allTags
+                                                .filter(tag => selectedTags.includes(tag.id))
+                                                .map(tag => (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        key={tag.id}
+                                                        className="rounded-sm px-1 font-normal"
+                                                        style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                                                    >
+                                                        {tag.name}
+                                                    </Badge>
+                                                ))
                                         )}
-                                        onClick={() => toggleTag(tag.id)}
-                                    >
-                                        <div
-                                            className={cn("flex items-center justify-center w-4 h-4 rounded border border-primary/30", isSelected ? "bg-primary border-primary" : "bg-transparent")}
-                                        >
-                                            {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
-                                        </div>
-                                        <span className="text-sm flex-1">{tag.name}</span>
-                                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
                                     </div>
-                                )
-                            })
-                        )}
-                    </div>
-                    {selectedTags.length > 0 && (
-                        <div className="p-1 border-t">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="w-full justify-center h-8 text-xs"
-                                onClick={() => onTagsChange([])}
-                            >
-                                Clear filters
-                            </Button>
+                                </>
+                            )}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-0" align="start">
+                        <div className="p-2 border-b">
+                            <span className="text-xs font-medium text-muted-foreground">Filter by tag</span>
                         </div>
-                    )}
-                </PopoverContent>
-            </Popover>
+                        <div className="p-1 max-h-[300px] overflow-auto">
+                            {allTags.length === 0 ? (
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                    No tags found
+                                </div>
+                            ) : (
+                                allTags.map((tag) => {
+                                    const isSelected = selectedTags.includes(tag.id)
+                                    return (
+                                        <div
+                                            key={tag.id}
+                                            className={cn(
+                                                "flex items-center px-2 py-2 cursor-pointer gap-2 rounded-sm hover:bg-accent",
+                                                isSelected && "bg-accent"
+                                            )}
+                                            onClick={() => toggleTag(tag.id)}
+                                        >
+                                            <div
+                                                className={cn("flex items-center justify-center w-4 h-4 rounded border border-primary/30", isSelected ? "bg-primary border-primary" : "bg-transparent")}
+                                            >
+                                                {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                                            </div>
+                                            <span className="text-sm flex-1">{tag.name}</span>
+                                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                                        </div>
+                                    )
+                                })
+                            )}
+                        </div>
+                        {selectedTags.length > 0 && (
+                            <div className="p-1 border-t">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="w-full justify-center h-8 text-xs"
+                                    onClick={() => onTagsChange([])}
+                                >
+                                    Clear filters
+                                </Button>
+                            </div>
+                        )}
+                    </PopoverContent>
+                </Popover>
+            </div>
 
             {selectedTags.length > 0 && (
                 <Button

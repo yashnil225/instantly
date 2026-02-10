@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dialog"
 import { FilterBar } from "@/components/common/FilterBar"
 import { TagManager, Tag as TagType } from "@/components/common/TagManager"
+import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
+import { useWorkspaces } from "@/contexts/WorkspaceContext"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -100,10 +102,19 @@ function AccountsPage() {
     const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get("page") || "1"))
     const [totalPages, setTotalPages] = useState(1)
 
-    // Workspace state
-    const [workspaces, setWorkspaces] = useState<{ id: string, name: string }[]>([])
+    // Workspace state - using global context
+    const { workspaces, refreshWorkspaces } = useWorkspaces()
     const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
     const [workspaceSearch, setWorkspaceSearch] = useState("")
+    const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
+
+    // Restore saved workspace from localStorage when workspaces load
+    useEffect(() => {
+        const savedWorkspace = localStorage.getItem('activeWorkspace')
+        if (savedWorkspace && workspaces.some((w: any) => w.name === savedWorkspace)) {
+            setCurrentWorkspace(savedWorkspace)
+        }
+    }, [workspaces])
 
     // Debounce search input (300ms delay)
     useEffect(() => {
@@ -221,21 +232,6 @@ function AccountsPage() {
         fetchAccounts()
     }, [currentPage, debouncedSearch, activeFilter, currentWorkspace, workspaces, fetchAccounts])
 
-    const loadWorkspaces = async () => {
-        try {
-            const res = await fetch('/api/workspaces')
-            if (res.ok) {
-                const data = await res.json()
-                setWorkspaces(data)
-                const savedWorkspace = localStorage.getItem('activeWorkspace')
-                if (savedWorkspace) {
-                    setCurrentWorkspace(savedWorkspace)
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load workspaces:", error)
-        }
-    }
 
     const switchWorkspace = (workspaceName: string) => {
         setCurrentWorkspace(workspaceName)
@@ -597,12 +593,18 @@ function AccountsPage() {
                                         </DropdownMenuItem>
                                     ))}
                                     <DropdownMenuSeparator className="bg-muted" />
-                                    <DropdownMenuItem onClick={() => router.push('/settings/workspaces')} className="focus:bg-secondary focus:text-blue-400 text-blue-400 cursor-pointer">
+                                    <DropdownMenuItem onClick={() => setCreateWorkspaceOpen(true)} className="focus:bg-secondary focus:text-blue-400 text-blue-400 cursor-pointer">
                                         <Plus className="h-4 w-4 mr-2" />
                                         Add Workspace
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+
+                            <CreateWorkspaceModal
+                                open={createWorkspaceOpen}
+                                onOpenChange={setCreateWorkspaceOpen}
+                                onWorkspaceCreated={refreshWorkspaces}
+                            />
                         </div>
                     </div>
 
@@ -905,11 +907,6 @@ function AccountsPage() {
                                                                 className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2"
                                                             >
                                                                 Reconnect
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator className="bg-muted" />
-                                                            <DropdownMenuItem onClick={() => router.push('/settings/workspaces')} className="cursor-pointer focus:bg-muted focus:text-foreground text-blue-400">
-                                                                <Plus className="h-4 w-4 mr-2" />
-                                                                Add Workspace
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator className="bg-muted" />
                                                             <DropdownMenuItem onClick={() => router.push('/settings/profile')} className="cursor-pointer focus:bg-muted focus:text-foreground">Settings</DropdownMenuItem>

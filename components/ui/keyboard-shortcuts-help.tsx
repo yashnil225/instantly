@@ -48,7 +48,7 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl bg-[#1e1e24] border-[#2a2a35] text-foreground">
+            <DialogContent className="max-w-2xl bg-popover border-border text-popover-foreground">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Command className="h-5 w-5" />
@@ -58,20 +58,20 @@ export function KeyboardShortcutsHelp({ open, onOpenChange }: KeyboardShortcutsH
                 <div className="grid grid-cols-2 gap-8 mt-4">
                     {shortcuts.map((section) => (
                         <div key={section.category}>
-                            <h3 className="text-sm font-semibold text-[#a1a1aa] mb-3 uppercase tracking-wider">
+                            <h3 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">
                                 {section.category}
                             </h3>
                             <div className="space-y-2">
                                 {section.items.map((item) => (
                                     <div key={item.key} className="flex items-center justify-between text-sm">
-                                        <span className="text-foreground flex items-center gap-2">
+                                        <span className="text-popover-foreground flex items-center gap-2">
                                             {item.description}
                                         </span>
                                         <span className="flex items-center gap-1">
                                             {item.key.split(' ').map((k, i) => (
                                                 <kbd
                                                     key={i}
-                                                    className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-[#2a2a35] bg-[#2a2a35] px-1.5 font-mono text-[10px] font-medium text-foreground opacity-100"
+                                                    className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-secondary px-1.5 font-mono text-[10px] font-medium text-popover-foreground opacity-100"
                                                 >
                                                     {k}
                                                 </kbd>

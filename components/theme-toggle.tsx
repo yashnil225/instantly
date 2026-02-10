@@ -44,30 +44,30 @@ export function ThemeToggle() {
                     <span className="sr-only">Toggle theme</span>
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-[#1a1a1a] border-[#2a2a2a] text-white">
+            <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
                 <DropdownMenuItem
                     onClick={() => setTheme("light")}
-                    className="cursor-pointer focus:bg-[#2a2a2a] focus:text-white gap-2"
+                    className="cursor-pointer focus:bg-secondary focus:text-foreground gap-2"
                 >
                     <Sun className="h-4 w-4" />
                     Light
-                    {theme === "light" && <span className="ml-auto text-blue-500">✓</span>}
+                    {theme === "light" && <span className="ml-auto text-primary">✓</span>}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                     onClick={() => setTheme("dark")}
-                    className="cursor-pointer focus:bg-[#2a2a2a] focus:text-white gap-2"
+                    className="cursor-pointer focus:bg-secondary focus:text-foreground gap-2"
                 >
                     <Moon className="h-4 w-4" />
                     Dark
-                    {theme === "dark" && <span className="ml-auto text-blue-500">✓</span>}
+                    {theme === "dark" && <span className="ml-auto text-primary">✓</span>}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                     onClick={() => setTheme("system")}
-                    className="cursor-pointer focus:bg-[#2a2a2a] focus:text-white gap-2"
+                    className="cursor-pointer focus:bg-secondary focus:text-foreground gap-2"
                 >
                     <Monitor className="h-4 w-4" />
                     System
-                    {theme === "system" && <span className="ml-auto text-blue-500">✓</span>}
+                    {theme === "system" && <span className="ml-auto text-primary">✓</span>}
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>

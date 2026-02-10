@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useWorkspaces } from "@/contexts/WorkspaceContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Search, Filter, Mail, Building2, Download, Loader2, Zap, ChevronDown, CheckSquare, MessageCircle, XCircle } from "lucide-react"
+import { Search, Filter, Mail, Building2, Download, Loader2, Zap, ChevronDown, CheckSquare, MessageCircle, XCircle, Plus } from "lucide-react"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -15,6 +16,7 @@ import {
 import { cn } from "@/lib/utils"
 import { FilterBar } from "@/components/common/FilterBar"
 import { TagManager } from "@/components/common/TagManager"
+import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
 import { toast } from "@/components/ui/use-toast"
 
 interface Lead {
@@ -37,9 +39,10 @@ export default function GlobalLeadsPage() {
     const [total, setTotal] = useState(0)
 
     // Workspace state
-    const [workspaces, setWorkspaces] = useState<any[]>([])
+    const { workspaces, refreshWorkspaces } = useWorkspaces()
     const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
     const [workspaceSearch, setWorkspaceSearch] = useState("")
+    const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
 
     // Filter state
     const [searchQuery, setSearchQuery] = useState("")
@@ -48,7 +51,10 @@ export default function GlobalLeadsPage() {
     const [statusFilter, setStatusFilter] = useState("all")
 
     useEffect(() => {
-        loadWorkspaces()
+        const savedWorkspace = localStorage.getItem('activeWorkspace')
+        if (savedWorkspace) {
+            setCurrentWorkspace(savedWorkspace)
+        }
     }, [])
 
     useEffect(() => {
@@ -61,22 +67,6 @@ export default function GlobalLeadsPage() {
     useEffect(() => {
         fetchLeads()
     }, [currentWorkspace, debouncedSearch, selectedTags, statusFilter])
-
-    const loadWorkspaces = async () => {
-        try {
-            const res = await fetch('/api/workspaces')
-            if (res.ok) {
-                const data = await res.json()
-                setWorkspaces(data)
-                const savedWorkspace = localStorage.getItem('activeWorkspace')
-                if (savedWorkspace) {
-                    setCurrentWorkspace(savedWorkspace)
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load workspaces:", error)
-        }
-    }
 
     const switchWorkspace = (workspaceName: string) => {
         setCurrentWorkspace(workspaceName)
@@ -202,8 +192,19 @@ export default function GlobalLeadsPage() {
                                         {workspace.name}
                                     </DropdownMenuItem>
                                 ))}
+                                <DropdownMenuSeparator className="bg-[#2a2a2a]" />
+                                <DropdownMenuItem onClick={() => setCreateWorkspaceOpen(true)} className="cursor-pointer focus:bg-[#2a2a2a] focus:text-blue-400 text-blue-400">
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Workspace
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <CreateWorkspaceModal
+                            open={createWorkspaceOpen}
+                            onOpenChange={setCreateWorkspaceOpen}
+                            onWorkspaceCreated={refreshWorkspaces}
+                        />
 
                         <Button variant="outline" className="border-[#222] bg-[#111] text-gray-400 hover:text-white" onClick={handleExport}>
                             <Download className="h-4 w-4 mr-2" />

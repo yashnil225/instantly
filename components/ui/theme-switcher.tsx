@@ -16,7 +16,7 @@ export function ThemeSwitcher() {
     return <div className="w-14 h-8 rounded-full bg-muted animate-pulse" />
   }
 
-  const isDark = theme === "dark" || theme === "synthwave"
+  const isDark = theme === "dark"
 
   return (
     <button

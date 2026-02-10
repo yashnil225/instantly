@@ -15,6 +15,7 @@ export async function GET(
     try {
         const { searchParams } = new URL(request.url)
         const range = searchParams.get('range') || 'last_7_days'
+        const includeAutoReplies = searchParams.get('includeAutoReplies') === 'true'
 
         // Get campaign with related data
         const campaign = await prisma.campaign.findUnique({
@@ -46,8 +47,27 @@ export async function GET(
         const sentCount = allEvents.filter(e => e.type === 'sent').length
         const openCount = allEvents.filter(e => e.type === 'open').length
         const clickCount = allEvents.filter(e => e.type === 'click').length
-        const replyCount = allEvents.filter(e => e.type === 'reply').length
         const bounceCount = allEvents.filter(e => e.type === 'bounce').length
+
+        // Fetch reply events with lead data for auto-reply filtering and classification
+        const replyEvents = await prisma.sendingEvent.findMany({
+            where: { 
+                campaignId: campaignId,
+                type: 'reply'
+            },
+            include: { lead: true }
+        })
+
+        // Filter replies based on includeAutoReplies setting
+        let filteredReplyEvents = replyEvents
+        if (!includeAutoReplies) {
+            filteredReplyEvents = replyEvents.filter(e => e.lead?.aiLabel !== 'out_of_office')
+        }
+        const replyCount = filteredReplyEvents.length
+
+        // Check for unclassified replies
+        const unclassifiedReplies = replyEvents.filter(e => !e.lead?.aiLabel)
+        const needsClassification = unclassifiedReplies.length > 0
 
         // Calculate rates based on tracking settings and sent count
         let openRate = 'Disabled'
@@ -73,6 +93,18 @@ export async function GET(
         // Opportunities = reply count (actual conversions from outreach)
         const opportunitiesCount = replyCount
         const conversions = campaign.leads.filter((l: any) => l.status === 'converted' || l.status === 'won')
+        const conversionValue = conversions.length * opportunityValue
+
+        // Calculate positive reply rate (if all replies are classified)
+        let positiveReplyRate = '0%'
+        if (!needsClassification && replyCount > 0) {
+            const positiveReplyCount = filteredReplyEvents.filter(e => 
+                ['interested', 'meeting_booked'].includes(e.lead?.aiLabel)
+            ).length
+            positiveReplyRate = Math.round((positiveReplyCount / replyCount) * 100) + '%'
+        } else if (needsClassification) {
+            positiveReplyRate = 'calculating...'
+        }
 
 
         // Generate chart data using real stats form events
@@ -146,7 +178,7 @@ export async function GET(
             openRate,
             clickRate,
             replyRate,
-            positiveReplyRate: '0%',
+            positiveReplyRate,
             bounceRate,
             opportunities: {
                 count: opportunitiesCount,
@@ -154,14 +186,16 @@ export async function GET(
             },
             conversions: {
                 count: conversions.length,
-                value: 0
+                value: conversionValue
             },
             chartData,
             stepAnalytics,
             heatmapData,
             funnelData,
             leads: campaign.leads,
-            sequences: campaign.sequences
+            sequences: campaign.sequences,
+            _needsClassification: needsClassification,
+            _unclassifiedCount: unclassifiedReplies.length
         }
 
         return NextResponse.json(analyticsData)

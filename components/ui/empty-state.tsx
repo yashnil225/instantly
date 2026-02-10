@@ -12,14 +12,14 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon: Icon, title, description, actionLabel, onAction }: EmptyStateProps) {
     return (
-        <div className="flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-[#333] bg-[#0f0f0f]">
-            <div className="h-16 w-16 bg-[#1a1a1a] rounded-full flex items-center justify-center mb-6">
-                <Icon className="h-8 w-8 text-gray-500" />
+        <div className="flex flex-col items-center justify-center p-12 text-center rounded-xl border border-dashed border-border bg-card">
+            <div className="h-16 w-16 bg-secondary rounded-full flex items-center justify-center mb-6">
+                <Icon className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
-            <p className="text-gray-400 max-w-sm mb-8">{description}</p>
+            <h3 className="text-xl font-semibold text-card-foreground mb-2">{title}</h3>
+            <p className="text-muted-foreground max-w-sm mb-8">{description}</p>
             {actionLabel && onAction && (
-                <Button onClick={onAction} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button onClick={onAction} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                     {actionLabel}
                 </Button>
             )}

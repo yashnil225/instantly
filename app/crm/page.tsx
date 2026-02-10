@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { useWorkspaces } from "@/contexts/WorkspaceContext"
 import {
     Search,
     ChevronDown,
@@ -39,13 +40,15 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
 
 export default function CRMPage() {
     const router = useRouter()
+    const { workspaces, refreshWorkspaces } = useWorkspaces()
     const [searchQuery, setSearchQuery] = useState("")
     const [leads, setLeads] = useState<any[]>([])
-    const [workspaces, setWorkspaces] = useState<any[]>([])
     const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("all")
+    const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
     const [loading, setLoading] = useState(true)
     const [preferences, setPreferences] = useState<any>(null)
     type ViewType = "opportunities" | "leads" | "campaigns" | "salesflows" | "reports" | "inbox" | "done" | "upcoming"
@@ -937,6 +940,19 @@ export default function CRMPage() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-64 bg-[#111116] border-border rounded-xl shadow-2xl p-2 z-[60]">
+                                {/* My Organization option (show all) */}
+                                <DropdownMenuItem
+                                    onSelect={(e) => {
+                                        e.preventDefault()
+                                        setSelectedWorkspaceId("all")
+                                    }}
+                                    className="px-3 py-2.5 cursor-pointer focus:bg-[#1a1a1f] rounded-lg flex items-center justify-between text-foreground focus:text-foreground"
+                                >
+                                    <span className={cn("text-sm", selectedWorkspaceId === "all" ? "font-bold text-blue-400" : "")}>
+                                        My Organization
+                                    </span>
+                                    {selectedWorkspaceId === "all" && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
+                                </DropdownMenuItem>
                                 {workspaces.map((ws) => (
                                     <DropdownMenuItem
                                         key={ws.id}
@@ -952,8 +968,24 @@ export default function CRMPage() {
                                         {selectedWorkspaceId === ws.id && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
                                     </DropdownMenuItem>
                                 ))}
+                                <DropdownMenuItem
+                                    onSelect={(e) => {
+                                        e.preventDefault()
+                                        setCreateWorkspaceOpen(true)
+                                    }}
+                                    className="px-3 py-2.5 cursor-pointer focus:bg-[#1a1a1f] rounded-lg flex items-center text-blue-400 focus:text-blue-400"
+                                >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    <span className="text-sm">Add Workspace</span>
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+
+                        <CreateWorkspaceModal
+                            open={createWorkspaceOpen}
+                            onOpenChange={setCreateWorkspaceOpen}
+                            onWorkspaceCreated={refreshWorkspaces}
+                        />
                     </div>
                 </div>
 

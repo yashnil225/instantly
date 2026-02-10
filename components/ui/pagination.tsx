@@ -25,16 +25,16 @@ export function Pagination({
     })
 
     return (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-[#2a2a2a]">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 {onItemsPerPageChange && (
                     <>
                         <span>Show</span>
                         <Select value={itemsPerPage.toString()} onValueChange={(v) => onItemsPerPageChange(parseInt(v))}>
-                            <SelectTrigger className="w-20 h-8 bg-[#1a1a1a] border-[#333]">
+                            <SelectTrigger className="w-20 h-8 bg-background border-border">
                                 <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-[#1a1a1a] border-[#333]">
+                            <SelectContent className="bg-popover border-border">
                                 <SelectItem value="10">10</SelectItem>
                                 <SelectItem value="20">20</SelectItem>
                                 <SelectItem value="50">50</SelectItem>
@@ -52,7 +52,7 @@ export function Pagination({
                     size="sm"
                     onClick={() => onPageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="border-[#333] text-gray-300 hover:bg-[#1a1a1a] disabled:opacity-30"
+                    className="border-border text-foreground hover:bg-secondary disabled:opacity-30"
                 >
                     <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -65,8 +65,8 @@ export function Pagination({
                         onClick={() => onPageChange(page)}
                         className={
                             page === currentPage
-                                ? "bg-blue-600 hover:bg-blue-700"
-                                : "border-[#333] text-gray-300 hover:bg-[#1a1a1a]"
+                                ? "bg-primary hover:bg-primary/90"
+                                : "border-border text-foreground hover:bg-secondary"
                         }
                     >
                         {page}
@@ -78,13 +78,13 @@ export function Pagination({
                     size="sm"
                     onClick={() => onPageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="border-[#333] text-gray-300 hover:bg-[#1a1a1a] disabled:opacity-30"
+                    className="border-border text-foreground hover:bg-secondary disabled:opacity-30"
                 >
                     <ChevronRight className="h-4 w-4" />
                 </Button>
             </div>
 
-            <div className="text-sm text-gray-400">
+            <div className="text-sm text-muted-foreground">
                 Page {currentPage} of {totalPages}
             </div>
         </div>

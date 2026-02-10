@@ -224,7 +224,7 @@ function AccountsPage() {
 
     // Load workspaces on mount
     useEffect(() => {
-        loadWorkspaces()
+        refreshWorkspaces()
     }, [])
 
     // Fetch accounts when workspace changes

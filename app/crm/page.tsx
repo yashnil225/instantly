@@ -128,21 +128,10 @@ export default function CRMPage() {
 
     const fetchData = useCallback(async () => {
         try {
-            // Fetch Workspaces and Campaigns
-            const [wsRes, campRes] = await Promise.all([
-                fetch('/api/workspaces'),
-                fetch('/api/campaigns')
-            ])
+            // Fetch Campaigns
+            const campRes = await fetch('/api/campaigns')
 
-            // Check responses before parsing
-            let wsData = []
             let campData = []
-
-            if (wsRes.ok) {
-                wsData = await wsRes.json()
-            } else {
-                console.error("Failed to fetch workspaces:", wsRes.status)
-            }
 
             if (campRes.ok) {
                 campData = await campRes.json()
@@ -150,7 +139,6 @@ export default function CRMPage() {
                 console.error("Failed to fetch campaigns:", campRes.status)
             }
 
-            setWorkspaces(wsData)
             setCampaigns(Array.isArray(campData) ? campData : [])
 
             // Fetch Preferences
@@ -171,8 +159,8 @@ export default function CRMPage() {
             }
 
             let currentWsId = selectedWorkspaceId
-            if (wsData.length > 0 && selectedWorkspaceId === "all") {
-                const defaultWs = wsData.find((w: any) => w.isDefault) || wsData[0]
+            if (workspaces.length > 0 && selectedWorkspaceId === "all") {
+                const defaultWs = workspaces.find((w: any) => w.isDefault) || workspaces[0]
                 currentWsId = defaultWs.id
                 setSelectedWorkspaceId(currentWsId)
             }
@@ -237,7 +225,7 @@ export default function CRMPage() {
         } finally {
             setLoading(false)
         }
-    }, [selectedWorkspaceId, sortField, sortOrder, selectedLabels, selectedUsers, dateRange, searchQuery, view, rowsPerPage, page, customDateStart, customDateEnd])
+    }, [selectedWorkspaceId, sortField, sortOrder, selectedLabels, selectedUsers, dateRange, searchQuery, view, rowsPerPage, page, customDateStart, customDateEnd, workspaces])
 
     const fetchReminders = useCallback(async () => {
         try {
@@ -475,20 +463,19 @@ export default function CRMPage() {
         }
 
         try {
-            const [wsRes, prefRes] = await Promise.all([
-                fetch(`/api/workspaces/${wsId}`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ opportunityValue: parseFloat(welcomeValue) || 1000 })
-                }),
-                fetch(`/api/user/preferences`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ hasSeenWelcomeModal: true })
-                })
-            ])
+            const prefRes = await fetch(`/api/workspaces/${wsId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ opportunityValue: parseFloat(welcomeValue) || 1000 })
+            })
 
-            if (prefRes.ok) {
+            const prefUpdateRes = await fetch(`/api/user/preferences`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ hasSeenWelcomeModal: true })
+            })
+
+            if (prefUpdateRes.ok) {
                 setShowWelcomeModal(false)
                 setShowSuccessToast(true)
                 setTimeout(() => setShowSuccessToast(false), 3000)
@@ -499,12 +486,10 @@ export default function CRMPage() {
                 }
 
                 // Refresh workspaces and preferences
-                const [wsData, prefData] = await Promise.all([
-                    fetch('/api/workspaces').then(r => r.json()),
-                    fetch('/api/user/preferences').then(r => r.json())
+                await Promise.all([
+                    refreshWorkspaces(),
+                    fetch('/api/user/preferences').then(r => r.json()).then(setPreferences)
                 ])
-                setWorkspaces(wsData)
-                setPreferences(prefData)
             }
         } catch (error) {
             console.error("Failed to set default value:", error)
@@ -1101,10 +1086,10 @@ export default function CRMPage() {
                                                 <div className="p-3">
                                                     <div className="text-[11px] font-black text-muted-foreground uppercase tracking-widest px-1 mb-2">All Users</div>
                                                     <div className="max-h-[300px] overflow-y-auto no-scrollbar space-y-1">
-                                                        {(!activeWorkspace?.members || activeWorkspace.members.length === 0) ? (
+                                                        {(!(activeWorkspace as any)?.members || (activeWorkspace as any).members.length === 0) ? (
                                                             <div className="px-3 py-4 text-center text-xs text-muted-foreground font-bold italic">No members found</div>
                                                         ) : (
-                                                            activeWorkspace.members
+                                                            (activeWorkspace as any).members
                                                                 .filter((m: any) => !userSearch || (m.user.name || m.user.email).toLowerCase().includes(userSearch.toLowerCase()))
                                                                 .map((member: any) => {
                                                                     const isSelected = selectedUsers.includes(member.userId)

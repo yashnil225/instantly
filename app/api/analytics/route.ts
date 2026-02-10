@@ -113,8 +113,8 @@ export async function GET(request: Request) {
         // Calculate positive reply rate (if all replies are classified)
         let positiveReplyRate = '0%'
         if (!needsClassification && totalReplied > 0) {
-            const positiveReplyCount = filteredReplyEvents.filter(e => 
-                ['interested', 'meeting_booked'].includes(e.lead?.aiLabel)
+            const positiveReplyCount = filteredReplyEvents.filter(e =>
+                e.lead?.aiLabel && ['interested', 'meeting_booked'].includes(e.lead.aiLabel)
             ).length
             positiveReplyRate = Math.round((positiveReplyCount / totalReplied) * 100) + '%'
         } else if (needsClassification) {

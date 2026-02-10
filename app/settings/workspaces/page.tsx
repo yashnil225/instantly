@@ -49,7 +49,7 @@ export default function WorkspacesPage() {
                 body: JSON.stringify({ opportunityValue: parseFloat(value) }),
             })
             if (res.ok) {
-                setWorkspaces(workspaces.map(w => w.id === id ? { ...w, opportunityValue: parseFloat(value) } : w))
+                await refreshWorkspaces()
                 setEditingId(null)
                 toast({ title: "Success", description: "Value updated" })
             }
@@ -75,7 +75,7 @@ export default function WorkspacesPage() {
                 body: JSON.stringify({ name: renameInput }),
             })
             if (res.ok) {
-                setWorkspaces(workspaces.map(w => w.id === renameWorkspace.id ? { ...w, name: renameInput } : w))
+                await refreshWorkspaces()
                 setRenameDialogOpen(false)
                 toast({ title: "Success", description: "Workspace renamed" })
             }
@@ -101,7 +101,7 @@ export default function WorkspacesPage() {
                 method: "DELETE",
             })
             if (res.ok) {
-                setWorkspaces(workspaces.filter(w => w.id !== deleteWorkspace.id))
+                await refreshWorkspaces()
                 setDeleteDialogOpen(false)
                 toast({ title: "Success", description: "Workspace deleted along with its campaigns and leads" })
             } else {

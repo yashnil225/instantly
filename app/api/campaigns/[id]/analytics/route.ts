@@ -99,7 +99,7 @@ export async function GET(
         let positiveReplyRate = '0%'
         if (!needsClassification && replyCount > 0) {
             const positiveReplyCount = filteredReplyEvents.filter(e => 
-                ['interested', 'meeting_booked'].includes(e.lead?.aiLabel)
+                e.lead?.aiLabel && ['interested', 'meeting_booked'].includes(e.lead.aiLabel)
             ).length
             positiveReplyRate = Math.round((positiveReplyCount / replyCount) * 100) + '%'
         } else if (needsClassification) {

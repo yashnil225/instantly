@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
                 
                 // Trigger background classification if needed
                 if (analyticsData._needsClassification && !isClassifying) {
-                    classifyRepliesInBackground(analyticsData._unclassifiedCount || 0, selectedWorkspaceId)
+                    classifyRepliesInBackground(analyticsData._unclassifiedCount || 0, selectedWorkspaceId || 'all')
                 }
             }
         } catch (error) {

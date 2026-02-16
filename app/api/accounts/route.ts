@@ -96,7 +96,8 @@ export async function GET(request: Request) {
         isInCampaign: acc.campaignAccounts.length > 0,
         hasCustomDomain: !!acc.provider,
         signature: acc.signature,
-        tags: acc.tags.map(t => t.tag) // Flatten relation
+        tags: acc.tags.map(t => t.tag), // Flatten relation
+        workspaces: acc.workspaces // Include workspace assignments
     }))
 
     return NextResponse.json({

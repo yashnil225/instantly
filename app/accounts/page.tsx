@@ -72,6 +72,7 @@ interface EmailAccount {
     isDFY: boolean
     isInCampaign: boolean
     hasCustomDomain: boolean
+    workspaces?: Array<{ workspaceId: string; workspace?: { name: string } }>
     tags: TagType[]
 }
 
@@ -818,20 +819,18 @@ function AccountsPage() {
                                                         </span>
                                                     )}
                                                     {/* Workspace Badges */}
-                                                    {account.workspaces?.length === 0 ? (
+                                                    {account.workspaces && account.workspaces.length === 0 ? (
                                                         <span className="px-2 py-0.5 border border-dashed border-muted-foreground/50 text-muted-foreground text-[10px] font-medium rounded-md">
                                                             Unassigned
                                                         </span>
-                                                    ) : (
-                                                        account.workspaces?.map((w: any) => (
-                                                            <span 
-                                                                key={w.workspaceId} 
-                                                                className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-medium rounded-md"
-                                                            >
-                                                                {w.workspace?.name || 'Workspace'}
-                                                            </span>
-                                                        ))
-                                                    )}
+                                                    ) : account.workspaces?.map((w: any) => (
+                                                        <span 
+                                                            key={w.workspaceId} 
+                                                            className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-medium rounded-md"
+                                                        >
+                                                            {w.workspace?.name || 'Workspace'}
+                                                        </span>
+                                                    ))}
                                                     {account.isWarming && (
                                                         <Flame className="h-4 w-4 text-orange-500 fill-orange-500" />
                                                     )}

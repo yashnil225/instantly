@@ -473,7 +473,7 @@ Instantly`,
         // Load saved workspace from localStorage
         const savedWorkspace = localStorage.getItem('activeWorkspace')
         if (savedWorkspace) {
-            setCurrentWorkspace(savedWorkspace as string)
+            switchWorkspace(savedWorkspace as string)
         }
 
         return () => {

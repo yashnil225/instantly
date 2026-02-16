@@ -18,13 +18,7 @@ export async function GET() {
             },
             include: {
                 members: { 
-                    include: { user: true },
-                    where: {
-                        OR: [
-                            { status: 'active' },
-                            { status: null }
-                        ]
-                    }
+                    include: { user: true }
                 },
                 _count: {
                     select: { 

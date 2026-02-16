@@ -33,27 +33,13 @@ export async function GET(request: Request) {
         }
     }
 
+    // Filter by workspace using EmailAccountWorkspace junction table
     if (workspaceId && workspaceId !== 'all') {
-        whereClause.OR = [
-            {
-                campaignAccounts: {
-                    some: {
-                        campaign: {
-                            campaignWorkspaces: {
-                                some: {
-                                    workspaceId: workspaceId
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            {
-                campaignAccounts: {
-                    none: {}
-                }
+        whereClause.workspaces = {
+            some: {
+                workspaceId: workspaceId
             }
-        ]
+        }
     }
 
     if (filter === 'paused') {
@@ -83,6 +69,11 @@ export async function GET(request: Request) {
                 tags: {
                     include: {
                         tag: true
+                    }
+                },
+                workspaces: {
+                    include: {
+                        workspace: true
                     }
                 }
             }
@@ -160,6 +151,8 @@ export async function POST(request: Request) {
         }
         // -------------------------
 
+        const { workspaceIds } = body
+
         const account = await prisma.emailAccount.create({
             data: {
                 userId: session.user.id,
@@ -175,7 +168,22 @@ export async function POST(request: Request) {
                 imapPort: parseInt(imapPort) || 993,
                 imapUser,
                 imapPass,
-                status: 'active'
+                status: 'active',
+                // Assign to workspace(s) if provided
+                ...(workspaceIds && workspaceIds.length > 0 && {
+                    workspaces: {
+                        create: workspaceIds.map((workspaceId: string) => ({
+                            workspaceId
+                        }))
+                    }
+                })
+            },
+            include: {
+                workspaces: {
+                    include: {
+                        workspace: true
+                    }
+                }
             }
         })
 

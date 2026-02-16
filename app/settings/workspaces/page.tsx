@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Settings, Trash2, DollarSign, Building2, Loader2, AlertTriangle } from "lucide-react"
+import { Plus, Settings, Trash2, DollarSign, Building2, Loader2, AlertTriangle, MoreVertical, Users, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
@@ -14,6 +14,13 @@ import {
     DialogHeader,
     DialogTitle
 } from "@/components/ui/dialog"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useWorkspaces } from "@/contexts/WorkspaceContext"
 import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
 
@@ -35,6 +42,13 @@ export default function WorkspacesPage() {
     const [deleteWorkspace, setDeleteWorkspace] = useState<any>(null)
     const [deleteConfirmInput, setDeleteConfirmInput] = useState("")
     const [deleting, setDeleting] = useState(false)
+
+    // Members dialog state
+    const [membersDialogOpen, setMembersDialogOpen] = useState(false)
+    const [selectedWorkspaceForMembers, setSelectedWorkspaceForMembers] = useState<any>(null)
+    const [inviteEmail, setInviteEmail] = useState("")
+    const [inviteRole, setInviteRole] = useState("member")
+    const [inviting, setInviting] = useState(false)
 
     useEffect(() => {
         refreshWorkspaces()
@@ -75,9 +89,23 @@ export default function WorkspacesPage() {
                 body: JSON.stringify({ name: renameInput }),
             })
             if (res.ok) {
+                const updatedWorkspace = await res.json()
+                
+                // Update local workspaces state immediately for instant UI reflection
+                const updatedWorkspaces = workspaces.map(w => 
+                    w.id === updatedWorkspace.id 
+                        ? { ...w, name: updatedWorkspace.name }
+                        : w
+                )
+                
+                // Update the context/workspaces state through refresh
                 await refreshWorkspaces()
+                
                 setRenameDialogOpen(false)
-                toast({ title: "Success", description: "Workspace renamed" })
+                toast({ title: "Success", description: "Workspace renamed successfully" })
+            } else {
+                const errorData = await res.json()
+                toast({ title: "Error", description: errorData.error || "Rename failed", variant: "destructive" })
             }
         } catch (error) {
             toast({ title: "Error", description: "Rename failed", variant: "destructive" })
@@ -112,6 +140,35 @@ export default function WorkspacesPage() {
             toast({ title: "Error", description: "Delete failed", variant: "destructive" })
         } finally {
             setDeleting(false)
+        }
+    }
+
+    const handleInviteMember = async () => {
+        if (!inviteEmail.trim() || !selectedWorkspaceForMembers) return
+
+        setInviting(true)
+        try {
+            const res = await fetch(`/api/workspaces/${selectedWorkspaceForMembers.id}/members`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+            })
+
+            const data = await res.json()
+
+            if (res.ok) {
+                toast({ title: "Success", description: `Invitation sent to ${inviteEmail}` })
+                setInviteEmail("")
+                setMembersDialogOpen(false)
+                // Refresh workspace data to show updated member count
+                await refreshWorkspaces()
+            } else {
+                toast({ title: "Error", description: data.error || "Failed to send invitation", variant: "destructive" })
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to send invitation", variant: "destructive" })
+        } finally {
+            setInviting(false)
         }
     }
 
@@ -159,24 +216,46 @@ export default function WorkspacesPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-                                            onClick={() => openRenameDialog(ws)}
-                                        >
-                                            <Settings className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-destructive transition-colors"
-                                            onClick={() => openDeleteDialog(ws)}
-                                            disabled={ws.isDefault}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
+                                                >
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+                                                <DropdownMenuItem 
+                                                    onClick={() => openRenameDialog(ws)}
+                                                    className="cursor-pointer focus:bg-secondary focus:text-foreground"
+                                                >
+                                                    <Pencil className="h-4 w-4 mr-2" />
+                                                    Rename
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem 
+                                                    onClick={() => {
+                                                        setSelectedWorkspaceForMembers(ws)
+                                                        setMembersDialogOpen(true)
+                                                    }}
+                                                    className="cursor-pointer focus:bg-secondary focus:text-foreground"
+                                                >
+                                                    <Users className="h-4 w-4 mr-2" />
+                                                    Add Members
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator className="bg-border" />
+                                                <DropdownMenuItem 
+                                                    onClick={() => openDeleteDialog(ws)}
+                                                    disabled={ws.isDefault}
+                                                    className="cursor-pointer focus:bg-secondary text-destructive focus:text-destructive disabled:opacity-50"
+                                                >
+                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                    Delete
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
 
@@ -317,6 +396,56 @@ export default function WorkspacesPage() {
                         >
                             {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                             Delete Permanently
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Add Members Dialog */}
+            <Dialog open={membersDialogOpen} onOpenChange={setMembersDialogOpen}>
+                <DialogContent className="bg-card border-border">
+                    <DialogHeader>
+                        <DialogTitle className="text-foreground flex items-center gap-2">
+                            <Users className="h-5 w-5" />
+                            Add Members
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground">
+                            Invite a new member to "{selectedWorkspaceForMembers?.name}"
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">Email Address</label>
+                            <Input
+                                value={inviteEmail}
+                                onChange={(e) => setInviteEmail(e.target.value)}
+                                placeholder="colleague@example.com"
+                                className="bg-background border-border"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleInviteMember()
+                                }}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">Role</label>
+                            <select
+                                value={inviteRole}
+                                onChange={(e) => setInviteRole(e.target.value)}
+                                className="w-full px-3 py-2 bg-background border border-border rounded-md text-foreground text-sm focus:outline-none focus:border-primary"
+                            >
+                                <option value="member">Member</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setMembersDialogOpen(false)}>Cancel</Button>
+                        <Button 
+                            onClick={handleInviteMember} 
+                            disabled={!inviteEmail.trim() || inviting}
+                        >
+                            {inviting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                            Send Invitation
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -20,14 +20,21 @@ export async function GET(request: NextRequest) {
         const search = searchParams.get('search')
         const tab = searchParams.get('tab')
 
+        // Get workspace filter
+        const workspaceId = searchParams.get('workspaceId')
+
         // Build filter conditions
         const where: any = {
             type: 'reply',
             campaign: {
-                // Ensure user owns the campaign or is a member
-                // For now, assuming direct ownership via userId or workspace access would be checked
-                // But simplified:
-                // userId: session.user.id
+                // Filter by workspace if specified
+                ...(workspaceId && workspaceId !== 'all' ? {
+                    campaignWorkspaces: {
+                        some: {
+                            workspaceId: workspaceId
+                        }
+                    }
+                } : {})
             }
         }
 

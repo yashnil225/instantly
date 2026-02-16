@@ -1,6 +1,11 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react"
+import { 
+    getSelectedWorkspaceId, 
+    setSelectedWorkspaceId, 
+    migrateWorkspaceStorage 
+} from "@/lib/workspace-storage"
 
 interface Workspace {
     id: string
@@ -27,6 +32,9 @@ interface WorkspaceContextType {
     isLoading: boolean
     refreshWorkspaces: () => Promise<void>
     createWorkspace: (name: string, opportunityValue?: number) => Promise<Workspace | null>
+    selectedWorkspaceId: string | null
+    setSelectedWorkspaceId: (id: string | null) => void
+    switchWorkspace: (id: string | null) => void
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined)
@@ -34,8 +42,43 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefin
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<string | null>(null)
 
-    const refreshWorkspaces = useCallback(async () => {
+    // Initialize selected workspace from storage and run migration
+    useEffect(() => {
+        if (workspaces.length > 0) {
+            const migratedId = migrateWorkspaceStorage(workspaces)
+            const storedId = getSelectedWorkspaceId()
+            
+            // Validate that stored workspace still exists
+            if (storedId && workspaces.find(w => w.id === storedId)) {
+                setSelectedWorkspaceIdState(storedId)
+            } else if (migratedId && workspaces.find(w => w.id === migratedId)) {
+                setSelectedWorkspaceIdState(migratedId)
+            } else {
+                // Default to null (My Organization - show all)
+                setSelectedWorkspaceIdState(null)
+            }
+        }
+    }, [workspaces])
+
+    // Listen for storage changes (cross-tab sync)
+    useEffect(() => {
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'selectedWorkspaceId') {
+                const newId = e.newValue
+                if (newId !== selectedWorkspaceId) {
+                    console.log(`[WorkspaceContext] Cross-tab sync: workspace changed to ${newId}`)
+                    setSelectedWorkspaceIdState(newId)
+                }
+            }
+        }
+
+        window.addEventListener('storage', handleStorageChange)
+        return () => window.removeEventListener('storage', handleStorageChange)
+    }, [selectedWorkspaceId])
+
+    const refreshWorkspaces = useCallback(async (): Promise<void> => {
         try {
             const res = await fetch('/api/workspaces')
             if (res.ok) {
@@ -71,6 +114,19 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         return null
     }, [])
 
+    // Switch workspace and persist to storage
+    const switchWorkspace = useCallback((id: string | null) => {
+        console.log(`[WorkspaceContext] Switching workspace to: ${id || 'My Organization'}`)
+        setSelectedWorkspaceIdState(id)
+        setSelectedWorkspaceId(id)
+    }, [])
+
+    // Setter for selected workspace ID (used internally)
+    const setSelectedWorkspaceIdWrapper = useCallback((id: string | null) => {
+        setSelectedWorkspaceIdState(id)
+        setSelectedWorkspaceId(id)
+    }, [])
+
     useEffect(() => {
         refreshWorkspaces()
     }, [refreshWorkspaces])
@@ -80,7 +136,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             workspaces,
             isLoading,
             refreshWorkspaces,
-            createWorkspace
+            createWorkspace,
+            selectedWorkspaceId,
+            setSelectedWorkspaceId: setSelectedWorkspaceIdWrapper,
+            switchWorkspace
         }}>
             {children}
         </WorkspaceContext.Provider>

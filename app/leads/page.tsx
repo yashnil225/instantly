@@ -38,9 +38,8 @@ export default function GlobalLeadsPage() {
     const [loading, setLoading] = useState(true)
     const [total, setTotal] = useState(0)
 
-    // Workspace state
-    const { workspaces, refreshWorkspaces } = useWorkspaces()
-    const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
+    // Workspace state - using unified ID-based storage from context
+    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
 
@@ -51,13 +50,6 @@ export default function GlobalLeadsPage() {
     const [statusFilter, setStatusFilter] = useState("all")
 
     useEffect(() => {
-        const savedWorkspace = localStorage.getItem('activeWorkspace')
-        if (savedWorkspace) {
-            setCurrentWorkspace(savedWorkspace)
-        }
-    }, [])
-
-    useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(searchQuery)
         }, 300)
@@ -66,12 +58,7 @@ export default function GlobalLeadsPage() {
 
     useEffect(() => {
         fetchLeads()
-    }, [currentWorkspace, debouncedSearch, selectedTags, statusFilter])
-
-    const switchWorkspace = (workspaceName: string) => {
-        setCurrentWorkspace(workspaceName)
-        localStorage.setItem('activeWorkspace', workspaceName)
-    }
+    }, [selectedWorkspaceId, debouncedSearch, selectedTags, statusFilter])
 
     const filteredWorkspaces = workspaces.filter((w: any) =>
         w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
@@ -80,12 +67,10 @@ export default function GlobalLeadsPage() {
     const fetchLeads = async () => {
         setLoading(true)
         try {
-            const workspace = workspaces.find((w: any) => w.name === currentWorkspace)
-            const workspaceId = workspace?.id || 'all'
-
+            // Use selectedWorkspaceId from unified storage - null means show all (My Organization)
             const params = new URLSearchParams({ limit: '100' })
-            if (workspaceId !== 'all') {
-                params.append('workspaceId', workspaceId)
+            if (selectedWorkspaceId) {
+                params.append('workspaceId', selectedWorkspaceId)
             }
             if (debouncedSearch) {
                 params.append('search', debouncedSearch)
@@ -165,7 +150,7 @@ export default function GlobalLeadsPage() {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="border-[#222] bg-[#111] text-white hover:text-white hover:bg-[#1a1a1a] gap-2">
                                     <Zap className="h-4 w-4 text-blue-500" />
-                                    {currentWorkspace}
+                                    {selectedWorkspaceId ? (workspaces.find(w => w.id === selectedWorkspaceId)?.name || 'Workspace') : 'My Organization'}
                                     <ChevronDown className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -179,13 +164,24 @@ export default function GlobalLeadsPage() {
                                     />
                                 </div>
                                 <DropdownMenuSeparator className="bg-[#2a2a2a]" />
+                                {/* My Organization option (show all) */}
+                                <DropdownMenuItem
+                                    onClick={() => switchWorkspace(null)}
+                                    className={cn(
+                                        "cursor-pointer focus:bg-[#2a2a2a] focus:text-white",
+                                        selectedWorkspaceId === null && "bg-blue-500/20 text-blue-400"
+                                    )}
+                                >
+                                    <Zap className="h-4 w-4 mr-2 text-blue-500" />
+                                    My Organization
+                                </DropdownMenuItem>
                                 {filteredWorkspaces.map((workspace) => (
                                     <DropdownMenuItem
-                                        key={workspace.id || workspace.name}
-                                        onClick={() => switchWorkspace(workspace.name)}
+                                        key={workspace.id}
+                                        onClick={() => switchWorkspace(workspace.id)}
                                         className={cn(
                                             "cursor-pointer focus:bg-[#2a2a2a] focus:text-white",
-                                            currentWorkspace === workspace.name && "bg-blue-500/20 text-blue-400"
+                                            selectedWorkspaceId === workspace.id && "bg-blue-500/20 text-blue-400"
                                         )}
                                     >
                                         <Zap className="h-4 w-4 mr-2 text-blue-500" />

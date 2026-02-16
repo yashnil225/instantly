@@ -163,9 +163,8 @@ function UniboxPage() {
     const [reminderMessage, setReminderMessage] = useState("")
     const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false)
 
-    // Workspace state
-    const { workspaces, refreshWorkspaces } = useWorkspaces()
-    const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
+    // Workspace state - using unified ID-based storage from context
+    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [workspaceLoading, setWorkspaceLoading] = useState(true)
     const [createWorkspaceModalOpen, setCreateWorkspaceModalOpen] = useState(false)
@@ -174,12 +173,10 @@ function UniboxPage() {
 
     const loadCampaigns = async () => {
         try {
-            const activeWorkspace = workspaces.find((w: any) => w.name === currentWorkspace)
-            const workspaceId = activeWorkspace?.id || 'all'
-
-            const url = workspaceId === 'all'
-                ? '/api/campaigns'
-                : `/api/campaigns?workspaceId=${workspaceId}`
+            // Use selectedWorkspaceId from unified storage - null means show all (My Organization)
+            const url = selectedWorkspaceId
+                ? `/api/campaigns?workspaceId=${selectedWorkspaceId}`
+                : '/api/campaigns'
 
             const res = await fetch(url)
             if (res.ok) {
@@ -229,6 +226,10 @@ function UniboxPage() {
             if (activeMoreFilter) params.append("filter", activeMoreFilter)
             if (activeTag) params.append("tags", activeTag)
             if (searchQuery) params.append("search", searchQuery)
+            // Add workspace filter
+            if (selectedWorkspaceId) {
+                params.append("workspaceIds", selectedWorkspaceId)
+            }
 
             const res = await fetch(`/api/unibox/emails?${params.toString()}`)
             if (res.ok) {
@@ -290,10 +291,7 @@ function UniboxPage() {
     }
 
 
-    const switchWorkspace = (workspaceName: string) => {
-        setCurrentWorkspace(workspaceName)
-        localStorage.setItem('activeWorkspace', workspaceName)
-    }
+
 
     const handleLabelChange = async (emailId: string, newLabel: string) => {
         // Optimistic update
@@ -497,12 +495,12 @@ Instantly`,
     useEffect(() => {
         setPage(1)
         loadEmails()
-    }, [activeStatus, activeCampaign, activeInbox, activeAiLabel, activeMoreFilter, activeTag, searchQuery])
+    }, [activeStatus, activeCampaign, activeInbox, activeAiLabel, activeMoreFilter, activeTag, searchQuery, selectedWorkspaceId])
 
     // Load campaigns when workspace changes
     useEffect(() => {
         loadCampaigns()
-    }, [currentWorkspace, workspaces])
+    }, [selectedWorkspaceId, workspaces])
 
     // Helper calculations
     const filteredCampaigns = campaigns.filter((c: any) =>
@@ -1433,7 +1431,7 @@ ${selectedEmail.body || selectedEmail.preview}
                                     <DropdownMenuTrigger asChild>
                                         <Button variant="outline" className="border-[#2a2a35] bg-[#1e1e24] text-foreground hover:text-foreground hover:bg-[#2a2a35] gap-2 h-9 px-4 rounded-md shadow-sm">
                                             <Logo variant="icon" size="sm" />
-                                            {currentWorkspace}
+                                            {selectedWorkspaceId ? (workspaces.find(w => w.id === selectedWorkspaceId)?.name || 'Workspace') : 'My Organization'}
                                             <ChevronDown className="h-4 w-4 text-[#a1a1aa]" />
                                         </Button>
                                     </DropdownMenuTrigger>
@@ -1447,13 +1445,24 @@ ${selectedEmail.body || selectedEmail.preview}
                                             />
                                         </div>
                                         <DropdownMenuSeparator className="bg-[#2a2a35]" />
+                                        {/* My Organization option (show all) */}
+                                        <DropdownMenuItem
+                                            onClick={() => switchWorkspace(null)}
+                                            className={cn(
+                                                "cursor-pointer focus:bg-[#2a2a35] focus:text-foreground m-1 rounded",
+                                                selectedWorkspaceId === null && "bg-blue-600/10 text-blue-400"
+                                            )}
+                                        >
+                                            <Logo variant="icon" size="sm" className="mr-2" />
+                                            My Organization
+                                        </DropdownMenuItem>
                                         {filteredWorkspaces.map((workspace) => (
                                             <DropdownMenuItem
-                                                key={workspace.id || workspace.name}
-                                                onClick={() => switchWorkspace(workspace.name)}
+                                                key={workspace.id}
+                                                onClick={() => switchWorkspace(workspace.id)}
                                                 className={cn(
                                                     "cursor-pointer focus:bg-[#2a2a35] focus:text-foreground m-1 rounded",
-                                                    currentWorkspace === workspace.name && "bg-blue-600/10 text-blue-400"
+                                                    selectedWorkspaceId === workspace.id && "bg-blue-600/10 text-blue-400"
                                                 )}
                                             >
                                                 <Logo variant="icon" size="sm" className="mr-2" />

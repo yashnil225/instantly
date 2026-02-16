@@ -116,23 +116,10 @@ export default function AnalyticsPage() {
     const [isClassifying, setIsClassifying] = useState(false)
     const [classifyingProgress, setClassifyingProgress] = useState(0)
 
-    // Workspace state
-    const { workspaces, refreshWorkspaces } = useWorkspaces()
-    const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
+    // Workspace state - using unified ID-based storage from context
+    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
-
-    useEffect(() => {
-        const savedWorkspace = localStorage.getItem('activeWorkspace')
-        if (savedWorkspace) {
-            setCurrentWorkspace(savedWorkspace)
-        }
-    }, [])
-
-    const switchWorkspace = (workspaceName: string) => {
-        setCurrentWorkspace(workspaceName)
-        localStorage.setItem('activeWorkspace', workspaceName)
-    }
 
     const filteredWorkspaces = workspaces.filter((w) =>
         w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
@@ -189,15 +176,13 @@ export default function AnalyticsPage() {
     const fetchAnalytics = React.useCallback(async () => {
         setLoading(true)
         try {
-            const workspace = workspaces.find((w) => w.name === currentWorkspace)
-            const workspaceId = workspace?.id || 'all'
-
+            // Use selectedWorkspaceId from unified storage - null means show all (My Organization)
             const params = new URLSearchParams({ 
                 range: dateRange,
                 includeAutoReplies: filters.includeAutoReplies.toString()
             })
-            if (workspaceId !== 'all') {
-                params.append('workspaceId', workspaceId)
+            if (selectedWorkspaceId) {
+                params.append('workspaceId', selectedWorkspaceId)
             }
 
             const res = await fetch(`/api/analytics?${params.toString()}`)
@@ -215,7 +200,7 @@ export default function AnalyticsPage() {
         } finally {
             setLoading(false)
         }
-    }, [dateRange, currentWorkspace, workspaces, filters.includeAutoReplies, isClassifying])
+    }, [dateRange, selectedWorkspaceId, filters.includeAutoReplies, isClassifying])
 
     useEffect(() => {
         fetchAnalytics()
@@ -351,7 +336,7 @@ export default function AnalyticsPage() {
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="border-border bg-card text-foreground hover:text-foreground hover:bg-secondary gap-2">
                                         <Logo variant="icon" size="sm" />
-                                        {currentWorkspace}
+                                        {selectedWorkspaceId ? (workspaces.find(w => w.id === selectedWorkspaceId)?.name || 'Workspace') : 'My Organization'}
                                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -367,10 +352,10 @@ export default function AnalyticsPage() {
                                     <DropdownMenuSeparator className="bg-muted" />
                                     {/* My Organization option (show all) */}
                                     <DropdownMenuItem
-                                        onClick={() => switchWorkspace("My Organization")}
+                                        onClick={() => switchWorkspace(null)}
                                         className={cn(
                                             "cursor-pointer rounded-md focus:bg-secondary focus:text-foreground my-0.5",
-                                            currentWorkspace === "My Organization" && "bg-blue-600/10 text-blue-400"
+                                            selectedWorkspaceId === null && "bg-blue-600/10 text-blue-400"
                                         )}
                                     >
                                         <Logo variant="icon" size="sm" className="mr-2 text-blue-500" />
@@ -378,11 +363,11 @@ export default function AnalyticsPage() {
                                     </DropdownMenuItem>
                                     {filteredWorkspaces.map((workspace) => (
                                         <DropdownMenuItem
-                                            key={workspace.id || workspace.name}
-                                            onClick={() => switchWorkspace(workspace.name)}
+                                            key={workspace.id}
+                                            onClick={() => switchWorkspace(workspace.id)}
                                             className={cn(
                                                 "cursor-pointer rounded-md focus:bg-secondary focus:text-foreground my-0.5",
-                                                currentWorkspace === workspace.name && "bg-blue-600/10 text-blue-400"
+                                                selectedWorkspaceId === workspace.id && "bg-blue-600/10 text-blue-400"
                                             )}
                                         >
                                             <Logo variant="icon" size="sm" className="mr-2 text-blue-500" />

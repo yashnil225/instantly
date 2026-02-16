@@ -102,19 +102,10 @@ function AccountsPage() {
     const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get("page") || "1"))
     const [totalPages, setTotalPages] = useState(1)
 
-    // Workspace state - using global context
-    const { workspaces, refreshWorkspaces } = useWorkspaces()
-    const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
+    // Workspace state - using unified ID-based storage from context
+    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
-
-    // Restore saved workspace from localStorage when workspaces load
-    useEffect(() => {
-        const savedWorkspace = localStorage.getItem('activeWorkspace')
-        if (savedWorkspace && workspaces.some((w: any) => w.name === savedWorkspace)) {
-            setCurrentWorkspace(savedWorkspace)
-        }
-    }, [workspaces])
 
     // Debounce search input (300ms delay)
     useEffect(() => {
@@ -189,19 +180,22 @@ function AccountsPage() {
     const [deleteOpen, setDeleteOpen] = useState(false)
     const [accountToDelete, setAccountToDelete] = useState<string | null>(null)
 
+    // Workspace assignment modal state
+    const [workspaceAssignOpen, setWorkspaceAssignOpen] = useState(false)
+    const [accountForWorkspace, setAccountForWorkspace] = useState<any>(null)
+    const [selectedWorkspaceIds, setSelectedWorkspaceIds] = useState<string[]>([])
+    const [isAssigningWorkspaces, setIsAssigningWorkspaces] = useState(false)
+
     const itemsPerPage = 20
 
 
     const fetchAccounts = useCallback(async () => {
         setLoading(true)
         try {
-            // Find workspace ID - "My Organization" shows all accounts
-            const workspace = workspaces.find((w) => w.name === currentWorkspace)
-            const workspaceId = workspace?.id || 'all'
-
+            // Use selectedWorkspaceId from unified storage - null means show all (My Organization)
             let url = `/api/accounts?page=${currentPage}&limit=${itemsPerPage}`
-            if (workspaceId !== 'all') {
-                url += `&workspaceId=${workspaceId}`
+            if (selectedWorkspaceId) {
+                url += `&workspaceId=${selectedWorkspaceId}`
             }
             if (selectedTags.length > 0) {
                 url += `&tags=${selectedTags.join(',')}`
@@ -220,7 +214,7 @@ function AccountsPage() {
             setLoading(false)
         }
         setLoading(false)
-    }, [currentPage, itemsPerPage, currentWorkspace, workspaces, toast, selectedTags])
+    }, [currentPage, itemsPerPage, selectedWorkspaceId, workspaces, toast, selectedTags])
 
     // Load workspaces on mount
     useEffect(() => {
@@ -230,13 +224,8 @@ function AccountsPage() {
     // Fetch accounts when workspace changes
     useEffect(() => {
         fetchAccounts()
-    }, [currentPage, debouncedSearch, activeFilter, currentWorkspace, workspaces, fetchAccounts])
+    }, [currentPage, debouncedSearch, activeFilter, selectedWorkspaceId, fetchAccounts])
 
-
-    const switchWorkspace = (workspaceName: string) => {
-        setCurrentWorkspace(workspaceName)
-        localStorage.setItem('activeWorkspace', workspaceName)
-    }
 
     const filteredWorkspaces = workspaces.filter((w) =>
         w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
@@ -410,10 +399,16 @@ function AccountsPage() {
 
         setIsCreating(true)
         try {
+            // Assign to current workspace if selected
+            const workspaceIds = selectedWorkspaceId ? [selectedWorkspaceId] : []
+            
             const res = await fetch('/api/accounts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newAccount)
+                body: JSON.stringify({
+                    ...newAccount,
+                    workspaceIds
+                })
             })
 
             if (res.ok) {
@@ -430,6 +425,40 @@ function AccountsPage() {
             toast({ title: "Error", description: "Failed to save", variant: "destructive" })
         } finally {
             // End
+        }
+    }
+
+    // Workspace assignment functions
+    const openWorkspaceAssign = (account: any) => {
+        setAccountForWorkspace(account)
+        // Pre-select current workspaces
+        const currentWorkspaceIds = account.workspaces?.map((w: any) => w.workspaceId) || []
+        setSelectedWorkspaceIds(currentWorkspaceIds)
+        setWorkspaceAssignOpen(true)
+    }
+
+    const handleAssignWorkspaces = async () => {
+        if (!accountForWorkspace) return
+
+        setIsAssigningWorkspaces(true)
+        try {
+            const res = await fetch(`/api/accounts/${accountForWorkspace.id}/workspaces`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workspaceIds: selectedWorkspaceIds })
+            })
+
+            if (res.ok) {
+                fetchAccounts()
+                setWorkspaceAssignOpen(false)
+                toast({ title: "Success", description: "Workspace assignment updated" })
+            } else {
+                toast({ title: "Error", description: "Failed to update workspaces", variant: "destructive" })
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to update workspaces", variant: "destructive" })
+        } finally {
+            setIsAssigningWorkspaces(false)
         }
     }
 
@@ -557,7 +586,7 @@ function AccountsPage() {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="border-border bg-card text-foreground hover:text-foreground hover:bg-secondary h-9 gap-2">
-                                        {currentWorkspace}
+                                        {selectedWorkspaceId ? (workspaces.find(w => w.id === selectedWorkspaceId)?.name || 'Workspace') : 'My Organization'}
                                         <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                     </Button>
                                 </DropdownMenuTrigger>
@@ -571,10 +600,10 @@ function AccountsPage() {
                                         />
                                     </div>
                                     <DropdownMenuItem
-                                        onClick={() => switchWorkspace("My Organization")}
+                                        onClick={() => switchWorkspace(null)}
                                         className={cn(
                                             "focus:bg-secondary focus:text-foreground cursor-pointer",
-                                            currentWorkspace === "My Organization" && "bg-blue-500/20 text-blue-400"
+                                            selectedWorkspaceId === null && "bg-blue-500/20 text-blue-400"
                                         )}
                                     >
                                         <Zap className="h-4 w-4 mr-2 text-blue-500" />
@@ -582,11 +611,11 @@ function AccountsPage() {
                                     </DropdownMenuItem>
                                     {filteredWorkspaces.map((workspace) => (
                                         <DropdownMenuItem
-                                            key={workspace.id || workspace.name}
-                                            onClick={() => switchWorkspace(workspace.name)}
+                                            key={workspace.id}
+                                            onClick={() => switchWorkspace(workspace.id)}
                                             className={cn(
                                                 "focus:bg-secondary focus:text-foreground cursor-pointer",
-                                                currentWorkspace === workspace.name && "bg-blue-500/20 text-blue-400"
+                                                selectedWorkspaceId === workspace.id && "bg-blue-500/20 text-blue-400"
                                             )}
                                         >
                                             {workspace.name}
@@ -788,6 +817,21 @@ function AccountsPage() {
                                                             Sending error
                                                         </span>
                                                     )}
+                                                    {/* Workspace Badges */}
+                                                    {account.workspaces?.length === 0 ? (
+                                                        <span className="px-2 py-0.5 border border-dashed border-muted-foreground/50 text-muted-foreground text-[10px] font-medium rounded-md">
+                                                            Unassigned
+                                                        </span>
+                                                    ) : (
+                                                        account.workspaces?.map((w: any) => (
+                                                            <span 
+                                                                key={w.workspaceId} 
+                                                                className="px-2 py-0.5 bg-blue-500/10 text-blue-400 text-[10px] font-medium rounded-md"
+                                                            >
+                                                                {w.workspace?.name || 'Workspace'}
+                                                            </span>
+                                                        ))
+                                                    )}
                                                     {account.isWarming && (
                                                         <Flame className="h-4 w-4 text-orange-500 fill-orange-500" />
                                                     )}
@@ -907,6 +951,13 @@ function AccountsPage() {
                                                                 className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2"
                                                             >
                                                                 Reconnect
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator className="bg-muted" />
+                                                            <DropdownMenuItem
+                                                                onClick={() => openWorkspaceAssign(account)}
+                                                                className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2"
+                                                            >
+                                                                <Zap className="mr-2 h-4 w-4 text-blue-500" /> Assign to Workspaces
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator className="bg-muted" />
                                                             <DropdownMenuItem onClick={() => router.push('/settings/profile')} className="cursor-pointer focus:bg-muted focus:text-foreground">Settings</DropdownMenuItem>
@@ -1217,6 +1268,81 @@ function AccountsPage() {
                         >
                             Delete
                         </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Assign to Workspaces Modal */}
+            <Dialog open={workspaceAssignOpen} onOpenChange={setWorkspaceAssignOpen}>
+                <DialogContent className="bg-background border-border sm:max-w-[500px] p-0 overflow-hidden">
+                    <div className="sr-only">
+                        <DialogTitle>Assign to Workspaces</DialogTitle>
+                    </div>
+                    <div className="p-8 space-y-6">
+                        <div className="space-y-2">
+                            <h2 className="text-xl font-semibold text-foreground">Assign to Workspaces</h2>
+                            <p className="text-muted-foreground text-sm">Select workspaces for "{accountForWorkspace?.email}"</p>
+                        </div>
+
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                            {workspaces.length === 0 ? (
+                                <p className="text-muted-foreground text-sm py-4 text-center">No workspaces available. Create a workspace first.</p>
+                            ) : (
+                                workspaces.map((ws: any) => (
+                                    <div
+                                        key={ws.id}
+                                        className={cn(
+                                            "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                                            selectedWorkspaceIds.includes(ws.id)
+                                                ? "border-blue-600 bg-blue-500/10"
+                                                : "border-border hover:border-muted-foreground/50"
+                                        )}
+                                        onClick={() => {
+                                            if (selectedWorkspaceIds.includes(ws.id)) {
+                                                setSelectedWorkspaceIds(prev => prev.filter(id => id !== ws.id))
+                                            } else {
+                                                setSelectedWorkspaceIds(prev => [...prev, ws.id])
+                                            }
+                                        }}
+                                    >
+                                        <Checkbox
+                                            checked={selectedWorkspaceIds.includes(ws.id)}
+                                            onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                    setSelectedWorkspaceIds(prev => [...prev, ws.id])
+                                                } else {
+                                                    setSelectedWorkspaceIds(prev => prev.filter(id => id !== ws.id))
+                                                }
+                                            }}
+                                            className="border-muted-foreground data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="font-medium text-foreground">{ws.name}</div>
+                                            {ws.isDefault && (
+                                                <span className="text-xs text-muted-foreground">Default</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                            <Button
+                                variant="ghost"
+                                onClick={() => setWorkspaceAssignOpen(false)}
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleAssignWorkspaces}
+                                disabled={isAssigningWorkspaces}
+                                className="bg-blue-600 hover:bg-blue-500 text-white"
+                            >
+                                {isAssigningWorkspaces ? "Saving..." : "Save Changes"}
+                            </Button>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

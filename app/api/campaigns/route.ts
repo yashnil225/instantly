@@ -41,7 +41,11 @@ export async function GET(request: Request) {
                 } : {})
             },
             include: {
-                campaignWorkspaces: true,
+                campaignWorkspaces: {
+                    include: {
+                        workspace: true
+                    }
+                },
                 tags: {
                     include: {
                         tag: true

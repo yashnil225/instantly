@@ -146,19 +146,10 @@ function CampaignsPage() {
 
 
 
-    // Workspace state - using global context
-    const { workspaces, refreshWorkspaces } = useWorkspaces()
-    const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null) // null = show all (Organization)
+    // Workspace state - using unified storage from context
+    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
-
-    useEffect(() => {
-        // Restore saved workspace ID from global workspaces
-        const savedWorkspaceId = localStorage.getItem('activeWorkspaceId')
-        if (savedWorkspaceId && workspaces.some((w: any) => w.id === savedWorkspaceId)) {
-            setCurrentWorkspaceId(savedWorkspaceId)
-        }
-    }, [workspaces])
 
     useEffect(() => {
         if (searchParams.get("welcome")) {
@@ -178,12 +169,7 @@ function CampaignsPage() {
         fetchCampaigns()
         const interval = setInterval(fetchCampaigns, 10000)
         return () => clearInterval(interval)
-    }, [currentWorkspaceId, workspaces, selectedTags])
-
-    const switchWorkspace = (workspaceId: string | null) => {
-        setCurrentWorkspaceId(workspaceId)
-        localStorage.setItem('activeWorkspaceId', workspaceId || '')
-    }
+    }, [selectedWorkspaceId, workspaces, selectedTags])
 
     const filteredWorkspaces = workspaces.filter((w: any) =>
         w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
@@ -191,10 +177,10 @@ function CampaignsPage() {
 
     const fetchCampaigns = async () => {
         try {
-            // Use workspace ID directly - null means show all
+            // Use workspace ID from unified storage - null means show all (My Organization)
             let url = `/api/campaigns?t=${Date.now()}`
-            if (currentWorkspaceId) {
-                url += `&workspaceId=${currentWorkspaceId}`
+            if (selectedWorkspaceId) {
+                url += `&workspaceId=${selectedWorkspaceId}`
             }
             if (selectedTags.length > 0) {
                 url += `&tags=${selectedTags.join(',')}`
@@ -222,7 +208,7 @@ function CampaignsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: newCampaignName,
-                    workspaceIds: currentWorkspaceId ? [currentWorkspaceId] : []
+                    workspaceIds: selectedWorkspaceId ? [selectedWorkspaceId] : []
                 })
             })
 
@@ -586,7 +572,7 @@ function CampaignsPage() {
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" className="border-border bg-card text-foreground hover:text-foreground hover:bg-secondary h-9 gap-2">
                                     <Logo variant="icon" size="sm" />
-                                    {currentWorkspaceId ? (workspaces.find(w => w.id === currentWorkspaceId)?.name || 'Workspace') : 'My Organization'}
+                                    {selectedWorkspaceId ? (workspaces.find(w => w.id === selectedWorkspaceId)?.name || 'Workspace') : 'My Organization'}
                                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -605,7 +591,7 @@ function CampaignsPage() {
                                     onClick={() => switchWorkspace(null)}
                                     className={cn(
                                         "cursor-pointer focus:bg-secondary focus:text-foreground",
-                                        currentWorkspaceId === null && "bg-blue-500/20 text-blue-400"
+                                        selectedWorkspaceId === null && "bg-blue-500/20 text-blue-400"
                                     )}
                                 >
                                     <Logo variant="icon" size="sm" className="mr-2 text-blue-500" />
@@ -617,7 +603,7 @@ function CampaignsPage() {
                                         onClick={() => switchWorkspace(workspace.id)}
                                         className={cn(
                                             "cursor-pointer focus:bg-secondary focus:text-foreground",
-                                            currentWorkspaceId === workspace.id && "bg-blue-500/20 text-blue-400"
+                                            selectedWorkspaceId === workspace.id && "bg-blue-500/20 text-blue-400"
                                         )}
                                     >
                                         <Logo variant="icon" size="sm" className="mr-2 text-blue-500" />
@@ -862,6 +848,24 @@ function CampaignsPage() {
                                 <div className="flex flex-col gap-2 min-w-0">
                                     <div className="font-semibold text-foreground/90 text-sm truncate" title={campaign.name}>
                                         {campaign.name}
+                                    </div>
+                                    {/* Workspace Badges */}
+                                    <div className="flex flex-wrap gap-1" onClick={e => e.stopPropagation()}>
+                                        {campaign.campaignWorkspaces?.length === 0 ? (
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-dashed border-muted-foreground/50 text-muted-foreground">
+                                                Unassigned
+                                            </Badge>
+                                        ) : (
+                                            campaign.campaignWorkspaces?.map((cw: any) => (
+                                                <Badge 
+                                                    key={cw.workspaceId} 
+                                                    variant="secondary" 
+                                                    className="text-[10px] px-1.5 py-0 h-4 bg-blue-500/10 text-blue-400 border-0"
+                                                >
+                                                    {cw.workspace?.name || 'Workspace'}
+                                                </Badge>
+                                            ))
+                                        )}
                                     </div>
                                     <div onClick={e => e.stopPropagation()}>
                                         <TagManager

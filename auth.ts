@@ -14,32 +14,48 @@ const providers: any[] = [
             password: { label: "Password", type: "password" }
         },
         async authorize(credentials) {
+            console.log(`[Auth] Login attempt for email: ${credentials?.email}`)
+            
             if (!credentials?.email || !credentials?.password) {
+                console.log('[Auth] Missing credentials')
                 return null
             }
 
-            const user = await prisma.user.findUnique({
-                where: { email: credentials.email as string }
-            })
+            try {
+                const user = await prisma.user.findUnique({
+                    where: { email: credentials.email as string }
+                })
 
-            if (!user || !user.password) {
+                if (!user) {
+                    console.log(`[Auth] User not found: ${credentials.email}`)
+                    return null
+                }
+
+                if (!user.password) {
+                    console.log(`[Auth] User has no password (Google auth only): ${credentials.email}`)
+                    return null
+                }
+
+                const passwordMatch = await bcrypt.compare(
+                    credentials.password as string,
+                    user.password
+                )
+
+                if (!passwordMatch) {
+                    console.log(`[Auth] Invalid password for: ${credentials.email}`)
+                    return null
+                }
+
+                console.log(`[Auth] Successful login: ${credentials.email}`)
+                return {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    plan: user.plan,
+                }
+            } catch (error) {
+                console.error('[Auth] Error during authorization:', error)
                 return null
-            }
-
-            const passwordMatch = await bcrypt.compare(
-                credentials.password as string,
-                user.password
-            )
-
-            if (!passwordMatch) {
-                return null
-            }
-
-            return {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                plan: user.plan,
             }
         }
     })

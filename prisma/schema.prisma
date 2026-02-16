@@ -101,6 +101,7 @@ model Workspace {
   campaignWorkspaces CampaignWorkspace[]
   members            WorkspaceMember[]
   invitations        Invitation[]
+  emailAccountWorkspaces EmailAccountWorkspace[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -169,6 +170,7 @@ model EmailAccount {
   sendingEvents    SendingEvent[]
   warmupLogs       WarmupLog[]
   tags             EmailAccountTag[]
+  workspaces       EmailAccountWorkspace[]
 }
 
 model Campaign {
@@ -241,6 +243,18 @@ model CampaignEmailAccount {
   createdAt DateTime @default(now())
 
   @@unique([campaignId, emailAccountId])
+}
+
+// Junction table for many-to-many EmailAccount <-> Workspace
+model EmailAccountWorkspace {
+  id             String       @id @default(cuid())
+  emailAccount   EmailAccount @relation(fields: [emailAccountId], references: [id], onDelete: Cascade)
+  emailAccountId String
+  workspace      Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId    String
+  createdAt      DateTime     @default(now())
+  
+  @@unique([emailAccountId, workspaceId])
 }
 
 model Lead {

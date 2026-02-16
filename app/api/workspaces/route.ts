@@ -17,11 +17,26 @@ export async function GET() {
                 ]
             },
             include: {
-                members: { include: { user: true } },
+                members: { 
+                    include: { user: true },
+                    where: {
+                        OR: [
+                            { status: 'active' },
+                            { status: null }
+                        ]
+                    }
+                },
                 _count: {
-                    select: { campaignWorkspaces: true }
+                    select: { 
+                        campaignWorkspaces: true,
+                        members: true 
+                    }
                 }
-            }
+            },
+            orderBy: [
+                { isDefault: 'desc' }, // Show default workspace first
+                { createdAt: 'desc' }  // Then newest first
+            ]
         })
 
         return NextResponse.json(workspaces)

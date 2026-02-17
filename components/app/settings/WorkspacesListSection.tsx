@@ -125,6 +125,7 @@ export function WorkspacesListSection() {
                             leadCount: statsData.leadCount || 0,
                             _count: {
                                 ...ws._count,
+                                members: (membersData.members || []).length,
                                 emailAccountWorkspaces: statsData.emailAccountCount || 0
                             }
                         } as WorkspaceWithDetails
@@ -136,6 +137,7 @@ export function WorkspacesListSection() {
                             leadCount: 0,
                             _count: {
                                 ...ws._count,
+                                members: 0,
                                 emailAccountWorkspaces: 0
                             }
                         } as WorkspaceWithDetails

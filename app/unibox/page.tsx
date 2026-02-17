@@ -70,6 +70,9 @@ import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
 import { Logo } from "@/components/ui/logo"
 import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
+import { WorkspaceDropdown } from "@/components/app/workspace/WorkspaceDropdown"
+import { WorkspaceManagerModal } from "@/components/app/workspace/WorkspaceManagerModal"
+import { DeleteConfirmationDialog } from "@/components/app/workspace/DeleteConfirmationDialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Textarea } from "@/components/ui/textarea"
 import { KeyboardShortcutsHelp } from "@/components/ui/keyboard-shortcuts-help"
@@ -164,10 +167,17 @@ function UniboxPage() {
     const [shortcutsModalOpen, setShortcutsModalOpen] = useState(false)
 
     // Workspace state - using unified ID-based storage from context
-    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace } = useWorkspaces()
+    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace, updateWorkspace, deleteWorkspace } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [workspaceLoading, setWorkspaceLoading] = useState(true)
     const [createWorkspaceModalOpen, setCreateWorkspaceModalOpen] = useState(false)
+
+    // Workspace management modal states
+    const [managerModalOpen, setManagerModalOpen] = useState(false)
+    const [managerMode, setManagerMode] = useState<'create' | 'rename'>('create')
+    const [workspaceToRename, setWorkspaceToRename] = useState<{ id: string; name: string } | null>(null)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [workspaceToDelete, setWorkspaceToDelete] = useState<{ id: string; name: string; isDefault?: boolean } | null>(null)
 
     // ============ HELPER FUNCTIONS ============
 
@@ -1165,6 +1175,38 @@ ${selectedEmail.body || selectedEmail.preview}
         setAttachments(attachments.filter((_, i) => i !== index))
     }
 
+    // Workspace management handlers
+    const handleWorkspaceRename = (workspace: { id: string; name: string }) => {
+        setWorkspaceToRename(workspace)
+        setManagerMode('rename')
+        setManagerModalOpen(true)
+    }
+
+    const handleWorkspaceDelete = (workspace: { id: string; name: string; isDefault?: boolean }) => {
+        setWorkspaceToDelete(workspace)
+        setDeleteDialogOpen(true)
+    }
+
+    const handleManagerSubmit = async (name: string): Promise<boolean> => {
+        if (managerMode === 'rename' && workspaceToRename) {
+            const success = await updateWorkspace(workspaceToRename.id, name)
+            if (success) {
+                await refreshWorkspaces()
+            }
+            return success
+        }
+        return false
+    }
+
+    const handleConfirmDelete = async (): Promise<boolean> => {
+        if (!workspaceToDelete) return false
+        const success = await deleteWorkspace(workspaceToDelete.id)
+        if (success) {
+            await refreshWorkspaces()
+        }
+        return success
+    }
+
     return (
         <TooltipProvider>
                 <div className="flex h-screen bg-background text-[#a1a1aa] font-sans">
@@ -1427,58 +1469,12 @@ ${selectedEmail.body || selectedEmail.preview}
                             </div>
                             <div className="flex items-center gap-4">
                                 {/* Organization/Workspace Dropdown */}
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" className="border-[#2a2a35] bg-[#1e1e24] text-foreground hover:text-foreground hover:bg-[#2a2a35] gap-2 h-9 px-4 rounded-md shadow-sm">
-                                            <Logo variant="icon" size="sm" />
-                                            {selectedWorkspaceId ? (workspaces.find(w => w.id === selectedWorkspaceId)?.name || 'Workspace') : 'My Organization'}
-                                            <ChevronDown className="h-4 w-4 text-[#a1a1aa]" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-64 bg-[#1e1e24] border-[#2a2a35] text-foreground shadow-xl">
-                                        <div className="p-2">
-                                            <Input
-                                                placeholder="Search"
-                                                value={workspaceSearch}
-                                                onChange={(e) => setWorkspaceSearch(e.target.value)}
-                                                className="bg-background border-[#2a2a35] text-foreground text-sm h-8 mb-2 focus-visible:ring-blue-500"
-                                            />
-                                        </div>
-                                        <DropdownMenuSeparator className="bg-[#2a2a35]" />
-                                        {/* My Organization option (show all) */}
-                                        <DropdownMenuItem
-                                            onClick={() => switchWorkspace(null)}
-                                            className={cn(
-                                                "cursor-pointer focus:bg-[#2a2a35] focus:text-foreground m-1 rounded",
-                                                selectedWorkspaceId === null && "bg-blue-600/10 text-blue-400"
-                                            )}
-                                        >
-                                            <Logo variant="icon" size="sm" className="mr-2" />
-                                            My Organization
-                                        </DropdownMenuItem>
-                                        {filteredWorkspaces.map((workspace) => (
-                                            <DropdownMenuItem
-                                                key={workspace.id}
-                                                onClick={() => switchWorkspace(workspace.id)}
-                                                className={cn(
-                                                    "cursor-pointer focus:bg-[#2a2a35] focus:text-foreground m-1 rounded",
-                                                    selectedWorkspaceId === workspace.id && "bg-blue-600/10 text-blue-400"
-                                                )}
-                                            >
-                                                <Logo variant="icon" size="sm" className="mr-2" />
-                                                {workspace.name}
-                                            </DropdownMenuItem>
-                                        ))}
-                                        <DropdownMenuSeparator className="bg-[#2a2a35]" />
-                                        <DropdownMenuItem
-                                            className="cursor-pointer focus:bg-[#2a2a35] focus:text-foreground text-blue-400 m-1 rounded"
-                                            onClick={() => setCreateWorkspaceModalOpen(true)}
-                                        >
-                                            <Plus className="h-4 w-4 mr-2" />
-                                            Create Workspace
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                <WorkspaceDropdown
+                                    onRename={handleWorkspaceRename}
+                                    onDelete={handleWorkspaceDelete}
+                                    onCreate={() => setCreateWorkspaceModalOpen(true)}
+                                    showQuickActions={true}
+                                />
                             </div>
                         </div>
 
@@ -2170,6 +2166,21 @@ ${selectedEmail.body || selectedEmail.preview}
                     open={createWorkspaceModalOpen}
                     onOpenChange={setCreateWorkspaceModalOpen}
                     onWorkspaceCreated={refreshWorkspaces}
+                />
+
+                <WorkspaceManagerModal
+                    open={managerModalOpen}
+                    onOpenChange={setManagerModalOpen}
+                    mode={managerMode}
+                    workspace={workspaceToRename}
+                    onSubmit={handleManagerSubmit}
+                />
+
+                <DeleteConfirmationDialog
+                    open={deleteDialogOpen}
+                    onOpenChange={setDeleteDialogOpen}
+                    workspace={workspaceToDelete}
+                    onConfirm={handleConfirmDelete}
                 />
 
                 {/* Move to Campaign Modal */}

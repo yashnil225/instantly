@@ -29,6 +29,13 @@ const nextConfig: NextConfig = {
         'better-sqlite3'
       )
     }
+    // Ignore moment.js locale files that cause build issues
+    config.module = config.module || {}
+    config.module.rules = config.module.rules || []
+    config.module.rules.push({
+      test: /desktop\.ini$/,
+      loader: 'ignore-loader'
+    })
     return config
   },
 };

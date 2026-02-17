@@ -32,6 +32,8 @@ interface WorkspaceContextType {
     isLoading: boolean
     refreshWorkspaces: () => Promise<void>
     createWorkspace: (name: string, opportunityValue?: number) => Promise<Workspace | null>
+    updateWorkspace: (id: string, name: string) => Promise<boolean>
+    deleteWorkspace: (id: string) => Promise<boolean>
     selectedWorkspaceId: string | null
     setSelectedWorkspaceId: (id: string | null) => void
     switchWorkspace: (id: string | null) => void
@@ -114,6 +116,45 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         return null
     }, [])
 
+    const updateWorkspace = useCallback(async (id: string, name: string): Promise<boolean> => {
+        try {
+            const res = await fetch(`/api/workspaces/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name.trim() })
+            })
+
+            if (res.ok) {
+                const updatedWorkspace = await res.json()
+                setWorkspaces(prev => prev.map(w => w.id === id ? { ...w, ...updatedWorkspace } : w))
+                return true
+            }
+        } catch (error) {
+            console.error("Failed to update workspace:", error)
+        }
+        return false
+    }, [])
+
+    const deleteWorkspace = useCallback(async (id: string): Promise<boolean> => {
+        try {
+            const res = await fetch(`/api/workspaces/${id}`, {
+                method: 'DELETE'
+            })
+
+            if (res.ok) {
+                setWorkspaces(prev => prev.filter(w => w.id !== id))
+                // If the deleted workspace was selected, switch to "My Organization"
+                if (selectedWorkspaceId === id) {
+                    switchWorkspace(null)
+                }
+                return true
+            }
+        } catch (error) {
+            console.error("Failed to delete workspace:", error)
+        }
+        return false
+    }, [selectedWorkspaceId, switchWorkspace])
+
     // Switch workspace and persist to storage
     const switchWorkspace = useCallback((id: string | null) => {
         console.log(`[WorkspaceContext] Switching workspace to: ${id || 'My Organization'}`)
@@ -137,6 +178,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             isLoading,
             refreshWorkspaces,
             createWorkspace,
+            updateWorkspace,
+            deleteWorkspace,
             selectedWorkspaceId,
             setSelectedWorkspaceId: setSelectedWorkspaceIdWrapper,
             switchWorkspace

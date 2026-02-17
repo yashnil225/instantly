@@ -17,6 +17,9 @@ import { cn } from "@/lib/utils"
 import { FilterBar } from "@/components/common/FilterBar"
 import { TagManager } from "@/components/common/TagManager"
 import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
+import { WorkspaceDropdown } from "@/components/app/workspace/WorkspaceDropdown"
+import { WorkspaceManagerModal } from "@/components/app/workspace/WorkspaceManagerModal"
+import { DeleteConfirmationDialog } from "@/components/app/workspace/DeleteConfirmationDialog"
 import { toast } from "@/components/ui/use-toast"
 
 interface Lead {
@@ -39,9 +42,16 @@ export default function GlobalLeadsPage() {
     const [total, setTotal] = useState(0)
 
     // Workspace state - using unified ID-based storage from context
-    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace } = useWorkspaces()
+    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace, updateWorkspace, deleteWorkspace } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
+
+    // Workspace management modal states
+    const [managerModalOpen, setManagerModalOpen] = useState(false)
+    const [managerMode, setManagerMode] = useState<'create' | 'rename'>('create')
+    const [workspaceToRename, setWorkspaceToRename] = useState<{ id: string; name: string } | null>(null)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [workspaceToDelete, setWorkspaceToDelete] = useState<{ id: string; name: string; isDefault?: boolean } | null>(null)
 
     // Filter state
     const [searchQuery, setSearchQuery] = useState("")
@@ -136,6 +146,38 @@ export default function GlobalLeadsPage() {
         toast({ title: "Export Started", description: `Exporting ${leads.length} leads...` })
     }
 
+    // Workspace management handlers
+    const handleWorkspaceRename = (workspace: { id: string; name: string }) => {
+        setWorkspaceToRename(workspace)
+        setManagerMode('rename')
+        setManagerModalOpen(true)
+    }
+
+    const handleWorkspaceDelete = (workspace: { id: string; name: string; isDefault?: boolean }) => {
+        setWorkspaceToDelete(workspace)
+        setDeleteDialogOpen(true)
+    }
+
+    const handleManagerSubmit = async (name: string): Promise<boolean> => {
+        if (managerMode === 'rename' && workspaceToRename) {
+            const success = await updateWorkspace(workspaceToRename.id, name)
+            if (success) {
+                await refreshWorkspaces()
+            }
+            return success
+        }
+        return false
+    }
+
+    const handleConfirmDelete = async (): Promise<boolean> => {
+        if (!workspaceToDelete) return false
+        const success = await deleteWorkspace(workspaceToDelete.id)
+        if (success) {
+            await refreshWorkspaces()
+        }
+        return success
+    }
+
     return (
         <div className="flex bg-[#0a0a0a] min-h-screen text-white font-sans">
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -145,61 +187,32 @@ export default function GlobalLeadsPage() {
                         <Badge variant="outline" className="border-gray-700 text-gray-400">{total} Total</Badge>
                     </div>
                     <div className="flex items-center gap-3">
-                        {/* Workspace Dropdown */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="border-[#222] bg-[#111] text-white hover:text-white hover:bg-[#1a1a1a] gap-2">
-                                    <Zap className="h-4 w-4 text-blue-500" />
-                                    {selectedWorkspaceId ? (workspaces.find(w => w.id === selectedWorkspaceId)?.name || 'Workspace') : 'My Organization'}
-                                    <ChevronDown className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-64 bg-[#1a1a1a] border-[#2a2a2a] text-white">
-                                <div className="p-2">
-                                    <Input
-                                        placeholder="Search"
-                                        value={workspaceSearch}
-                                        onChange={(e) => setWorkspaceSearch(e.target.value)}
-                                        className="bg-[#0a0a0a] border-[#2a2a2a] text-white text-sm h-8 mb-2"
-                                    />
-                                </div>
-                                <DropdownMenuSeparator className="bg-[#2a2a2a]" />
-                                {/* My Organization option (show all) */}
-                                <DropdownMenuItem
-                                    onClick={() => switchWorkspace(null)}
-                                    className={cn(
-                                        "cursor-pointer focus:bg-[#2a2a2a] focus:text-white",
-                                        selectedWorkspaceId === null && "bg-blue-500/20 text-blue-400"
-                                    )}
-                                >
-                                    <Zap className="h-4 w-4 mr-2 text-blue-500" />
-                                    My Organization
-                                </DropdownMenuItem>
-                                {filteredWorkspaces.map((workspace) => (
-                                    <DropdownMenuItem
-                                        key={workspace.id}
-                                        onClick={() => switchWorkspace(workspace.id)}
-                                        className={cn(
-                                            "cursor-pointer focus:bg-[#2a2a2a] focus:text-white",
-                                            selectedWorkspaceId === workspace.id && "bg-blue-500/20 text-blue-400"
-                                        )}
-                                    >
-                                        <Zap className="h-4 w-4 mr-2 text-blue-500" />
-                                        {workspace.name}
-                                    </DropdownMenuItem>
-                                ))}
-                                <DropdownMenuSeparator className="bg-[#2a2a2a]" />
-                                <DropdownMenuItem onClick={() => setCreateWorkspaceOpen(true)} className="cursor-pointer focus:bg-[#2a2a2a] focus:text-blue-400 text-blue-400">
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Workspace
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <WorkspaceDropdown
+                            onRename={handleWorkspaceRename}
+                            onDelete={handleWorkspaceDelete}
+                            onCreate={() => setCreateWorkspaceOpen(true)}
+                            showQuickActions={true}
+                        />
 
                         <CreateWorkspaceModal
                             open={createWorkspaceOpen}
                             onOpenChange={setCreateWorkspaceOpen}
                             onWorkspaceCreated={refreshWorkspaces}
+                        />
+
+                        <WorkspaceManagerModal
+                            open={managerModalOpen}
+                            onOpenChange={setManagerModalOpen}
+                            mode={managerMode}
+                            workspace={workspaceToRename}
+                            onSubmit={handleManagerSubmit}
+                        />
+
+                        <DeleteConfirmationDialog
+                            open={deleteDialogOpen}
+                            onOpenChange={setDeleteDialogOpen}
+                            workspace={workspaceToDelete}
+                            onConfirm={handleConfirmDelete}
                         />
 
                         <Button variant="outline" className="border-[#222] bg-[#111] text-gray-400 hover:text-white" onClick={handleExport}>

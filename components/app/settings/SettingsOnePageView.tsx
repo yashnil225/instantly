@@ -2,7 +2,7 @@
 
 // Sections
 import { ProfileSection } from "@/components/app/settings/ProfileSection"
-import { WorkspaceMembersSection } from "@/components/app/settings/WorkspaceMembersSection"
+import { WorkspacesListSection } from "@/components/app/settings/WorkspacesListSection"
 import WorkspaceGroupsPage from "@/app/settings/groups/page"
 import LeadLabelsPage from "@/app/settings/labels/page"
 import CustomTagsPage from "@/app/settings/tags/page"
@@ -50,15 +50,11 @@ export function SettingsOnePageView({ user, workspaceId }: SettingsOnePageProps)
             <section id="workspace" className="scroll-mt-6">
                 <div className="mb-8">
                     <h2 className="text-xl font-semibold text-foreground mb-2 flex items-center gap-2">
-                        <Users className="h-5 w-5 text-blue-500" /> Workspace & Members
+                        <Users className="h-5 w-5 text-blue-500" /> My Workspaces
                     </h2>
-                    <p className="text-muted-foreground text-sm">Manage workspace details and team members.</p>
+                    <p className="text-muted-foreground text-sm">Manage your workspaces and team members.</p>
                 </div>
-                {workspaceId ? (
-                    <WorkspaceMembersSection workspaceId={workspaceId} />
-                ) : (
-                    <div className="text-muted-foreground">Loading workspace...</div>
-                )}
+                <WorkspacesListSection />
             </section>
 
             <div className="h-[1px] bg-secondary" />

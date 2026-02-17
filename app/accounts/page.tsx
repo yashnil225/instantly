@@ -15,6 +15,9 @@ import {
 import { FilterBar } from "@/components/common/FilterBar"
 import { TagManager, Tag as TagType } from "@/components/common/TagManager"
 import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
+import { WorkspaceDropdown } from "@/components/app/workspace/WorkspaceDropdown"
+import { WorkspaceManagerModal } from "@/components/app/workspace/WorkspaceManagerModal"
+import { DeleteConfirmationDialog } from "@/components/app/workspace/DeleteConfirmationDialog"
 import { useWorkspaces } from "@/contexts/WorkspaceContext"
 import {
     DropdownMenu,
@@ -104,9 +107,16 @@ function AccountsPage() {
     const [totalPages, setTotalPages] = useState(1)
 
     // Workspace state - using unified ID-based storage from context
-    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace } = useWorkspaces()
+    const { workspaces, refreshWorkspaces, selectedWorkspaceId, switchWorkspace, updateWorkspace, deleteWorkspace } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
+
+    // Workspace management modal states
+    const [managerModalOpen, setManagerModalOpen] = useState(false)
+    const [managerMode, setManagerMode] = useState<'create' | 'rename'>('create')
+    const [workspaceToRename, setWorkspaceToRename] = useState<{ id: string; name: string } | null>(null)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [workspaceToDelete, setWorkspaceToDelete] = useState<{ id: string; name: string; isDefault?: boolean } | null>(null)
 
     // Debounce search input (300ms delay)
     useEffect(() => {
@@ -540,6 +550,38 @@ function AccountsPage() {
     // Legacy export function for backwards compatibility
     const handleExport = handleExportCSV
 
+    // Workspace management handlers
+    const handleWorkspaceRename = (workspace: { id: string; name: string }) => {
+        setWorkspaceToRename(workspace)
+        setManagerMode('rename')
+        setManagerModalOpen(true)
+    }
+
+    const handleWorkspaceDelete = (workspace: { id: string; name: string; isDefault?: boolean }) => {
+        setWorkspaceToDelete(workspace)
+        setDeleteDialogOpen(true)
+    }
+
+    const handleManagerSubmit = async (name: string): Promise<boolean> => {
+        if (managerMode === 'rename' && workspaceToRename) {
+            const success = await updateWorkspace(workspaceToRename.id, name)
+            if (success) {
+                await refreshWorkspaces()
+            }
+            return success
+        }
+        return false
+    }
+
+    const handleConfirmDelete = async (): Promise<boolean> => {
+        if (!workspaceToDelete) return false
+        const success = await deleteWorkspace(workspaceToDelete.id)
+        if (success) {
+            await refreshWorkspaces()
+        }
+        return success
+    }
+
     const [selectedDetailId, setSelectedDetailId] = useState<string | null>(null)
 
     // ... (rest of effects)
@@ -584,56 +626,32 @@ function AccountsPage() {
                             )}
 
 
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="border-border bg-card text-foreground hover:text-foreground hover:bg-secondary h-9 gap-2">
-                                        {selectedWorkspaceId ? (workspaces.find(w => w.id === selectedWorkspaceId)?.name || 'Workspace') : 'My Organization'}
-                                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56 bg-card border-border text-foreground">
-                                    <div className="p-2">
-                                        <Input
-                                            placeholder="Search workspaces..."
-                                            value={workspaceSearch}
-                                            onChange={(e) => setWorkspaceSearch(e.target.value)}
-                                            className="bg-background border-border h-8 text-sm"
-                                        />
-                                    </div>
-                                    <DropdownMenuItem
-                                        onClick={() => switchWorkspace(null)}
-                                        className={cn(
-                                            "focus:bg-secondary focus:text-foreground cursor-pointer",
-                                            selectedWorkspaceId === null && "bg-blue-500/20 text-blue-400"
-                                        )}
-                                    >
-                                        <Zap className="h-4 w-4 mr-2 text-blue-500" />
-                                        My Organization
-                                    </DropdownMenuItem>
-                                    {filteredWorkspaces.map((workspace) => (
-                                        <DropdownMenuItem
-                                            key={workspace.id}
-                                            onClick={() => switchWorkspace(workspace.id)}
-                                            className={cn(
-                                                "focus:bg-secondary focus:text-foreground cursor-pointer",
-                                                selectedWorkspaceId === workspace.id && "bg-blue-500/20 text-blue-400"
-                                            )}
-                                        >
-                                            {workspace.name}
-                                        </DropdownMenuItem>
-                                    ))}
-                                    <DropdownMenuSeparator className="bg-muted" />
-                                    <DropdownMenuItem onClick={() => setCreateWorkspaceOpen(true)} className="focus:bg-secondary focus:text-blue-400 text-blue-400 cursor-pointer">
-                                        <Plus className="h-4 w-4 mr-2" />
-                                        Add Workspace
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <WorkspaceDropdown
+                                onRename={handleWorkspaceRename}
+                                onDelete={handleWorkspaceDelete}
+                                onCreate={() => setCreateWorkspaceOpen(true)}
+                                showQuickActions={true}
+                            />
 
                             <CreateWorkspaceModal
                                 open={createWorkspaceOpen}
                                 onOpenChange={setCreateWorkspaceOpen}
                                 onWorkspaceCreated={refreshWorkspaces}
+                            />
+
+                            <WorkspaceManagerModal
+                                open={managerModalOpen}
+                                onOpenChange={setManagerModalOpen}
+                                mode={managerMode}
+                                workspace={workspaceToRename}
+                                onSubmit={handleManagerSubmit}
+                            />
+
+                            <DeleteConfirmationDialog
+                                open={deleteDialogOpen}
+                                onOpenChange={setDeleteDialogOpen}
+                                workspace={workspaceToDelete}
+                                onConfirm={handleConfirmDelete}
                             />
                         </div>
                     </div>

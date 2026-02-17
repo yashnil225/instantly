@@ -41,14 +41,24 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { CreateWorkspaceModal } from "@/components/app/CreateWorkspaceModal"
+import { WorkspaceDropdown } from "@/components/app/workspace/WorkspaceDropdown"
+import { WorkspaceManagerModal } from "@/components/app/workspace/WorkspaceManagerModal"
+import { DeleteConfirmationDialog } from "@/components/app/workspace/DeleteConfirmationDialog"
 
 export default function CRMPage() {
     const router = useRouter()
-    const { workspaces, refreshWorkspaces } = useWorkspaces()
+    const { workspaces, refreshWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaces()
     const [searchQuery, setSearchQuery] = useState("")
     const [leads, setLeads] = useState<any[]>([])
     const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("all")
     const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
+
+    // Workspace management modal states
+    const [managerModalOpen, setManagerModalOpen] = useState(false)
+    const [managerMode, setManagerMode] = useState<'create' | 'rename'>('create')
+    const [workspaceToRename, setWorkspaceToRename] = useState<{ id: string; name: string } | null>(null)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [workspaceToDelete, setWorkspaceToDelete] = useState<{ id: string; name: string; isDefault?: boolean } | null>(null)
     const [loading, setLoading] = useState(true)
     const [preferences, setPreferences] = useState<any>(null)
     type ViewType = "opportunities" | "leads" | "campaigns" | "salesflows" | "reports" | "inbox" | "done" | "upcoming"
@@ -680,6 +690,46 @@ export default function CRMPage() {
         }
     }
 
+    // Workspace management handlers
+    const handleWorkspaceRename = (workspace: { id: string; name: string }) => {
+        setWorkspaceToRename(workspace)
+        setManagerMode('rename')
+        setManagerModalOpen(true)
+    }
+
+    const handleWorkspaceDelete = (workspace: { id: string; name: string; isDefault?: boolean }) => {
+        setWorkspaceToDelete(workspace)
+        setDeleteDialogOpen(true)
+    }
+
+    const handleManagerSubmit = async (name: string): Promise<boolean> => {
+        if (managerMode === 'rename' && workspaceToRename) {
+            const success = await updateWorkspace(workspaceToRename.id, name)
+            if (success) {
+                await refreshWorkspaces()
+            }
+            return success
+        }
+        return false
+    }
+
+    const handleConfirmDelete = async (): Promise<boolean> => {
+        if (!workspaceToDelete) return false
+        const success = await deleteWorkspace(workspaceToDelete.id)
+        if (success) {
+            await refreshWorkspaces()
+            // If the deleted workspace was selected, switch to "all"
+            if (selectedWorkspaceId === workspaceToDelete.id) {
+                setSelectedWorkspaceId("all")
+            }
+        }
+        return success
+    }
+
+    const handleWorkspaceSelect = (workspaceId: string | null) => {
+        setSelectedWorkspaceId(workspaceId || "all")
+    }
+
     return (
         <div className="flex h-screen bg-background text-foreground overflow-hidden font-sans">
             {/* CRM Sub-sidebar */}
@@ -917,59 +967,34 @@ export default function CRMPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-10 px-4 gap-3 bg-[#111116] border border-border rounded-xl font-bold text-sm text-foreground hover:bg-[#1a1a1f] hover:text-foreground transition-all">
-                                    {activeWorkspace?.name || "My Organization"}
-                                    <ChevronDown className="h-4 w-4 opacity-50" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-64 bg-[#111116] border-border rounded-xl shadow-2xl p-2 z-[60]">
-                                {/* My Organization option (show all) */}
-                                <DropdownMenuItem
-                                    onSelect={(e) => {
-                                        e.preventDefault()
-                                        setSelectedWorkspaceId("all")
-                                    }}
-                                    className="px-3 py-2.5 cursor-pointer focus:bg-[#1a1a1f] rounded-lg flex items-center justify-between text-foreground focus:text-foreground"
-                                >
-                                    <span className={cn("text-sm", selectedWorkspaceId === "all" ? "font-bold text-blue-400" : "")}>
-                                        My Organization
-                                    </span>
-                                    {selectedWorkspaceId === "all" && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
-                                </DropdownMenuItem>
-                                {workspaces.map((ws) => (
-                                    <DropdownMenuItem
-                                        key={ws.id}
-                                        onSelect={(e) => {
-                                            e.preventDefault()
-                                            setSelectedWorkspaceId(ws.id)
-                                        }}
-                                        className="px-3 py-2.5 cursor-pointer focus:bg-[#1a1a1f] rounded-lg flex items-center justify-between text-foreground focus:text-foreground"
-                                    >
-                                        <span className={cn("text-sm", selectedWorkspaceId === ws.id ? "font-bold text-blue-400" : "")}>
-                                            {ws.name}
-                                        </span>
-                                        {selectedWorkspaceId === ws.id && <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />}
-                                    </DropdownMenuItem>
-                                ))}
-                                <DropdownMenuItem
-                                    onSelect={(e) => {
-                                        e.preventDefault()
-                                        setCreateWorkspaceOpen(true)
-                                    }}
-                                    className="px-3 py-2.5 cursor-pointer focus:bg-[#1a1a1f] rounded-lg flex items-center text-blue-400 focus:text-blue-400"
-                                >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    <span className="text-sm">Add Workspace</span>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <WorkspaceDropdown
+                            onRename={handleWorkspaceRename}
+                            onDelete={handleWorkspaceDelete}
+                            onCreate={() => setCreateWorkspaceOpen(true)}
+                            onSwitch={handleWorkspaceSelect}
+                            selectedWorkspaceId={selectedWorkspaceId === "all" ? null : selectedWorkspaceId}
+                            showQuickActions={true}
+                        />
 
                         <CreateWorkspaceModal
                             open={createWorkspaceOpen}
                             onOpenChange={setCreateWorkspaceOpen}
                             onWorkspaceCreated={refreshWorkspaces}
+                        />
+
+                        <WorkspaceManagerModal
+                            open={managerModalOpen}
+                            onOpenChange={setManagerModalOpen}
+                            mode={managerMode}
+                            workspace={workspaceToRename}
+                            onSubmit={handleManagerSubmit}
+                        />
+
+                        <DeleteConfirmationDialog
+                            open={deleteDialogOpen}
+                            onOpenChange={setDeleteDialogOpen}
+                            workspace={workspaceToDelete}
+                            onConfirm={handleConfirmDelete}
                         />
                     </div>
                 </div>

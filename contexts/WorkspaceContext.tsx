@@ -135,6 +135,13 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         return false
     }, [])
 
+    // Switch workspace and persist to storage
+    const switchWorkspace = useCallback((id: string | null) => {
+        console.log(`[WorkspaceContext] Switching workspace to: ${id || 'My Organization'}`)
+        setSelectedWorkspaceIdState(id)
+        setSelectedWorkspaceId(id)
+    }, [])
+
     const deleteWorkspace = useCallback(async (id: string): Promise<boolean> => {
         try {
             const res = await fetch(`/api/workspaces/${id}`, {
@@ -154,13 +161,6 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         }
         return false
     }, [selectedWorkspaceId, switchWorkspace])
-
-    // Switch workspace and persist to storage
-    const switchWorkspace = useCallback((id: string | null) => {
-        console.log(`[WorkspaceContext] Switching workspace to: ${id || 'My Organization'}`)
-        setSelectedWorkspaceIdState(id)
-        setSelectedWorkspaceId(id)
-    }, [])
 
     // Setter for selected workspace ID (used internally)
     const setSelectedWorkspaceIdWrapper = useCallback((id: string | null) => {

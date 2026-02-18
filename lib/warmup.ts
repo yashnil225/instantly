@@ -15,6 +15,103 @@ const DEFAULT_CONFIG: WarmupConfig = {
     replyRate: 30
 }
 
+/**
+ * Calculate health score based on account performance
+ * Health score starts at 100 and adjusts based on:
+ * - Successful warmup sends (+1 per send, max +10 per day)
+ * - Reply rates (+5 if reply rate > 30%)
+ * - Pool participation (+5 if opted in)
+ * - Bounces (-10 per bounce)
+ */
+export async function calculateAndUpdateHealthScore(accountId: string): Promise<number> {
+    const account = await prisma.emailAccount.findUnique({
+        where: { id: accountId },
+        include: {
+            warmupLogs: {
+                where: {
+                    createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+                }
+            }
+        }
+    })
+
+    if (!account) return 100
+
+    // Get last 7 days of activity
+    const lastWeekLogs = account.warmupLogs || []
+    
+    // Calculate metrics
+    const totalSent = lastWeekLogs.filter(l => l.action === 'send' || l.action === 'pool_send').length
+    const totalReplies = lastWeekLogs.filter(l => l.action === 'auto_reply' || l.action === 'reply').length
+    const totalBounces = account.bounceCount || 0
+    const isPoolParticipant = account.warmupPoolOptIn
+    
+    // Calculate reply rate
+    const replyRate = totalSent > 0 ? (totalReplies / totalSent) * 100 : 0
+    
+    // Base score starts at 100
+    let healthScore = 100
+    
+    // Positive factors
+    if (totalSent > 0) {
+        // +1 for each successful send (max +10)
+        healthScore += Math.min(totalSent * 0.5, 10)
+    }
+    
+    if (replyRate >= 30) {
+        // Good reply rate bonus
+        healthScore += 5
+    }
+    
+    if (isPoolParticipant) {
+        // Pool participation bonus
+        healthScore += 3
+    }
+    
+    // Negative factors
+    if (totalBounces > 0) {
+        // -10 per bounce
+        healthScore -= Math.min(totalBounces * 10, 30)
+    }
+    
+    // Ensure score stays within 0-100 range
+    healthScore = Math.max(0, Math.min(100, Math.round(healthScore)))
+    
+    // Only update if significantly different (avoid tiny fluctuations)
+    if (Math.abs(healthScore - (account.healthScore || 100)) >= 1) {
+        await prisma.emailAccount.update({
+            where: { id: accountId },
+            data: { healthScore }
+        })
+    }
+    
+    return healthScore
+}
+
+/**
+ * Log warmup activity for tracking
+ */
+async function logWarmupActivity(
+    accountId: string,
+    action: 'send' | 'receive' | 'pool_send' | 'pool_receive' | 'auto_reply' | 'spam_rescue',
+    details?: string,
+    recipientAccountId?: string
+) {
+    try {
+        await prisma.warmupLog.create({
+            data: {
+                accountId,
+                action,
+                details: details || null,
+                recipientAccountId: recipientAccountId || null,
+                createdAt: new Date()
+            }
+        })
+    } catch (error) {
+        console.error(`Failed to log warmup activity:`, error)
+    }
+}
+
 export function calculateWarmupLimit(account: any): number {
     if (!account.warmupEnabled) {
         return account.dailyLimit || 50
@@ -122,6 +219,17 @@ async function sendWarmupEmail(from: any, to: any) {
         fromName: `${from.firstName || ''} ${from.lastName || ''}`.trim() || from.email,
         fromEmail: from.email
     })
+
+    // Log the warmup send activity
+    await logWarmupActivity(
+        from.id,
+        'send',
+        `Sent warmup email to ${to.email}`,
+        to.id
+    )
+
+    // Update health score after successful send
+    await calculateAndUpdateHealthScore(from.id)
 }
 
 // Reset daily counters at midnight

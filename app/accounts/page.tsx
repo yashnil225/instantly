@@ -201,7 +201,7 @@ function AccountsPage() {
     const itemsPerPage = 20
 
 
-    const fetchAccounts = useCallback(async () => {
+    const fetchAccounts = useCallback(async (forceRefresh = false) => {
         setLoading(true)
         try {
             // Use selectedWorkspaceId from unified storage - null means show all (My Organization)
@@ -212,8 +212,17 @@ function AccountsPage() {
             if (selectedTags.length > 0) {
                 url += `&tags=${selectedTags.join(',')}`
             }
+            // Add cache-busting timestamp when force refresh is needed
+            if (forceRefresh) {
+                url += `&_t=${Date.now()}`
+            }
 
-            const res = await fetch(url)
+            const res = await fetch(url, {
+                cache: forceRefresh ? 'no-store' : 'default',
+                headers: {
+                    'Cache-Control': forceRefresh ? 'no-cache' : 'default'
+                }
+            })
             if (res.ok) {
                 const data = await res.json()
                 setAccounts(data.accounts || [])
@@ -1143,9 +1152,15 @@ function AccountsPage() {
                     <AccountDetailPanel
                         account={selectedDetailAccount}
                         onClose={() => setSelectedDetailId(null)}
-                        onUpdate={() => {
-                            // Refresh accounts list to show updated data immediately
-                            fetchAccounts()
+                        onUpdate={(updatedAccount) => {
+                            // Update the account in the local state immediately
+                            setAccounts(prevAccounts => 
+                                prevAccounts.map(acc => 
+                                    acc.id === updatedAccount.id ? { ...acc, ...updatedAccount } : acc
+                                )
+                            )
+                            // Also refresh from server to ensure consistency
+                            fetchAccounts(true)
                         }}
                     />
                 )}

@@ -95,6 +95,30 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
         }
     }, [account?.id])
 
+    // Sync form state with account prop when it changes (e.g., after save)
+    useEffect(() => {
+        if (account) {
+            setFirstName(account.firstName || "")
+            setLastName(account.lastName || "")
+            setSignature(account.signature || "")
+            setDailyLimit(account.dailyLimit?.toString() || "300")
+            setMinWaitTime(account.minWaitTime?.toString() || "1")
+            setSlowRamp(account.slowRamp || false)
+            setWarmupEnabled(account.warmupEnabled || false)
+            setWarmupTag(account.warmupTag || "")
+            setWarmupDailyLimit(account.warmupDailyLimit?.toString() || "50")
+            setWarmupDailyIncrease(account.warmupDailyIncrease?.toString() || "4")
+            setWarmupReplyRate(account.warmupReplyRate?.toString() || "30")
+            setStatus(account.status || "active")
+            setSmtpHost(account.smtpHost || "")
+            setSmtpPort(account.smtpPort?.toString() || "587")
+            setSmtpUser(account.smtpUser || "")
+            setImapHost(account.imapHost || "")
+            setImapPort(account.imapPort?.toString() || "993")
+            setImapUser(account.imapUser || "")
+        }
+    }, [account])
+
     const fetchAccountDetails = async () => {
         try {
             const res = await fetch(`/api/accounts/${account.id}`)
@@ -385,7 +409,23 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
 
             if (res.ok) {
                 toast({ title: "Settings Saved", description: "Account settings updated successfully" })
-                onUpdate?.({ ...account, firstName, lastName })
+                
+                // Refetch account details to get updated stats and data
+                await fetchAccountDetails()
+                
+                // Notify parent with updated account data including warmup settings
+                onUpdate?.({ 
+                    ...account, 
+                    firstName, 
+                    lastName,
+                    dailyLimit: parseInt(dailyLimit),
+                    warmupEnabled,
+                    warmupTag,
+                    warmupDailyLimit: parseInt(warmupDailyLimit),
+                    warmupDailyIncrease: parseInt(warmupDailyIncrease),
+                    warmupReplyRate: parseInt(warmupReplyRate)
+                })
+                
                 router.refresh() // Ensure server components update
                 setShowLargeLimitWarning(false)
                 setLargeLimitAcknowledged(false)

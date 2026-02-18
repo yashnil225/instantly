@@ -88,7 +88,8 @@ export async function GET(request: Request) {
         status: acc.status as "active" | "paused" | "error" | "warmup",
         emailsSent: acc.sentToday || 0,
         emailsLimit: acc.dailyLimit || 300,
-        warmupEmails: 0, // TODO: Add warmup tracking
+        warmupEmails: acc.warmupSentToday || 0,
+        warmupEmailsLimit: acc.warmupDailyLimit || 50,
         healthScore: acc.healthScore || 100,
         hasError: acc.status === 'error',
         isWarming: acc.warmupEnabled || false,

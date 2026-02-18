@@ -20,15 +20,19 @@ export function calculateWarmupLimit(account: any): number {
         return account.dailyLimit || 50
     }
 
-    // Use account's configured warmup settings
-    const startLimit = 1  // Start with 1 email on day 1 (Satisfies user request for odd start)
-    const dailyIncrease = account.warmupDailyIncrease || 1  // Increase per day from account settings
-    const maxLimit = account.warmupDailyLimit || 50  // Max limit from account settings
+    // Use account's configured warmup settings with proper defaults from schema
+    // Schema defaults: warmupDailyIncrease @default(5), warmupDailyLimit @default(50)
+    const dailyIncrease = account.warmupDailyIncrease ?? DEFAULT_CONFIG.increasePerDay  // Default: 5
+    const maxLimit = account.warmupDailyLimit ?? DEFAULT_CONFIG.maxLimit  // Default: 50
+    
+    // Use configured start limit or default to 5 (not 1, to be more practical)
+    // Users can configure this via the warmup settings UI
+    const startLimit = account.warmupStartLimit ?? DEFAULT_CONFIG.startLimit  // Default: 10
 
     // Get current warmup day (how many days since warmup started)
     const currentDay = account.warmupCurrentDay || 1
 
-    // Calculate current warmup limit: starts at 1, increases by dailyIncrease each day
+    // Calculate current warmup limit: starts at startLimit, increases by dailyIncrease each day
     const calculatedLimit = startLimit + ((currentDay - 1) * dailyIncrease)
 
     // Cap at the account's warmupDailyLimit

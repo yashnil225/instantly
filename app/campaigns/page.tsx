@@ -213,12 +213,16 @@ function CampaignsPage() {
         setIsCreating(true)
 
         try {
+            // Only assign to workspace if a specific workspace is selected (not "My Organization")
+            // selectedWorkspaceId is null when "My Organization" is selected
+            const workspaceIds = selectedWorkspaceId ? [selectedWorkspaceId] : undefined
+            
             const res = await fetch('/api/campaigns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: newCampaignName,
-                    workspaceIds: selectedWorkspaceId ? [selectedWorkspaceId] : []
+                    workspaceIds
                 })
             })
 
@@ -989,10 +993,15 @@ function CampaignsPage() {
                                             <DropdownMenuItem onClick={() => openShareModal(campaign.id, campaign.name)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
                                                 <Share2 className="mr-2 h-4 w-4 text-muted-foreground" /> Share Campaign
                                             </DropdownMenuItem>
-                                            <DropdownMenuSeparator className="bg-border" />
-                                            <DropdownMenuItem onClick={() => openWorkspaceAssign(campaign)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
-                                                <Zap className="mr-2 h-4 w-4 text-blue-500" /> Assign to Workspaces
-                                            </DropdownMenuItem>
+                                            {/* Only show "Assign to Workspaces" when viewing "My Organization" and campaign has no workspace assignments */}
+                                            {selectedWorkspaceId === null && (!campaign.campaignWorkspaces || campaign.campaignWorkspaces.length === 0) && (
+                                                <>
+                                                    <DropdownMenuSeparator className="bg-border" />
+                                                    <DropdownMenuItem onClick={() => openWorkspaceAssign(campaign)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
+                                                        <Zap className="mr-2 h-4 w-4 text-blue-500" /> Assign to Workspaces
+                                                    </DropdownMenuItem>
+                                                </>
+                                            )}
                                         </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>

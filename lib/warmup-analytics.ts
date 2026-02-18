@@ -159,13 +159,26 @@ async function getDailyWarmupStats(days: number): Promise<DailyWarmupStats[]> {
             }
         })
 
+        // Calculate average health score for this day from accounts that had activity
+        const accountIdsWithActivity = [...new Set(logs.map(l => l.accountId))]
+        let dayHealthScore = 100
+        if (accountIdsWithActivity.length > 0) {
+            const accountsWithActivity = await prisma.emailAccount.findMany({
+                where: { id: { in: accountIdsWithActivity } },
+                select: { healthScore: true }
+            })
+            dayHealthScore = Math.round(
+                accountsWithActivity.reduce((sum, a) => sum + (a.healthScore || 100), 0) / accountsWithActivity.length
+            )
+        }
+
         stats.push({
             date: date.toISOString().split("T")[0],
             sent: logs.filter(l => l.action === "send" || l.action === "pool_send").length,
             received: logs.filter(l => l.action === "receive" || l.action === "pool_receive").length,
             replies: logs.filter(l => l.action === "auto_reply").length,
             spamRescued: logs.filter(l => l.action === "spam_rescue").length,
-            healthScore: 85 + Math.floor(Math.random() * 10) // Placeholder
+            healthScore: dayHealthScore
         })
     }
 
@@ -249,42 +262,102 @@ async function getPoolStats(): Promise<PoolStats> {
  * Get health score breakdown with factors
  */
 async function getHealthBreakdown(): Promise<HealthBreakdown> {
-    // Calculate health factors
+    // Get warmup accounts and their logs for the past 14 days
+    const accounts = await prisma.emailAccount.findMany({
+        where: { warmupEnabled: true },
+        include: {
+            warmupLogs: {
+                where: {
+                    createdAt: { gte: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) }
+                }
+            }
+        }
+    })
+
+    if (accounts.length === 0) {
+        return {
+            factors: [],
+            overallScore: 100,
+            trend: 0,
+            recommendations: ["Enable warmup on your email accounts to improve deliverability"]
+        }
+    }
+
+    // Calculate metrics from actual data
+    const totalSent = accounts.reduce((sum, a) => 
+        sum + a.warmupLogs.filter(l => l.action === "send" || l.action === "pool_send").length, 0
+    )
+    const totalReplies = accounts.reduce((sum, a) => 
+        sum + a.warmupLogs.filter(l => l.action === "auto_reply").length, 0
+    )
+    const totalRescued = accounts.reduce((sum, a) => 
+        sum + a.warmupLogs.filter(l => l.action === "spam_rescue").length, 0
+    )
+    const totalBounces = accounts.reduce((sum, a) => a.bounceCount || 0, 0)
+
+    // Calculate average health score
+    const avgHealthScore = Math.round(
+        accounts.reduce((sum, a) => sum + (a.healthScore || 100), 0) / accounts.length
+    )
+
+    // Calculate reply rate
+    const replyRate = totalSent > 0 ? Math.round((totalReplies / totalSent) * 100) : 0
+
+    // Calculate spam rescue rate
+    const spamRescueRate = totalSent > 0 ? Math.min(Math.round((totalRescued / totalSent) * 100), 100) : 0
+
+    // Calculate sender reputation based on bounces and health scores
+    const bounceRate = totalSent > 0 ? (totalBounces / totalSent) : 0
+    const senderReputation = Math.max(0, Math.min(100, 100 - (bounceRate * 100)))
+
+    // Calculate send volume consistency (check if sending daily)
+    const last7Days = await prisma.warmupLog.groupBy({
+        by: ['createdAt'],
+        where: {
+            createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+            action: { in: ['send', 'pool_send'] }
+        },
+        _count: { id: true }
+    })
+    const daysWithActivity = last7Days.length
+    const sendVolumeScore = Math.round((daysWithActivity / 7) * 100)
+
+    // Calculate factors
     const factors: HealthFactor[] = [
         {
             name: "Sender Reputation",
-            score: 85,
+            score: Math.round(senderReputation),
             weight: 30,
             description: "Based on bounce rates and spam complaints",
-            status: "good"
+            status: senderReputation >= 80 ? "good" : senderReputation >= 60 ? "warning" : "critical"
         },
         {
             name: "Engagement Rate",
-            score: 72,
+            score: Math.round((replyRate + avgHealthScore) / 2),
             weight: 25,
             description: "Open and reply rates from warmup emails",
-            status: "warning"
+            status: replyRate >= 30 ? "good" : replyRate >= 15 ? "warning" : "critical"
         },
         {
             name: "Send Volume",
-            score: 90,
+            score: sendVolumeScore,
             weight: 20,
             description: "Consistent daily sending patterns",
-            status: "good"
+            status: sendVolumeScore >= 80 ? "good" : sendVolumeScore >= 50 ? "warning" : "critical"
         },
         {
             name: "Spam Rescue",
-            score: 95,
+            score: Math.max(0, 100 - spamRescueRate * 2), // Lower is better for spam rescue need
             weight: 15,
             description: "Emails successfully rescued from spam",
-            status: "good"
+            status: spamRescueRate < 5 ? "good" : spamRescueRate < 15 ? "warning" : "critical"
         },
         {
             name: "Reply Rate",
-            score: 68,
+            score: replyRate,
             weight: 10,
             description: "Percentage of warmup emails replied to",
-            status: "warning"
+            status: replyRate >= 30 ? "good" : replyRate >= 15 ? "warning" : "critical"
         }
     ]
 
@@ -292,18 +365,51 @@ async function getHealthBreakdown(): Promise<HealthBreakdown> {
         factors.reduce((sum, f) => sum + (f.score * f.weight / 100), 0)
     )
 
+    // Calculate trend by comparing last 7 days to previous 7 days
+    const now = new Date()
+    const lastWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const previousWeekStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
+
+    const lastWeekLogs = await prisma.warmupLog.count({
+        where: {
+            createdAt: { gte: lastWeekStart },
+            action: { in: ['send', 'pool_send', 'auto_reply'] }
+        }
+    })
+
+    const previousWeekLogs = await prisma.warmupLog.count({
+        where: {
+            createdAt: { gte: previousWeekStart, lt: lastWeekStart },
+            action: { in: ['send', 'pool_send', 'auto_reply'] }
+        }
+    })
+
+    const trend = previousWeekLogs > 0 
+        ? Math.round(((lastWeekLogs - previousWeekLogs) / previousWeekLogs) * 100)
+        : 0
+
+    // Generate recommendations based on actual data
     const recommendations: string[] = []
-    if (factors.find(f => f.name === "Engagement Rate")?.score || 0 < 75) {
-        recommendations.push("Improve subject lines to increase open rates")
-    }
-    if (factors.find(f => f.name === "Reply Rate")?.score || 0 < 70) {
+    if (replyRate < 20) {
         recommendations.push("Enable auto-reply to boost reply rates")
+    }
+    if (sendVolumeScore < 70) {
+        recommendations.push("Ensure consistent daily warmup sending")
+    }
+    if (bounceRate > 0.05) {
+        recommendations.push("High bounce rate detected - check email list quality")
+    }
+    if (avgHealthScore < 70) {
+        recommendations.push("Some accounts have low health scores - review warmup settings")
+    }
+    if (recommendations.length === 0) {
+        recommendations.push("Your warmup is performing well!")
     }
 
     return {
         factors,
         overallScore,
-        trend: 3, // +3% from yesterday
+        trend,
         recommendations
     }
 }

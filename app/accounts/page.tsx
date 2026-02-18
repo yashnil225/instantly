@@ -69,6 +69,7 @@ interface EmailAccount {
     emailsSent: number
     emailsLimit: number
     warmupEmails: number
+    warmupEmailsLimit: number
     healthScore: number
     hasError: boolean
     isWarming: boolean
@@ -225,17 +226,17 @@ function AccountsPage() {
             setLoading(false)
         }
         setLoading(false)
-    }, [currentPage, itemsPerPage, selectedWorkspaceId, workspaces, toast, selectedTags])
+    }, [currentPage, itemsPerPage, selectedWorkspaceId, selectedTags, toast])
 
     // Load workspaces on mount
     useEffect(() => {
         refreshWorkspaces()
     }, [])
 
-    // Fetch accounts when workspace changes
+    // Fetch accounts when workspace or filters change
     useEffect(() => {
         fetchAccounts()
-    }, [currentPage, debouncedSearch, activeFilter, selectedWorkspaceId, fetchAccounts])
+    }, [currentPage, debouncedSearch, activeFilter, selectedWorkspaceId, selectedTags, fetchAccounts])
 
 
     const filteredWorkspaces = workspaces.filter((w) =>
@@ -869,7 +870,9 @@ function AccountsPage() {
                                                 <div className="text-sm text-foreground font-medium">
                                                     {account.emailsSent} <span className="text-muted-foreground font-normal">of {account.emailsLimit}</span>
                                                 </div>
-                                                <div className="text-sm text-foreground font-medium">{account.warmupEmails}</div>
+                                                <div className="text-sm text-foreground font-medium">
+                                                    {account.warmupEmails} <span className="text-muted-foreground font-normal">of {account.warmupEmailsLimit}</span>
+                                                </div>
                                                 <div className="text-sm font-bold text-foreground">{account.healthScore}%</div>
                                                 <div className="flex justify-end items-center gap-3">
                                                     {/* Warmup (Fire) toggle */}
@@ -1069,7 +1072,7 @@ function AccountsPage() {
                                             </div>
                                             <div className="text-center border-l border-border">
                                                 <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Warmup</div>
-                                                <div className="text-sm font-bold text-foreground">{account.warmupEmails}</div>
+                                                <div className="text-sm font-bold text-foreground">{account.warmupEmails} <span className="text-muted-foreground font-normal text-xs">/ {account.warmupEmailsLimit}</span></div>
                                             </div>
                                             <div className="text-center border-l border-border">
                                                 <div className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mb-1">Health</div>
@@ -1140,6 +1143,10 @@ function AccountsPage() {
                     <AccountDetailPanel
                         account={selectedDetailAccount}
                         onClose={() => setSelectedDetailId(null)}
+                        onUpdate={() => {
+                            // Refresh accounts list to show updated data immediately
+                            fetchAccounts()
+                        }}
                     />
                 )}
             </div>

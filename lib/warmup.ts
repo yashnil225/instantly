@@ -95,7 +95,7 @@ async function logWarmupActivity(
     accountId: string,
     action: 'send' | 'receive' | 'pool_send' | 'pool_receive' | 'auto_reply' | 'spam_rescue',
     details?: string,
-    recipientAccountId?: string
+    recipientEmail?: string
 ) {
     try {
         await prisma.warmupLog.create({
@@ -103,7 +103,8 @@ async function logWarmupActivity(
                 accountId,
                 action,
                 details: details || null,
-                recipientAccountId: recipientAccountId || null,
+                toEmail: recipientEmail || null,
+                warmupId: `warmup-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 createdAt: new Date()
             }
         })
@@ -225,7 +226,7 @@ async function sendWarmupEmail(from: any, to: any) {
         from.id,
         'send',
         `Sent warmup email to ${to.email}`,
-        to.id
+        to.email
     )
 
     // Update health score after successful send

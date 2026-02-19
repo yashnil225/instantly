@@ -374,11 +374,36 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
         }
     }
 
+    // Calculate warmup limit based on current settings
+    const calculateCurrentWarmupLimit = () => {
+        const limit = parseInt(warmupDailyLimit) || 50
+        const increase = parseInt(warmupDailyIncrease) || 4
+        const startLimit = 10 // Default start limit
+        const currentDay = account?.warmupCurrentDay || 1
+        const calculatedLimit = startLimit + ((currentDay - 1) * increase)
+        return Math.min(calculatedLimit, limit)
+    }
+
     // Actually perform the save API call
     const performSave = async () => {
+        // Validate: warmupDailyLimit should not exceed dailyLimit
+        const dailyLimitValue = parseInt(dailyLimit) || 300
+        const warmupLimitValue = parseInt(warmupDailyLimit) || 50
+        
+        if (warmupLimitValue > dailyLimitValue) {
+            toast({ 
+                title: "Invalid Warmup Limit", 
+                description: `Warmup limit (${warmupLimitValue}) cannot exceed daily sending limit (${dailyLimitValue}).`,
+                variant: "destructive" 
+            })
+            return
+        }
+
         setSaving(true)
 
         try {
+            const calculatedWarmupLimit = calculateCurrentWarmupLimit()
+
             const res = await fetch(`/api/accounts/${account.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
@@ -386,13 +411,13 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                     firstName,
                     lastName,
                     signature,
-                    dailyLimit: parseInt(dailyLimit),
+                    dailyLimit: dailyLimitValue,
                     minWaitTime: parseInt(minWaitTime),
                     slowRamp,
+                    warmupEnabled,
                     warmupTag,
-                    warmupDailyLimit: parseInt(warmupDailyLimit),
+                    warmupDailyLimit: warmupLimitValue,
                     warmupDailyIncrease: parseInt(warmupDailyIncrease),
-
                     warmupReplyRate: parseInt(warmupReplyRate),
                     // Connection settings update
                     smtpHost,
@@ -408,20 +433,22 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
             })
 
             if (res.ok) {
+                const data = await res.json()
                 toast({ title: "Settings Saved", description: "Account settings updated successfully" })
                 
                 // Refetch account details to get updated stats and data
                 await fetchAccountDetails()
                 
-                // Notify parent with updated account data including warmup settings
+                // Notify parent with updated account data including calculated warmup limit from API
                 onUpdate?.({ 
                     ...account, 
                     firstName, 
                     lastName,
-                    dailyLimit: parseInt(dailyLimit),
+                    dailyLimit: dailyLimitValue,
                     warmupEnabled,
                     warmupTag,
-                    warmupDailyLimit: parseInt(warmupDailyLimit),
+                    warmupDailyLimit: warmupLimitValue,
+                    warmupEmailsLimit: data.warmupEmailsLimit ?? calculatedWarmupLimit,
                     warmupDailyIncrease: parseInt(warmupDailyIncrease),
                     warmupReplyRate: parseInt(warmupReplyRate)
                 })

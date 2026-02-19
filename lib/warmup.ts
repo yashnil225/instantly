@@ -155,11 +155,31 @@ export async function sendWarmupEmails() {
 
     for (const account of accounts) {
         try {
-            const warmupLimit = calculateWarmupLimit(account)
-            const alreadySent = account.warmupSentToday
+            // Re-fetch account to get latest state and prevent race conditions
+            const freshAccount = await prisma.emailAccount.findUnique({
+                where: { id: account.id }
+            })
+
+            if (!freshAccount) {
+                console.log(`Account ${account.id} not found, skipping`)
+                continue
+            }
+
+            const warmupLimit = calculateWarmupLimit(freshAccount)
+            const alreadySent = freshAccount.warmupSentToday || 0
 
             if (alreadySent >= warmupLimit) {
-                console.log(`${account.email}: Warmup limit reached (${alreadySent}/${warmupLimit})`)
+                console.log(`${freshAccount.email}: Warmup limit reached (${alreadySent}/${warmupLimit})`)
+                continue
+            }
+
+            // Check if we've sent emails recently (within last 30 minutes) to prevent duplicates
+            // when user pauses/starts warmup or cron runs multiple times
+            const lastSent = freshAccount.lastWarmupSentAt
+            const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000)
+
+            if (lastSent && lastSent > thirtyMinutesAgo) {
+                console.log(`${freshAccount.email}: Skipping - already sent at ${lastSent.toISOString()}`)
                 continue
             }
 
@@ -173,12 +193,15 @@ export async function sendWarmupEmails() {
             })
 
             for (const recipient of otherAccounts) {
-                await sendWarmupEmail(account, recipient)
+                await sendWarmupEmail(freshAccount, recipient)
 
-                // Update warmup sent count
+                // Update warmup sent count and timestamp
                 await prisma.emailAccount.update({
-                    where: { id: account.id },
-                    data: { warmupSentToday: { increment: 1 } }
+                    where: { id: freshAccount.id },
+                    data: { 
+                        warmupSentToday: { increment: 1 },
+                        lastWarmupSentAt: new Date()
+                    }
                 })
             }
 

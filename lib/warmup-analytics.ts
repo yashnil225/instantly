@@ -146,12 +146,10 @@ async function getDailyWarmupStats(days: number): Promise<DailyWarmupStats[]> {
     const stats: DailyWarmupStats[] = []
 
     for (let i = days - 1; i >= 0; i--) {
-        const date = new Date()
-        date.setDate(date.getDate() - i)
-        date.setHours(0, 0, 0, 0)
-
-        const nextDate = new Date(date)
-        nextDate.setDate(nextDate.getDate() + 1)
+        // Use UTC dates to match database timestamps and avoid timezone issues
+        const now = new Date()
+        const date = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() - i))
+        const nextDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate() - i + 1))
 
         const logs = await prisma.warmupLog.findMany({
             where: {

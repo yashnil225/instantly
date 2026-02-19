@@ -812,7 +812,7 @@ function CampaignsPage() {
                 {/* Campaigns Table */}
                 <div className="space-y-4">
                     {/* Header Row */}
-                    <div className="grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-3 text-[11px] font-bold text-[#666666] uppercase tracking-wider">
+                    <div className="grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-2 text-[11px] font-bold text-[#666666] uppercase tracking-wider">
                         <div className="flex items-center">
                             <Checkbox
                                 checked={campaigns.length > 0 && selectedIds.length === campaigns.length}
@@ -851,7 +851,7 @@ function CampaignsPage() {
                                 key={campaign.id}
                                 onClick={(e) => handleRowClick(e, campaign.id)}
                                 className={cn(
-                                    "group grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-5 bg-card border border-border rounded-xl items-center hover:border-[#333333] transition-all cursor-pointer",
+                                    "group grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-2.5 bg-card border border-border rounded-xl items-center hover:border-[#333333] transition-all cursor-pointer",
                                     selectedIds.includes(campaign.id) && "border-blue-900 bg-blue-900/10"
                                 )}
                             >
@@ -863,10 +863,35 @@ function CampaignsPage() {
                                     />
                                 </div>
 
-                                <div className="flex flex-col gap-2 min-w-0">
+                                <div className="flex items-center gap-2 min-w-0">
                                     <div className="font-semibold text-foreground/90 text-sm truncate" title={campaign.name}>
                                         {campaign.name}
                                     </div>
+                                    {/* Workspace Badges */}
+                                    {campaign.campaignWorkspaces?.length === 0 ? (
+                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-dashed border-muted-foreground/50 text-muted-foreground">
+                                            Unassigned
+                                        </Badge>
+                                    ) : (
+                                        campaign.campaignWorkspaces?.map((cw: any) => (
+                                            <Badge 
+                                                key={cw.workspaceId} 
+                                                variant="secondary" 
+                                                className="text-[10px] px-1.5 py-0 h-4 bg-blue-500/10 text-blue-400 border-0"
+                                            >
+                                                {cw.workspace?.name || 'Workspace'}
+                                            </Badge>
+                                        ))
+                                    )}
+                                    <div onClick={e => e.stopPropagation()}>
+                                        <TagManager
+                                            entityId={campaign.id}
+                                            entityType="campaign"
+                                            selectedTags={campaign.tags?.map((t: any) => t.tag) || []}
+                                            onTagsChange={() => fetchCampaigns()}
+                                        />
+                                    </div>
+                                </div>
                                     {/* Workspace Badges */}
                                     <div className="flex flex-wrap gap-1" onClick={e => e.stopPropagation()}>
                                         {campaign.campaignWorkspaces?.length === 0 ? (

@@ -823,7 +823,7 @@ function AccountsPage() {
                                                 key={account.id}
                                                 onClick={(e) => handleRowClick(account.id, e)}
                                                 className={cn(
-                                                    "grid grid-cols-[auto_2.5fr_1fr_1fr_1fr_auto] gap-4 items-center bg-card border border-border rounded-xl px-6 py-4 transition-colors group cursor-pointer hover:border-[#444]",
+                                                    "grid grid-cols-[auto_2.5fr_1fr_1fr_1fr_auto] gap-4 items-center bg-card border border-border rounded-xl px-6 py-2.5 transition-colors group cursor-pointer hover:border-[#444]",
                                                     selectedDetailId === account.id && "border-blue-600/50 bg-[#161616]"
                                                 )}
                                             >
@@ -834,7 +834,7 @@ function AccountsPage() {
                                                         className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-[4px] w-4 h-4"
                                                     />
                                                 </div>
-                                                <div className="flex items-center gap-3 min-w-0 ml-7">
+                                                <div className="flex items-center gap-3 min-w-0">
                                                     <span className="text-foreground font-semibold text-sm truncate">{account.email}</span>
                                                     {account.status === "paused" && (
                                                         <span className="px-2.5 py-0.5 bg-muted text-muted-foreground text-[11px] font-medium rounded-md uppercase tracking-wide">
@@ -867,14 +867,14 @@ function AccountsPage() {
                                                     {account.isInCampaign && (
                                                         <Zap className="h-3.5 w-3.5 text-blue-500 fill-blue-500" />
                                                     )}
-                                                </div>
-                                                <div className="ml-7 mt-1" onClick={e => e.stopPropagation()}>
-                                                    <TagManager
-                                                        entityId={account.id}
-                                                        entityType="account"
-                                                        selectedTags={account.tags || []}
-                                                        onTagsChange={() => fetchAccounts()}
-                                                    />
+                                                    <div onClick={e => e.stopPropagation()}>
+                                                        <TagManager
+                                                            entityId={account.id}
+                                                            entityType="account"
+                                                            selectedTags={account.tags || []}
+                                                            onTagsChange={() => fetchAccounts()}
+                                                        />
+                                                    </div>
                                                 </div>
                                                 <div className="text-sm text-foreground font-medium">
                                                     {account.emailsSent} <span className="text-muted-foreground font-normal">of {account.emailsLimit}</span>

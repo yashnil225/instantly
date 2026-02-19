@@ -157,6 +157,7 @@ model EmailAccount {
   warmupPoolOptIn     Boolean @default(false) // Opted into warmup pool
   warmupScore         Int     @default(100)   // Reputation score in pool (0-100)
   lastActive          DateTime? // Last warmup activity
+  lastWarmupSentAt    DateTime? // Last time warmup emails were sent (prevents duplicates)
   healthScore     Int      @default(100)
   status          String   @default("active") // active, paused, error
   lastSyncedAt    DateTime?

@@ -20,7 +20,8 @@ export async function runDailyReset() {
             data: {
                 sentToday: 0,
                 warmupSentToday: 0,
-                warmupRepliedToday: 0
+                warmupRepliedToday: 0,
+                lastWarmupSentAt: null // Clear timestamp for new day
             }
         })
         console.log(`[Daily Reset] Reset sentToday for ${accountResult.count} accounts`)

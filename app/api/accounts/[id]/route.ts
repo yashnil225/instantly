@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { calculateWarmupLimit } from '@/lib/warmup'
 
 
 // GET - Fetch single account with warmup stats
@@ -187,7 +188,13 @@ export async function PATCH(
             data: updateData
         })
 
-        return NextResponse.json({ success: true, account })
+        const warmupEmailsLimit = calculateWarmupLimit(account)
+
+        return NextResponse.json({ 
+            success: true, 
+            account,
+            warmupEmailsLimit
+        })
     } catch (error) {
         console.error('Failed to update account:', error)
         return NextResponse.json({ error: 'Failed to update account' }, { status: 500 })

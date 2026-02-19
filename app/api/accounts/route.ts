@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { calculateWarmupLimit } from '@/lib/warmup'
 
 
 export async function GET(request: Request) {
@@ -89,7 +90,7 @@ export async function GET(request: Request) {
         emailsSent: acc.sentToday || 0,
         emailsLimit: acc.dailyLimit || 300,
         warmupEmails: acc.warmupSentToday || 0,
-        warmupEmailsLimit: acc.warmupDailyLimit || 50,
+        warmupEmailsLimit: calculateWarmupLimit(acc),
         healthScore: acc.healthScore || 100,
         hasError: acc.status === 'error',
         isWarming: acc.warmupEnabled || false,

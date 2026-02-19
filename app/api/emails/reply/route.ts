@@ -109,8 +109,6 @@ export async function POST(request: Request) {
                 port: sendingAccount.smtpPort || 587,
                 user: sendingAccount.smtpUser || '',
                 pass: sendingAccount.smtpPass || '',
-                provider: sendingAccount.provider,
-                refreshToken: sendingAccount.refreshToken || undefined,
                 inReplyTo,
                 references
             },

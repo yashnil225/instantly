@@ -158,6 +158,7 @@ export async function detectWarmupEmails(account: {
     imapPort?: number | null
     imapUser?: string | null
     imapPass?: string | null
+    smtpPass?: string | null
 }): Promise<{
     needsReply: WarmupEmail[]
     inSpam: WarmupEmail[]
@@ -167,7 +168,7 @@ export async function detectWarmupEmails(account: {
         host: account.imapHost || 'imap.gmail.com',
         port: account.imapPort || 993,
         user: account.imapUser || account.email,
-        password: account.imapPass || '',
+        password: account.imapPass || account.smtpPass || '',
         tls: true
     }
 
@@ -229,12 +230,13 @@ export async function rescueFromSpam(account: {
     imapPort?: number | null
     imapUser?: string | null
     imapPass?: string | null
+    smtpPass?: string | null
 }): Promise<number> {
     const config: ImapConfig = {
         host: account.imapHost || 'imap.gmail.com',
         port: account.imapPort || 993,
         user: account.imapUser || account.email,
-        password: account.imapPass || '',
+        password: account.imapPass || account.smtpPass || '',
         tls: true
     }
 

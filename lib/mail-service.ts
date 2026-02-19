@@ -13,27 +13,14 @@ export async function sendEmail(options: {
     references?: string
 }) {
     const { account } = options
-    let transporter
-
-    if (account.provider === 'google' && account.refreshToken) {
-        transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                type: 'OAuth2',
-                user: account.email,
-                clientId: process.env.GOOGLE_CLIENT_ID,
-                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-                refreshToken: account.refreshToken
-            }
-        })
-    } else {
-        transporter = nodemailer.createTransport({
-            host: account.smtpHost!,
-            port: account.smtpPort!,
-            secure: account.smtpPort === 465,
-            auth: { user: account.smtpUser!, pass: account.smtpPass! }
-        })
-    }
+    
+    // Always use SMTP with app password (OAuth2 removed for stability)
+    const transporter = nodemailer.createTransport({
+        host: account.smtpHost!,
+        port: account.smtpPort!,
+        secure: account.smtpPort === 465,
+        auth: { user: account.smtpUser!, pass: account.smtpPass! }
+    })
 
     const mailOptions: any = {
         from: `"${account.firstName || ''} ${account.lastName || ''}" <${account.email}>`,

@@ -41,21 +41,8 @@ export async function GET(request: Request) {
             throw new Error('No email found in Google profile')
         }
 
-        // Upsert EmailAccount
-        const updateData: Record<string, string | bigint | boolean | null | number> = {
-            userId: session.user.id,
-            provider: 'google',
-            accessToken: tokens.access_token ?? '',
-            expiresAt: tokens.expiry_date ? BigInt(tokens.expiry_date) : null,
-            scope: tokens.scope ?? '',
-            status: 'active',
-            errorDetail: null // Clear any errors
-        }
-
-        if (tokens.refresh_token) {
-            updateData.refreshToken = tokens.refresh_token
-        }
-
+        // Note: OAuth tokens are NOT stored - user must configure SMTP/IMAP manually
+        // This ensures app password authentication is used for all sending
         await prisma.emailAccount.upsert({
             where: {
                 email: userInfo.email
@@ -66,14 +53,23 @@ export async function GET(request: Request) {
                 firstName: userInfo.given_name,
                 lastName: userInfo.family_name,
                 provider: 'google',
-                refreshToken: tokens.refresh_token,
-                accessToken: tokens.access_token,
-                expiresAt: tokens.expiry_date ? BigInt(tokens.expiry_date) : null,
-                idToken: tokens.id_token,
-                scope: tokens.scope,
+                smtpHost: 'smtp.gmail.com',
+                smtpPort: 587,
+                smtpUser: userInfo.email,
+                imapHost: 'imap.gmail.com',
+                imapPort: 993,
+                imapUser: userInfo.email,
                 status: 'active'
+                // Note: smtpPass and imapPass must be set manually via UI
             },
-            update: updateData
+            update: {
+                userId: session.user.id,
+                firstName: userInfo.given_name,
+                lastName: userInfo.family_name,
+                status: 'active',
+                errorDetail: null
+                // OAuth tokens intentionally NOT updated
+            }
         })
 
         const redirectUrl = new URL(callbackUrl, request.url)

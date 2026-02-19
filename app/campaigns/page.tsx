@@ -892,33 +892,6 @@ function CampaignsPage() {
                                         />
                                     </div>
                                 </div>
-                                    {/* Workspace Badges */}
-                                    <div className="flex flex-wrap gap-1" onClick={e => e.stopPropagation()}>
-                                        {campaign.campaignWorkspaces?.length === 0 ? (
-                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-dashed border-muted-foreground/50 text-muted-foreground">
-                                                Unassigned
-                                            </Badge>
-                                        ) : (
-                                            campaign.campaignWorkspaces?.map((cw: any) => (
-                                                <Badge 
-                                                    key={cw.workspaceId} 
-                                                    variant="secondary" 
-                                                    className="text-[10px] px-1.5 py-0 h-4 bg-blue-500/10 text-blue-400 border-0"
-                                                >
-                                                    {cw.workspace?.name || 'Workspace'}
-                                                </Badge>
-                                            ))
-                                        )}
-                                    </div>
-                                    <div onClick={e => e.stopPropagation()}>
-                                        <TagManager
-                                            entityId={campaign.id}
-                                            entityType="campaign"
-                                            selectedTags={campaign.tags?.map((t: any) => t.tag) || []}
-                                            onTagsChange={() => fetchCampaigns()}
-                                        />
-                                    </div>
-                                </div>
 
                                 <div>
                                     <Badge

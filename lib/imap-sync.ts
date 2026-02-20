@@ -87,10 +87,10 @@ export async function syncReplies(account: EmailAccount) {
     return withRetry(async () => {
         const config = {
             imap: {
-                user: account.imapUser,
-                password: account.imapPass,
-                host: account.imapHost,
-                port: account.imapPort,
+                user: account.imapUser!,
+                password: account.imapPass!,
+                host: account.imapHost!,
+                port: account.imapPort!,
                 tls: true,
                 tlsOptions: { rejectUnauthorized: false },
                 authTimeout: 10000,

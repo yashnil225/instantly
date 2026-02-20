@@ -5,7 +5,7 @@ import { auth } from "@/auth"
 export async function POST(request: NextRequest) {
     try {
         const session = await auth()
-        if (!session?.user?.email) {
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
@@ -17,14 +17,13 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Label name is required" }, { status: 400 })
         }
 
-        // In a real app, you'd store custom labels in a separate table
-        // For now, we'll just return the label format
-        const label = {
-            id: `custom_${Date.now()}`,
-            name,
-            color: color || "blue",
-            type: "custom"
-        }
+        const label = await prisma.leadLabel.create({
+            data: {
+                name,
+                color: color || "#3b82f6",
+                userId: session.user.id
+            }
+        })
 
         return NextResponse.json(label)
     } catch (error) {

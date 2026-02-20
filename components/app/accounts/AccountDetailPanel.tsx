@@ -436,10 +436,7 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                 const data = await res.json()
                 toast({ title: "Settings Saved", description: "Account settings updated successfully" })
                 
-                // Refetch account details to get updated stats and data
-                await fetchAccountDetails()
-                
-                // Notify parent with updated account data including calculated warmup limit from API
+                // Notify parent with updated account data FIRST (before fetch) so UI updates immediately
                 onUpdate?.({ 
                     ...account, 
                     firstName, 
@@ -450,8 +447,12 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                     warmupDailyLimit: warmupLimitValue,
                     warmupEmailsLimit: data.warmupEmailsLimit ?? calculatedWarmupLimit,
                     warmupDailyIncrease: parseInt(warmupDailyIncrease),
-                    warmupReplyRate: parseInt(warmupReplyRate)
+                    warmupReplyRate: parseInt(warmupReplyRate),
+                    healthScore: data.healthScore ?? account.healthScore
                 })
+                
+                // Refetch account details to get updated stats and data
+                await fetchAccountDetails()
                 
                 router.refresh() // Ensure server components update
                 setShowLargeLimitWarning(false)

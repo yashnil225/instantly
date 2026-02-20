@@ -122,7 +122,9 @@ export async function PATCH(
         if (body.slowRamp !== undefined) updateData.slowRamp = body.slowRamp
 
         // Warmup settings
-        if (body.warmupEnabled !== undefined) updateData.warmupEnabled = body.warmupEnabled
+        if (body.warmupEnabled !== undefined) {
+            updateData.warmupEnabled = body.warmupEnabled
+        }
         if (body.warmupTag !== undefined) updateData.warmupTag = body.warmupTag
         if (body.warmupDailyLimit !== undefined) updateData.warmupDailyLimit = parseInt(body.warmupDailyLimit)
         if (body.warmupReplyRate !== undefined) updateData.warmupReplyRate = parseInt(body.warmupReplyRate)
@@ -190,10 +192,18 @@ export async function PATCH(
 
         const warmupEmailsLimit = calculateWarmupLimit(account)
 
+        // Calculate health score when warmup is enabled or pool is opted in
+        let healthScore = account.healthScore || 100
+        if (body.warmupEnabled === true || body.warmupPoolOptIn === true) {
+            const { calculateAndUpdateHealthScore } = await import('@/lib/warmup')
+            healthScore = await calculateAndUpdateHealthScore(id)
+        }
+
         return NextResponse.json({ 
             success: true, 
             account,
-            warmupEmailsLimit
+            warmupEmailsLimit,
+            healthScore
         })
     } catch (error) {
         console.error('Failed to update account:', error)
@@ -209,11 +219,17 @@ export async function DELETE(
     try {
         const { id } = await params
 
+        // Check if account exists first
+        const existingAccount = await prisma.emailAccount.findUnique({ where: { id } })
+        if (!existingAccount) {
+            return NextResponse.json({ success: true })
+        }
+
         await prisma.$transaction(async (tx) => {
-            // Delete related warmup logs
+            // Delete related warmup logs (use deleteMany - won't throw if none exist)
             await tx.warmupLog.deleteMany({ where: { accountId: id } })
 
-            // Delete related campaign associations
+            // Delete related campaign associations (use deleteMany - won't throw if none exist)
             await tx.campaignEmailAccount.deleteMany({ where: { emailAccountId: id } })
 
             // Delete account

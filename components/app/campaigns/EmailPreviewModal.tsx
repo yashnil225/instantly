@@ -231,24 +231,24 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, sampleLea
                     {/* Preview Content */}
                     <div className="flex-1 flex flex-col bg-[#050505]">
                         {/* Email Header Preview */}
-                        <div className="bg-white p-6 border-b border-gray-100 text-gray-800">
+                        <div className="bg-[#1a1a1a] p-6 border-b border-[#333] text-gray-300">
                             <div className="flex items-center gap-2 mb-4 text-gray-400/50">
-                                <div className="h-4 w-4 rounded-full border border-gray-300" />
+                                <div className="h-4 w-4 rounded-full border border-[#444]" />
                                 <span className="font-semibold text-lg text-gray-300 select-none">Email Preview</span>
                             </div>
 
                             <div className="space-y-2 text-sm">
                                 <div className="grid grid-cols-[80px_1fr] items-center">
                                     <span className="text-gray-400">From:</span>
-                                    <span className="text-gray-600">{selectedAccount?.email || 'Select an account'}</span>
+                                    <span className="text-gray-300">{selectedAccount?.email || 'Select an account'}</span>
                                 </div>
                                 <div className="grid grid-cols-[80px_1fr] items-center">
                                     <span className="text-gray-400">To:</span>
-                                    <span className="text-gray-600">{testEmail || 'Enter recipient email'}</span>
+                                    <span className="text-gray-300">{testEmail || 'Enter recipient email'}</span>
                                 </div>
-                                <div className="grid grid-cols-[80px_1fr] items-center border-b border-gray-100 pb-2">
+                                <div className="grid grid-cols-[80px_1fr] items-center border-b border-[#333] pb-2">
                                     <span className="text-gray-400">Subject:</span>
-                                    <span className="font-medium text-gray-800">{previewSubject || <span className="text-gray-400 font-normal">No subject</span>}</span>
+                                    <span className="font-medium text-gray-300">{previewSubject || <span className="text-gray-400 font-normal">No subject</span>}</span>
                                 </div>
                             </div>
                         </div>

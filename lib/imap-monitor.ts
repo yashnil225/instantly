@@ -3,47 +3,106 @@ import { simpleParser, Source } from 'mailparser'
 import { prisma } from '@/lib/prisma'
 import type { EmailAccount } from '@prisma/client'
 
+const RETRY_ATTEMPTS = 3
+const RETRY_DELAYS = [1000, 2000, 4000] // Exponential backoff: 1s, 2s, 4s
+
+const TRANSIENT_ERRORS = ['ECONNRESET', 'ETIMEDOUT', 'ENETUNREACH', 'ECONNREFUSED', 'EAI_AGAIN']
+const PERMANENT_ERRORS = ['EAUTH', 'ENOTFOUND', 'Authentication', 'invalid credentials', 'Invalid credentials']
+
+function isTransientError(error: any): boolean {
+    const errorStr = String(error?.message || error).toLowerCase()
+    return TRANSIENT_ERRORS.some(e => errorStr.includes(e.toLowerCase())) || 
+           error?.code === 'ECONNRESET' ||
+           error?.code === 'ETIMEDOUT'
+}
+
+function isPermanentError(error: any): boolean {
+    const errorStr = String(error?.message || error).toLowerCase()
+    return PERMANENT_ERRORS.some(e => errorStr.includes(e.toLowerCase())) ||
+           error?.code === 'EAUTH' ||
+           error?.code === 'ENOTFOUND'
+}
+
+async function withRetry<T>(
+    fn: () => Promise<T>,
+    accountEmail: string,
+    operationName: string
+): Promise<T> {
+    let lastError: any
+    
+    for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
+        try {
+            return await fn()
+        } catch (error: any) {
+            lastError = error
+            
+            if (isPermanentError(error)) {
+                console.error(`[IMAP] Permanent error for ${accountEmail} (${operationName}): Invalid credentials or DNS issue -`, error.message || error)
+                throw error
+            }
+            
+            if (isTransientError(error)) {
+                const delay = RETRY_DELAYS[attempt] || RETRY_DELAYS[RETRY_DELAYS.length - 1]
+                console.warn(`[IMAP] Transient error for ${accountEmail} (${operationName}), attempt ${attempt + 1}/${RETRY_ATTEMPTS}: ${error.message || error}. Retrying in ${delay}ms...`)
+                
+                if (attempt < RETRY_ATTEMPTS - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay))
+                    continue
+                }
+            }
+            
+            // If we get here, it's an unknown error or we've exhausted retries
+            console.error(`[IMAP] Error for ${accountEmail} (${operationName}) after ${attempt + 1} attempts:`, error.message || error)
+            throw error
+        }
+    }
+    
+    throw lastError
+}
+
 /**
  * Check inbox for replies to sent emails
  */
-export async function checkForReplies(account: EmailAccount) {
-    return new Promise<number>((resolve, reject) => {
-        const imap = new Imap({
-            user: account.imapUser || account.email,
-            password: account.imapPass || account.smtpPass || '',
-            host: account.imapHost || 'imap.gmail.com',
-            port: account.imapPort || 993,
-            tls: true,
-            tlsOptions: { rejectUnauthorized: false }
-        })
+export async function checkForReplies(account: EmailAccount): Promise<number> {
+    return withRetry(async () => {
+        return new Promise<number>((resolve, reject) => {
+            const imap = new Imap({
+                user: account.imapUser || account.email,
+                password: account.imapPass || account.smtpPass || '',
+                host: account.imapHost || 'imap.gmail.com',
+                port: account.imapPort || 993,
+                tls: true,
+                tlsOptions: { rejectUnauthorized: false },
+                connTimeout: 30000
+            })
 
-        let repliesFound = 0
+            let repliesFound = 0
 
-        imap.once('ready', () => {
-            imap.openBox('INBOX', false, (err) => {
-                if (err) {
-                    console.error(`IMAP error opening inbox for ${account.email}:`, err)
-                    imap.end()
-                    return reject(err)
-                }
-
-                // Search for unread emails from the last 7 days
-                const searchCriteria = ['UNSEEN', ['SINCE', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)]]
-
-                imap.search(searchCriteria, (err, results) => {
+            imap.once('ready', () => {
+                imap.openBox('INBOX', false, (err) => {
                     if (err) {
-                        console.error(`IMAP search error for ${account.email}:`, err)
+                        console.error(`IMAP error opening inbox for ${account.email}:`, err)
                         imap.end()
                         return reject(err)
                     }
 
-                    if (!results || results.length === 0) {
-                        console.log(`No unread emails for ${account.email}`)
-                        imap.end()
-                        return resolve(0)
-                    }
+                    // Search for unread emails from the last 7 days
+                    const searchCriteria = ['UNSEEN', ['SINCE', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)]]
 
-                    const fetch = imap.fetch(results, { bodies: '', markSeen: false })
+                    imap.search(searchCriteria, (err, results) => {
+                        if (err) {
+                            console.error(`IMAP search error for ${account.email}:`, err)
+                            imap.end()
+                            return reject(err)
+                        }
+
+                        if (!results || results.length === 0) {
+                            console.log(`No unread emails for ${account.email}`)
+                            imap.end()
+                            return resolve(0)
+                        }
+
+                        const fetch = imap.fetch(results, { bodies: '', markSeen: false })
 
                     fetch.on('message', (msg) => {
                         msg.on('body', (stream) => {
@@ -146,23 +205,26 @@ export async function checkForReplies(account: EmailAccount) {
 
         imap.connect()
     })
+    }, account.email, 'checkForReplies')
 }
 
 /**
  * Check inbox for bounce messages
  */
-export async function checkForBounces(account: EmailAccount) {
-    return new Promise<number>((resolve, reject) => {
-        const imap = new Imap({
-            user: account.imapUser || account.email,
-            password: account.imapPass || account.smtpPass || '',
-            host: account.imapHost || 'imap.gmail.com',
-            port: account.imapPort || 993,
-            tls: true,
-            tlsOptions: { rejectUnauthorized: false }
-        })
+export async function checkForBounces(account: EmailAccount): Promise<number> {
+    return withRetry(async () => {
+        return new Promise<number>((resolve, reject) => {
+            const imap = new Imap({
+                user: account.imapUser || account.email,
+                password: account.imapPass || account.smtpPass || '',
+                host: account.imapHost || 'imap.gmail.com',
+                port: account.imapPort || 993,
+                tls: true,
+                tlsOptions: { rejectUnauthorized: false },
+                connTimeout: 30000
+            })
 
-        let bouncesFound = 0
+            let bouncesFound = 0
 
         imap.once('ready', () => {
             imap.openBox('INBOX', false, (err) => {
@@ -288,4 +350,5 @@ export async function checkForBounces(account: EmailAccount) {
 
         imap.connect()
     })
+    }, account.email, 'checkForBounces')
 }

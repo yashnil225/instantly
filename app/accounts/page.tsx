@@ -326,6 +326,16 @@ function AccountsPage() {
                 body: JSON.stringify({ warmupEnabled: newIsWarming })
             })
             if (res.ok) {
+                const data = await res.json()
+                // Update warmupEmailsLimit and healthScore from API response
+                setAccounts(prev => prev.map(acc =>
+                    acc.id === id ? { 
+                        ...acc, 
+                        isWarming: newIsWarming,
+                        warmupEmailsLimit: data.warmupEmailsLimit ?? acc.warmupEmailsLimit,
+                        healthScore: data.healthScore ?? acc.healthScore
+                    } : acc
+                ))
                 toast({
                     title: newIsWarming ? "Warmup Started" : "Warmup Paused",
                     description: `Warmup is now ${newIsWarming ? "enabled" : "disabled"}`

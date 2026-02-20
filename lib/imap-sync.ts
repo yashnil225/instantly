@@ -13,6 +13,63 @@ interface EmailAccount {
     lastSyncedAt?: Date | null
 }
 
+const RETRY_ATTEMPTS = 3
+const RETRY_DELAYS = [1000, 2000, 4000] // Exponential backoff: 1s, 2s, 4s
+
+const TRANSIENT_ERRORS = ['ECONNRESET', 'ETIMEDOUT', 'ENETUNREACH', 'ECONNREFUSED', 'EAI_AGAIN']
+const PERMANENT_ERRORS = ['EAUTH', 'ENOTFOUND', 'Authentication', 'invalid credentials', 'Invalid credentials']
+
+function isTransientError(error: any): boolean {
+    const errorStr = String(error?.message || error).toLowerCase()
+    return TRANSIENT_ERRORS.some(e => errorStr.includes(e.toLowerCase())) || 
+           error?.code === 'ECONNRESET' ||
+           error?.code === 'ETIMEDOUT'
+}
+
+function isPermanentError(error: any): boolean {
+    const errorStr = String(error?.message || error).toLowerCase()
+    return PERMANENT_ERRORS.some(e => errorStr.includes(e.toLowerCase())) ||
+           error?.code === 'EAUTH' ||
+           error?.code === 'ENOTFOUND'
+}
+
+async function withRetry<T>(
+    fn: () => Promise<T>,
+    accountEmail: string,
+    operationName: string
+): Promise<T> {
+    let lastError: any
+    
+    for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
+        try {
+            return await fn()
+        } catch (error: any) {
+            lastError = error
+            
+            if (isPermanentError(error)) {
+                console.error(`[IMAP] Permanent error for ${accountEmail} (${operationName}): Invalid credentials or DNS issue -`, error.message || error)
+                throw error
+            }
+            
+            if (isTransientError(error)) {
+                const delay = RETRY_DELAYS[attempt] || RETRY_DELAYS[RETRY_DELAYS.length - 1]
+                console.warn(`[IMAP] Transient error for ${accountEmail} (${operationName}), attempt ${attempt + 1}/${RETRY_ATTEMPTS}: ${error.message || error}. Retrying in ${delay}ms...`)
+                
+                if (attempt < RETRY_ATTEMPTS - 1) {
+                    await new Promise(resolve => setTimeout(resolve, delay))
+                    continue
+                }
+            }
+            
+            // If we get here, it's an unknown error or we've exhausted retries
+            console.error(`[IMAP] Error for ${accountEmail} (${operationName}) after ${attempt + 1} attempts:`, error.message || error)
+            throw error
+        }
+    }
+    
+    throw lastError
+}
+
 function getAddressString(address: AddressObject | AddressObject[] | undefined): string {
     if (!address) return ''
     if (Array.isArray(address)) {
@@ -27,23 +84,25 @@ export async function syncReplies(account: EmailAccount) {
         return
     }
 
-    const config = {
-        imap: {
-            user: account.imapUser,
-            password: account.imapPass,
-            host: account.imapHost,
-            port: account.imapPort,
-            tls: true,
-            tlsOptions: { rejectUnauthorized: false },
-            authTimeout: 10000
+    return withRetry(async () => {
+        const config = {
+            imap: {
+                user: account.imapUser,
+                password: account.imapPass,
+                host: account.imapHost,
+                port: account.imapPort,
+                tls: true,
+                tlsOptions: { rejectUnauthorized: false },
+                authTimeout: 10000,
+                connectionTimeout: 30000
+            }
         }
-    }
 
-    try {
-        console.log(`Syncing replies for ${account.email}...`)
+        try {
+            console.log(`Syncing replies for ${account.email}...`)
 
-        const connection = await imaps.connect(config)
-        await connection.openBox('INBOX')
+            const connection = await imaps.connect(config)
+            await connection.openBox('INBOX')
 
         // Search for unread emails since last sync
         const searchCriteria = ['UNSEEN']
@@ -150,6 +209,7 @@ export async function syncReplies(account: EmailAccount) {
         console.error(`IMAP sync failed for ${account.email}:`, error)
         throw error
     }
+    }, account.email, 'syncReplies')
 }
 
 export async function syncAllAccounts() {

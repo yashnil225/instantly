@@ -27,9 +27,15 @@ export async function GET(request: Request) {
 
         for (const account of accounts) {
             try {
+                // Sequential delay between accounts to prevent rate limiting
+                await new Promise(resolve => setTimeout(resolve, 3000))
+                
                 // Check for replies
                 const replies = await checkForReplies(account)
                 totalReplies += replies
+
+                // Small delay between ops on same account
+                await new Promise(resolve => setTimeout(resolve, 1500))
 
                 // Check for bounces
                 const bounces = await checkForBounces(account)

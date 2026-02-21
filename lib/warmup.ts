@@ -114,20 +114,20 @@ async function logWarmupActivity(
 }
 
 export function calculateWarmupLimit(account: any): number {
+    // Use configured warmup goal even if disabled, so UI shows correct target
+    const maxLimit = account.warmupDailyLimit ?? DEFAULT_CONFIG.maxLimit  // Default: 50
+    
     if (!account.warmupEnabled) {
-        return account.dailyLimit || 50
+        return maxLimit
     }
 
     // Use account's configured warmup settings with proper defaults from schema
-    // Schema defaults: warmupDailyIncrease @default(5), warmupDailyLimit @default(50)
     const dailyIncrease = account.warmupDailyIncrease ?? DEFAULT_CONFIG.increasePerDay  // Default: 5
-    const maxLimit = account.warmupDailyLimit ?? DEFAULT_CONFIG.maxLimit  // Default: 50
     
-    // Use configured start limit or default to 5 (not 1, to be more practical)
-    // Users can configure this via the warmup settings UI
+    // Use configured start limit or default to 10
     const startLimit = account.warmupStartLimit ?? DEFAULT_CONFIG.startLimit  // Default: 10
 
-    // Get current warmup day (how many days since warmup started)
+    // Get current warmup day
     const currentDay = account.warmupCurrentDay || 1
 
     // Calculate current warmup limit: starts at startLimit, increases by dailyIncrease each day

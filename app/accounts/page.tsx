@@ -71,8 +71,10 @@ interface EmailAccount {
     status: "active" | "paused" | "error" | "warmup"
     emailsSent: number
     emailsLimit: number
+    dailyLimit: number
     warmupEmails: number
     warmupEmailsLimit: number
+    warmupDailyLimit: number
     healthScore: number
     hasError: boolean
     isWarming: boolean

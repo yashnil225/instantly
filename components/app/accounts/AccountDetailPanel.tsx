@@ -105,12 +105,20 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
             setFirstName(account.firstName || "")
             setLastName(account.lastName || "")
             setSignature(account.signature || "")
-            if (account.dailyLimit !== undefined) setDailyLimit(account.dailyLimit?.toString() || "")
+            
+            // Sync Daily Limit (handle both names)
+            const dLimit = account.dailyLimit ?? account.emailsLimit
+            if (dLimit !== undefined) setDailyLimit(dLimit.toString())
+            
             setMinWaitTime(account.minWaitTime?.toString() || "1")
             setSlowRamp(account.slowRamp || false)
             setWarmupEnabled(account.warmupEnabled || false)
             setWarmupTag(account.warmupTag || "")
-            if (account.warmupDailyLimit !== undefined) setWarmupDailyLimit(account.warmupDailyLimit?.toString() || "")
+            
+            // Sync Warmup Daily Limit (handle both names)
+            const wLimit = account.warmupDailyLimit ?? account.warmupEmailsLimit
+            if (wLimit !== undefined) setWarmupDailyLimit(wLimit.toString())
+
             setWarmupDailyIncrease(account.warmupDailyIncrease?.toString() || "1")
             setWarmupReplyRate(account.warmupReplyRate?.toString() || "30")
             setStatus(account.status || "active")
@@ -143,6 +151,10 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                 setSignature(data.signature || "")
                 setTrackingDomainEnabled(data.trackingDomainEnabled || false)
                 setCustomDomain(data.customDomain || "")
+
+                // Sync limits from GET response
+                if (data.dailyLimit !== undefined) setDailyLimit(data.dailyLimit.toString())
+                if (data.warmupDailyLimit !== undefined) setWarmupDailyLimit(data.warmupDailyLimit.toString())
 
                 // Parsing error detail if it's JSON
                 try {

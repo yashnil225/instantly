@@ -127,6 +127,7 @@ export async function PATCH(
         }
         if (body.warmupTag !== undefined) updateData.warmupTag = body.warmupTag
         if (body.warmupDailyLimit !== undefined) updateData.warmupDailyLimit = parseInt(body.warmupDailyLimit)
+        if (body.warmupMaxPerDay !== undefined) updateData.warmupMaxPerDay = parseInt(body.warmupMaxPerDay)
         if (body.warmupReplyRate !== undefined) updateData.warmupReplyRate = parseInt(body.warmupReplyRate)
         if (body.warmupDailyIncrease !== undefined) updateData.warmupDailyIncrease = parseInt(body.warmupDailyIncrease)
         if (body.warmupPoolOptIn !== undefined) updateData.warmupPoolOptIn = body.warmupPoolOptIn

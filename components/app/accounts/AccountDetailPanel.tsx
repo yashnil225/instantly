@@ -30,15 +30,15 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
     const [firstName, setFirstName] = useState(account?.firstName || "")
     const [lastName, setLastName] = useState(account?.lastName || "")
     const [signature, setSignature] = useState(account?.signature || "")
-    const [dailyLimit, setDailyLimit] = useState(account?.dailyLimit?.toString() || "300")
+    const [dailyLimit, setDailyLimit] = useState(account?.dailyLimit?.toString() || "")
     const [minWaitTime, setMinWaitTime] = useState(account?.minWaitTime?.toString() || "1")
     const [slowRamp, setSlowRamp] = useState(account?.slowRamp || false)
 
     // Warmup state
     const [warmupEnabled, setWarmupEnabled] = useState(account?.warmupEnabled || false)
     const [warmupTag, setWarmupTag] = useState(account?.warmupTag || "")
-    const [warmupDailyLimit, setWarmupDailyLimit] = useState(account?.warmupDailyLimit?.toString() || "50")
-    const [warmupDailyIncrease, setWarmupDailyIncrease] = useState(account?.warmupDailyIncrease?.toString() || "4")
+    const [warmupDailyLimit, setWarmupDailyLimit] = useState(account?.warmupDailyLimit?.toString() || "")
+    const [warmupDailyIncrease, setWarmupDailyIncrease] = useState(account?.warmupDailyIncrease?.toString() || "1")
     const [warmupReplyRate, setWarmupReplyRate] = useState(account?.warmupReplyRate?.toString() || "30")
 
     // Account status
@@ -97,17 +97,17 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
 
     // Sync form state with account prop when it changes (e.g., after save)
     useEffect(() => {
-        if (account) {
+        if (account && !saving) {
             setFirstName(account.firstName || "")
             setLastName(account.lastName || "")
             setSignature(account.signature || "")
-            setDailyLimit(account.dailyLimit?.toString() || "300")
+            if (account.dailyLimit !== undefined) setDailyLimit(account.dailyLimit?.toString() || "")
             setMinWaitTime(account.minWaitTime?.toString() || "1")
             setSlowRamp(account.slowRamp || false)
             setWarmupEnabled(account.warmupEnabled || false)
             setWarmupTag(account.warmupTag || "")
-            setWarmupDailyLimit(account.warmupDailyLimit?.toString() || "50")
-            setWarmupDailyIncrease(account.warmupDailyIncrease?.toString() || "4")
+            if (account.warmupDailyLimit !== undefined) setWarmupDailyLimit(account.warmupDailyLimit?.toString() || "")
+            setWarmupDailyIncrease(account.warmupDailyIncrease?.toString() || "1")
             setWarmupReplyRate(account.warmupReplyRate?.toString() || "30")
             setStatus(account.status || "active")
             setSmtpHost(account.smtpHost || "")
@@ -117,7 +117,7 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
             setImapPort(account.imapPort?.toString() || "993")
             setImapUser(account.imapUser || "")
         }
-    }, [account])
+    }, [account, saving])
 
     const fetchAccountDetails = async () => {
         try {
@@ -387,8 +387,8 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
     // Actually perform the save API call
     const performSave = async () => {
         // Validate: warmupDailyLimit should not exceed dailyLimit
-        const dailyLimitValue = parseInt(dailyLimit) || 300
-        const warmupLimitValue = parseInt(warmupDailyLimit) || 50
+        const dailyLimitValue = dailyLimit === "" ? (account?.dailyLimit || 300) : (parseInt(dailyLimit) || 300)
+        const warmupLimitValue = warmupDailyLimit === "" ? (account?.warmupDailyLimit || 50) : (parseInt(warmupDailyLimit) || 50)
         
         if (warmupLimitValue > dailyLimitValue) {
             toast({ 
@@ -402,59 +402,53 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
         setSaving(true)
 
         try {
-            const calculatedWarmupLimit = calculateCurrentWarmupLimit()
+            const updatePayload = {
+                firstName,
+                lastName,
+                signature,
+                dailyLimit: dailyLimitValue,
+                minWaitTime: parseInt(minWaitTime),
+                slowRamp,
+                warmupEnabled,
+                warmupTag,
+                warmupDailyLimit: warmupLimitValue,
+                warmupMaxPerDay: warmupLimitValue, // Keep these synced
+                warmupDailyIncrease: parseInt(warmupDailyIncrease),
+                warmupReplyRate: parseInt(warmupReplyRate),
+                // Connection settings update
+                smtpHost,
+                smtpPort: parseInt(smtpPort),
+                smtpUser,
+                imapHost,
+                imapPort: parseInt(imapPort),
+                imapUser,
+                smtpPass: connectionPassword, // will only update if not empty
+                imapPass: connectionPassword // assume same password for IMAP
+            }
 
             const res = await fetch(`/api/accounts/${account.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    firstName,
-                    lastName,
-                    signature,
-                    dailyLimit: dailyLimitValue,
-                    minWaitTime: parseInt(minWaitTime),
-                    slowRamp,
-                    warmupEnabled,
-                    warmupTag,
-                    warmupDailyLimit: warmupLimitValue,
-                    warmupDailyIncrease: parseInt(warmupDailyIncrease),
-                    warmupReplyRate: parseInt(warmupReplyRate),
-                    // Connection settings update
-                    smtpHost,
-                    smtpPort: parseInt(smtpPort),
-                    smtpUser,
-                    imapHost,
-                    imapPort: parseInt(imapPort),
-                    imapUser,
-                    smtpPass: connectionPassword, // will only update if not empty
-                    imapPass: connectionPassword // assume same password for IMAP
-                })
-
+                body: JSON.stringify(updatePayload)
             })
 
             if (res.ok) {
                 const data = await res.json()
+                const updatedAccount = data.account || { ...account, ...updatePayload }
+                
                 toast({ title: "Settings Saved", description: "Account settings updated successfully" })
                 
-                // Notify parent with updated account data FIRST (before fetch) so UI updates immediately
-                onUpdate?.({ 
-                    ...account, 
-                    firstName, 
-                    lastName,
-                    dailyLimit: dailyLimitValue,
-                    warmupEnabled,
-                    warmupTag,
-                    warmupDailyLimit: warmupLimitValue,
-                    warmupEmailsLimit: data.warmupEmailsLimit ?? calculatedWarmupLimit,
-                    warmupDailyIncrease: parseInt(warmupDailyIncrease),
-                    warmupReplyRate: parseInt(warmupReplyRate),
-                    healthScore: data.healthScore ?? account.healthScore
-                })
+                // Notify parent with the actual response data to ensure full sync
+                onUpdate?.(updatedAccount)
                 
-                // Refetch account details to get updated stats and data
+                // Sync local state to prevent any weird jumps
+                setDailyLimit(updatedAccount.dailyLimit?.toString() || "")
+                setWarmupDailyLimit(updatedAccount.warmupDailyLimit?.toString() || "")
+                
+                // Refetch to get stats
                 await fetchAccountDetails()
                 
-                router.refresh() // Ensure server components update
+                router.refresh()
                 setShowLargeLimitWarning(false)
                 setLargeLimitAcknowledged(false)
             } else {

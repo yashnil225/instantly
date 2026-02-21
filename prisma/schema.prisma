@@ -160,6 +160,11 @@ model EmailAccount {
   lastWarmupSentAt    DateTime? // Last time warmup emails were sent (prevents duplicates)
   healthScore     Int      @default(100)
   status          String   @default("active") // active, paused, error
+  
+  // Custom Tracking Domain
+  trackingDomainEnabled Boolean @default(false)
+  customDomain          String?
+  
   lastSyncedAt    DateTime?
   bounceCount     Int      @default(0) // For warmup score calculation
   errorDetail     String?  // JSON or text for error context

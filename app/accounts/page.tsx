@@ -65,6 +65,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 interface EmailAccount {
     id: string
     email: string
+    firstName?: string
+    lastName?: string
+    signature?: string
     status: "active" | "paused" | "error" | "warmup"
     emailsSent: number
     emailsLimit: number
@@ -76,6 +79,8 @@ interface EmailAccount {
     isDFY: boolean
     isInCampaign: boolean
     hasCustomDomain: boolean
+    trackingDomainEnabled?: boolean
+    customDomain?: string
     workspaces?: Array<{ workspaceId: string; workspace?: { name: string } }>
     tags: TagType[]
 }

@@ -132,6 +132,10 @@ export async function PATCH(
         if (body.warmupDailyIncrease !== undefined) updateData.warmupDailyIncrease = parseInt(body.warmupDailyIncrease)
         if (body.warmupPoolOptIn !== undefined) updateData.warmupPoolOptIn = body.warmupPoolOptIn
 
+        // Tracking Domain
+        if (body.trackingDomainEnabled !== undefined) updateData.trackingDomainEnabled = body.trackingDomainEnabled
+        if (body.customDomain !== undefined) updateData.customDomain = body.customDomain
+
         // Credentials Update Logic
         if (body.smtpHost !== undefined) updateData.smtpHost = body.smtpHost
         if (body.smtpPort !== undefined) updateData.smtpPort = parseInt(body.smtpPort)

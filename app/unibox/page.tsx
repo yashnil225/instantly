@@ -442,23 +442,19 @@ function UniboxPage() {
         const demoEmail: Email = {
             id: 'demo-1',
             from: 'support@instantly.ai',
-            fromName: 'support@instantly.ai',
-            subject: 'Instantly Demo Email 🚀',
-            preview: 'This is a demo email just to show you how incoming replies will appear in the Unibox!...',
-            body: `This is a demo email just to show you how incoming replies will appear in the Unibox. 🚀
+            fromName: 'Instantly Team',
+            subject: 'Welcome to Instantly! 👋',
+            preview: 'This is a demo email to help you get started with the Unibox. You\'ll see your real email replies here once your campaigns are active.',
+            body: `Welcome to Instantly!
 
-Feel free to click around, explore all the options, and get a feel for how easy it is to manage your sales conversations here.
+The Unibox is where you can manage all your email replies from all your accounts in one place.
 
-When real replies from your outreach campaigns start rolling in, they'll show up just like this - ready for you to review, reply, or take action.
-
-To start getting replies, you need to first make sure you connect an account and launch a campaign. If you need help with anything, contact our support team by clicking the chat bubble icon in the bottom right corner of your screen.
-
-All the best,
-Instantly`,
+Happy sending!`,
             timestamp: signupDate,
             isRead: false,
             status: 'interested',
-            campaign: { id: 'demo-camp', name: 'Demo' },
+            aiLabel: 'interested',
+            campaign: { id: 'demo-camp', name: 'Onboarding' },
             hasReply: false,
             sentFrom: 'Primary',
             recipient: session?.user?.name || 'You',

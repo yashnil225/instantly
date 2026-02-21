@@ -97,6 +97,10 @@ export async function GET(request: Request) {
         isDFY: false, // TODO: Add DFY tracking
         isInCampaign: acc.campaignAccounts.length > 0,
         hasCustomDomain: !!acc.provider,
+        trackingDomainEnabled: acc.trackingDomainEnabled,
+        customDomain: acc.customDomain,
+        firstName: acc.firstName,
+        lastName: acc.lastName,
         signature: acc.signature,
         tags: acc.tags.map(t => t.tag), // Flatten relation
         workspaces: acc.workspaces // Include workspace assignments

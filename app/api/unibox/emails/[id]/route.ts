@@ -16,6 +16,12 @@ export async function PATCH(
         const body = await request.json()
         const { aiLabel, isRead, isStarred, isArchived } = body
 
+        // FIX: Handle Demo Emails gracefully
+        if (id.startsWith('demo-')) {
+            console.log(`[Unibox] Demo email label update simulated for: ${id} -> ${aiLabel}`)
+            return NextResponse.json({ success: true, message: "Demo mode simulated success" })
+        }
+
         // We need to update the Lead associated with this email thread (SendingEvent)
         // Or if we are tracking state on SendingEvent/UniboxEmail model.
         // Based on previous analysis, Unibox state seems to be on the Lead model (aiLabel, isRead, etc.)

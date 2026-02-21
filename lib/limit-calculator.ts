@@ -57,19 +57,17 @@ export function validateCampaignLimits(
     campaignDailyLimit?: number
 ): LimitValidation {
     const activeAccounts = accounts.filter(acc => acc.status?.toLowerCase() === 'active')
-    const accountCapacity = calculateDailyCapacity(activeAccounts)
-
-    // Effective limit is the minimum of account capacity and campaign limit
-    const effectiveLimit = campaignDailyLimit
-        ? Math.min(accountCapacity, campaignDailyLimit)
-        : accountCapacity
+    
+    // Primary fix: Use the synced campaign daily limit directly if available
+    // The user ensures campaign limit is within total account capacity
+    const effectiveLimit = campaignDailyLimit || calculateDailyCapacity(activeAccounts)
 
     const daysNeeded = calculateDaysNeeded(totalLeads, effectiveLimit)
     const withinLimits = totalLeads <= effectiveLimit
 
     let warningMessage = null
     if (!withinLimits && effectiveLimit > 0) {
-        warningMessage = `This campaign will take ${daysNeeded} days to complete. You have ${totalLeads} leads but can only send ${effectiveLimit} emails per day.`
+        warningMessage = `This campaign will take approximately ${daysNeeded} days to complete. The system will automatically spread ${totalLeads} emails across multiple days, sending up to ${effectiveLimit} emails per day.`
     } else if (effectiveLimit === 0) {
         warningMessage = `No active email accounts available. Please connect and activate at least one email account.`
     }

@@ -44,6 +44,10 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
     // Account status
     const [status, setStatus] = useState(account?.status || "active")
 
+    // Custom Domain state
+    const [trackingDomainEnabled, setTrackingDomainEnabled] = useState(account?.trackingDomainEnabled || false)
+    const [customDomain, setCustomDomain] = useState(account?.customDomain || "")
+
     // Connection settings state
     const [smtpHost, setSmtpHost] = useState(account?.smtpHost || "")
     const [smtpPort, setSmtpPort] = useState(account?.smtpPort?.toString() || "587")
@@ -116,6 +120,8 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
             setImapHost(account.imapHost || "")
             setImapPort(account.imapPort?.toString() || "993")
             setImapUser(account.imapUser || "")
+            setTrackingDomainEnabled(account.trackingDomainEnabled || false)
+            setCustomDomain(account.customDomain || "")
         }
     }, [account, saving])
 
@@ -130,6 +136,14 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                 setWarmupEnabled(data.warmupEnabled || false)
                 setStatus(data.status || "active")
                 setCampaigns(data.campaigns || [])
+                
+                // NEW: Sync all fields from GET response
+                setFirstName(data.firstName || "")
+                setLastName(data.lastName || "")
+                setSignature(data.signature || "")
+                setTrackingDomainEnabled(data.trackingDomainEnabled || false)
+                setCustomDomain(data.customDomain || "")
+
                 // Parsing error detail if it's JSON
                 try {
                     const parsed = JSON.parse(data.errorDetail)
@@ -423,7 +437,10 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                 imapPort: parseInt(imapPort),
                 imapUser,
                 smtpPass: connectionPassword, // will only update if not empty
-                imapPass: connectionPassword // assume same password for IMAP
+                imapPass: connectionPassword, // assume same password for IMAP
+                // Tracking Domain
+                trackingDomainEnabled,
+                customDomain
             }
 
             const res = await fetch(`/api/accounts/${account.id}`, {
@@ -1014,9 +1031,27 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
                                 <span className="text-gray-500"><Globe className="h-4 w-4" /></span>
                                 Custom Tracking Domain
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Checkbox id="custom-domain" className="border-[#333] data-[state=checked]:bg-blue-600 rounded-[4px]" />
-                                <label htmlFor="custom-domain" className="text-gray-300 text-sm cursor-pointer">Enable custom tracking domain</label>
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <Checkbox 
+                                        id="custom-domain" 
+                                        className="border-[#333] data-[state=checked]:bg-blue-600 rounded-[4px]" 
+                                        checked={trackingDomainEnabled}
+                                        onCheckedChange={(checked) => setTrackingDomainEnabled(checked === true)}
+                                    />
+                                    <label htmlFor="custom-domain" className="text-gray-300 text-sm cursor-pointer">Enable custom tracking domain</label>
+                                </div>
+                                {trackingDomainEnabled && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                                        <Label className="text-gray-400 text-xs">Tracking Domain (e.g. track.yourdomain.com)</Label>
+                                        <Input 
+                                            placeholder="track.example.com"
+                                            value={customDomain}
+                                            onChange={(e) => setCustomDomain(e.target.value)}
+                                            className="bg-[#111] border-[#2a2a2a] text-white h-10 max-w-md"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         </div>
 

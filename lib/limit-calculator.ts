@@ -54,26 +54,6 @@ export interface LimitValidation {
 }
 
 /**
- * Calculate total daily sending capacity across all active accounts
- */
-export function calculateDailyCapacity(accounts: EmailAccount[]): number {
-    return accounts
-        .filter(acc => acc.status === 'active')
-        .reduce((sum, acc) => {
-            if (acc.warmupEnabled) {
-                // Use warmup limits
-                const warmupLimit = Math.min(
-                    acc.warmupCurrentDay * acc.warmupDailyIncrease,
-                    acc.warmupMaxPerDay
-                )
-                return sum + Math.max(0, warmupLimit - acc.sentToday)
-            }
-            // Use regular daily limit
-            return sum + Math.max(0, acc.dailyLimit - acc.sentToday)
-        }, 0)
-}
-
-/**
  * Calculate how many days needed to send all emails
  */
 export function calculateDaysNeeded(totalLeads: number, dailyCapacity: number): number {

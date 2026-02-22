@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { syncAccountInbox } from '@/lib/imap-monitor'
+import { waitUntil } from '@vercel/functions'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300 // Set max duration for Vercel
+export const maxDuration = 300
 
 export async function GET(request: Request) {
-    const startTime = Date.now()
-    const TIMEOUT_SAFETY_MARGIN = 240 * 1000 // 4 minutes
-
     const authHeader = request.headers.get('authorization')
     if (process.env.NODE_ENV === 'production') {
         const secret = process.env.CRON_SECRET || process.env.AUTHORIZATION
@@ -18,10 +16,18 @@ export async function GET(request: Request) {
         }
     }
 
-    try {
-        console.log('Starting Prioritized Unified IMAP Sync...')
+    // Respond IMMEDIATELY so cron-job.org (30s timeout) doesn't kill the connection.
+    // waitUntil keeps the Vercel function alive for up to maxDuration (300s) in the background.
+    waitUntil(runReplyCheck())
 
-        // Get 3 oldest active email accounts (prioritize those not checked recently)
+    return NextResponse.json({ success: true, message: 'Reply check started in background' })
+}
+
+async function runReplyCheck() {
+    const startTime = Date.now()
+    console.log('[check-replies] Starting background IMAP sync...')
+
+    try {
         const accounts = await prisma.emailAccount.findMany({
             where: { status: 'active' },
             orderBy: { lastSyncedAt: 'asc' },
@@ -29,64 +35,40 @@ export async function GET(request: Request) {
         })
 
         if (accounts.length === 0) {
-            return NextResponse.json({ success: true, message: 'No accounts to check' })
+            console.log('[check-replies] No accounts to check')
+            return
         }
 
         let totalReplies = 0
         let totalBounces = 0
-        let accountsChecked = 0
-        const errors: string[] = []
 
-        // Process in parallel with staggered starts to prevent IP blocking/resets
+        // Process accounts with staggered starts to prevent IP blocks
         const syncPromises = accounts.map(async (account, index) => {
             try {
-                // Stagger the start of each connection by 1 second
                 if (index > 0) {
                     await new Promise(resolve => setTimeout(resolve, index * 1000))
                 }
 
-                // Update timestamp immediately so it moves to end of queue
                 await prisma.emailAccount.update({
                     where: { id: account.id },
                     data: { lastSyncedAt: new Date() }
                 })
 
                 const result = await syncAccountInbox(account)
-                
-                console.log(`[Cron] Finished ${account.email}: +${result.replies} replies, +${result.bounces} bounces`)
+                console.log(`[check-replies] ${account.email}: +${result.replies} replies, +${result.bounces} bounces`)
                 return result
             } catch (error) {
-                console.error(`Error checking ${account.email}:`, error)
-                errors.push(`${account.email}: ${error}`)
+                console.error(`[check-replies] Error on ${account.email}:`, error)
                 return { replies: 0, bounces: 0 }
             }
         })
 
         const results = await Promise.all(syncPromises)
-        
-        results.forEach(res => {
-            totalReplies += res.replies
-            totalBounces += res.bounces
-            accountsChecked++
-        })
+        results.forEach(r => { totalReplies += r.replies; totalBounces += r.bounces })
 
-        const totalActive = await prisma.emailAccount.count({ where: { status: 'active' } })
-
-        return NextResponse.json({
-            success: true,
-            totalReplies,
-            totalBounces,
-            accountsChecked,
-            totalAccounts: totalActive,
-            completedBatch: true,
-            elapsedSeconds: Math.floor((Date.now() - startTime) / 1000),
-            errors: errors.length > 0 ? errors : undefined
-        })
+        const elapsed = Math.floor((Date.now() - startTime) / 1000)
+        console.log(`[check-replies] Done in ${elapsed}s — ${totalReplies} replies, ${totalBounces} bounces`)
     } catch (error) {
-        console.error('IMAP check failed:', error)
-        return NextResponse.json(
-            { success: false, error: String(error) },
-            { status: 500 }
-        )
+        console.error('[check-replies] Background task failed:', error)
     }
 }

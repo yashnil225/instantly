@@ -38,6 +38,7 @@
     "@types/mailparser": "^3.4.6",
     "@types/papaparse": "^5.5.1",
     "@types/uuid": "^10.0.0",
+    "@vercel/functions": "^3.4.2",
     "axios": "^1.6.2",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.65.1",

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { processBatch } from '@/lib/sender'
+import { waitUntil } from '@vercel/functions'
 
-export const dynamic = 'force-dynamic' // Prevent caching
-export const maxDuration = 300 // Max timeout in seconds (requires Vercel Pro for > 10s)
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization')
@@ -14,11 +15,11 @@ export async function GET(request: Request) {
         }
     }
 
-    try {
-        const result = await processBatch()
-        return NextResponse.json({ success: true, ...result })
-    } catch (error) {
-        console.error("Cron Job Failed", error)
-        return NextResponse.json({ success: false, error: 'Internal Server Error' }, { status: 500 })
-    }
+    // Respond IMMEDIATELY so cron-job.org (30s timeout) doesn't kill the connection.
+    // waitUntil keeps the Vercel function alive for up to maxDuration (300s) in the background.
+    waitUntil(
+        processBatch().catch(err => console.error('[cron/send] processBatch failed:', err))
+    )
+
+    return NextResponse.json({ success: true, message: 'Email send batch started in background' })
 }

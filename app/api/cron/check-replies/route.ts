@@ -37,10 +37,15 @@ export async function GET(request: Request) {
         let accountsChecked = 0
         const errors: string[] = []
 
-        // Process in parallel to save time, but limited to 3 to prevent IP blocking
-        const syncPromises = accounts.map(async (account) => {
+        // Process in parallel with staggered starts to prevent IP blocking/resets
+        const syncPromises = accounts.map(async (account, index) => {
             try {
-                // Update timestamp immediately so it moves to end of queue if crash occurs
+                // Stagger the start of each connection by 1 second
+                if (index > 0) {
+                    await new Promise(resolve => setTimeout(resolve, index * 1000))
+                }
+
+                // Update timestamp immediately so it moves to end of queue
                 await prisma.emailAccount.update({
                     where: { id: account.id },
                     data: { lastSyncedAt: new Date() }

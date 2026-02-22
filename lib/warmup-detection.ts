@@ -387,37 +387,46 @@ export async function processWarmupMaintenance() {
     })
 
     console.log(`[Warmup] Starting maintenance for ${accounts.length} accounts...`)
-    let totalRescued = 0
-    let totalReplied = 0
-
-    for (const account of accounts) {
+    
+    const results = await Promise.all(accounts.map(async (account, index) => {
         try {
+            // Stagger the start of each account's maintenance
+            if (index > 0) {
+                await new Promise(resolve => setTimeout(resolve, index * 2000))
+            }
+
             // Update timestamp immediately
             await prisma.emailAccount.update({
                 where: { id: account.id },
                 data: { lastSyncedAt: new Date() }
             })
 
-            // Sequential delay to prevent rate limits
-            await new Promise(resolve => setTimeout(resolve, 2000))
-
             // 1. Rescue from spam
             const rescued = await rescueFromSpam(account)
-            totalRescued += rescued
 
-            // Small delay
+            // Small delay between ops
             await new Promise(resolve => setTimeout(resolve, 1000))
 
             // 2. Detect and reply to warmup emails
             const detection = await detectWarmupEmails(account)
+            let replied = 0
             if (detection.needsReply.length > 0) {
-                const replied = await processWarmupReplies(account, detection.needsReply)
-                totalReplied += replied
+                replied = await processWarmupReplies(account, detection.needsReply)
             }
+            
+            return { rescued, replied }
         } catch (error) {
             console.error(`[Warmup] Maintenance failed for ${account.email}:`, error)
+            return { rescued: 0, replied: 0 }
         }
-    }
+    }))
+
+    let totalRescued = 0
+    let totalReplied = 0
+    results.forEach(res => {
+        totalRescued += res.rescued
+        totalReplied += res.replied
+    })
 
     return { totalRescued, totalReplied, completedBatch: true, elapsed: (Date.now() - startTime) }
 }

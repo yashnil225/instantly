@@ -166,7 +166,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     take: 1
                 }
             },
-            take: 50 // Increased to allow for some prioritization sorting
+            take: 20 // Reduced from 50
         })
 
         // Sort by priority if needed
@@ -183,8 +183,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
         // Filter out Blocklisted Emails
         candidateLeads = candidateLeads.filter(l => !blockedEmails.includes(l.email.toLowerCase()))
 
-        // Limit to batch size after sort
-        candidateLeads = candidateLeads.slice(0, 20)
+        // Limit to small batch size to prevent timeouts
+        candidateLeads = candidateLeads.slice(0, 10) // Reduced from 20
 
         let sentForThisCampaign = 0
 

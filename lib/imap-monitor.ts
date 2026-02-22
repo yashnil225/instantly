@@ -116,8 +116,8 @@ export async function syncAccountInbox(account: EmailAccount): Promise<{ replies
                     rejectUnauthorized: false,
                     minVersion: 'TLSv1.2'
                 },
-                connTimeout: 20000,
-                authTimeout: 20000,
+                connTimeout: 10000, // Reduced to 10s
+                authTimeout: 10000, // Reduced to 10s
                 keepalive: false
             })
 

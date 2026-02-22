@@ -375,13 +375,15 @@ import { processWarmupReplies } from './warmup-reply'
  */
 export async function processWarmupMaintenance() {
     const startTime = Date.now()
-    const TIMEOUT_SAFETY_MARGIN = 240 * 1000 // 4 minutes
 
+    // Pick 3 oldest warmup accounts to prevent timeouts
     const accounts = await prisma.emailAccount.findMany({
         where: {
             warmupEnabled: true,
             status: 'active'
-        }
+        },
+        orderBy: { lastSyncedAt: 'asc' },
+        take: 3
     })
 
     console.log(`[Warmup] Starting maintenance for ${accounts.length} accounts...`)
@@ -389,23 +391,22 @@ export async function processWarmupMaintenance() {
     let totalReplied = 0
 
     for (const account of accounts) {
-        // Safety timeout check
-        const elapsed = Date.now() - startTime
-        if (elapsed > TIMEOUT_SAFETY_MARGIN) {
-            console.warn(`[Warmup] Approaching Vercel timeout (${elapsed/1000}s). Stopping maintenance early.`)
-            break
-        }
-
         try {
-            // Sequential delay between accounts
-            await new Promise(resolve => setTimeout(resolve, 3000))
+            // Update timestamp immediately
+            await prisma.emailAccount.update({
+                where: { id: account.id },
+                data: { lastSyncedAt: new Date() }
+            })
+
+            // Sequential delay to prevent rate limits
+            await new Promise(resolve => setTimeout(resolve, 2000))
 
             // 1. Rescue from spam
             const rescued = await rescueFromSpam(account)
             totalRescued += rescued
 
-            // Small delay between ops
-            await new Promise(resolve => setTimeout(resolve, 2000))
+            // Small delay
+            await new Promise(resolve => setTimeout(resolve, 1000))
 
             // 2. Detect and reply to warmup emails
             const detection = await detectWarmupEmails(account)
@@ -418,5 +419,5 @@ export async function processWarmupMaintenance() {
         }
     }
 
-    return { totalRescued, totalReplied, timedOut: (Date.now() - startTime) > TIMEOUT_SAFETY_MARGIN }
+    return { totalRescued, totalReplied, completedBatch: true, elapsed: (Date.now() - startTime) }
 }

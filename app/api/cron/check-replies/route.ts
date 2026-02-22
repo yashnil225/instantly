@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { checkForReplies, checkForBounces } from '@/lib/imap-monitor'
+import { syncAccountInbox } from '@/lib/imap-monitor'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // Set max duration for Vercel
 
 export async function GET(request: Request) {
+    const startTime = Date.now()
+    const TIMEOUT_SAFETY_MARGIN = 240 * 1000 // 4 minutes
+
     const authHeader = request.headers.get('authorization')
     if (process.env.NODE_ENV === 'production') {
         const secret = process.env.CRON_SECRET || process.env.AUTHORIZATION
@@ -13,8 +17,9 @@ export async function GET(request: Request) {
             return new Response('Unauthorized', { status: 401 })
         }
     }
+
     try {
-        console.log('Starting IMAP check for replies and bounces...')
+        console.log('Starting Unified IMAP Sync...')
 
         // Get all active email accounts
         const accounts = await prisma.emailAccount.findMany({
@@ -23,26 +28,31 @@ export async function GET(request: Request) {
 
         let totalReplies = 0
         let totalBounces = 0
+        let accountsChecked = 0
         const errors: string[] = []
 
         for (const account of accounts) {
+            // Safety timeout check
+            const elapsed = Date.now() - startTime
+            if (elapsed > TIMEOUT_SAFETY_MARGIN) {
+                console.warn(`[Cron] Approaching Vercel timeout (${elapsed/1000}s). Stopping sync early. Checked ${accountsChecked}/${accounts.length} accounts.`)
+                break
+            }
+
             try {
-                // Sequential delay between accounts to prevent rate limiting
-                await new Promise(resolve => setTimeout(resolve, 3000))
+                // Sequential delay to prevent concurrent connections
+                await new Promise(resolve => setTimeout(resolve, 2000))
                 
-                // Check for replies
-                const replies = await checkForReplies(account)
-                totalReplies += replies
-
-                // Small delay between ops on same account
-                await new Promise(resolve => setTimeout(resolve, 1500))
-
-                // Check for bounces
-                const bounces = await checkForBounces(account)
-                totalBounces += bounces
+                const result = await syncAccountInbox(account)
+                totalReplies += result.replies
+                totalBounces += result.bounces
+                accountsChecked++
+                
+                console.log(`[Cron] Finished ${account.email}: +${result.replies} replies, +${result.bounces} bounces`)
             } catch (error) {
                 console.error(`Error checking ${account.email}:`, error)
                 errors.push(`${account.email}: ${error}`)
+                accountsChecked++
             }
         }
 
@@ -50,7 +60,10 @@ export async function GET(request: Request) {
             success: true,
             totalReplies,
             totalBounces,
-            accountsChecked: accounts.length,
+            accountsChecked,
+            totalAccounts: accounts.length,
+            completed: accountsChecked === accounts.length,
+            elapsedSeconds: Math.floor((Date.now() - startTime) / 1000),
             errors: errors.length > 0 ? errors : undefined
         })
     } catch (error) {

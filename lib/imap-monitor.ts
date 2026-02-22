@@ -96,146 +96,16 @@ async function withRetry<T>(
 }
 
 /**
- * Check inbox for replies to sent emails
+ * Combined sync function for efficiency (one connection for both replies and bounces)
  */
-export async function checkForReplies(account: EmailAccount): Promise<number> {
+export async function syncAccountInbox(account: EmailAccount): Promise<{ replies: number, bounces: number }> {
     return withRetry(async (attempt) => {
-        // Add sequential delay to prevent concurrent connections from same IP
         if (attempt === 0) {
-            const jitter = Math.floor(Math.random() * 2000)
-            await new Promise(resolve => setTimeout(resolve, jitter))
+            // Small jitter
+            await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 1000)))
         }
 
-        return new Promise<number>((resolve, reject) => {
-            const imap = new Imap({
-                user: account.imapUser || account.email,
-                password: account.imapPass || account.smtpPass || '',
-                host: account.imapHost || 'imap.gmail.com',
-                port: account.imapPort || 993,
-                tls: true,
-                tlsOptions: { 
-                    rejectUnauthorized: false,
-                    minVersion: 'TLSv1.2' // Enforce stable TLS
-                },
-                connTimeout: 15000,
-                authTimeout: 15000,
-                keepalive: false // Don't keep alive for cron jobs
-            })
-
-            let repliesFound = 0
-            let isResolved = false
-
-            const safeReject = async (err: any) => {
-                if (isResolved) return
-                isResolved = true
-                await endImap(imap)
-                reject(err)
-            }
-
-            const safeResolve = async (val: number) => {
-                if (isResolved) return
-                isResolved = true
-                await endImap(imap)
-                resolve(val)
-            }
-
-            imap.once('ready', () => {
-                imap.openBox('INBOX', false, (err) => {
-                    if (err) return safeReject(err)
-
-                    const searchCriteria = ['UNSEEN', ['SINCE', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)]]
-
-                    imap.search(searchCriteria, (err, results) => {
-                        if (err) return safeReject(err)
-
-                        if (!results || results.length === 0) {
-                            return safeResolve(0)
-                        }
-
-                        const fetch = imap.fetch(results, { bodies: '', markSeen: false })
-
-                        fetch.on('message', (msg) => {
-                            msg.on('body', (stream) => {
-                                simpleParser(stream as unknown as Source, async (err, parsed) => {
-                                    if (err) return
-
-                                    try {
-                                        const from = parsed.from?.value[0]?.address
-                                        if (!from) return
-
-                                        const lead = await prisma.lead.findFirst({
-                                            where: { email: from }
-                                        })
-
-                                        if (!lead) return
-
-                                        const sentEvent = await prisma.sendingEvent.findFirst({
-                                            where: {
-                                                leadId: lead.id,
-                                                type: 'sent',
-                                                emailAccountId: account.id
-                                            },
-                                            orderBy: { createdAt: 'desc' }
-                                        })
-
-                                        if (!sentEvent) return
-
-                                        await prisma.$transaction([
-                                            prisma.sendingEvent.create({
-                                                data: {
-                                                    type: 'reply',
-                                                    leadId: lead.id,
-                                                    campaignId: sentEvent.campaignId,
-                                                    emailAccountId: account.id,
-                                                    metadata: JSON.stringify({
-                                                        subject: parsed.subject,
-                                                        from: from,
-                                                        date: parsed.date
-                                                    })
-                                                }
-                                            }),
-                                            prisma.lead.update({
-                                                where: { id: lead.id },
-                                                data: { status: 'replied' }
-                                            }),
-                                            prisma.campaign.update({
-                                                where: { id: sentEvent.campaignId },
-                                                data: { replyCount: { increment: 1 } }
-                                            })
-                                        ])
-
-                                        repliesFound++
-                                        console.log(`✅ Reply detected from ${from} to ${account.email}`)
-                                    } catch (error) {
-                                        console.error('Error processing reply:', error)
-                                    }
-                                })
-                            })
-                        })
-
-                        fetch.once('error', (err) => safeReject(err))
-                        fetch.once('end', () => safeResolve(repliesFound))
-                    })
-                })
-            })
-
-            imap.once('error', (err) => safeReject(err))
-            imap.connect()
-        })
-    }, account.email, 'checkForReplies')
-}
-
-/**
- * Check inbox for bounce messages
- */
-export async function checkForBounces(account: EmailAccount): Promise<number> {
-    return withRetry(async (attempt) => {
-        // Add sequential delay
-        if (attempt === 0) {
-            await new Promise(resolve => setTimeout(resolve, 1000))
-        }
-
-        return new Promise<number>((resolve, reject) => {
+        return new Promise<{ replies: number, bounces: number }>((resolve, reject) => {
             const imap = new Imap({
                 user: account.imapUser || account.email,
                 password: account.imapPass || account.smtpPass || '',
@@ -246,11 +116,12 @@ export async function checkForBounces(account: EmailAccount): Promise<number> {
                     rejectUnauthorized: false,
                     minVersion: 'TLSv1.2'
                 },
-                connTimeout: 15000,
-                authTimeout: 15000,
+                connTimeout: 20000,
+                authTimeout: 20000,
                 keepalive: false
             })
 
+            let repliesFound = 0
             let bouncesFound = 0
             let isResolved = false
 
@@ -261,95 +132,130 @@ export async function checkForBounces(account: EmailAccount): Promise<number> {
                 reject(err)
             }
 
-            const safeResolve = async (val: number) => {
+            const safeResolve = async () => {
                 if (isResolved) return
                 isResolved = true
                 await endImap(imap)
-                resolve(val)
+                resolve({ replies: repliesFound, bounces: bouncesFound })
             }
 
             imap.once('ready', () => {
                 imap.openBox('INBOX', false, (err) => {
                     if (err) return safeReject(err)
 
-                    const searchCriteria = [
-                        'UNSEEN',
-                        ['OR', ['FROM', 'mailer-daemon'], ['FROM', 'postmaster']],
-                        ['SINCE', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)]
-                    ]
+                    // 1. Search for EVERYTHING (unseen in last 7 days)
+                    const searchCriteria = ['UNSEEN', ['SINCE', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)]]
 
                     imap.search(searchCriteria, (err, results) => {
                         if (err) return safeReject(err)
 
                         if (!results || results.length === 0) {
-                            return safeResolve(0)
+                            return safeResolve()
                         }
 
                         const fetch = imap.fetch(results, { bodies: '', markSeen: false })
+                        let processedCount = 0
 
                         fetch.on('message', (msg) => {
                             msg.on('body', (stream) => {
                                 simpleParser(stream as unknown as Source, async (err, parsed) => {
-                                    if (err) return
+                                    processedCount++
+                                    if (err) {
+                                        if (processedCount === results.length) safeResolve()
+                                        return
+                                    }
 
                                     try {
+                                        const from = parsed.from?.value[0]?.address?.toLowerCase()
+                                        const subject = parsed.subject?.toLowerCase() || ''
                                         const bodyText = parsed.text || ''
-                                        const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/g
-                                        const emails = bodyText.match(emailRegex) || []
 
-                                        for (const email of emails) {
-                                            const lead = await prisma.lead.findFirst({
-                                                where: { email: email }
-                                            })
+                                        // --- CHECK FOR BOUNCE ---
+                                        const isBounceSource = from === 'mailer-daemon@googlemail.com' || 
+                                                             from === 'postmaster' || 
+                                                             from?.includes('mailer-daemon') ||
+                                                             subject.includes('delivery status notification') ||
+                                                             subject.includes('undelivered')
 
-                                            if (!lead) continue
-
-                                            const sentEvent = await prisma.sendingEvent.findFirst({
-                                                where: {
-                                                    leadId: lead.id,
-                                                    type: 'sent',
-                                                    emailAccountId: account.id
-                                                },
-                                                orderBy: { createdAt: 'desc' }
-                                            })
-
-                                            if (!sentEvent) continue
-
-                                            await prisma.$transaction([
-                                                prisma.sendingEvent.create({
-                                                    data: {
-                                                        type: 'bounce',
-                                                        leadId: lead.id,
-                                                        campaignId: sentEvent.campaignId,
-                                                        emailAccountId: account.id,
-                                                        metadata: JSON.stringify({
-                                                            subject: parsed.subject,
-                                                            bounceReason: bodyText.substring(0, 500)
-                                                        })
-                                                    }
-                                                }),
-                                                prisma.lead.update({
-                                                    where: { id: lead.id },
-                                                    data: { status: 'bounced' }
-                                                }),
-                                                prisma.campaign.update({
-                                                    where: { id: sentEvent.campaignId },
-                                                    data: { bounceCount: { increment: 1 } }
+                                        if (isBounceSource) {
+                                            const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/g
+                                            const foundEmails = bodyText.match(emailRegex) || []
+                                            
+                                            for (const bouncedEmail of foundEmails) {
+                                                const lead = await prisma.lead.findFirst({
+                                                    where: { email: bouncedEmail, campaignId: { not: undefined } }
                                                 })
-                                            ])
 
-                                            bouncesFound++
-                                            console.log(`⚠️ Bounce detected for ${email} via ${account.email}`)
+                                                if (lead) {
+                                                    const sentEvent = await prisma.sendingEvent.findFirst({
+                                                        where: { leadId: lead.id, type: 'sent', emailAccountId: account.id },
+                                                        orderBy: { createdAt: 'desc' }
+                                                    })
+
+                                                    if (sentEvent) {
+                                                        await prisma.$transaction([
+                                                            prisma.sendingEvent.create({
+                                                                data: {
+                                                                    type: 'bounce',
+                                                                    leadId: lead.id,
+                                                                    campaignId: sentEvent.campaignId,
+                                                                    emailAccountId: account.id,
+                                                                    metadata: JSON.stringify({ subject: parsed.subject, reason: 'Detected via Inbox Sync' })
+                                                                }
+                                                            }),
+                                                            prisma.lead.update({ where: { id: lead.id }, data: { status: 'bounced' } }),
+                                                            prisma.campaign.update({ where: { id: sentEvent.campaignId }, data: { bounceCount: { increment: 1 } } })
+                                                        ])
+                                                        bouncesFound++
+                                                        console.log(`⚠️ Bounce detected: ${bouncedEmail}`)
+                                                    }
+                                                }
+                                            }
+                                        } 
+                                        // --- CHECK FOR REPLY ---
+                                        else if (from) {
+                                            const lead = await prisma.lead.findFirst({
+                                                where: { email: from }
+                                            })
+
+                                            if (lead) {
+                                                const sentEvent = await prisma.sendingEvent.findFirst({
+                                                    where: { leadId: lead.id, type: 'sent', emailAccountId: account.id },
+                                                    orderBy: { createdAt: 'desc' }
+                                                })
+
+                                                if (sentEvent) {
+                                                    await prisma.$transaction([
+                                                        prisma.sendingEvent.create({
+                                                            data: {
+                                                                type: 'reply',
+                                                                leadId: lead.id,
+                                                                campaignId: sentEvent.campaignId,
+                                                                emailAccountId: account.id,
+                                                                metadata: JSON.stringify({ subject: parsed.subject, from })
+                                                            }
+                                                        }),
+                                                        prisma.lead.update({ where: { id: lead.id }, data: { status: 'replied' } }),
+                                                        prisma.campaign.update({ where: { id: sentEvent.campaignId }, data: { replyCount: { increment: 1 } } })
+                                                    ])
+                                                    repliesFound++
+                                                    console.log(`✅ Reply detected from ${from}`)
+                                                }
+                                            }
                                         }
-                                    } catch (error) {
-                                        console.error('Error processing bounce:', error)
+                                    } catch (e) {
+                                        console.error('Processing error:', e)
+                                    } finally {
+                                        if (processedCount === results.length) safeResolve()
                                     }
                                 })
                             })
                         })
 
                         fetch.once('error', (err) => safeReject(err))
-                        fetch.once('end', () => safeResolve(bouncesFound))
+                        fetch.once('end', () => {
+                            if (results.length === 0) safeResolve()
+                        })
                     })
                 })
             })
@@ -357,5 +263,21 @@ export async function checkForBounces(account: EmailAccount): Promise<number> {
             imap.once('error', (err) => safeReject(err))
             imap.connect()
         })
-    }, account.email, 'checkForBounces')
+    }, account.email, 'syncAccountInbox')
+}
+
+/**
+ * Legacy support: Check inbox for replies to sent emails
+ */
+export async function checkForReplies(account: EmailAccount): Promise<number> {
+    const result = await syncAccountInbox(account)
+    return result.replies
+}
+
+/**
+ * Legacy support: Check inbox for bounce messages
+ */
+export async function checkForBounces(account: EmailAccount): Promise<number> {
+    const result = await syncAccountInbox(account)
+    return result.bounces
 }

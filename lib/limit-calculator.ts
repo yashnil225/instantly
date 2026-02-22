@@ -5,10 +5,43 @@ export interface EmailAccount {
     status: string
     dailyLimit: number
     sentToday: number
+    createdAt: Date | string
+    slowRamp?: boolean
     warmupEnabled: boolean
     warmupCurrentDay: number
     warmupDailyIncrease: number
     warmupMaxPerDay: number
+}
+
+/**
+ * Calculate total daily sending capacity across all active accounts
+ */
+export function calculateDailyCapacity(accounts: EmailAccount[]): number {
+    return accounts
+        .filter(acc => acc.status === 'active')
+        .reduce((sum, acc) => {
+            if (acc.warmupEnabled) {
+                // Use warmup limits
+                const warmupLimit = Math.min(
+                    acc.warmupCurrentDay * acc.warmupDailyIncrease,
+                    acc.warmupMaxPerDay
+                )
+                return sum + Math.max(0, warmupLimit - acc.sentToday)
+            }
+            
+            // Check Campaign Slow Ramp
+            let currentLimit = acc.dailyLimit
+            if (acc.slowRamp) {
+                const createdAt = typeof acc.createdAt === 'string' ? new Date(acc.createdAt) : acc.createdAt
+                const daysSinceCreated = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24))
+                // Start at 20, increase by 20 each day
+                const rampedLimit = 20 + (daysSinceCreated * 20)
+                currentLimit = Math.min(rampedLimit, acc.dailyLimit)
+            }
+
+            // Use regular daily limit or ramped limit
+            return sum + Math.max(0, currentLimit - acc.sentToday)
+        }, 0)
 }
 
 export interface LimitValidation {

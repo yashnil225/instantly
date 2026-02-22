@@ -4,6 +4,7 @@ import { runPoolWarmupCycle } from '@/lib/warmup-pool'
 import { processWarmupMaintenance } from '@/lib/warmup-detection'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // Set max duration for Vercel
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization')

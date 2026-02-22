@@ -30,6 +30,9 @@ function injectTracking(html: string, eventId: string, baseUrl: string) {
 }
 
 export async function processBatch(options: { filter?: AutomationFilter } = {}) {
+    const startTime = Date.now()
+    const TIMEOUT_SAFETY_MARGIN = 240 * 1000 // 4 minutes
+
     const { filter } = options
     console.log("Starting batch processing...")
 
@@ -66,6 +69,13 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
     let errors = 0
 
     for (const campaign of campaigns) {
+        // Safety timeout check
+        const elapsed = Date.now() - startTime
+        if (elapsed > TIMEOUT_SAFETY_MARGIN) {
+            console.warn(`[Sender] Approaching Vercel timeout (${elapsed/1000}s). Stopping batch early.`)
+            break
+        }
+
         // --- 0. Parse Settings ---
         let settings: any = {}
         try {
@@ -103,7 +113,16 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     return acc.sentToday < warmupLimit
                 }
 
-                return acc.sentToday < acc.dailyLimit
+                // Check Campaign Slow Ramp
+                let currentLimit = acc.dailyLimit
+                if (acc.slowRamp) {
+                    const daysSinceCreated = Math.floor((Date.now() - new Date(acc.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+                    // Start at 20, increase by 20 each day
+                    const rampedLimit = 20 + (daysSinceCreated * 20)
+                    currentLimit = Math.min(rampedLimit, acc.dailyLimit)
+                }
+
+                return acc.sentToday < currentLimit
             })
 
         if (availableAccounts.length === 0) continue
@@ -170,6 +189,13 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
         let sentForThisCampaign = 0
 
         for (const lead of candidateLeads) {
+            // Safety timeout check
+            const elapsed = Date.now() - startTime
+            if (elapsed > TIMEOUT_SAFETY_MARGIN) {
+                console.warn(`[Sender] Approaching timeout in lead loop (${elapsed/1000}s). Stopping batch.`)
+                return { totalSent, errors, timedOut: true }
+            }
+
             if (sentForThisCampaign >= availableAccounts.length * 5) break
 
             // Determine Next Step

@@ -374,6 +374,9 @@ import { processWarmupReplies } from './warmup-reply'
  * (Spam rescue + Auto-replies)
  */
 export async function processWarmupMaintenance() {
+    const startTime = Date.now()
+    const TIMEOUT_SAFETY_MARGIN = 240 * 1000 // 4 minutes
+
     const accounts = await prisma.emailAccount.findMany({
         where: {
             warmupEnabled: true,
@@ -386,6 +389,13 @@ export async function processWarmupMaintenance() {
     let totalReplied = 0
 
     for (const account of accounts) {
+        // Safety timeout check
+        const elapsed = Date.now() - startTime
+        if (elapsed > TIMEOUT_SAFETY_MARGIN) {
+            console.warn(`[Warmup] Approaching Vercel timeout (${elapsed/1000}s). Stopping maintenance early.`)
+            break
+        }
+
         try {
             // Sequential delay between accounts
             await new Promise(resolve => setTimeout(resolve, 3000))
@@ -408,5 +418,5 @@ export async function processWarmupMaintenance() {
         }
     }
 
-    return { totalRescued, totalReplied }
+    return { totalRescued, totalReplied, timedOut: (Date.now() - startTime) > TIMEOUT_SAFETY_MARGIN }
 }

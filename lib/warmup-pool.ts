@@ -208,7 +208,7 @@ export async function sendPoolWarmupEmail(
  * Run pool warmup cycle
  * Each participating account sends to and receives from pool members
  */
-export async function runPoolWarmupCycle(): Promise<{ sent: number, errors: number }> {
+export async function runPoolWarmupCycle(guard?: { isTimedOut: () => boolean, elapsedSec: () => number }): Promise<{ sent: number, errors: number }> {
     let sent = 0
     let errors = 0
 
@@ -230,6 +230,11 @@ export async function runPoolWarmupCycle(): Promise<{ sent: number, errors: numb
         }
 
         for (const account of participants) {
+            if (guard?.isTimedOut()) {
+                console.warn(`[Pool Warmup] Approaching timeout (${guard.elapsedSec()}s). Stopping pool cycle early.`)
+                break
+            }
+
             // Check daily limit
             if ((account.warmupSentToday || 0) >= (account.warmupMaxPerDay || 10)) {
                 continue
@@ -239,6 +244,11 @@ export async function runPoolWarmupCycle(): Promise<{ sent: number, errors: numb
             const poolMembers = await getPoolMembers(account.id, 3)
 
             for (const member of poolMembers) {
+                if (guard?.isTimedOut()) {
+                    console.warn(`[Pool Warmup] Timeout in member loop (${guard.elapsedSec()}s). Breaking.`)
+                    break
+                }
+
                 const sender: PoolMember = {
                     id: account.id,
                     email: account.email,

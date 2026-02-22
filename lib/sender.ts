@@ -72,7 +72,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
         // Safety timeout check
         const elapsed = Date.now() - startTime
         if (elapsed > TIMEOUT_SAFETY_MARGIN) {
-            console.warn(`[Sender] Approaching Vercel timeout (${elapsed/1000}s). Stopping batch early.`)
+            console.warn(`[Sender] Approaching Vercel timeout (${elapsed / 1000}s). Stopping batch early.`)
             break
         }
 
@@ -166,7 +166,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     take: 1
                 }
             },
-            take: 20 // Reduced from 50
+            take: 10 // Tight batch to prevent Vercel timeout
         })
 
         // Sort by priority if needed
@@ -192,7 +192,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
             // Safety timeout check
             const elapsed = Date.now() - startTime
             if (elapsed > TIMEOUT_SAFETY_MARGIN) {
-                console.warn(`[Sender] Approaching timeout in lead loop (${elapsed/1000}s). Stopping batch.`)
+                console.warn(`[Sender] Approaching timeout in lead loop (${elapsed / 1000}s). Stopping batch.`)
                 return { totalSent, errors, timedOut: true }
             }
 
@@ -423,12 +423,12 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 const minGap = (settings.minTimeGap || 20) * 1000
                 let baseDelayMs = 2000 // default 2s for Hobby plan serverless compatibility
                 if (settings.minTimeGap) {
-                    baseDelayMs = Math.min(parseInt(settings.minTimeGap) * 1000, 5000) // Cap at 5s in a loop
+                    baseDelayMs = Math.min(parseInt(settings.minTimeGap) * 1000, 3000) // Cap at 3s to prevent timeout
                 }
 
                 let randomDelayMs = 1000 // default additional 1s
                 if (settings.randomTimeGap) {
-                    randomDelayMs = Math.min(parseInt(settings.randomTimeGap) * 1000, 3000) // Cap at 3s
+                    randomDelayMs = Math.min(parseInt(settings.randomTimeGap) * 1000, 2000) // Cap at 2s to prevent timeout
                 }
 
                 const delay = baseDelayMs + Math.floor(Math.random() * randomDelayMs)

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { processReminders } from '@/lib/reminder-service'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization')

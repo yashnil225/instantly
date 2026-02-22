@@ -39,44 +39,44 @@ export async function calculateAndUpdateHealthScore(accountId: string): Promise<
 
     // Get last 7 days of activity
     const lastWeekLogs = account.warmupLogs || []
-    
+
     // Calculate metrics
     const totalSent = lastWeekLogs.filter(l => l.action === 'send' || l.action === 'pool_send').length
     const totalReplies = lastWeekLogs.filter(l => l.action === 'auto_reply' || l.action === 'reply').length
     const totalBounces = account.bounceCount || 0
     const isPoolParticipant = account.warmupPoolOptIn
-    
+
     // Calculate reply rate
     const replyRate = totalSent > 0 ? (totalReplies / totalSent) * 100 : 0
-    
+
     // Base score starts at 100
     let healthScore = 100
-    
+
     // Positive factors
     if (totalSent > 0) {
         // +1 for each successful send (max +10)
         healthScore += Math.min(totalSent * 0.5, 10)
     }
-    
+
     if (replyRate >= 30) {
         // Good reply rate bonus
         healthScore += 5
     }
-    
+
     if (isPoolParticipant) {
         // Pool participation bonus
         healthScore += 3
     }
-    
+
     // Negative factors
     if (totalBounces > 0) {
         // -10 per bounce
         healthScore -= Math.min(totalBounces * 10, 30)
     }
-    
+
     // Ensure score stays within 0-100 range
     healthScore = Math.max(0, Math.min(100, Math.round(healthScore)))
-    
+
     // Only update if significantly different (avoid tiny fluctuations)
     if (Math.abs(healthScore - (account.healthScore || 100)) >= 1) {
         await prisma.emailAccount.update({
@@ -84,7 +84,7 @@ export async function calculateAndUpdateHealthScore(accountId: string): Promise<
             data: { healthScore }
         })
     }
-    
+
     return healthScore
 }
 
@@ -116,14 +116,14 @@ async function logWarmupActivity(
 export function calculateWarmupLimit(account: any): number {
     // Use configured warmup goal even if disabled, so UI shows correct target
     const maxLimit = account.warmupDailyLimit ?? DEFAULT_CONFIG.maxLimit  // Default: 50
-    
+
     if (!account.warmupEnabled) {
         return maxLimit
     }
 
     // Use account's configured warmup settings with proper defaults from schema
     const dailyIncrease = account.warmupDailyIncrease ?? DEFAULT_CONFIG.increasePerDay  // Default: 5
-    
+
     // Use configured start limit or default to 10
     const startLimit = account.warmupStartLimit ?? DEFAULT_CONFIG.startLimit  // Default: 10
 
@@ -137,7 +137,7 @@ export function calculateWarmupLimit(account: any): number {
     return Math.min(calculatedLimit, maxLimit)
 }
 
-export async function sendWarmupEmails() {
+export async function sendWarmupEmails(guard?: { isTimedOut: () => boolean, elapsedSec: () => number }) {
     // Get all accounts with warmup enabled
     const accounts = await prisma.emailAccount.findMany({
         where: {
@@ -154,6 +154,11 @@ export async function sendWarmupEmails() {
     }
 
     for (const account of accounts) {
+        if (guard?.isTimedOut()) {
+            console.warn(`[Warmup] Approaching timeout (${guard.elapsedSec()}s). Stopping warmup sends early.`)
+            break
+        }
+
         try {
             // Re-fetch account to get latest state and prevent race conditions
             const freshAccount = await prisma.emailAccount.findUnique({
@@ -193,12 +198,17 @@ export async function sendWarmupEmails() {
             })
 
             for (const recipient of otherAccounts) {
+                if (guard?.isTimedOut()) {
+                    console.warn(`[Warmup] Timeout in recipient loop (${guard.elapsedSec()}s). Breaking.`)
+                    break
+                }
+
                 await sendWarmupEmail(freshAccount, recipient)
 
                 // Update warmup sent count and timestamp
                 await prisma.emailAccount.update({
                     where: { id: freshAccount.id },
-                    data: { 
+                    data: {
                         warmupSentToday: { increment: 1 },
                         lastWarmupSentAt: new Date()
                     }

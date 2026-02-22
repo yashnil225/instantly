@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { sendWarmupEmails } from '@/lib/warmup'
 import { runPoolWarmupCycle } from '@/lib/warmup-pool'
 import { processWarmupMaintenance } from '@/lib/warmup-detection'
+import { createTimeoutGuard } from '@/lib/timeout-guard'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // Set max duration for Vercel
@@ -17,22 +18,38 @@ export async function GET(request: Request) {
     }
 
     console.log('[Cron] Starting warmup tasks (sending + pool + maintenance)...')
+    const guard = createTimeoutGuard(240_000) // 240s safety margin
+    const results: Record<string, any> = {}
 
     try {
         // 1. Send system warmup emails (internal peer-to-peer)
-        await sendWarmupEmails()
+        await sendWarmupEmails(guard)
+        results.warmupSent = true
 
         // 2. Run Pool Warmup Cycle (cross-domain exchange)
-        const poolResults = await runPoolWarmupCycle()
-        console.log(`[Cron] Pool Warmup: Sent ${poolResults.sent}, Errors ${poolResults.errors}`)
+        if (!guard.isTimedOut()) {
+            const poolResults = await runPoolWarmupCycle(guard)
+            console.log(`[Cron] Pool Warmup: Sent ${poolResults.sent}, Errors ${poolResults.errors}`)
+            results.pool = poolResults
+        } else {
+            console.warn(`[Cron] Skipping pool warmup — approaching timeout (${guard.elapsedSec()}s)`)
+            results.pool = { skipped: true }
+        }
 
         // 3. Run maintenance (Spam rescue + Auto-replies)
-        const result = await processWarmupMaintenance()
+        if (!guard.isTimedOut()) {
+            const maintenanceResult = await processWarmupMaintenance()
+            results.maintenance = maintenanceResult
+        } else {
+            console.warn(`[Cron] Skipping maintenance — approaching timeout (${guard.elapsedSec()}s)`)
+            results.maintenance = { skipped: true }
+        }
 
         return NextResponse.json({
             success: true,
             timestamp: new Date().toISOString(),
-            ...result
+            elapsedSeconds: guard.elapsedSec(),
+            ...results
         })
     } catch (error: any) {
         console.error('[Cron] Warmup failed:', error)

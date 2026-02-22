@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { syncAllAccounts } from '@/lib/imap-sync'
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 300 // Vercel Pro max timeout
+
 export async function POST() {
     try {
         await syncAllAccounts()

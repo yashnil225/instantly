@@ -214,7 +214,7 @@ export async function syncReplies(account: EmailAccount) {
 
 export async function syncAllAccounts() {
     const { createTimeoutGuard } = await import('./timeout-guard')
-    const guard = createTimeoutGuard(240_000) // 240s safety margin
+    const guard = createTimeoutGuard(50_000) // 50s budget for Hobby plan (60s hard limit)
 
     const accounts = await prisma.emailAccount.findMany({
         where: {

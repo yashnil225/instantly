@@ -3,7 +3,7 @@ import { processBatch } from '@/lib/sender'
 import { waitUntil } from '@vercel/functions'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+export const maxDuration = 60 // Hobby plan hard limit
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization')

@@ -270,8 +270,8 @@ export async function runPoolWarmupCycle(guard?: { isTimedOut: () => boolean, el
                     errors++
                 }
 
-                // Rate limiting - wait between sends
-                await new Promise(r => setTimeout(r, 2000))
+                // Rate limiting - smaller delay to save time budget
+                await new Promise(r => setTimeout(r, 500))
             }
         }
     } catch (error) {

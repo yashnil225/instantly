@@ -6,7 +6,11 @@ import { createTimeoutGuard } from '@/lib/timeout-guard'
 import { waitUntil } from '@vercel/functions'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+export const maxDuration = 60 // Hobby plan hard limit
+
+// Simple phase rotation: each cron invocation runs ONE phase to stay under 60s.
+// Phase rotates via a module-level counter persisted across warm starts.
+let lastPhase = 0
 
 export async function GET(request: Request) {
     const authHeader = request.headers.get('authorization')
@@ -18,40 +22,40 @@ export async function GET(request: Request) {
         }
     }
 
-    // Respond IMMEDIATELY so cron-job.org (30s timeout) doesn't kill the connection.
-    // waitUntil keeps the Vercel function alive for up to maxDuration (300s) in the background.
+    // Respond IMMEDIATELY so cron-job.org doesn't kill the connection.
     waitUntil(runWarmupTasks())
 
     return NextResponse.json({ success: true, message: 'Warmup tasks started in background' })
 }
 
 async function runWarmupTasks() {
-    console.log('[Warmup] Starting background warmup tasks...')
-    const guard = createTimeoutGuard(240_000) // 240s safety margin
+    // 50s guard = 10s buffer before Hobby 60s hard kill
+    const guard = createTimeoutGuard(50_000)
+
+    // Rotate through phases: 1 → 2 → 3 → 1 → ...
+    lastPhase = (lastPhase % 3) + 1
+    const phase = lastPhase
+
+    console.log(`[Warmup] Running phase ${phase}/3 (50s budget)...`)
 
     try {
-        // 1. Send system warmup emails (internal peer-to-peer)
-        await sendWarmupEmails(guard)
-        console.log(`[Warmup] Phase 1 done (${guard.elapsedSec()}s)`)
+        switch (phase) {
+            case 1:
+                await sendWarmupEmails(guard)
+                console.log(`[Warmup] Phase 1 (send) done (${guard.elapsedSec()}s)`)
+                break
 
-        // 2. Run Pool Warmup Cycle (cross-domain exchange)
-        if (!guard.isTimedOut()) {
-            const poolResults = await runPoolWarmupCycle(guard)
-            console.log(`[Warmup] Phase 2 done — Sent ${poolResults.sent}, Errors ${poolResults.errors} (${guard.elapsedSec()}s)`)
-        } else {
-            console.warn(`[Warmup] Skipping pool cycle — timeout approaching (${guard.elapsedSec()}s)`)
+            case 2:
+                const poolResults = await runPoolWarmupCycle(guard)
+                console.log(`[Warmup] Phase 2 (pool) done — Sent ${poolResults.sent}, Errors ${poolResults.errors} (${guard.elapsedSec()}s)`)
+                break
+
+            case 3:
+                await processWarmupMaintenance(guard)
+                console.log(`[Warmup] Phase 3 (maintenance) done (${guard.elapsedSec()}s)`)
+                break
         }
-
-        // 3. Run maintenance (spam rescue + auto-replies)
-        if (!guard.isTimedOut()) {
-            await processWarmupMaintenance()
-            console.log(`[Warmup] Phase 3 done (${guard.elapsedSec()}s)`)
-        } else {
-            console.warn(`[Warmup] Skipping maintenance — timeout approaching (${guard.elapsedSec()}s)`)
-        }
-
-        console.log(`[Warmup] All tasks completed in ${guard.elapsedSec()}s`)
     } catch (error: any) {
-        console.error('[Warmup] Background task failed:', error?.message || error)
+        console.error(`[Warmup] Phase ${phase} failed:`, error?.message || error)
     }
 }

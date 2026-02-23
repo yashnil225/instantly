@@ -36,16 +36,16 @@ const PERMANENT_ERRORS = ['EAUTH', 'ENOTFOUND', 'Authentication', 'invalid crede
 
 function isTransientError(error: any): boolean {
     const errorStr = String(error?.message || error).toLowerCase()
-    return TRANSIENT_ERRORS.some(e => errorStr.includes(e.toLowerCase())) || 
-           error?.code === 'ECONNRESET' ||
-           error?.code === 'ETIMEDOUT'
+    return TRANSIENT_ERRORS.some(e => errorStr.includes(e.toLowerCase())) ||
+        error?.code === 'ECONNRESET' ||
+        error?.code === 'ETIMEDOUT'
 }
 
 function isPermanentError(error: any): boolean {
     const errorStr = String(error?.message || error).toLowerCase()
     return PERMANENT_ERRORS.some(e => errorStr.includes(e.toLowerCase())) ||
-           error?.code === 'EAUTH' ||
-           error?.code === 'ENOTFOUND'
+        error?.code === 'EAUTH' ||
+        error?.code === 'ENOTFOUND'
 }
 
 /**
@@ -57,7 +57,7 @@ const endImap = (imapConnection: Imap) => {
             resolve()
             return
         }
-        
+
         const timeout = setTimeout(() => {
             imapConnection.destroy()
             resolve()
@@ -67,7 +67,7 @@ const endImap = (imapConnection: Imap) => {
             clearTimeout(timeout)
             resolve()
         })
-        
+
         imapConnection.once('close', () => {
             clearTimeout(timeout)
             resolve()
@@ -88,33 +88,33 @@ async function withRetry<T>(
     operationName: string
 ): Promise<T> {
     let lastError: any
-    
+
     for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
         try {
             return await fn(attempt)
         } catch (error: any) {
             lastError = error
-            
+
             if (isPermanentError(error)) {
                 console.error(`[Warmup-IMAP] Permanent error for ${accountEmail} (${operationName}):`, error.message || error)
                 throw error
             }
-            
+
             if (isTransientError(error)) {
                 const delay = RETRY_DELAYS[attempt] || RETRY_DELAYS[RETRY_DELAYS.length - 1]
                 console.warn(`[Warmup-IMAP] Connection blip for ${accountEmail} (${operationName}), retry ${attempt + 1}/${RETRY_ATTEMPTS} in ${delay}ms...`)
-                
+
                 if (attempt < RETRY_ATTEMPTS - 1) {
                     await new Promise(resolve => setTimeout(resolve, delay))
                     continue
                 }
             }
-            
+
             console.error(`[Warmup-IMAP] ${operationName} failed for ${accountEmail} after ${attempt + 1} attempts:`, error.message || error)
             throw error
         }
     }
-    
+
     throw lastError
 }
 
@@ -129,12 +129,12 @@ function connectImap(config: ImapConfig): Promise<Imap> {
             host: config.host,
             port: config.port,
             tls: config.tls,
-            tlsOptions: { 
+            tlsOptions: {
                 rejectUnauthorized: false,
                 minVersion: 'TLSv1.2'
             },
-            connTimeout: 15000,
-            authTimeout: 15000
+            connTimeout: 8000,  // Reduced from 15s for Hobby plan budget
+            authTimeout: 8000   // Reduced from 15s for Hobby plan budget
         })
 
         imap.once('ready', () => resolve(imap))
@@ -373,28 +373,32 @@ import { processWarmupReplies } from './warmup-reply'
  * Process warmup maintenance for all active warmup accounts
  * (Spam rescue + Auto-replies)
  */
-export async function processWarmupMaintenance() {
+export async function processWarmupMaintenance(guard?: { isTimedOut: () => boolean, elapsedSec: () => number }) {
     const startTime = Date.now()
 
-    // Pick 3 oldest warmup accounts to prevent timeouts
+    // Pick 2 oldest warmup accounts (reduced from 3) to fit in Hobby 60s budget
     const accounts = await prisma.emailAccount.findMany({
         where: {
             warmupEnabled: true,
             status: 'active'
         },
         orderBy: { lastSyncedAt: 'asc' },
-        take: 3
+        take: 2
     })
 
     console.log(`[Warmup] Starting maintenance for ${accounts.length} accounts...`)
-    
-    const results = await Promise.all(accounts.map(async (account, index) => {
-        try {
-            // Stagger the start of each account's maintenance
-            if (index > 0) {
-                await new Promise(resolve => setTimeout(resolve, index * 2000))
-            }
 
+    let totalRescued = 0
+    let totalReplied = 0
+
+    // Process sequentially so the guard can stop us between accounts
+    for (const account of accounts) {
+        if (guard?.isTimedOut()) {
+            console.warn(`[Warmup] Maintenance stopping early — timeout (${guard.elapsedSec()}s)`)
+            break
+        }
+
+        try {
             // Update timestamp immediately
             await prisma.emailAccount.update({
                 where: { id: account.id },
@@ -403,30 +407,23 @@ export async function processWarmupMaintenance() {
 
             // 1. Rescue from spam
             const rescued = await rescueFromSpam(account)
+            totalRescued += rescued
+
+            if (guard?.isTimedOut()) break
 
             // Small delay between ops
-            await new Promise(resolve => setTimeout(resolve, 1000))
+            await new Promise(resolve => setTimeout(resolve, 500))
 
             // 2. Detect and reply to warmup emails
             const detection = await detectWarmupEmails(account)
-            let replied = 0
             if (detection.needsReply.length > 0) {
-                replied = await processWarmupReplies(account, detection.needsReply)
+                const replied = await processWarmupReplies(account, detection.needsReply)
+                totalReplied += replied
             }
-            
-            return { rescued, replied }
         } catch (error) {
             console.error(`[Warmup] Maintenance failed for ${account.email}:`, error)
-            return { rescued: 0, replied: 0 }
         }
-    }))
-
-    let totalRescued = 0
-    let totalReplied = 0
-    results.forEach(res => {
-        totalRescued += res.rescued
-        totalReplied += res.replied
-    })
+    }
 
     return { totalRescued, totalReplied, completedBatch: true, elapsed: (Date.now() - startTime) }
 }

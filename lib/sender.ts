@@ -6,6 +6,16 @@ import nodemailer from 'nodemailer'
 import { AutomationFilter } from './replies'
 import { replaceVariables } from './variables'
 
+/** Returns known SMTP defaults for major providers to prevent localhost fallback */
+function getSmtpDefaults(provider: string): { host: string; port: number } | null {
+    switch (provider?.toLowerCase()) {
+        case 'google': return { host: 'smtp.gmail.com', port: 587 }
+        case 'microsoft': return { host: 'smtp.office365.com', port: 587 }
+        case 'outlook': return { host: 'smtp.office365.com', port: 587 }
+        default: return null
+    }
+}
+
 // Helper to rewrite links
 function injectTracking(html: string, eventId: string, baseUrl: string) {
     let newHtml = html
@@ -105,6 +115,13 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 if (filter?.emailAccountId && acc.id !== filter.emailAccountId) return false
 
                 if (acc.status !== 'active') return false
+
+                // Skip accounts with no resolvable SMTP host — they'll always fail
+                const resolvedHost = acc.smtpHost || getSmtpDefaults(acc.provider)?.host
+                if (!resolvedHost) {
+                    console.warn(`[Sender] Skipping ${acc.email} — no SMTP host configured`)
+                    return false
+                }
 
                 // Check warmup mode
                 if (acc.warmupEnabled) {
@@ -345,11 +362,20 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 }
 
                 // Always use SMTP with app password (OAuth2 removed for stability)
+                // Use provider defaults as fallback if host/port are missing in DB
+                const smtpDefaults = getSmtpDefaults(account.provider)
+                const smtpHost = account.smtpHost || smtpDefaults?.host
+                const smtpPort = account.smtpPort || smtpDefaults?.port || 587
+
+                if (!smtpHost) {
+                    throw new Error(`No SMTP host configured for ${account.email} (provider: ${account.provider}). Please update the account settings.`)
+                }
+
                 const transporter = nodemailer.createTransport({
-                    host: account.smtpHost!,
-                    port: account.smtpPort!,
-                    secure: account.smtpPort === 465,
-                    auth: { user: account.smtpUser!, pass: account.smtpPass! }
+                    host: smtpHost,
+                    port: smtpPort,
+                    secure: smtpPort === 465,
+                    auth: { user: account.smtpUser || account.email, pass: account.smtpPass! }
                 })
 
                 const mailOptions: any = {

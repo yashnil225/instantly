@@ -80,8 +80,8 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, sampleLea
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     to: testEmail,
-                    subject: subject || 'Test Email',
-                    body: body || 'This is a test email.'
+                    subject: previewSubject || 'Test Email',
+                    body: previewBody || 'This is a test email.'
                 })
             })
 

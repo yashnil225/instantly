@@ -32,13 +32,26 @@ export async function POST(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
         }
 
+        const smtpDefaultsByProvider: Record<string, { host: string; port: number }> = {
+            google: { host: 'smtp.gmail.com', port: 587 },
+            microsoft: { host: 'smtp.office365.com', port: 587 },
+            outlook: { host: 'smtp.office365.com', port: 587 },
+        }
+        const defaults = smtpDefaultsByProvider[account.provider?.toLowerCase() ?? '']
+        const smtpHost = account.smtpHost || defaults?.host
+        const smtpPort = account.smtpPort || defaults?.port || 587
+
+        if (!smtpHost) {
+            return NextResponse.json({ error: 'No SMTP host configured for this account.', details: 'Please update your account settings to include the SMTP host.' }, { status: 400 })
+        }
+
         const nodemailer = (await import('nodemailer')).default
         const transporter = nodemailer.createTransport({
-            host: account.smtpHost!,
-            port: account.smtpPort!,
-            secure: account.smtpPort === 465,
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
             auth: {
-                user: account.smtpUser!,
+                user: account.smtpUser || account.email,
                 pass: account.smtpPass!
             }
         })

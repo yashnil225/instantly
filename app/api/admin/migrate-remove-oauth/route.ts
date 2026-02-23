@@ -13,7 +13,7 @@ import { prisma } from '@/lib/prisma'
  * POST /api/admin/migrate-remove-oauth
  */
 
-export async function POST(request: Request) {
+export async function POST(_request: Request) {
     // Check authentication
     const session = await auth()
     if (!session?.user?.id) {
@@ -30,6 +30,7 @@ export async function POST(request: Request) {
         imapFixed: 0,
         gmailImapDefaults: 0,
         gmailSmtpDefaults: 0,
+        microsoftDefaults: 0,
         errorsCleared: 0,
         errors: [] as string[]
     }
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
 
         // Step 2: Copy smtpPass to imapPass where imapPass is empty
         console.log('[Migrate] Step 2: Fixing IMAP credentials...')
-        
+
         const accountsNeedingImapFix = await prisma.emailAccount.findMany({
             where: {
                 smtpPass: { not: null },
@@ -126,14 +127,16 @@ export async function POST(request: Request) {
             }
         }
 
-        // Step 4: Set default SMTP settings for Gmail accounts
+        // Step 4: Set default SMTP settings for Gmail accounts (force re-apply to catch partial migrations)
         console.log('[Migrate] Step 4: Setting default SMTP settings for Gmail accounts...')
         const gmailAccountsNeedingSmtp = await prisma.emailAccount.findMany({
             where: {
                 provider: 'google',
                 OR: [
                     { smtpHost: null },
-                    { smtpHost: '' }
+                    { smtpHost: '' },
+                    { smtpUser: null },
+                    { smtpUser: '' }
                 ]
             },
             select: {
@@ -149,11 +152,14 @@ export async function POST(request: Request) {
                     data: {
                         smtpHost: 'smtp.gmail.com',
                         smtpPort: 587,
-                        smtpUser: account.email
+                        smtpUser: account.email, // always use the email as the SMTP user for Gmail
+                        imapHost: 'imap.gmail.com',
+                        imapPort: 993,
+                        imapUser: account.email
                     }
                 })
                 results.gmailSmtpDefaults++
-                console.log(`[Migrate] ✅ Set SMTP defaults for ${account.email}`)
+                console.log(`[Migrate] ✅ Set SMTP/IMAP defaults for ${account.email}`)
             } catch (err: any) {
                 results.errors.push(`Failed to set SMTP defaults for ${account.email}: ${err.message}`)
                 console.error(`[Migrate] ❌ Failed to set SMTP defaults for ${account.email}:`, err)
@@ -176,6 +182,46 @@ export async function POST(request: Request) {
         })
         results.errorsCleared = errorClearResult.count
         console.log(`[Migrate] ✅ Cleared ${errorClearResult.count} OAuth-related error states`)
+
+        // Step 6: Set default SMTP/IMAP settings for Microsoft/Outlook accounts
+        console.log('[Migrate] Step 6: Setting default SMTP/IMAP settings for Microsoft accounts...')
+        const microsoftAccountsNeedingDefaults = await prisma.emailAccount.findMany({
+            where: {
+                provider: { in: ['microsoft', 'outlook'] },
+                OR: [
+                    { smtpHost: null },
+                    { smtpHost: '' },
+                    { smtpUser: null },
+                    { smtpUser: '' }
+                ]
+            },
+            select: {
+                id: true,
+                email: true
+            }
+        })
+
+        for (const account of microsoftAccountsNeedingDefaults) {
+            try {
+                await prisma.emailAccount.update({
+                    where: { id: account.id },
+                    data: {
+                        smtpHost: 'smtp.office365.com',
+                        smtpPort: 587,
+                        smtpUser: account.email,
+                        imapHost: 'outlook.office365.com',
+                        imapPort: 993,
+                        imapUser: account.email
+                    }
+                })
+                results.microsoftDefaults++
+                console.log(`[Migrate] ✅ Set Microsoft defaults for ${account.email}`)
+            } catch (err: any) {
+                results.errors.push(`Failed to set Microsoft defaults for ${account.email}: ${err.message}`)
+                console.error(`[Migrate] ❌ Failed to set Microsoft defaults for ${account.email}:`, err)
+            }
+        }
+
 
         const elapsed = Date.now() - startTime
         console.log(`[Migrate] ✅ Migration completed in ${elapsed}ms`)

@@ -11,9 +11,10 @@ interface ConnectAccountModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     onAccountConnected: () => void
+    workspaceId?: string | null // If set, the new account is auto-assigned to this workspace
 }
 
-export function ConnectAccountModal({ open, onOpenChange, onAccountConnected }: ConnectAccountModalProps) {
+export function ConnectAccountModal({ open, onOpenChange, onAccountConnected, workspaceId }: ConnectAccountModalProps) {
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1) // 1: Providers, 2: Choice, 3: OAuth Instructions, 4: App Password Form
     const [provider, setProvider] = useState<"google" | "outlook" | "custom" | null>(null)
     const [loading, setLoading] = useState(false)
@@ -37,7 +38,7 @@ export function ConnectAccountModal({ open, onOpenChange, onAccountConnected }: 
 
         try {
             // Construct payload based on provider
-            const payload = {
+            const payload: any = {
                 ...formData,
                 provider,
                 // Use defaults for Google/Outlook if not custom, or let user edit them in a real app
@@ -46,6 +47,11 @@ export function ConnectAccountModal({ open, onOpenChange, onAccountConnected }: 
                 imapUser: formData.email,
                 smtpPass: formData.password,
                 imapPass: formData.password
+            }
+
+            // Auto-assign to the currently-selected workspace if provided
+            if (workspaceId && workspaceId !== 'all') {
+                payload.workspaceIds = [workspaceId]
             }
 
             const res = await fetch("/api/accounts", {

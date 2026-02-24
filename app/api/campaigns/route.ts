@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const singleWorkspaceId = searchParams.get('workspaceId')
     const multipleWorkspaceIdsParam = searchParams.get('workspaceIds')
     const multipleWorkspaceIds = multipleWorkspaceIdsParam ? multipleWorkspaceIdsParam.split(',') : []
-    
+
     const workspaceIds = singleWorkspaceId && singleWorkspaceId !== 'all'
         ? [singleWorkspaceId]
         : multipleWorkspaceIds
@@ -70,9 +70,9 @@ export async function GET(request: Request) {
 
             return {
                 ...campaign,
-                openRate: sentCount > 0 ? Math.min(Math.round((openCount / sentCount) * 100), 100) : 0,
-                clickRate: sentCount > 0 ? Math.min(Math.round((clickCount / sentCount) * 100), 100) : 0,
-                replyRate: sentCount > 0 ? Math.min(Math.round((replyCount / sentCount) * 100), 100) : 0,
+                openRate: !campaign.trackOpens ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((openCount / sentCount) * 100), 100) : 0}%`,
+                clickRate: !campaign.trackLinks ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((clickCount / sentCount) * 100), 100) : 0}%`,
+                replyRate: `${sentCount > 0 ? Math.min(Math.round((replyCount / sentCount) * 100), 100) : 0}%`,
                 opportunities: replyCount // Opportunities = Replies
             }
         })

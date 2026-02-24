@@ -51,7 +51,7 @@ export async function GET(
 
         // Fetch reply events with lead data for auto-reply filtering and classification
         const replyEvents = await prisma.sendingEvent.findMany({
-            where: { 
+            where: {
                 campaignId: campaignId,
                 type: 'reply'
             },
@@ -98,7 +98,7 @@ export async function GET(
         // Calculate positive reply rate (if all replies are classified)
         let positiveReplyRate = '0%'
         if (!needsClassification && replyCount > 0) {
-            const positiveReplyCount = filteredReplyEvents.filter(e => 
+            const positiveReplyCount = filteredReplyEvents.filter(e =>
                 e.lead?.aiLabel && ['interested', 'meeting_booked'].includes(e.lead.aiLabel)
             ).length
             positiveReplyRate = Math.round((positiveReplyCount / replyCount) * 100) + '%'
@@ -195,7 +195,11 @@ export async function GET(
             leads: campaign.leads,
             sequences: campaign.sequences,
             _needsClassification: needsClassification,
-            _unclassifiedCount: unclassifiedReplies.length
+            _unclassifiedCount: unclassifiedReplies.length,
+            dailyLimit: campaign.dailyLimit,
+            trackOpens: campaign.trackOpens,
+            trackLinks: campaign.trackLinks,
+            stopOnReply: campaign.stopOnReply
         }
 
         return NextResponse.json(analyticsData)

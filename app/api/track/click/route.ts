@@ -37,12 +37,12 @@ export async function GET(request: Request) {
                         where: {
                             campaignId_date: {
                                 campaignId: sentEvent.campaignId,
-                                date: new Date(new Date().setHours(0, 0, 0, 0))
+                                date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
                             }
                         },
                         create: {
                             campaignId: sentEvent.campaignId,
-                            date: new Date(new Date().setHours(0, 0, 0, 0)),
+                            date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z'),
                             clicked: 1
                         },
                         update: {

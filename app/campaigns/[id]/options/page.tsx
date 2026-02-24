@@ -362,10 +362,30 @@ export default function CampaignOptionsPage() {
                             <Label className="text-white font-bold text-sm">Delivery Optimization</Label>
                             <span className="text-[10px] bg-green-900/40 text-green-400 border border-green-900/50 px-1.5 py-0.5 rounded">Recon</span>
                         </div>
-                        <p className="text-gray-500 text-xs">Disables open tracking</p>
+                        <p className="text-gray-500 text-xs">A/B Testing & text-only configuration</p>
                     </div>
                     <div className="w-2/3 flex flex-col items-end gap-3">
-                        <div className="flex items-center gap-2">
+                        <div className="w-[300px] flex items-center justify-between bg-[#111] p-2 rounded-lg border border-[#2a2a2a]">
+                            <label className="text-sm text-gray-300 font-medium ml-2">Auto optimize A/B testing</label>
+                            <Switch checked={autoOptimizeAZ} onCheckedChange={setAutoOptimizeAZ} />
+                        </div>
+
+                        {autoOptimizeAZ && (
+                            <div className="w-[300px] flex items-center justify-between">
+                                <label className="text-sm text-gray-300 font-medium">Winning Metric</label>
+                                <Select value={winningMetric} onValueChange={setWinningMetric}>
+                                    <SelectTrigger className="w-[150px] bg-[#0a0a0a] border-[#2a2a2a] h-8 text-xs">
+                                        <SelectValue placeholder="Select metric" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-[#1a1a1a] border-[#2a2a2a]">
+                                        <SelectItem value="opens">Open Rate</SelectItem>
+                                        <SelectItem value="clicks">Click Rate</SelectItem>
+                                        <SelectItem value="replies">Reply Rate</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
                             <Checkbox
                                 id="text-only"
                                 checked={sendAsTextOnly}

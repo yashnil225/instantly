@@ -89,7 +89,7 @@ export function RichEditor({ value, onChange, placeholder, leftActions }: RichEd
                     <div
                         ref={editorRef}
                         contentEditable
-                        className="w-full h-full text-foreground p-6 outline-none focus:outline-none whitespace-pre-wrap font-sans text-base leading-relaxed"
+                        className="w-full h-full text-foreground p-6 outline-none focus:outline-none whitespace-pre-wrap font-sans text-base leading-relaxed [&>div]:min-h-[1.5em] [&>p]:min-h-[1.5em] [&>p]:mb-2"
                         onInput={handleChange}
                         onBlur={handleChange}
                         style={{ minHeight: '100%' }}
@@ -107,7 +107,7 @@ export function RichEditor({ value, onChange, placeholder, leftActions }: RichEd
                     <ToolbarBtn icon={Strikethrough} onClick={() => exec('strikeThrough')} tooltip="Strikethrough" />
 
                     <div className="w-[1px] h-5 bg-border mx-2" />
-                    
+
                     <ToolbarBtn icon={AlignLeft} onClick={() => exec('justifyLeft')} tooltip="Align Left" />
                     <ToolbarBtn icon={AlignCenter} onClick={() => exec('justifyCenter')} tooltip="Align Center" />
                     <ToolbarBtn icon={AlignRight} onClick={() => exec('justifyRight')} tooltip="Align Right" />
@@ -124,13 +124,13 @@ export function RichEditor({ value, onChange, placeholder, leftActions }: RichEd
                 {/* Left Actions & Formatting Toggle */}
                 <div className="flex items-center gap-3">
                     {leftActions}
-                    
+
                     <div className="w-[1px] h-5 bg-border mx-1" />
-                    
-                    <ToolbarBtn 
-                        icon={ALargeSmall} 
-                        onClick={() => setShowFormatting(!showFormatting)} 
-                        tooltip="Formatting Options" 
+
+                    <ToolbarBtn
+                        icon={ALargeSmall}
+                        onClick={() => setShowFormatting(!showFormatting)}
+                        tooltip="Formatting Options"
                         active={showFormatting}
                     />
                 </div>
@@ -138,7 +138,7 @@ export function RichEditor({ value, onChange, placeholder, leftActions }: RichEd
                 {/* Right Side: Insertions */}
                 <div className="flex items-center gap-1">
                     <ToolbarBtn icon={Eraser} onClick={cleanHtml} tooltip="Clean HTML (Ctrl+Shift+F)" />
-                    
+
                     <ToolbarBtn icon={LinkIcon} onClick={() => {
                         const url = prompt("Enter Link URL:")
                         if (url) exec('createLink', url)

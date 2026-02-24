@@ -41,7 +41,7 @@ function injectTracking(html: string, eventId: string, baseUrl: string) {
 
 export async function processBatch(options: { filter?: AutomationFilter } = {}) {
     const startTime = Date.now()
-    const TIMEOUT_SAFETY_MARGIN = 240 * 1000 // 4 minutes
+    const TIMEOUT_SAFETY_MARGIN = 48 * 1000 // 48 seconds to aggressively avoid 60s Vercel limit
 
     const { filter } = options
     console.log("Starting batch processing...")
@@ -144,8 +144,21 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
         if (availableAccounts.length === 0) continue
 
-        // --- 4. Campaign Limit Check ---
-        if (campaign.dailyLimit && campaign.sentCount >= campaign.dailyLimit) continue
+        let campaignRemainingToday = Infinity
+        if (campaign.dailyLimit) {
+            const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+            const statsToday = await prisma.campaignStat.findUnique({
+                where: {
+                    campaignId_date: {
+                        campaignId: campaign.id,
+                        date: todayUTC
+                    }
+                }
+            })
+            if (statsToday && statsToday.sent >= campaign.dailyLimit) continue
+            if (statsToday) campaignRemainingToday = campaign.dailyLimit - statsToday.sent
+            else campaignRemainingToday = campaign.dailyLimit
+        }
 
         // --- 5. Find Due Leads with FILTERS ---
         const excludedStatuses = ['unsubscribed', 'bounced', 'sequence_complete']
@@ -183,7 +196,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     take: 1
                 }
             },
-            take: 10 // Tight batch to prevent Vercel timeout
+            take: 10 // Let's fetch 10 max, dynamically slice them down later
         })
 
         // Sort by priority if needed
@@ -200,8 +213,9 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
         // Filter out Blocklisted Emails
         candidateLeads = candidateLeads.filter(l => !blockedEmails.includes(l.email.toLowerCase()))
 
-        // Limit to small batch size to prevent timeouts
-        candidateLeads = candidateLeads.slice(0, 10) // Reduced from 20
+        // Limit to small batch size to prevent timeouts and enforce hard limits!
+        const dynamicLimit = Math.min(5, campaignRemainingToday)
+        candidateLeads = candidateLeads.slice(0, dynamicLimit)
 
         let sentForThisCampaign = 0
 
@@ -309,15 +323,61 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 // Select Variant
                 let subject = ""
                 let body = ""
+                let selectedVariantId = ""
                 // @ts-ignore
                 const variants = (step as any).variants
 
                 if (variants && variants.length > 0) {
-                    const variant = variants[Math.floor(Math.random() * variants.length)]
+                    let chosenVariant = variants[Math.floor(Math.random() * variants.length)]
+
+                    // Auto-Optimize A/B Testing Logic
+                    if (settings.autoOptimizeAZ && settings.winningMetric && sentForThisCampaign > 10) {
+                        try {
+                            const variantStats = await Promise.all(variants.map(async (v: any) => {
+                                const sendingEvents = await prisma.sendingEvent.findMany({
+                                    where: {
+                                        campaignId: campaign.id,
+                                        metadata: { contains: `"variantId":"${v.id}"` }
+                                    },
+                                    include: { lead: true }
+                                })
+
+                                const totalSent = sendingEvents.filter(e => e.type === 'sent').length
+                                if (totalSent < 5) return { variant: v, score: 0, sent: totalSent } // Needs minimum sample size
+
+                                let opens = sendingEvents.filter(e => e.type === 'open').length
+                                let clicks = sendingEvents.filter(e => e.type === 'click').length
+                                let replies = sendingEvents.filter(e => e.type === 'reply').length
+
+                                let score = 0
+                                if (settings.winningMetric === 'Open Rate' && totalSent > 0) score = opens / totalSent
+                                else if (settings.winningMetric === 'Click Rate' && totalSent > 0) score = clicks / totalSent
+                                else if (settings.winningMetric === 'Reply Rate' && totalSent > 0) score = replies / totalSent
+
+                                return { variant: v, score, sent: totalSent }
+                            }))
+
+                            // Find variant with highest score, fallback to random if all scores are 0 or tied
+                            const maxScoreStat = variantStats.reduce((max, current) => current.score > max.score ? current : max, variantStats[0])
+
+                            // Only use the optimized winner if the score is actually higher than 0 and there's enough data
+                            if (maxScoreStat && maxScoreStat.score > 0 && maxScoreStat.sent >= 5) {
+                                // 80/20 exploitation/exploration: 80% chance to pick best, 20% to pick random
+                                if (Math.random() < 0.8) {
+                                    chosenVariant = maxScoreStat.variant
+                                }
+                            }
+
+                        } catch (e) {
+                            console.error(`[Sender] Failed to auto-optimize variant for step ${step.id}`, e)
+                        }
+                    }
+
                     // @ts-ignore
-                    subject = variant.subject || ""
+                    subject = chosenVariant.subject || ""
                     // @ts-ignore
-                    body = variant.body
+                    body = chosenVariant.body
+                    selectedVariantId = chosenVariant.id
                 } else {
                     // @ts-ignore
                     subject = step.subject || ""
@@ -338,12 +398,18 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         campaignId: campaign.id,
                         leadId: lead.id,
                         emailAccountId: account.id,
-                        metadata: JSON.stringify({ accountId: account.id, subject, step: nextStepNumber })
+                        metadata: JSON.stringify({ accountId: account.id, subject, step: nextStepNumber, variantId: selectedVariantId })
                     }
                 })
 
                 // Construct Email Body (Text vs HTML)
                 let finalHtml: string | undefined = `${body}`
+
+                // If it's plain text without block tags, convert newlines to <br /> to prevent cramped spacing
+                if (finalHtml && !finalHtml.includes('<p') && !finalHtml.includes('<div') && !finalHtml.includes('<br')) {
+                    finalHtml = finalHtml.replace(/\n/g, '<br />')
+                }
+
                 let finalText: string | undefined = undefined
 
                 // Check Text-Only Settings
@@ -407,7 +473,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     }),
                     prisma.sendingEvent.update({
                         where: { id: sentEvent.id },
-                        data: { type: 'sent', messageId }
+                        data: { type: 'sent', messageId, details: finalHtml || finalText }
                     }),
                     prisma.campaign.update({
                         where: { id: campaign.id },
@@ -418,8 +484,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         data: { sentToday: { increment: 1 } }
                     }),
                     prisma.campaignStat.upsert({
-                        where: { campaignId_date: { campaignId: campaign.id, date: new Date(new Date().setHours(0, 0, 0, 0)) } },
-                        create: { campaignId: campaign.id, date: new Date(new Date().setHours(0, 0, 0, 0)), sent: 1 },
+                        where: { campaignId_date: { campaignId: campaign.id, date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z') } },
+                        create: { campaignId: campaign.id, date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z'), sent: 1 },
                         update: { sent: { increment: 1 } }
                     })
                 ])
@@ -465,14 +531,28 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 console.error(`Failed to send to ${lead.email}`, error)
                 errors++
 
-                // Log error to the account to surface in UI
-                await prisma.emailAccount.update({
-                    where: { id: account.id },
-                    data: {
-                        status: 'error',
-                        errorDetail: `Sending failed: ${error.message || 'Unknown SMTP error'}`
-                    }
-                }).catch(e => console.error('Failed to update account error status', e))
+                const errorMessage = error.message || 'Unknown SMTP error'
+                // Handle Google's specifically shifting "Daily user sending quota" and "Daily user sending limit" outputs
+                const isDailyLimitError = errorMessage.includes('550 5.4.5') || errorMessage.includes('Daily user sending quota exceeded') || errorMessage.includes('Daily user sending limit exceeded')
+
+                if (isDailyLimitError) {
+                    console.warn(`[Sender] Account ${account.email} hit provider daily limit. Maxing out sentToday to pause until tomorrow.`)
+                    await prisma.emailAccount.update({
+                        where: { id: account.id },
+                        data: {
+                            sentToday: account.dailyLimit // Ensure no more sends today without triggering permanent error
+                        }
+                    }).catch(e => console.error('Failed to update account limit status', e))
+                } else {
+                    // Log error to the account to surface in UI
+                    await prisma.emailAccount.update({
+                        where: { id: account.id },
+                        data: {
+                            status: 'error',
+                            errorDetail: `Sending failed: ${errorMessage}`
+                        }
+                    }).catch(e => console.error('Failed to update account error status', e))
+                }
             }
         }
 

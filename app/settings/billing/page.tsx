@@ -15,7 +15,7 @@ export default function BillingPage() {
     const { status, update } = useSession()
     const { toast } = useToast()
     const [leadCount, setLeadCount] = useState<number | null>(null)
-    const [emailCount] = useState<number>(0)
+    const [emailCount, setEmailCount] = useState<number>(0)
     const [currentPlan, setCurrentPlan] = useState<string>("trial")
     // const [planLoading, setPlanLoading] = useState(true)
 
@@ -42,8 +42,9 @@ export default function BillingPage() {
             if (billingRes.ok) {
                 const data = await billingRes.json()
                 setCurrentPlan(data.plan || "trial")
-                // In a real app, email usage would come from billing stats
-                // For demo, we leave emailCount as 0 or fetch if available
+                if (data.emailCount !== undefined) {
+                    setEmailCount(data.emailCount)
+                }
             }
         } catch (error) {
             console.error("Failed to load billing data:", error)

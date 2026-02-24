@@ -18,7 +18,38 @@ export async function GET() {
             }
         })
 
-        return NextResponse.json(user)
+        const startOfMonth = new Date()
+        startOfMonth.setDate(1)
+        startOfMonth.setHours(0, 0, 0, 0)
+
+        const stats = await prisma.campaignStat.aggregate({
+            _sum: {
+                sent: true
+            },
+            where: {
+                date: {
+                    gte: startOfMonth
+                },
+                campaign: {
+                    campaignWorkspaces: {
+                        some: {
+                            workspace: {
+                                members: {
+                                    some: {
+                                        userId: session.user.id
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        return NextResponse.json({
+            ...user,
+            emailCount: stats._sum.sent || 0
+        })
     } catch (error) {
         console.error("[BILLING GET ERROR]:", error)
         return NextResponse.json({ error: "Internal server error" }, { status: 500 })

@@ -151,6 +151,7 @@ export async function syncReplies(account: EmailAccount) {
                             })
 
                             if (sentEvent) {
+                                const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
                                 await prisma.$transaction([
                                     prisma.sendingEvent.create({
                                         data: {
@@ -162,7 +163,12 @@ export async function syncReplies(account: EmailAccount) {
                                         }
                                     }),
                                     prisma.lead.update({ where: { id: lead.id }, data: { status: 'bounced' } }),
-                                    prisma.campaign.update({ where: { id: sentEvent.campaignId }, data: { bounceCount: { increment: 1 } } })
+                                    prisma.campaign.update({ where: { id: sentEvent.campaignId }, data: { bounceCount: { increment: 1 } } }),
+                                    prisma.campaignStat.upsert({
+                                        where: { campaignId_date: { campaignId: sentEvent.campaignId, date: todayUTC } },
+                                        create: { campaignId: sentEvent.campaignId, date: todayUTC, bounced: 1, sent: 0, opened: 0, clicked: 0, replied: 0 },
+                                        update: { bounced: { increment: 1 } }
+                                    })
                                 ])
                                 console.log(`⚠️ Bounce detected: ${bouncedEmail}`)
                             }

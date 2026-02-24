@@ -59,7 +59,7 @@ async function runReplyCheck() {
                 const result = await syncAccountInbox(account)
                 totalReplies += result.replies
                 totalBounces += result.bounces
-                console.log(`[check-replies] ${account.email}: +${result.replies} replies, +${result.bounces} bounces`)
+                console.log(`[check-replies] ${account.email}: +${result.replies} replies, +${result.bounces} bounces, +${result.sentSynced} sent synced`)
             } catch (error) {
                 console.error(`[check-replies] Error on ${account.email}:`, error)
             }

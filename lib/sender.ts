@@ -540,7 +540,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     await prisma.emailAccount.update({
                         where: { id: account.id },
                         data: {
-                            sentToday: account.dailyLimit // Ensure no more sends today without triggering permanent error
+                            sentToday: Math.max(account.dailyLimit || 0, 999999) // Ensure no more sends today without triggering permanent error
                         }
                     }).catch(e => console.error('Failed to update account limit status', e))
                 } else {

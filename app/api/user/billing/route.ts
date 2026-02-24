@@ -31,17 +31,22 @@ export async function GET() {
                     gte: startOfMonth
                 },
                 campaign: {
-                    campaignWorkspaces: {
-                        some: {
-                            workspace: {
-                                members: {
-                                    some: {
-                                        userId: session.user.id
+                    OR: [
+                        { userId: session.user.id },
+                        {
+                            campaignWorkspaces: {
+                                some: {
+                                    workspace: {
+                                        members: {
+                                            some: {
+                                                userId: session.user.id
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
+                    ]
                 }
             }
         })

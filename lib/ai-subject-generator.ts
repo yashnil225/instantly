@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
+function getGenAI() {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY is not defined");
+    return new GoogleGenerativeAI(apiKey);
+}
 
 interface SubjectLineRequest {
     productOrService: string
@@ -51,7 +55,7 @@ Return ONLY a JSON object in this exact format:
 }`
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+        const model = getGenAI().getGenerativeModel({ model: "gemini-pro" })
         const result = await model.generateContent(prompt)
         const response = result.response.text()
 
@@ -214,7 +218,7 @@ Generate 3 A/B test variants that:
 Return ONLY a JSON array of strings: ["variant1", "variant2", "variant3"]`
 
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+        const model = getGenAI().getGenerativeModel({ model: "gemini-pro" })
         const result = await model.generateContent(prompt)
         const response = result.response.text()
 

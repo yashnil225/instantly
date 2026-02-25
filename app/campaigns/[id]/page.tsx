@@ -75,14 +75,26 @@ interface CampaignAnalytics {
         uniqueClicks: number
     }[]
     stepAnalytics: {
+        stepId: string
+        stepNumber: number
         step: string
         sent: number
         opened: number
         replied: number
         clicked: number
         opportunities: number
+        variants: {
+            id: string
+            label: string
+            subject: string | null
+            enabled: boolean
+            sent: number
+            opened: number
+            replied: number
+            clicked: number
+        }[]
     }[]
-    leads?: { id: string; status: string }[]
+    leads?: { id: string; status: string; aiLabel?: string | null }[]
     sequences?: unknown[]
     heatmapData?: unknown[]
     funnelData?: unknown[]
@@ -137,7 +149,7 @@ export default function CampaignAnalyticsPage() {
     const fetchCampaignAnalytics = React.useCallback(async () => {
         setLoading(true)
         try {
-            const params = new URLSearchParams({ 
+            const params = new URLSearchParams({
                 range: dateRange,
                 includeAutoReplies: filters.includeAutoReplies.toString()
             })
@@ -145,7 +157,7 @@ export default function CampaignAnalyticsPage() {
             if (res.ok) {
                 const analyticsData = await res.json()
                 setData(analyticsData)
-                
+
                 // Trigger background classification if needed
                 if (analyticsData._needsClassification && !isClassifying) {
                     classifyRepliesInBackground(analyticsData._unclassifiedCount || 0)
@@ -162,14 +174,14 @@ export default function CampaignAnalyticsPage() {
     const classifyRepliesInBackground = async (totalUnclassified: number) => {
         setIsClassifying(true)
         setClassifyingProgress(0)
-        
+
         try {
             // Start classification
             await fetch(`/api/campaigns/${campaignId}/classify-replies`, { method: 'POST' })
-            
+
             // Poll every 3 seconds until complete
             const pollInterval = setInterval(async () => {
-                const params = new URLSearchParams({ 
+                const params = new URLSearchParams({
                     range: dateRange,
                     includeAutoReplies: filters.includeAutoReplies.toString()
                 })
@@ -177,11 +189,11 @@ export default function CampaignAnalyticsPage() {
                 if (res.ok) {
                     const analyticsData = await res.json()
                     setData(analyticsData)
-                    
+
                     // Update progress
                     const classified = totalUnclassified - (analyticsData._unclassifiedCount || 0)
                     setClassifyingProgress(Math.round((classified / totalUnclassified) * 100))
-                    
+
                     // Stop polling when complete
                     if (!analyticsData._needsClassification) {
                         clearInterval(pollInterval)
@@ -189,13 +201,13 @@ export default function CampaignAnalyticsPage() {
                     }
                 }
             }, 3000)
-            
+
             // Cleanup after 2 minutes max
             setTimeout(() => {
                 clearInterval(pollInterval)
                 setIsClassifying(false)
             }, 120000)
-            
+
         } catch (err) {
             console.error("Classification failed:", err)
             setIsClassifying(false)
@@ -241,6 +253,33 @@ export default function CampaignAnalyticsPage() {
             return `${parts[1]} to ${parts[2]}`
         }
         return dateRangeOptions.find(opt => opt.value === dateRange)?.label || "Last 7 days"
+    }
+
+    const toggleVariant = async (variantId: string, currentStatus: boolean) => {
+        try {
+            const res = await fetch(`/api/campaigns/${campaignId}/variants/${variantId}/toggle`, {
+                method: 'POST'
+            })
+            if (res.ok) {
+                const result = await res.json()
+                // Optimistically update local state
+                if (data) {
+                    const newStepAnalytics = data.stepAnalytics.map(step => ({
+                        ...step,
+                        variants: step.variants.map(v =>
+                            v.id === variantId ? { ...v, enabled: result.enabled } : v
+                        )
+                    }))
+                    setData({ ...data, stepAnalytics: newStepAnalytics })
+                }
+                toast({ title: "Success", description: `Variant ${result.enabled ? 'enabled' : 'disabled'}` })
+            } else {
+                toast({ title: "Error", description: "Failed to toggle variant", variant: "destructive" })
+            }
+        } catch (err) {
+            console.error("Failed to toggle variant:", err)
+            toast({ title: "Error", description: "Failed to toggle variant", variant: "destructive" })
+        }
     }
 
     const handleDiagnose = async () => {
@@ -535,7 +574,7 @@ export default function CampaignAnalyticsPage() {
                                                             <span className="text-sm text-gray-400">Calculating...</span>
                                                         </div>
                                                         <div className="w-full h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                                                            <div 
+                                                            <div
                                                                 className="h-full bg-blue-500 rounded-full transition-all duration-500"
                                                                 style={{ width: `${classifyingProgress}%` }}
                                                             />
@@ -628,14 +667,60 @@ export default function CampaignAnalyticsPage() {
                                                 <tbody>
                                                     {data?.stepAnalytics && data.stepAnalytics.length > 0 ? (
                                                         data.stepAnalytics.map((step, index) => (
-                                                            <tr key={index} className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]/50 transition-colors last:border-0">
-                                                                <td className="py-4 pl-4 text-sm font-medium text-white">{step.step}</td>
-                                                                <td className="py-4 text-sm text-gray-300">{step.sent}</td>
-                                                                <td className="py-4 text-sm text-gray-300">{step.opened}</td>
-                                                                <td className="py-4 text-sm text-gray-300">{step.replied}</td>
-                                                                <td className="py-4 text-sm text-gray-300">{step.clicked}</td>
-                                                                <td className="py-4 pr-4 text-sm text-gray-300">{step.opportunities}</td>
-                                                            </tr>
+                                                            <React.Fragment key={index}>
+                                                                <tr className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]/50 transition-colors last:border-0">
+                                                                    <td className="py-4 pl-4 text-sm font-medium text-white flex items-center gap-2">
+                                                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                                                        {step.step}
+                                                                    </td>
+                                                                    <td className="py-4 text-sm text-gray-300">{step.sent}</td>
+                                                                    <td className="py-4 text-sm text-gray-300">{step.opened}</td>
+                                                                    <td className="py-4 text-sm text-gray-300">{step.replied}</td>
+                                                                    <td className="py-4 text-sm text-gray-300">{step.clicked}</td>
+                                                                    <td className="py-4 pr-4 text-sm text-gray-300">
+                                                                        <div className="flex items-center justify-between">
+                                                                            {step.opportunities}
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                {step.variants && step.variants.length > 0 && step.variants.map((variant, vIndex) => (
+                                                                    <tr key={`${index}-${vIndex}`} className="border-b border-[#1a1a1a]/30 bg-[#0c0c0c] hover:bg-[#151515] transition-colors last:border-0">
+                                                                        <td className="py-3 pl-10 text-xs text-gray-400">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-5 h-5 rounded border border-[#333] flex items-center justify-center text-[10px] font-bold text-gray-500 bg-[#111]">
+                                                                                    {variant.label}
+                                                                                </div>
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="font-medium text-gray-300">Variant {variant.label}</span>
+                                                                                    {variant.subject && <span className="text-[10px] text-gray-500 truncate max-w-[200px]">{variant.subject}</span>}
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="py-3 text-xs text-gray-500">{variant.sent}</td>
+                                                                        <td className="py-3 text-xs text-gray-500">{variant.opened}</td>
+                                                                        <td className="py-3 text-xs text-gray-500">{variant.replied}</td>
+                                                                        <td className="py-3 text-xs text-gray-500">{variant.clicked}</td>
+                                                                        <td className="py-3 pr-4 text-xs text-gray-500">
+                                                                            <div className="flex items-center justify-end">
+                                                                                <button
+                                                                                    onClick={() => toggleVariant(variant.id, variant.enabled)}
+                                                                                    className={cn(
+                                                                                        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none",
+                                                                                        variant.enabled ? "bg-blue-600" : "bg-[#2a2a2a]"
+                                                                                    )}
+                                                                                >
+                                                                                    <span
+                                                                                        className={cn(
+                                                                                            "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                                                                                            variant.enabled ? "translate-x-5" : "translate-x-1"
+                                                                                        )}
+                                                                                    />
+                                                                                </button>
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </React.Fragment>
                                                         ))
                                                     ) : (
                                                         <tr>

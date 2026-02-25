@@ -24,7 +24,7 @@ export async function GET(request: Request) {
 }
 
 async function runReplyCheck() {
-    const guard = createTimeoutGuard(50_000) // 50s budget, 10s buffer
+    const guard = createTimeoutGuard(25_000) // 25s budget, 35s buffer
     console.log('[check-replies] Starting background IMAP sync...')
 
     try {
@@ -56,7 +56,7 @@ async function runReplyCheck() {
                     data: { lastSyncedAt: new Date() }
                 })
 
-                const result = await syncAccountInbox(account)
+                const result = await syncAccountInbox(account, guard)
                 totalReplies += result.replies
                 totalBounces += result.bounces
                 console.log(`[check-replies] ${account.email}: +${result.replies} replies, +${result.bounces} bounces, +${result.sentSynced} sent synced`)

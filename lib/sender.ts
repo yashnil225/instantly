@@ -325,7 +325,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 let body = ""
                 let selectedVariantId = ""
                 // @ts-ignore
-                const variants = (step as any).variants
+                const variants = ((step as any).variants || []).filter((v: any) => v.enabled !== false)
 
                 if (variants && variants.length > 0) {
                     let chosenVariant = variants[Math.floor(Math.random() * variants.length)]

@@ -336,6 +336,7 @@ model SequenceVariant {
   
   // Weight for distribution (e.g. 50/50)
   weight  Int @default(50) 
+  enabled Boolean @default(true)
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

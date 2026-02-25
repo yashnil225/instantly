@@ -2,6 +2,7 @@ import imaps, { MessageBodyPart } from 'imap-simple'
 import { simpleParser, AddressObject } from 'mailparser'
 import { prisma } from './prisma'
 import { dispatchWebhook } from './webhooks'
+import { classifyEmailStatus } from './ai-service'
 
 interface EmailAccount {
     id: string
@@ -102,192 +103,221 @@ export async function syncReplies(account: EmailAccount) {
             console.log(`Syncing replies for ${account.email}...`)
 
             const connection = await imaps.connect(config)
-            await connection.openBox('INBOX')
 
-            // Search last 60 days so historical replies/bounces are backfilled.
-            // markSeen: false ensures we don't alter the read-state in the inbox.
-            const since60Days = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-            const searchCriteria = [['SINCE', since60Days]]
-            const fetchOptions = {
-                bodies: ['HEADER', 'TEXT'],
-                markSeen: false
-            }
+            // 1. Get List of Folders to find "Sent" folder
+            const boxes = await connection.getBoxes()
+            const boxNames = Object.keys(boxes)
 
-            const messages = await connection.search(searchCriteria, fetchOptions)
-            console.log(`Found ${messages.length} messages (last 60 days) for ${account.email}`)
+            const sentFolderCandidates = ['sent', 'sent items', 'sent messages', '[gmail]/sent mail']
+            const sentFolder = boxNames.find(name => sentFolderCandidates.includes(name.toLowerCase()))
 
-            for (const item of messages) {
-                const all = item.parts.find((part: MessageBodyPart) => part.which === '')
-                if (!all) continue
+            const foldersToSync = ['INBOX']
+            if (sentFolder) foldersToSync.push(sentFolder)
 
-                const parsed = await simpleParser(all.body)
+            console.log(`Syncing folders: ${foldersToSync.join(', ')} for ${account.email}`)
 
-                const from = parsed.from?.value[0]?.address?.toLowerCase() || getAddressString(parsed.from).toLowerCase()
-                const subject = parsed.subject?.toLowerCase() || ''
-                const bodyText = parsed.text || ''
+            for (const folderName of foldersToSync) {
+                await connection.openBox(folderName)
+                const isSentFolder = folderName === sentFolder
 
-                // --- CHECK FOR BOUNCE ---
-                const isBounceSource = from === 'mailer-daemon@googlemail.com' ||
-                    from === 'postmaster' ||
-                    from?.includes('mailer-daemon') ||
-                    from?.includes('postmaster') ||
-                    from?.includes('bounce') ||
-                    subject.includes('delivery status notification') ||
-                    subject.includes('undelivered') ||
-                    subject.includes('undeliverable') ||
-                    subject.includes('returned mail')
+                // Search last 60 days
+                const since60Days = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+                const searchCriteria = [['SINCE', since60Days]]
+                const fetchOptions = {
+                    bodies: ['HEADER', 'TEXT'],
+                    markSeen: false
+                }
 
-                if (isBounceSource) {
-                    const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/g
-                    const foundEmails = bodyText.match(emailRegex) || []
+                const messages = await connection.search(searchCriteria, fetchOptions)
+                console.log(`[${folderName}] Found ${messages.length} messages for ${account.email}`)
 
-                    for (const bouncedEmail of foundEmails) {
-                        const lead = await prisma.lead.findFirst({
-                            where: { email: bouncedEmail, campaignId: { not: undefined } }
-                        })
+                for (const item of messages) {
+                    const all = item.parts.find((part: MessageBodyPart) => part.which === '')
+                    if (!all) continue
 
-                        if (lead) {
-                            const sentEvent = await prisma.sendingEvent.findFirst({
-                                where: { leadId: lead.id, type: 'sent', emailAccountId: account.id },
-                                orderBy: { createdAt: 'desc' }
+                    const parsed = await simpleParser(all.body)
+
+                    const from = parsed.from?.value[0]?.address?.toLowerCase() || getAddressString(parsed.from).toLowerCase()
+                    const subject = parsed.subject?.toLowerCase() || ''
+                    const bodyText = parsed.text || ''
+
+                    // --- CHECK FOR BOUNCE ---
+                    const isBounceSource = from === 'mailer-daemon@googlemail.com' ||
+                        from === 'postmaster' ||
+                        from?.includes('mailer-daemon') ||
+                        from?.includes('postmaster') ||
+                        from?.includes('bounce') ||
+                        subject.includes('delivery status notification') ||
+                        subject.includes('undelivered') ||
+                        subject.includes('undeliverable') ||
+                        subject.includes('returned mail')
+
+                    if (isBounceSource) {
+                        const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/g
+                        const foundEmails = bodyText.match(emailRegex) || []
+
+                        for (const bouncedEmail of foundEmails) {
+                            const lead = await prisma.lead.findFirst({
+                                where: { email: bouncedEmail, campaignId: { not: undefined } }
                             })
 
-                            if (sentEvent) {
-                                // Duplicate guard: skip if bounce already recorded for this lead
-                                const existingBounce = await prisma.sendingEvent.findFirst({
-                                    where: { leadId: lead.id, type: 'bounce' }
+                            if (lead) {
+                                const sentEvent = await prisma.sendingEvent.findFirst({
+                                    where: { leadId: lead.id, type: 'sent', emailAccountId: account.id },
+                                    orderBy: { createdAt: 'desc' }
                                 })
-                                if (existingBounce) {
-                                    console.log(`⚡ Bounce already recorded for ${bouncedEmail}, skipping`)
-                                } else {
-                                    const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
-                                    await prisma.$transaction([
-                                        prisma.sendingEvent.create({
-                                            data: {
-                                                type: 'bounce',
-                                                leadId: lead.id,
-                                                campaignId: sentEvent.campaignId,
-                                                emailAccountId: account.id,
-                                                metadata: JSON.stringify({ subject: parsed.subject, reason: 'Detected via Inbox Sync' })
-                                            }
-                                        }),
-                                        prisma.lead.update({ where: { id: lead.id }, data: { status: 'bounced' } }),
-                                        prisma.campaign.update({ where: { id: sentEvent.campaignId }, data: { bounceCount: { increment: 1 } } }),
-                                        prisma.campaignStat.upsert({
-                                            where: { campaignId_date: { campaignId: sentEvent.campaignId, date: todayUTC } },
-                                            create: { campaignId: sentEvent.campaignId, date: todayUTC, bounced: 1, sent: 0, opened: 0, clicked: 0, replied: 0 },
-                                            update: { bounced: { increment: 1 } }
-                                        })
-                                    ])
-                                    console.log(`⚠️ Bounce detected: ${bouncedEmail}`)
+
+                                if (sentEvent) {
+                                    // Duplicate guard: skip if bounce already recorded for this lead
+                                    const existingBounce = await prisma.sendingEvent.findFirst({
+                                        where: { leadId: lead.id, type: 'bounce' }
+                                    })
+                                    if (existingBounce) {
+                                        console.log(`⚡ Bounce already recorded for ${bouncedEmail}, skipping`)
+                                    } else {
+                                        const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+                                        await prisma.$transaction([
+                                            prisma.sendingEvent.create({
+                                                data: {
+                                                    type: 'bounce',
+                                                    leadId: lead.id,
+                                                    campaignId: sentEvent.campaignId,
+                                                    emailAccountId: account.id,
+                                                    metadata: JSON.stringify({ subject: parsed.subject, reason: 'Detected via Inbox Sync' })
+                                                }
+                                            }),
+                                            prisma.lead.update({ where: { id: lead.id }, data: { status: 'bounced' } }),
+                                            prisma.campaign.update({ where: { id: sentEvent.campaignId }, data: { bounceCount: { increment: 1 } } }),
+                                            prisma.campaignStat.upsert({
+                                                where: { campaignId_date: { campaignId: sentEvent.campaignId, date: todayUTC } },
+                                                create: { campaignId: sentEvent.campaignId, date: todayUTC, bounced: 1, sent: 0, opened: 0, clicked: 0, replied: 0 },
+                                                update: { bounced: { increment: 1 } }
+                                            })
+                                        ])
+                                        console.log(`⚠️ Bounce detected: ${bouncedEmail}`)
+                                    }
                                 }
                             }
                         }
+                        continue
                     }
-                    continue
-                }
 
-                // --- CHECK FOR REPLY ---
-                let matchedSentEvent = null
+                    // --- CHECK FOR REPLY ---
+                    let matchedSentEvent = null
 
-                // 1. Thread matching via In-Reply-To or References
-                let replyHeaders: string[] = []
-                if (parsed.inReplyTo) {
-                    const inReplies = Array.isArray(parsed.inReplyTo) ? parsed.inReplyTo : [parsed.inReplyTo]
-                    replyHeaders.push(...inReplies)
-                }
-                if (parsed.references) {
-                    const refs = Array.isArray(parsed.references) ? parsed.references : [parsed.references]
-                    replyHeaders.push(...refs)
-                }
+                    // 1. Thread matching via In-Reply-To or References
+                    let replyHeaders: string[] = []
+                    if (parsed.inReplyTo) {
+                        const inReplies = Array.isArray(parsed.inReplyTo) ? parsed.inReplyTo : [parsed.inReplyTo]
+                        replyHeaders.push(...inReplies)
+                    }
+                    if (parsed.references) {
+                        const refs = Array.isArray(parsed.references) ? parsed.references : [parsed.references]
+                        replyHeaders.push(...refs)
+                    }
 
-                // Clean headers (remove < >)
-                replyHeaders = replyHeaders.map(h => h.replace(/[<>]/g, ''))
+                    // Clean headers (remove < >)
+                    replyHeaders = replyHeaders.map(h => h.replace(/[<>]/g, ''))
 
-                if (replyHeaders.length > 0) {
-                    matchedSentEvent = await prisma.sendingEvent.findFirst({
-                        where: {
-                            messageId: { in: replyHeaders },
-                            emailAccountId: account.id
-                        },
-                        include: { lead: true, campaign: true }
-                    })
-                }
-
-                // 2. Fallback matching strictly by emailAccountId and Lead Email
-                if (!matchedSentEvent && from) {
-                    matchedSentEvent = await prisma.sendingEvent.findFirst({
-                        where: {
-                            type: 'sent',
-                            emailAccountId: account.id,
-                            lead: { email: from }
-                        },
-                        orderBy: { createdAt: 'desc' },
-                        include: { lead: true, campaign: true }
-                    })
-                }
-
-                if (matchedSentEvent && matchedSentEvent.lead) {
-                    const sentEvent = matchedSentEvent
-                    console.log(`Reply detected from ${from} for lead ${sentEvent.lead.email}`)
-
-                    // Duplicate guard: skip if we already have a reply event
-                    // that matches this exact message ID (handles re-scanning old emails)
-                    const existingReply = parsed.messageId
-                        ? await prisma.sendingEvent.findFirst({
+                    if (replyHeaders.length > 0) {
+                        matchedSentEvent = await prisma.sendingEvent.findFirst({
                             where: {
-                                leadId: sentEvent.leadId,
-                                type: 'reply',
-                                metadata: { contains: parsed.messageId }
-                            }
+                                messageId: { in: replyHeaders },
+                                emailAccountId: account.id
+                            },
+                            include: { lead: true, campaign: true }
                         })
-                        : null
+                    }
 
-                    if (existingReply) {
-                        console.log(`⚡ Reply already recorded (msgId: ${parsed.messageId}), skipping`)
-                    } else {
-                        // Create reply event
-                        const replyEvent = await prisma.sendingEvent.create({
-                            data: {
-                                type: 'reply',
-                                leadId: sentEvent.leadId,
-                                campaignId: sentEvent.campaignId,
+                    // 2. Fallback matching strictly by emailAccountId and Lead Email
+                    if (!matchedSentEvent && from) {
+                        matchedSentEvent = await prisma.sendingEvent.findFirst({
+                            where: {
+                                type: 'sent',
                                 emailAccountId: account.id,
-                                metadata: JSON.stringify({
-                                    from: getAddressString(parsed.from),
-                                    to: getAddressString(parsed.to),
-                                    subject: parsed.subject,
-                                    date: parsed.date,
-                                    messageId: parsed.messageId
-                                }),
-                                details: (typeof parsed.html === 'string' && parsed.html.trim().length > 0) ? parsed.html : (parsed.textAsHtml || parsed.text || "")
-                            }
+                                lead: { email: from }
+                            },
+                            orderBy: { createdAt: 'desc' },
+                            include: { lead: true, campaign: true }
                         })
+                    }
 
-                        // Update lead status
-                        const updatedLead = await prisma.lead.update({
-                            where: { id: sentEvent.leadId },
-                            data: { status: 'replied' }
-                        })
+                    if (matchedSentEvent && matchedSentEvent.lead) {
+                        const sentEvent = matchedSentEvent
+                        console.log(`Reply detected from ${from} for lead ${sentEvent.lead.email}`)
 
-                        // Dispatch Webhook
-                        if (sentEvent.campaign.userId) {
-                            dispatchWebhook(sentEvent.campaign.userId, "lead.replied", {
-                                lead: updatedLead,
-                                campaign: sentEvent.campaign,
-                                reply: JSON.parse(replyEvent.metadata!)
+                        // Duplicate guard: skip if we already have a reply event
+                        // that matches this exact message ID (handles re-scanning old emails)
+                        const existingReply = parsed.messageId
+                            ? await prisma.sendingEvent.findFirst({
+                                where: {
+                                    leadId: sentEvent.leadId,
+                                    type: 'reply',
+                                    metadata: { contains: parsed.messageId }
+                                }
                             })
-                        }
+                            : null
 
-                        // Update campaign stats
-                        await prisma.campaign.update({
-                            where: { id: sentEvent.campaignId },
-                            data: { replyCount: { increment: 1 } }
-                        })
+                        if (existingReply) {
+                            console.log(`⚡ Reply already recorded (msgId: ${parsed.messageId}), skipping`)
+                        } else {
+                            // Create reply event
+                            const replyEvent = await prisma.sendingEvent.create({
+                                data: {
+                                    type: 'reply',
+                                    leadId: sentEvent.leadId,
+                                    campaignId: sentEvent.campaignId,
+                                    emailAccountId: account.id,
+                                    metadata: JSON.stringify({
+                                        from: getAddressString(parsed.from),
+                                        to: getAddressString(parsed.to),
+                                        subject: parsed.subject,
+                                        date: parsed.date,
+                                        messageId: parsed.messageId
+                                    }),
+                                    details: (typeof parsed.html === 'string' && parsed.html.trim().length > 0) ? parsed.html : (parsed.textAsHtml || parsed.text || "")
+                                }
+                            })
 
-                        // If stopOnReply is enabled, we could pause the campaign for this lead
-                        if (sentEvent.campaign.stopOnReply) {
-                            console.log(`Campaign ${sentEvent.campaign.name} has stopOnReply enabled`)
+                            // Update lead status
+                            const updatedLead = await prisma.lead.update({
+                                where: { id: sentEvent.leadId },
+                                data: { status: 'replied' }
+                            })
+
+                            // Dispatch Webhook
+                            if (sentEvent.campaign.userId) {
+                                dispatchWebhook(sentEvent.campaign.userId, "lead.replied", {
+                                    lead: updatedLead,
+                                    campaign: sentEvent.campaign,
+                                    reply: JSON.parse(replyEvent.metadata!)
+                                })
+                            }
+
+                            // Update campaign stats
+                            await prisma.campaign.update({
+                                where: { id: sentEvent.campaignId },
+                                data: { replyCount: { increment: 1 } }
+                            })
+
+                            // If stopOnReply is enabled, we could pause the campaign for this lead
+                            if (sentEvent.campaign.stopOnReply) {
+                                console.log(`Campaign ${sentEvent.campaign.name} has stopOnReply enabled`)
+                            }
+
+                            // --- NEW: AI CLASSIFICATION ---
+                            if (!isSentFolder) {
+                                try {
+                                    const classification = await classifyEmailStatus(parsed.subject || '', parsed.text || '')
+                                    await prisma.lead.update({
+                                        where: { id: sentEvent.leadId },
+                                        data: { aiLabel: classification }
+                                    })
+                                    console.log(`Classified reply from ${from} as: ${classification}`)
+                                } catch (e) {
+                                    console.error(`AI classification failed for ${from}:`, e)
+                                }
+                            }
                         }
                     }
                 }
@@ -318,7 +348,7 @@ export async function syncAllAccounts() {
             imapHost: { not: null }
         },
         orderBy: { lastSyncedAt: 'asc' },
-        take: 5 // Batch limit to prevent timeouts
+        take: 10 // Increased to 10 for better throughput, guarded by timeoutGuard
     })
 
     console.log(`Syncing ${accounts.length} accounts...`)

@@ -98,7 +98,10 @@ async function withRetry<T>(
 /**
  * Combined sync function for efficiency (one connection for both replies and bounces)
  */
-export async function syncAccountInbox(account: EmailAccount): Promise<{ replies: number, bounces: number, sentSynced: number }> {
+export async function syncAccountInbox(
+    account: EmailAccount,
+    guard?: { isTimedOut: () => boolean, elapsedSec: () => string }
+): Promise<{ replies: number, bounces: number, sentSynced: number }> {
     const inboxResult = await withRetry(async (attempt) => {
         if (attempt === 0) {
             // Small jitter
@@ -143,10 +146,10 @@ export async function syncAccountInbox(account: EmailAccount): Promise<{ replies
                 imap.openBox('INBOX', false, (err) => {
                     if (err) return safeReject(err)
 
-                    // Scan last 60 days (not just UNSEEN) so historical replies/bounces are backfilled.
+                    // Scan last 7 days (not just UNSEEN) so historical replies/bounces are backfilled.
                     // markSeen: false ensures we never alter read-state in the inbox.
-                    const since60Days = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-                    const searchCriteria = [['SINCE', since60Days]]
+                    const since7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                    const searchCriteria = [['SINCE', since7Days]]
 
                     imap.search(searchCriteria, (err, results) => {
                         if (err) return safeReject(err)
@@ -375,6 +378,11 @@ export async function syncAccountInbox(account: EmailAccount): Promise<{ replies
     }, account.email, 'syncAccountInbox')
 
     // Also scan SENT folder to capture user's manual replies to leads
+    if (guard?.isTimedOut()) {
+        console.warn(`[SENT] Skipping SENT sync for ${account.email} due to timeout guard (${guard.elapsedSec()}s)`)
+        return { ...inboxResult, sentSynced: 0 }
+    }
+
     const sentSynced = await syncSentFolder(account)
 
     return { ...inboxResult, sentSynced }
@@ -445,8 +453,8 @@ async function syncSentFolder(account: EmailAccount): Promise<number> {
                         if (err) return tryNextFolder() // try next folder name
                         console.log(`[SENT] Scanning ${folder} for ${account.email}`)
 
-                        const since60Days = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-                        imap.search([['SINCE', since60Days]], (searchErr, results) => {
+                        const since7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                        imap.search([['SINCE', since7Days]], (searchErr, results) => {
                             if (searchErr || !results || results.length === 0) return safeEnd()
 
                             const fetch = imap.fetch(results, { bodies: '', markSeen: false })

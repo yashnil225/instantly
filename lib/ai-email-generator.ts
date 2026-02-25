@@ -1,6 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+function getGenAI() {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error('GEMINI_API_KEY is not defined');
+    return new GoogleGenerativeAI(apiKey);
+}
 
 export async function generateEmailContent(params: {
     recipientName?: string
@@ -12,7 +16,7 @@ export async function generateEmailContent(params: {
 }) {
     const { recipientName, companyName, industry, tone = 'professional', purpose, context } = params
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    const model = getGenAI().getGenerativeModel({ model: 'gemini-pro' })
 
     const prompt = `You are an expert cold email copywriter. Generate a compelling cold email with the following details:
 
@@ -62,7 +66,7 @@ Only return the JSON, no additional text.`
 }
 
 export async function improveEmailContent(currentContent: string, instruction: string) {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    const model = getGenAI().getGenerativeModel({ model: 'gemini-pro' })
 
     const prompt = `You are an expert email copywriter. Improve the following email based on this instruction: "${instruction}"
 
@@ -82,7 +86,7 @@ Return ONLY the improved email text, no explanations or additional commentary.`
 }
 
 export async function generateVariants(emailContent: string, count: number = 3) {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
+    const model = getGenAI().getGenerativeModel({ model: 'gemini-pro' })
 
     const prompt = `Generate ${count} different variants of this email. Each should have a different angle or approach while maintaining the core message.
 

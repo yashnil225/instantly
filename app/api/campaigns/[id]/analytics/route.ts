@@ -22,6 +22,7 @@ export async function GET(
             where: { id: campaignId },
             include: {
                 sequences: {
+                    include: { variants: true },
                     orderBy: { stepNumber: 'asc' }
                 },
                 leads: true
@@ -119,13 +120,36 @@ export async function GET(
                 } catch { return false }
             })
 
+            // Calculate variant stats
+            const variantsStats = (seq.variants || []).map((v: any) => {
+                const variantEvents = stepEvents.filter(e => {
+                    try {
+                        const meta = JSON.parse(e.metadata || '{}')
+                        return meta.variantId === v.id
+                    } catch { return false }
+                })
+                return {
+                    id: v.id,
+                    label: v.label || 'A',
+                    subject: v.subject,
+                    enabled: v.enabled,
+                    sent: variantEvents.filter(e => e.type === 'sent').length,
+                    opened: variantEvents.filter(e => e.type === 'open').length,
+                    replied: variantEvents.filter(e => e.type === 'reply').length,
+                    clicked: variantEvents.filter(e => e.type === 'click').length,
+                }
+            })
+
             return {
+                stepId: seq.id,
+                stepNumber: seq.stepNumber,
                 step: `Step ${seq.stepNumber}: ${seq.subject || 'Email'}`,
                 sent: stepEvents.filter(e => e.type === 'sent').length,
                 opened: stepEvents.filter(e => e.type === 'open').length,
                 replied: stepEvents.filter(e => e.type === 'reply').length,
                 clicked: stepEvents.filter(e => e.type === 'click').length,
-                opportunities: stepEvents.filter(e => e.type === 'reply').length // Simplified
+                opportunities: stepEvents.filter(e => e.type === 'reply').length,
+                variants: variantsStats
             }
         })
 

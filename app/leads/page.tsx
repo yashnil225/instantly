@@ -115,6 +115,8 @@ export default function GlobalLeadsPage() {
                 return <Badge variant="secondary" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-0">Bounced</Badge>
             case 'replied':
                 return <Badge variant="secondary" className="bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 border-0">Replied</Badge>
+            case 'won':
+                return <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-0">Won</Badge>
             default:
                 return <Badge variant="secondary" className="bg-gray-500/10 text-gray-400 hover:bg-gray-500/20 border-0">New</Badge>
         }
@@ -264,6 +266,9 @@ export default function GlobalLeadsPage() {
                                     <XCircle className="h-4 w-4 mr-2 text-red-500" /> Bounced
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => setStatusFilter('opportunities')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'opportunities' && "bg-blue-500/20 text-blue-400")}>
+                                <Zap className="h-4 w-4 mr-2 text-yellow-500" /> Opportunities
+                            </DropdownMenuItem>
                         </DropdownMenu>
                     </div>
 

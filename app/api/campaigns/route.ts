@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: Request) {
     const session = await auth()
@@ -61,19 +62,56 @@ export async function GET(request: Request) {
             orderBy: { createdAt: 'desc' }
         })
 
+        if (campaigns.length === 0) {
+            return NextResponse.json([])
+        }
+
+        const campaignIds = campaigns.map(c => c.id)
+
+        // Fetch unique event counts
+        const eventCounts = await prisma.$queryRaw<{ campaignId: string, type: string, count: number | bigint }[]>`
+            SELECT "campaignId", "type", COUNT(DISTINCT "leadId") as count
+            FROM "SendingEvent"
+            WHERE "campaignId" IN (${Prisma.join(campaignIds)})
+            AND "type" IN ('open', 'click', 'reply')
+            GROUP BY "campaignId", "type"
+        `
+
+        // Fetch opportunity counts
+        const oppCounts = await prisma.$queryRaw<{ campaignId: string, count: number | bigint }[]>`
+            SELECT "campaignId", COUNT(id) as count
+            FROM "Lead"
+            WHERE "campaignId" IN (${Prisma.join(campaignIds)})
+            AND ("aiLabel" IN ('interested', 'meeting_booked') OR "status" = 'won')
+            GROUP BY "campaignId"
+        `
+
         // Calculate rates and opportunities for each campaign
         const campaignsWithAnalytics = campaigns.map(campaign => {
             const sentCount = campaign.sentCount || 0
-            const openCount = campaign.openCount || 0
-            const clickCount = campaign.clickCount || 0
-            const replyCount = campaign.replyCount || 0
+
+            // Extract counts from query results safely handling BigInts
+            const getUniqueCount = (type: string) => {
+                const match = eventCounts.find(e => e.campaignId === campaign.id && e.type === type)
+                return match ? Number(match.count) : 0
+            }
+
+            const getOppCount = () => {
+                const match = oppCounts.find(e => e.campaignId === campaign.id)
+                return match ? Number(match.count) : 0
+            }
+
+            const uniqueOpenCount = getUniqueCount('open')
+            const uniqueClickCount = getUniqueCount('click')
+            const uniqueReplyCount = getUniqueCount('reply')
+            const oppCount = getOppCount()
 
             return {
                 ...campaign,
-                openRate: !campaign.trackOpens ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((openCount / sentCount) * 100), 100) : 0}%`,
-                clickRate: !campaign.trackLinks ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((clickCount / sentCount) * 100), 100) : 0}%`,
-                replyRate: `${sentCount > 0 ? Math.min(Math.round((replyCount / sentCount) * 100), 100) : 0}%`,
-                opportunities: replyCount // Opportunities = Replies
+                openRate: !campaign.trackOpens ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueOpenCount / sentCount) * 100), 100) : 0}%`,
+                clickRate: !campaign.trackLinks ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueClickCount / sentCount) * 100), 100) : 0}%`,
+                replyRate: `${sentCount > 0 ? Math.min(Math.round((uniqueReplyCount / sentCount) * 100), 100) : 0}%`,
+                opportunities: oppCount // Opportunities = Interested/Won
             }
         })
 

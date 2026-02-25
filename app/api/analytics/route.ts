@@ -104,7 +104,7 @@ export async function GET(request: Request) {
         if (!includeAutoReplies) {
             filteredReplyEvents = replyEvents.filter(e => e.lead?.aiLabel !== 'out_of_office')
         }
-        const totalReplied = filteredReplyEvents.length
+        const totalReplied = new Set(filteredReplyEvents.map(e => e.leadId)).size
 
         // Check for unclassified replies
         const unclassifiedReplies = replyEvents.filter(e => !e.lead?.aiLabel)
@@ -113,9 +113,9 @@ export async function GET(request: Request) {
         // Calculate positive reply rate (if all replies are classified)
         let positiveReplyRate = '0%'
         if (!needsClassification && totalReplied > 0) {
-            const positiveReplyCount = filteredReplyEvents.filter(e =>
+            const positiveReplyCount = new Set(filteredReplyEvents.filter(e =>
                 e.lead?.aiLabel && ['interested', 'meeting_booked'].includes(e.lead.aiLabel)
-            ).length
+            ).map(e => e.leadId)).size
             positiveReplyRate = Math.round((positiveReplyCount / totalReplied) * 100) + '%'
         } else if (needsClassification) {
             positiveReplyRate = 'calculating...'
@@ -123,12 +123,15 @@ export async function GET(request: Request) {
 
         // Calculate totals from events
         const totalSent = events.filter(e => e.type === 'sent').length
-        const totalOpened = events.filter(e => e.type === 'open').length
-        const totalClicked = events.filter(e => e.type === 'click').length
-        const totalBounced = events.filter(e => e.type === 'bounce').length
+        const totalOpened = new Set(events.filter(e => e.type === 'open').map(e => e.leadId)).size
+        const totalClicked = new Set(events.filter(e => e.type === 'click').map(e => e.leadId)).size
+        const totalBounced = new Set(events.filter(e => e.type === 'bounce').map(e => e.leadId)).size
 
-        // Opportunities = replies
-        const opportunitiesCount = totalReplied
+        // Opportunities = interested, meeting_booked, or won
+        const opportunityLeads = leads.filter(l =>
+            l.status === 'won' || ['interested', 'meeting_booked'].includes(l.aiLabel || '')
+        )
+        const opportunitiesCount = opportunityLeads.length
         const totalOpportunityValue = opportunitiesCount * (opportunityValue || 0)
 
         // Calculate conversions value

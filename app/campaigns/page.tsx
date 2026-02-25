@@ -216,7 +216,7 @@ function CampaignsPage() {
             // Only assign to workspace if a specific workspace is selected (not "My Organization")
             // selectedWorkspaceId is null when "My Organization" is selected
             const workspaceIds = selectedWorkspaceId ? [selectedWorkspaceId] : undefined
-            
+
             const res = await fetch('/api/campaigns', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -656,357 +656,357 @@ function CampaignsPage() {
                 {/* Toolbar */}
                 <div className="px-8 pb-6 space-y-4">
                     <div className="flex w-full items-center justify-end gap-4 p-4">
-                    <div className="flex items-center gap-3">
-                        {/* Status Filter Dropdown */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="h-10 border-border bg-card text-foreground hover:bg-secondary hover:text-foreground gap-2">
-                                    <Logo variant="icon" size="sm" />
-                                    {statusFilter === "all" && "All statuses"}
-                                    {statusFilter === "active" && "Active"}
-                                    {statusFilter === "draft" && "Draft"}
-                                    {statusFilter === "paused" && "Paused"}
-                                    {statusFilter === "error" && "Error"}
-                                    {statusFilter === "completed" && "Completed"}
-                                    {statusFilter === "evergreen" && "Evergreen"}
-                                    <ChevronDown className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-56 bg-secondary border-border text-foreground">
-                                <div className="p-2">
-                                    <Input
-                                        placeholder="Search"
-                                        className="bg-background border-border text-foreground text-sm h-8"
-                                    />
-                                </div>
-                                <DropdownMenuSeparator className="bg-muted" />
-                                <DropdownMenuItem
-                                    onClick={() => setStatusFilter("all")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "all" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    <Logo variant="icon" size="sm" />
-                                    All statuses
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setStatusFilter("active")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "active" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    <Play className="h-4 w-4 text-green-400" />
-                                    Active
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setStatusFilter("draft")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "draft" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    <Filter className="h-4 w-4 text-muted-foreground" />
-                                    Draft
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setStatusFilter("paused")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "paused" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    <Pause className="h-4 w-4 text-yellow-400" />
-                                    Paused
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setStatusFilter("error")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "error" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    <AlertCircle className="h-4 w-4 text-red-400" />
-                                    Error
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setStatusFilter("completed")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "completed" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    <ChevronLeft className="h-4 w-4 text-green-400 rotate-90" />
-                                    Completed
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setStatusFilter("evergreen")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "evergreen" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    <InfinityIcon className="h-4 w-4 text-blue-400" />
-                                    Evergreen
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        {/* Sorting Dropdown */}
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="outline" className="h-10 border-border bg-card text-foreground hover:bg-secondary hover:text-foreground gap-2">
-                                    {sortBy === "newest" && "Newest first"}
-                                    {sortBy === "oldest" && "Oldest first"}
-                                    {sortBy === "name_asc" && "Name (A-Z)"}
-                                    {sortBy === "name_desc" && "Name (Z-A)"}
-                                    <ChevronDown className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-48 bg-secondary border-border text-foreground">
-                                <DropdownMenuItem
-                                    onClick={() => setSortBy("newest")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground", sortBy === "newest" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    Newest first
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setSortBy("oldest")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground", sortBy === "oldest" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    Oldest first
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setSortBy("name_asc")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground", sortBy === "name_asc" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    Name (A-Z)
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                    onClick={() => setSortBy("name_desc")}
-                                    className={cn("cursor-pointer focus:bg-muted focus:text-foreground", sortBy === "name_desc" && "bg-blue-500/20 text-blue-400")}
-                                >
-                                    Name (Z-A)
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className="h-10 w-10 p-0 border-border bg-card text-foreground hover:bg-secondary hover:text-foreground"
-                                        onClick={handleExport}
-                                    >
-                                        <Download className="h-4 w-4" />
+                        <div className="flex items-center gap-3">
+                            {/* Status Filter Dropdown */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="h-10 border-border bg-card text-foreground hover:bg-secondary hover:text-foreground gap-2">
+                                        <Logo variant="icon" size="sm" />
+                                        {statusFilter === "all" && "All statuses"}
+                                        {statusFilter === "active" && "Active"}
+                                        {statusFilter === "draft" && "Draft"}
+                                        {statusFilter === "paused" && "Paused"}
+                                        {statusFilter === "error" && "Error"}
+                                        {statusFilter === "completed" && "Completed"}
+                                        {statusFilter === "evergreen" && "Evergreen"}
+                                        <ChevronDown className="h-4 w-4" />
                                     </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Export to CSV</TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                        {selectedIds.length > 0 && (
-                            <Button
-                                variant="destructive"
-                                onClick={() => {
-                                    if (selectedIds.length === 1) {
-                                        setCampaignToDelete(selectedIds[0])
-                                    } else {
-                                        setCampaignToDelete(selectedIds.join(','))
-                                    }
-                                    setDeleteOpen(true)
-                                }}
-                                className="h-10 px-4 font-medium rounded-lg gap-2"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Delete ({selectedIds.length})
-                            </Button>
-                        )}
-                        <Button onClick={() => setCreateOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-foreground h-10 px-6 font-medium rounded-lg gap-2">
-                            <Plus className="h-4 w-4" />
-                            Add New
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Campaigns Table */}
-                <div className="space-y-4">
-                    {/* Header Row */}
-                    <div className="grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-2 text-[11px] font-bold text-[#666666] uppercase tracking-wider">
-                        <div className="flex items-center">
-                            <Checkbox
-                                checked={campaigns.length > 0 && selectedIds.length === campaigns.length}
-                                onCheckedChange={(checked) => toggleSelectAll(checked as boolean)}
-                                className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-                            />
-                        </div>
-                        <div>Name</div>
-                        <div>Status</div>
-                        <div>Progress</div>
-                        <div>Sent</div>
-                        <div>Open</div>
-                        <div>Click</div>
-                        <div>Replied</div>
-                        <div>Opportunities</div>
-                        <div className="text-right"></div>
-                    </div>
-
-                    {loading ? (
-                        <div className="flex items-center justify-center py-24">
-                            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                        </div>
-                    ) : filteredAndSortedCampaigns.length === 0 ? (
-                        <div className="py-12">
-                            <EmptyState
-                                icon={Rocket}
-                                title={searchQuery || statusFilter !== "all" ? "No campaigns found" : "No campaigns yet"}
-                                description={searchQuery || statusFilter !== "all" ? "Try adjusting your filters or search query" : "Create your first campaign to start reaching out to prospects."}
-                                actionLabel={!searchQuery && statusFilter === "all" ? "Create Campaign" : undefined}
-                                onAction={!searchQuery && statusFilter === "all" ? () => setCreateOpen(true) : undefined}
-                            />
-                        </div>
-                    ) : (
-                        filteredAndSortedCampaigns.map((campaign) => (
-                            <div
-                                key={campaign.id}
-                                onClick={(e) => handleRowClick(e, campaign.id)}
-                                className={cn(
-                                    "group grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-2.5 bg-card border border-border rounded-xl items-center hover:border-[#333333] transition-all cursor-pointer",
-                                    selectedIds.includes(campaign.id) && "border-blue-900 bg-blue-900/10"
-                                )}
-                            >
-                                <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                                    <Checkbox
-                                        checked={selectedIds.includes(campaign.id)}
-                                        onCheckedChange={(checked) => toggleSelectOne(campaign.id, checked as boolean)}
-                                        className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-[4px]"
-                                    />
-                                </div>
-
-                                <div className="flex items-center gap-2 min-w-0">
-                                    <div className="font-semibold text-foreground/90 text-sm truncate" title={campaign.name}>
-                                        {campaign.name}
-                                    </div>
-                                    {/* Workspace Badges */}
-                                    {campaign.campaignWorkspaces?.length === 0 ? (
-                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-dashed border-muted-foreground/50 text-muted-foreground">
-                                            Unassigned
-                                        </Badge>
-                                    ) : (
-                                        campaign.campaignWorkspaces?.map((cw: any) => (
-                                            <Badge 
-                                                key={cw.workspaceId} 
-                                                variant="secondary" 
-                                                className="text-[10px] px-1.5 py-0 h-4 bg-blue-500/10 text-blue-400 border-0"
-                                            >
-                                                {cw.workspace?.name || 'Workspace'}
-                                            </Badge>
-                                        ))
-                                    )}
-                                    <div onClick={e => e.stopPropagation()}>
-                                        <TagManager
-                                            entityId={campaign.id}
-                                            entityType="campaign"
-                                            selectedTags={campaign.tags?.map((t: any) => t.tag) || []}
-                                            onTagsChange={() => fetchCampaigns()}
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56 bg-secondary border-border text-foreground">
+                                    <div className="p-2">
+                                        <Input
+                                            placeholder="Search"
+                                            className="bg-background border-border text-foreground text-sm h-8"
                                         />
                                     </div>
-                                </div>
-
-                                <div>
-                                    <Badge
-                                        variant="secondary"
-                                        className={cn(
-                                            "font-medium capitalize px-2.5 py-0.5 min-w-[80px] justify-center rounded-lg border-0",
-                                            campaign.status === "active" && "bg-green-500/10 text-green-400 hover:bg-green-500/20",
-                                            campaign.status === "completed" && "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20",
-                                            campaign.status === "error" && "bg-red-500/10 text-red-400 hover:bg-red-500/20",
-                                            (campaign.status === "draft" || campaign.status === "paused") && "bg-muted text-muted-foreground hover:bg-[#333]"
-                                        )}
+                                    <DropdownMenuSeparator className="bg-muted" />
+                                    <DropdownMenuItem
+                                        onClick={() => setStatusFilter("all")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "all" && "bg-blue-500/20 text-blue-400")}
                                     >
-                                        {campaign.status}
-                                    </Badge>
-                                </div>
-
-                                <div>
-                                    {(() => {
-                                        const leadsCount = campaign._count?.leads || 0
-                                        const stepsCount = campaign._count?.sequences || 0
-                                        const totalExpected = leadsCount * stepsCount
-                                        let progress = totalExpected > 0
-                                            ? Math.min(100, Math.round(((campaign.sentCount || 0) / totalExpected) * 100))
-                                            : 0
-
-                                        if (campaign.status === 'completed') progress = 100
-
-                                        return (
-                                            <div className="flex items-center gap-2">
-                                                <div className="h-1.5 w-16 bg-secondary/50 rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                                                        style={{ width: `${progress}%` }}
-                                                    />
-                                                </div>
-                                                <span className="text-xs text-muted-foreground font-medium">{progress}%</span>
-                                            </div>
-                                        )
-                                    })()}
-                                </div>
-
-                                <div className="text-muted-foreground text-sm font-medium">{campaign.sentCount || "-"}</div>
-                                <div className="text-muted-foreground text-sm font-medium">{campaign.openRate ? `${campaign.openRate}%` : "-"}</div>
-                                <div className="text-muted-foreground text-sm font-medium">{campaign.clickRate ? `${campaign.clickRate}%` : "-"}</div>
-                                <div className="text-muted-foreground text-sm font-medium">{campaign.replyRate ? `${campaign.replyRate}%` : "-"}</div>
-                                <div className="text-muted-foreground text-sm font-medium">{campaign.opportunities || "-"}</div>
-
-                                <div className="flex justify-end items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
-                                        onClick={() => updateCampaignStatus(campaign.id, campaign.status)}
+                                        <Logo variant="icon" size="sm" />
+                                        All statuses
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setStatusFilter("active")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "active" && "bg-blue-500/20 text-blue-400")}
                                     >
-                                        {campaign.status === "active" ? (
-                                            <Pause className="h-4 w-4 fill-current" />
-                                        ) : (
-                                            <Play className="h-4 w-4 fill-current" />
-                                        )}
+                                        <Play className="h-4 w-4 text-green-400" />
+                                        Active
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setStatusFilter("draft")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "draft" && "bg-blue-500/20 text-blue-400")}
+                                    >
+                                        <Filter className="h-4 w-4 text-muted-foreground" />
+                                        Draft
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setStatusFilter("paused")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "paused" && "bg-blue-500/20 text-blue-400")}
+                                    >
+                                        <Pause className="h-4 w-4 text-yellow-400" />
+                                        Paused
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setStatusFilter("error")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "error" && "bg-blue-500/20 text-blue-400")}
+                                    >
+                                        <AlertCircle className="h-4 w-4 text-red-400" />
+                                        Error
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setStatusFilter("completed")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "completed" && "bg-blue-500/20 text-blue-400")}
+                                    >
+                                        <ChevronLeft className="h-4 w-4 text-green-400 rotate-90" />
+                                        Completed
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setStatusFilter("evergreen")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "evergreen" && "bg-blue-500/20 text-blue-400")}
+                                    >
+                                        <InfinityIcon className="h-4 w-4 text-blue-400" />
+                                        Evergreen
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            {/* Sorting Dropdown */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" className="h-10 border-border bg-card text-foreground hover:bg-secondary hover:text-foreground gap-2">
+                                        {sortBy === "newest" && "Newest first"}
+                                        {sortBy === "oldest" && "Oldest first"}
+                                        {sortBy === "name_asc" && "Name (A-Z)"}
+                                        {sortBy === "name_desc" && "Name (Z-A)"}
+                                        <ChevronDown className="h-4 w-4" />
                                     </Button>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0">
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-56 bg-card border-border text-foreground p-1">
-                                            <DropdownMenuItem onClick={() => router.push(`/campaigns/${campaign.id}`)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
-                                                <Pencil className="mr-2 h-4 w-4 text-muted-foreground" /> Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => openRenameModal(campaign.id, campaign.name)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
-                                                <Terminal className="mr-2 h-4 w-4 text-muted-foreground" /> Rename
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => deleteCampaign(campaign.id)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
-                                                <Trash2 className="mr-2 h-4 w-4 text-muted-foreground" /> Delete
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => {
-                                                console.log("Duplicate clicked for:", campaign.id);
-                                                openDuplicateModal(campaign.id, campaign.name);
-                                            }} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
-                                                <Copy className="mr-2 h-4 w-4 text-muted-foreground" /> Duplicate campaign
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => toast({ title: "Downloading CSV...", description: "Analytics export started." })} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
-                                                <Download className="mr-2 h-4 w-4 text-muted-foreground" /> Download analytics CSV
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                                onClick={() => {
-                                                    import('@/lib/pdf-export').then(({ generateCampaignReport }) => {
-                                                        generateCampaignReport(campaign)
-                                                        toast({ title: "PDF Generated", description: "Report downloaded successfully" })
-                                                    })
-                                                }}
-                                                className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2"
-                                            >
-                                                <FileText className="mr-2 h-4 w-4 text-muted-foreground" /> Download PDF Report
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => openShareModal(campaign.id, campaign.name)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
-                                                <Share2 className="mr-2 h-4 w-4 text-muted-foreground" /> Share Campaign
-                                            </DropdownMenuItem>
-                                            {/* Only show "Assign to Workspaces" when viewing "My Organization" and campaign has no workspace assignments */}
-                                            {selectedWorkspaceId === null && (!campaign.campaignWorkspaces || campaign.campaignWorkspaces.length === 0) && (
-                                                <>
-                                                    <DropdownMenuSeparator className="bg-border" />
-                                                    <DropdownMenuItem onClick={() => openWorkspaceAssign(campaign)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
-                                                        <Zap className="mr-2 h-4 w-4 text-blue-500" /> Assign to Workspaces
-                                                    </DropdownMenuItem>
-                                                </>
-                                            )}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-48 bg-secondary border-border text-foreground">
+                                    <DropdownMenuItem
+                                        onClick={() => setSortBy("newest")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground", sortBy === "newest" && "bg-blue-500/20 text-blue-400")}
+                                    >
+                                        Newest first
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setSortBy("oldest")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground", sortBy === "oldest" && "bg-blue-500/20 text-blue-400")}
+                                    >
+                                        Oldest first
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setSortBy("name_asc")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground", sortBy === "name_asc" && "bg-blue-500/20 text-blue-400")}
+                                    >
+                                        Name (A-Z)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={() => setSortBy("name_desc")}
+                                        className={cn("cursor-pointer focus:bg-muted focus:text-foreground", sortBy === "name_desc" && "bg-blue-500/20 text-blue-400")}
+                                    >
+                                        Name (Z-A)
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="h-10 w-10 p-0 border-border bg-card text-foreground hover:bg-secondary hover:text-foreground"
+                                            onClick={handleExport}
+                                        >
+                                            <Download className="h-4 w-4" />
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Export to CSV</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                            {selectedIds.length > 0 && (
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => {
+                                        if (selectedIds.length === 1) {
+                                            setCampaignToDelete(selectedIds[0])
+                                        } else {
+                                            setCampaignToDelete(selectedIds.join(','))
+                                        }
+                                        setDeleteOpen(true)
+                                    }}
+                                    className="h-10 px-4 font-medium rounded-lg gap-2"
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete ({selectedIds.length})
+                                </Button>
+                            )}
+                            <Button onClick={() => setCreateOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-foreground h-10 px-6 font-medium rounded-lg gap-2">
+                                <Plus className="h-4 w-4" />
+                                Add New
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Campaigns Table */}
+                    <div className="space-y-4">
+                        {/* Header Row */}
+                        <div className="grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-2 text-[11px] font-bold text-[#666666] uppercase tracking-wider">
+                            <div className="flex items-center">
+                                <Checkbox
+                                    checked={campaigns.length > 0 && selectedIds.length === campaigns.length}
+                                    onCheckedChange={(checked) => toggleSelectAll(checked as boolean)}
+                                    className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                                />
                             </div>
-                        ))
-                    )}
-                </div>
+                            <div>Name</div>
+                            <div>Status</div>
+                            <div>Progress</div>
+                            <div>Sent</div>
+                            <div>Open</div>
+                            <div>Click</div>
+                            <div>Replied</div>
+                            <div>Opportunities</div>
+                            <div className="text-right"></div>
+                        </div>
+
+                        {loading ? (
+                            <div className="flex items-center justify-center py-24">
+                                <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                            </div>
+                        ) : filteredAndSortedCampaigns.length === 0 ? (
+                            <div className="py-12">
+                                <EmptyState
+                                    icon={Rocket}
+                                    title={searchQuery || statusFilter !== "all" ? "No campaigns found" : "No campaigns yet"}
+                                    description={searchQuery || statusFilter !== "all" ? "Try adjusting your filters or search query" : "Create your first campaign to start reaching out to prospects."}
+                                    actionLabel={!searchQuery && statusFilter === "all" ? "Create Campaign" : undefined}
+                                    onAction={!searchQuery && statusFilter === "all" ? () => setCreateOpen(true) : undefined}
+                                />
+                            </div>
+                        ) : (
+                            filteredAndSortedCampaigns.map((campaign) => (
+                                <div
+                                    key={campaign.id}
+                                    onClick={(e) => handleRowClick(e, campaign.id)}
+                                    className={cn(
+                                        "group grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-2.5 bg-card border border-border rounded-xl items-center hover:border-[#333333] transition-all cursor-pointer",
+                                        selectedIds.includes(campaign.id) && "border-blue-900 bg-blue-900/10"
+                                    )}
+                                >
+                                    <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                                        <Checkbox
+                                            checked={selectedIds.includes(campaign.id)}
+                                            onCheckedChange={(checked) => toggleSelectOne(campaign.id, checked as boolean)}
+                                            className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-[4px]"
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <div className="font-semibold text-foreground/90 text-sm truncate" title={campaign.name}>
+                                            {campaign.name}
+                                        </div>
+                                        {/* Workspace Badges */}
+                                        {campaign.campaignWorkspaces?.length === 0 ? (
+                                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-dashed border-muted-foreground/50 text-muted-foreground">
+                                                Unassigned
+                                            </Badge>
+                                        ) : (
+                                            campaign.campaignWorkspaces?.map((cw: any) => (
+                                                <Badge
+                                                    key={cw.workspaceId}
+                                                    variant="secondary"
+                                                    className="text-[10px] px-1.5 py-0 h-4 bg-blue-500/10 text-blue-400 border-0"
+                                                >
+                                                    {cw.workspace?.name || 'Workspace'}
+                                                </Badge>
+                                            ))
+                                        )}
+                                        <div onClick={e => e.stopPropagation()}>
+                                            <TagManager
+                                                entityId={campaign.id}
+                                                entityType="campaign"
+                                                selectedTags={campaign.tags?.map((t: any) => t.tag) || []}
+                                                onTagsChange={() => fetchCampaigns()}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <Badge
+                                            variant="secondary"
+                                            className={cn(
+                                                "font-medium capitalize px-2.5 py-0.5 min-w-[80px] justify-center rounded-lg border-0",
+                                                campaign.status === "active" && "bg-green-500/10 text-green-400 hover:bg-green-500/20",
+                                                campaign.status === "completed" && "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20",
+                                                campaign.status === "error" && "bg-red-500/10 text-red-400 hover:bg-red-500/20",
+                                                (campaign.status === "draft" || campaign.status === "paused") && "bg-muted text-muted-foreground hover:bg-[#333]"
+                                            )}
+                                        >
+                                            {campaign.status}
+                                        </Badge>
+                                    </div>
+
+                                    <div>
+                                        {(() => {
+                                            const leadsCount = campaign._count?.leads || 0
+                                            const stepsCount = campaign._count?.sequences || 0
+                                            const totalExpected = leadsCount * stepsCount
+                                            let progress = totalExpected > 0
+                                                ? Math.min(100, Math.round(((campaign.sentCount || 0) / totalExpected) * 100))
+                                                : 0
+
+                                            if (campaign.status === 'completed') progress = 100
+
+                                            return (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-1.5 w-16 bg-secondary/50 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                                            style={{ width: `${progress}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs text-muted-foreground font-medium">{progress}%</span>
+                                                </div>
+                                            )
+                                        })()}
+                                    </div>
+
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.sentCount || "-"}</div>
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.openRate || "-"}</div>
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.clickRate || "-"}</div>
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.replyRate || "-"}</div>
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.opportunities || "-"}</div>
+
+                                    <div className="flex justify-end items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+                                            onClick={() => updateCampaignStatus(campaign.id, campaign.status)}
+                                        >
+                                            {campaign.status === "active" ? (
+                                                <Pause className="h-4 w-4 fill-current" />
+                                            ) : (
+                                                <Play className="h-4 w-4 fill-current" />
+                                            )}
+                                        </Button>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-56 bg-card border-border text-foreground p-1">
+                                                <DropdownMenuItem onClick={() => router.push(`/campaigns/${campaign.id}`)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
+                                                    <Pencil className="mr-2 h-4 w-4 text-muted-foreground" /> Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => openRenameModal(campaign.id, campaign.name)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
+                                                    <Terminal className="mr-2 h-4 w-4 text-muted-foreground" /> Rename
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => deleteCampaign(campaign.id)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
+                                                    <Trash2 className="mr-2 h-4 w-4 text-muted-foreground" /> Delete
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => {
+                                                    console.log("Duplicate clicked for:", campaign.id);
+                                                    openDuplicateModal(campaign.id, campaign.name);
+                                                }} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
+                                                    <Copy className="mr-2 h-4 w-4 text-muted-foreground" /> Duplicate campaign
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => toast({ title: "Downloading CSV...", description: "Analytics export started." })} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
+                                                    <Download className="mr-2 h-4 w-4 text-muted-foreground" /> Download analytics CSV
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    onClick={() => {
+                                                        import('@/lib/pdf-export').then(({ generateCampaignReport }) => {
+                                                            generateCampaignReport(campaign)
+                                                            toast({ title: "PDF Generated", description: "Report downloaded successfully" })
+                                                        })
+                                                    }}
+                                                    className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2"
+                                                >
+                                                    <FileText className="mr-2 h-4 w-4 text-muted-foreground" /> Download PDF Report
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => openShareModal(campaign.id, campaign.name)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
+                                                    <Share2 className="mr-2 h-4 w-4 text-muted-foreground" /> Share Campaign
+                                                </DropdownMenuItem>
+                                                {/* Only show "Assign to Workspaces" when viewing "My Organization" and campaign has no workspace assignments */}
+                                                {selectedWorkspaceId === null && (!campaign.campaignWorkspaces || campaign.campaignWorkspaces.length === 0) && (
+                                                    <>
+                                                        <DropdownMenuSeparator className="bg-border" />
+                                                        <DropdownMenuItem onClick={() => openWorkspaceAssign(campaign)} className="cursor-pointer focus:bg-secondary focus:text-foreground text-sm py-2">
+                                                            <Zap className="mr-2 h-4 w-4 text-blue-500" /> Assign to Workspaces
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
 

@@ -44,11 +44,11 @@ export async function GET(
             where: { campaignId: campaignId }
         })
 
-        // Calculate real-time stats from events for accuracy
+        // Calculate real-time stats from events for accuracy (Unique Opens/Clicks)
         const sentCount = allEvents.filter(e => e.type === 'sent').length
-        const openCount = allEvents.filter(e => e.type === 'open').length
-        const clickCount = allEvents.filter(e => e.type === 'click').length
-        const bounceCount = allEvents.filter(e => e.type === 'bounce').length
+        const openCount = new Set(allEvents.filter(e => e.type === 'open').map(e => e.leadId)).size
+        const clickCount = new Set(allEvents.filter(e => e.type === 'click').map(e => e.leadId)).size
+        const bounceCount = new Set(allEvents.filter(e => e.type === 'bounce').map(e => e.leadId)).size
 
         // Fetch reply events with lead data for auto-reply filtering and classification
         const replyEvents = await prisma.sendingEvent.findMany({
@@ -64,7 +64,8 @@ export async function GET(
         if (!includeAutoReplies) {
             filteredReplyEvents = replyEvents.filter(e => e.lead?.aiLabel !== 'out_of_office')
         }
-        const replyCount = filteredReplyEvents.length
+        // Unique leads who replied
+        const replyCount = new Set(filteredReplyEvents.map(e => e.leadId)).size
 
         // Check for unclassified replies
         const unclassifiedReplies = replyEvents.filter(e => !e.lead?.aiLabel)
@@ -91,17 +92,20 @@ export async function GET(
         })
         const opportunityValue = campaignWithWorkspace?.workspace?.opportunityValue || 5000
 
-        // Opportunities = reply count (actual conversions from outreach)
-        const opportunitiesCount = replyCount
+        // Opportunities = interested, meeting_booked, or won
+        const opportunityLeads = campaign.leads.filter((l: any) =>
+            l.status === 'won' || ['interested', 'meeting_booked'].includes(l.aiLabel || '')
+        )
+        const opportunitiesCount = opportunityLeads.length
         const conversions = campaign.leads.filter((l: any) => l.status === 'converted' || l.status === 'won')
         const conversionValue = conversions.length * opportunityValue
 
         // Calculate positive reply rate (if all replies are classified)
         let positiveReplyRate = '0%'
         if (!needsClassification && replyCount > 0) {
-            const positiveReplyCount = filteredReplyEvents.filter(e =>
+            const positiveReplyCount = new Set(filteredReplyEvents.filter(e =>
                 e.lead?.aiLabel && ['interested', 'meeting_booked'].includes(e.lead.aiLabel)
-            ).length
+            ).map(e => e.leadId)).size
             positiveReplyRate = Math.round((positiveReplyCount / replyCount) * 100) + '%'
         } else if (needsClassification) {
             positiveReplyRate = 'calculating...'

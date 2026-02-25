@@ -59,7 +59,19 @@ export async function GET(request: Request) {
         }
 
         if (status && status !== 'all') {
-            where.status = status
+            if (status === 'opportunities') {
+                where.AND = [
+                    ...(where.AND || []),
+                    {
+                        OR: [
+                            { status: 'won' },
+                            { aiLabel: { in: ['interested', 'meeting_booked'] } }
+                        ]
+                    }
+                ]
+            } else {
+                where.status = status
+            }
         }
 
         if (tagIds.length > 0) {

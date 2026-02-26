@@ -17,7 +17,7 @@ export async function GET(
         }
 
         // Return the binary data with correct headers
-        return new Response(attachment.content, {
+        return new Response(new Uint8Array(attachment.content), {
             headers: {
                 'Content-Type': attachment.mimeType,
                 'Content-Disposition': `inline; filename="${attachment.filename}"`,

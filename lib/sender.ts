@@ -66,7 +66,11 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 include: { emailAccount: true }
             },
             sequences: {
-                include: { variants: true },
+                include: {
+                    variants: {
+                        include: { attachments: true }
+                    }
+                },
                 orderBy: { stepNumber: 'asc' }
             }
         }
@@ -378,6 +382,12 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     // @ts-ignore
                     body = chosenVariant.body
                     selectedVariantId = chosenVariant.id
+                        // Extract attachments for the chosen variant
+                        (step as any).mailAttachments = (chosenVariant.attachments || []).map((a: any) => ({
+                            filename: a.filename,
+                            content: a.content,
+                            contentType: a.mimeType
+                        }))
                 } else {
                     // @ts-ignore
                     subject = step.subject || ""
@@ -450,6 +460,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     subject: subject,
                     html: finalHtml,
                     text: finalText,
+                    attachments: (step as any).mailAttachments || [],
                     cc: settings.ccRecipients,
                     bcc: settings.bccRecipients
                 }

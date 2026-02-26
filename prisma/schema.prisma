@@ -338,8 +338,22 @@ model SequenceVariant {
   weight  Int @default(50) 
   enabled Boolean @default(true)
   
+  attachments Attachment[]
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Attachment {
+  id                String          @id @default(cuid())
+  filename          String
+  mimeType          String
+  size              Int
+  content           Bytes
+  createdAt         DateTime        @default(now())
+  
+  sequenceVariant   SequenceVariant? @relation(fields: [sequenceVariantId], references: [id])
+  sequenceVariantId String?
 }
 
 model SendingEvent {

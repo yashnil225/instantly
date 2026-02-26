@@ -100,7 +100,7 @@ async function withRetry<T>(
  */
 export async function syncAccountInbox(
     account: EmailAccount,
-    guard?: { isTimedOut: () => boolean, elapsedSec: () => string }
+    guard?: { isTimedOut: () => boolean, elapsedSec: () => number }
 ): Promise<{ replies: number, bounces: number, sentSynced: number }> {
     const inboxResult = await withRetry(async (attempt) => {
         if (attempt === 0) {

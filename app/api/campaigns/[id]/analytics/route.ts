@@ -94,7 +94,7 @@ export async function GET(
 
         // Opportunities = interested, meeting_booked, or won
         const opportunityLeads = campaign.leads.filter((l: any) =>
-            l.status === 'won' || ['interested', 'meeting_booked'].includes(l.aiLabel || '')
+            ['won', 'converted'].includes(l.status || '') || ['interested', 'meeting_booked'].includes(l.aiLabel || '')
         )
         const opportunitiesCount = opportunityLeads.length
         const conversions = campaign.leads.filter((l: any) => l.status === 'converted' || l.status === 'won')
@@ -152,7 +152,10 @@ export async function GET(
                 opened: stepEvents.filter(e => e.type === 'open').length,
                 replied: stepEvents.filter(e => e.type === 'reply').length,
                 clicked: stepEvents.filter(e => e.type === 'click').length,
-                opportunities: stepEvents.filter(e => e.type === 'reply').length,
+                opportunities: stepEvents.filter(e => {
+                    const lead = campaign.leads.find(l => l.id === e.leadId)
+                    return lead && (['won', 'converted'].includes(lead.status || '') || ['interested', 'meeting_booked'].includes(lead.aiLabel || ''))
+                }).length,
                 variants: variantsStats
             }
         })

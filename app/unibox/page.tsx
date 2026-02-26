@@ -364,6 +364,8 @@ function UniboxPage() {
 
     // File attachment state
     const [attachments, setAttachments] = useState<File[]>([])
+    const [uploadedAttachmentIds, setUploadedAttachmentIds] = useState<string[]>([])
+    const [uploading, setUploading] = useState(false)
 
     const startResizing = (mouseDownEvent: React.MouseEvent) => {
         const startX = mouseDownEvent.clientX
@@ -674,12 +676,12 @@ ${selectedEmail.body || selectedEmail.preview}
             if (res.ok) {
                 const data = await res.json()
                 const messages = (data.events || [])
-                    .filter((e: any) => e.type === 'sent' || e.type === 'reply')
+                    .filter((e: any) => e.name === 'email_sent' || e.name === 'email_received')
                     .map((e: any) => ({
                         id: e.id,
-                        isMe: e.type === 'sent',
-                        from: e.type === 'sent' ? 'Me' : (data.firstName ? `${data.firstName} ${data.lastName || ''}` : email.fromName),
-                        to: e.type === 'sent' ? (data.firstName || 'Lead') : 'Me',
+                        isMe: e.name === 'email_sent',
+                        from: e.name === 'email_sent' ? 'Me' : (data.firstName ? `${data.firstName} ${data.lastName || ''}` : email.fromName),
+                        to: e.name === 'email_sent' ? (data.firstName || 'Lead') : 'Me',
                         body: e.details,
                         timestamp: e.createdAt
                     }))
@@ -767,13 +769,19 @@ ${selectedEmail.body || selectedEmail.preview}
                     })
                 })
             } else {
-                res = await fetch('/api/emails/reply', {
+                // Determine leadId and campaignId from selectedEmail
+                const leadId = selectedEmail?.leadId || selectedEmail?.id
+                const campaignId = selectedEmail?.campaign?.id
+
+                res = await fetch('/api/unibox/reply', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        emailId: params.emailId,
-                        body: params.body,
-                        replyAll: params.mode === 'reply-all'
+                        threadId: params.emailId,
+                        leadId,
+                        campaignId,
+                        replyBody: params.body,
+                        attachmentIds: uploadedAttachmentIds
                     })
                 })
             }
@@ -788,6 +796,8 @@ ${selectedEmail.body || selectedEmail.preview}
                 setReplyBody("")
                 setForwardTo("")
                 setForwardSubject("")
+                setAttachments([])
+                setUploadedAttachmentIds([])
             } else {
                 toast({ title: "Error", description: "Failed to send email. Please try again.", variant: "destructive" })
             }
@@ -1135,40 +1145,76 @@ ${selectedEmail.body || selectedEmail.preview}
         toast({ title: "Success", description: `Labeled ${ids.length} emails as ${label}` })
     }
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || [])
-        const MAX_SIZE = 25 * 1024 * 1024
+        const MAX_TOTAL_SIZE = 25 * 1024 * 1024
+
+        // Calculate current total size of existing attachments
+        const currentTotalSize = attachments.reduce((sum, file) => sum + file.size, 0)
 
         const validFiles: File[] = []
-        const oversizedFiles: string[] = []
+        let runningTotalSize = currentTotalSize
 
-        files.forEach(file => {
-            if (file.size > MAX_SIZE) {
-                oversizedFiles.push(file.name)
-            } else {
-                validFiles.push(file)
+        for (const file of files) {
+            if (runningTotalSize + file.size > MAX_TOTAL_SIZE) {
+                toast({
+                    title: "Total size limit exceeded",
+                    description: `Adding "${file.name}" would exceed the 25MB total limit for all attachments.`,
+                    variant: "destructive"
+                })
+                break // Stop adding files that would exceed the total limit
             }
-        })
-
-        if (oversizedFiles.length > 0) {
-            toast({
-                title: "File size limit exceeded",
-                description: `The following files exceed 25MB and were not added: ${oversizedFiles.join(', ')}. Please use a file sharing service for large files.`,
-                variant: "destructive"
-            })
+            validFiles.push(file)
+            runningTotalSize += file.size
         }
 
         if (validFiles.length > 0) {
-            setAttachments([...attachments, ...validFiles])
-            toast({
-                title: "Files attached",
-                description: `Added ${validFiles.length} file(s)`
-            })
+            setUploading(true)
+            try {
+                const newIds: string[] = []
+                const newFiles: File[] = []
+
+                for (const file of validFiles) {
+                    const formData = new FormData()
+                    formData.append('file', file)
+
+                    const res = await fetch('/api/upload/attachment', {
+                        method: 'POST',
+                        body: formData
+                    })
+
+                    if (res.ok) {
+                        const { id } = await res.json()
+                        newIds.push(id)
+                        newFiles.push(file)
+                    } else {
+                        toast({ title: "Upload Failed", description: `Failed to upload ${file.name}`, variant: "destructive" })
+                    }
+                }
+
+                setAttachments([...attachments, ...newFiles])
+                setUploadedAttachmentIds([...uploadedAttachmentIds, ...newIds])
+
+                if (newFiles.length > 0) {
+                    toast({
+                        title: "Files attached",
+                        description: `Added ${newFiles.length} file(s)`
+                    })
+                }
+            } catch (error) {
+                console.error("Upload error", error)
+                toast({ title: "Error", description: "Failed to upload files", variant: "destructive" })
+            } finally {
+                setUploading(false)
+                e.target.value = ''
+            }
         }
     }
 
     const removeAttachment = (index: number) => {
+        const fileToRemove = attachments[index]
         setAttachments(attachments.filter((_, i) => i !== index))
+        setUploadedAttachmentIds(uploadedAttachmentIds.filter((_, i) => i !== index))
     }
 
     // Workspace management handlers
@@ -1939,12 +1985,8 @@ ${selectedEmail.body || selectedEmail.preview}
                                                         </div>
                                                     </div>
                                                     <div className="p-5 text-sm leading-relaxed text-[#d4d4d8] font-sans">
-                                                        {/* Render HTML content or plain text safely */}
-                                                        {msg.body && msg.body.includes('<') && msg.body.includes('>') ? (
-                                                            <div dangerouslySetInnerHTML={{ __html: msg.body }} />
-                                                        ) : (
-                                                            <div style={{ whiteSpace: 'pre-wrap' }}>{msg.body}</div>
-                                                        )}
+                                                        {/* Render HTML content safely */}
+                                                        <div dangerouslySetInnerHTML={{ __html: msg.body }} />
                                                     </div>
                                                 </div>
                                             ))}

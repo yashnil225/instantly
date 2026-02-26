@@ -21,7 +21,10 @@ import {
     ToggleLeft,
     ToggleRight,
     AlertTriangle,
-    CheckCircle
+    CheckCircle,
+    Paperclip,
+    X,
+    Loader2
 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
@@ -48,9 +51,12 @@ import { EmailPreviewModal } from "@/components/app/campaigns/EmailPreviewModal"
 
 // Types matching backend
 interface SequenceVariant {
+    id?: string
     subject: string
     body: string
-    enabled?: boolean // For toggle on/off
+    enabled?: boolean
+    attachments?: { id: string, filename: string, size: number, mimeType: string }[]
+    attachmentIds?: string[]
 }
 
 interface SequenceStep {
@@ -181,11 +187,16 @@ export default function SequencesPage() {
             const res = await fetch(`/api/campaigns/${params.id}/sequence`)
             if (res.ok) {
                 const data = await res.json()
-                const mappedSteps = data.map((seq: { id: string, stepNumber: number, dayGap: number, variants: SequenceVariant[] }) => ({
+                const mappedSteps = data.map((seq: any) => ({
                     id: seq.id,
                     stepNumber: seq.stepNumber,
                     day: seq.dayGap,
-                    variants: seq.variants && seq.variants.length > 0 ? seq.variants : [{ subject: '', body: '' }],
+                    variants: (seq.variants && seq.variants.length > 0)
+                        ? seq.variants.map((v: any) => ({
+                            ...v,
+                            attachmentIds: (v.attachments || []).map((a: any) => a.id)
+                        }))
+                        : [{ subject: '', body: '', attachmentIds: [] }],
                     activeVariant: 0
                 }))
                 setSteps(mappedSteps)
@@ -290,6 +301,74 @@ export default function SequencesPage() {
         // Append to end for simplicity, ideally at cursor position if we had ref
         updateStep(activeStepIndex, 'variant', currentBody + " " + variable, activeStep.activeVariant, 'body')
         setVariableMenuOpen(false)
+    }
+
+    // --- Attachment Logic ---
+    const [uploading, setUploading] = useState(false)
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        const activeStep = steps[activeStepIndex]
+        if (!activeStep) return
+        const variant = activeStep.variants[activeStep.activeVariant || 0]
+
+        // 25MB total limit check
+        const MAX_TOTAL_SIZE = 25 * 1024 * 1024
+        const currentTotalSize = (variant.attachments || []).reduce((sum, a: any) => sum + (a.size || 0), 0)
+
+        if (currentTotalSize + file.size > MAX_TOTAL_SIZE) {
+            toast({
+                title: "Total size limit exceeded",
+                description: `Adding "${file.name}" would exceed the 25MB total limit for this variant.`,
+                variant: "destructive"
+            })
+            return
+        }
+
+        setUploading(true)
+        const formData = new FormData()
+        formData.append('file', file)
+
+        try {
+            const res = await fetch('/api/upload/attachment', {
+                method: 'POST',
+                body: formData
+            })
+
+            if (!res.ok) throw new Error("Upload failed")
+
+            const attachment = await res.json()
+
+            // Add to current variant
+            const newSteps = [...steps]
+            const variant = newSteps[activeStepIndex].variants[activeStep.activeVariant || 0]
+
+            variant.attachments = [...(variant.attachments || []), attachment]
+            variant.attachmentIds = [...(variant.attachmentIds || []), attachment.id]
+
+            setSteps(newSteps)
+            toast({ title: "File Uploaded", description: `${file.name} attached.` })
+
+        } catch (error) {
+            console.error("Upload error:", error)
+            toast({ title: "Upload Failed", description: "Failed to upload file.", variant: "destructive" })
+        } finally {
+            setUploading(false)
+            // Clear input
+            e.target.value = ''
+        }
+    }
+
+    const removeAttachment = (attachmentId: string) => {
+        const newSteps = [...steps]
+        const variant = newSteps[activeStepIndex].variants[activeStep.activeVariant || 0]
+
+        variant.attachments = (variant.attachments || []).filter((a: any) => a.id !== attachmentId)
+        variant.attachmentIds = (variant.attachmentIds || []).filter(id => id !== attachmentId)
+
+        setSteps(newSteps)
     }
 
     const handleApplyTemplate = (subject: string, body: string) => {
@@ -706,143 +785,182 @@ export default function SequencesPage() {
                                                     ))}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
+
+                                            <div className="w-[1px] h-5 bg-[#333] mx-1" />
+
+                                            <div className="relative">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-gray-400 hover:text-white gap-2 h-8 text-xs transition-colors"
+                                                    disabled={uploading}
+                                                    onClick={() => document.getElementById('variant-file-upload')?.click()}
+                                                >
+                                                    {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Paperclip className="h-3 w-3" />}
+                                                    Attach
+                                                </Button>
+                                                <input
+                                                    id="variant-file-upload"
+                                                    type="file"
+                                                    className="hidden"
+                                                    onChange={handleFileUpload}
+                                                />
+                                            </div>
                                         </div>
                                     }
                                 />
-                            </div>
 
-                            <div className="hidden">
-                                <div className="flex items-center gap-3">
-                                    {/* Save Split Button */}
-                                    <div className="flex items-center rounded-md bg-blue-600 hover:bg-blue-700 transition-colors">
-                                        <button
-                                            className="px-4 py-2 text-sm font-medium text-white border-r border-blue-700"
-                                            onClick={handleSave}
-                                        >
-                                            {saving ? "Saving..." : "Save"}
-                                        </button>
-                                        <div className="px-1.5 cursor-pointer hover:bg-blue-800 rounded-r-md h-full flex items-center">
-                                            <ChevronDown className="h-4 w-4 text-white" />
-                                        </div>
+                                {/* Attachment List */}
+                                {activeVariant.attachments && activeVariant.attachments.length > 0 && (
+                                    <div className="px-6 py-3 flex flex-wrap gap-2 border-t border-[#222] bg-[#0d0d0d]">
+                                        {activeVariant.attachments.map((file: any) => (
+                                            <div key={file.id} className="flex items-center gap-2 bg-[#1a1a1a] border border-[#333] rounded-md px-2 py-1 text-xs text-gray-300">
+                                                <Paperclip className="h-3 w-3 text-gray-500" />
+                                                <span className="max-w-[150px] truncate">{file.filename}</span>
+                                                <span className="text-[10px] text-gray-600">({(file.size / (1024 * 1024)).toFixed(2)}MB)</span>
+                                                <button
+                                                    onClick={() => removeAttachment(file.id)}
+                                                    className="text-gray-500 hover:text-red-400 transition-colors ml-1"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
-
-                                    {/* Tools Group */}
-                                    <div className="h-6 w-[1px] bg-[#333] mx-2" /> {/* Divider */}
-
-                                    {/* AI Tools Dropdown */}
-                                    <DropdownMenu open={aiMenuOpen} onOpenChange={setAiMenuOpen}>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white gap-2 data-[state=open]:bg-[#2a2a2a] data-[state=open]:text-white">
-                                                <Sparkles className="h-4 w-4" /> AI Tools
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white w-56" align="start">
-                                            <DropdownMenuItem className="hover:bg-[#333] cursor-pointer gap-2" onClick={() => toast({ title: "Thinking...", description: "AI is generating sequence ideas." })}>
-                                                <Sparkles className="h-4 w-4 text-purple-400" /> <span>AI Sequence Writer</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem className="hover:bg-[#333] cursor-pointer gap-2" onClick={() => toast({ title: "Processing...", description: "AI Spintax generation started." })}>
-                                                <RefreshCw className="h-4 w-4 text-blue-400" /> <span>AI Spintax Writer</span>
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem className="hover:bg-[#333] cursor-pointer gap-2 justify-between" onClick={() => toast({ title: "Checking...", description: "Scanning for spam words." })}>
-                                                <div className="flex items-center gap-2">
-                                                    <ShieldAlert className="h-4 w-4 text-orange-400" /> <span>AI Spam Words Checker</span>
-                                                </div>
-                                                <span className="text-[10px] bg-green-900/50 text-green-400 px-1.5 rounded border border-green-800">Beta</span>
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-gray-400 hover:text-white gap-2"
-                                        onClick={() => setTemplatesOpen(true)}
-                                    >
-                                        <LayoutTemplate className="h-4 w-4" /> Templates
-                                    </Button>
-
-                                    <DropdownMenu open={variableMenuOpen} onOpenChange={setVariableMenuOpen}>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white gap-2">
-                                                <Zap className="h-4 w-4" /> Variables
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white">
-                                            {availableVariables.map((v: { label: string; value: string }) => (
-                                                <DropdownMenuItem key={v.value} onClick={() => insertVariable(v.value)} className="hover:bg-[#333] cursor-pointer">
-                                                    {v.label} <span className="ml-2 text-gray-500 text-xs">{v.value}</span>
-                                                </DropdownMenuItem>
-                                            ))}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white w-8" onClick={() => toast({ title: "AI Assistant", description: "How can I help you write this email?" })}>
-                                        <span className="font-serif italic font-bold text-lg">Ai</span>
-                                    </Button>
-                                </div>
-
-                                <div className="flex items-center gap-1 text-gray-400">
-                                    <Button variant="ghost" size="icon" className="hover:text-white hover:bg-[#222] w-8 h-8" onClick={() => updateStep(activeStepIndex, 'variant', '', activeStep.activeVariant, 'body')} title="Clear Body">
-                                        <Eraser className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="hover:text-white hover:bg-[#222] w-8 h-8" onClick={() => insertVariable('[Link Text](url)')} title="Insert Link">
-                                        <LinkIcon className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="hover:text-white hover:bg-[#222] w-8 h-8" onClick={() => insertVariable('<b>Bold Text</b>')} title="Insert HTML">
-                                        <Code className="h-4 w-4" />
-                                    </Button>
-                                </div>
+                                )}
                             </div>
-
-                            <EmailPreviewModal
-                                open={previewOpen}
-                                onOpenChange={setPreviewOpen}
-                                subject={activeVariant.subject}
-                                body={activeVariant.body}
-                                sampleLead={sampleLead}
-                            />
-
-
-
-
-                            <TemplatesModal
-                                open={templatesOpen}
-                                onOpenChange={setTemplatesOpen}
-                                onSelectTemplate={handleApplyTemplate}
-                            />
-
-                            <AlertDialog open={deleteStepId !== null} onOpenChange={(open) => !open && setDeleteStepId(null)}>
-                                <AlertDialogContent className="bg-[#1a1a1a] border-[#222] text-white">
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle className="text-xl font-semibold text-center">Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription className="text-center text-gray-400">
-                                            You&apos;re trying to delete a step for a launched campaign.
-                                            <br /><br />
-                                            This can cause issues with the campaign&apos;s analytics reporting - are you sure you want proceed?
-                                            <br /><br />
-                                            <span className="text-orange-400 font-medium">Warning: This action is irreversible once you save the campaign.</span>
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter className="flex justify-center gap-3 sm:justify-center mt-4">
-                                        <AlertDialogAction
-                                            className="bg-red-600 hover:bg-red-700 text-white font-medium border-0"
-                                            onClick={confirmDeleteStep}
-                                        >
-                                            Delete step
-                                        </AlertDialogAction>
-                                        <AlertDialogCancel
-                                            className="bg-[#2a2a2a] text-white hover:bg-[#333] border-0"
-                                            onClick={() => setDeleteStepId(null)}
-                                        >
-                                            Cancel
-                                        </AlertDialogCancel>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-
                         </>
                     )
                 }
-            </div >
-        </div >
+            </div>
+
+            <div className="hidden">
+                <div className="flex items-center gap-3">
+                    {/* Save Split Button */}
+                    <div className="flex items-center rounded-md bg-blue-600 hover:bg-blue-700 transition-colors">
+                        <button
+                            className="px-4 py-2 text-sm font-medium text-white border-r border-blue-700"
+                            onClick={handleSave}
+                        >
+                            {saving ? "Saving..." : "Save"}
+                        </button>
+                        <div className="px-1.5 cursor-pointer hover:bg-blue-800 rounded-r-md h-full flex items-center">
+                            <ChevronDown className="h-4 w-4 text-white" />
+                        </div>
+                    </div>
+
+                    {/* Tools Group */}
+                    <div className="h-6 w-[1px] bg-[#333] mx-2" /> {/* Divider */}
+
+                    {/* AI Tools Dropdown */}
+                    <DropdownMenu open={aiMenuOpen} onOpenChange={setAiMenuOpen}>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white gap-2 data-[state=open]:bg-[#2a2a2a] data-[state=open]:text-white">
+                                <Sparkles className="h-4 w-4" /> AI Tools
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white w-56" align="start">
+                            <DropdownMenuItem className="hover:bg-[#333] cursor-pointer gap-2" onClick={() => toast({ title: "Thinking...", description: "AI is generating sequence ideas." })}>
+                                <Sparkles className="h-4 w-4 text-purple-400" /> <span>AI Sequence Writer</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="hover:bg-[#333] cursor-pointer gap-2" onClick={() => toast({ title: "Processing...", description: "AI Spintax generation started." })}>
+                                <RefreshCw className="h-4 w-4 text-blue-400" /> <span>AI Spintax Writer</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="hover:bg-[#333] cursor-pointer gap-2 justify-between" onClick={() => toast({ title: "Checking...", description: "Scanning for spam words." })}>
+                                <div className="flex items-center gap-2">
+                                    <ShieldAlert className="h-4 w-4 text-orange-400" /> <span>AI Spam Words Checker</span>
+                                </div>
+                                <span className="text-[10px] bg-green-900/50 text-green-400 px-1.5 rounded border border-green-800">Beta</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-400 hover:text-white gap-2"
+                        onClick={() => setTemplatesOpen(true)}
+                    >
+                        <LayoutTemplate className="h-4 w-4" /> Templates
+                    </Button>
+
+                    <DropdownMenu open={variableMenuOpen} onOpenChange={setVariableMenuOpen}>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white gap-2">
+                                <Zap className="h-4 w-4" /> Variables
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white">
+                            {availableVariables.map((v: { label: string; value: string }) => (
+                                <DropdownMenuItem key={v.value} onClick={() => insertVariable(v.value)} className="hover:bg-[#333] cursor-pointer">
+                                    {v.label} <span className="ml-2 text-gray-500 text-xs">{v.value}</span>
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white w-8" onClick={() => toast({ title: "AI Assistant", description: "How can I help you write this email?" })}>
+                        <span className="font-serif italic font-bold text-lg">Ai</span>
+                    </Button>
+                </div>
+
+                <div className="flex items-center gap-1 text-gray-400">
+                    <Button variant="ghost" size="icon" className="hover:text-white hover:bg-[#222] w-8 h-8" onClick={() => updateStep(activeStepIndex, 'variant', '', activeStep.activeVariant, 'body')} title="Clear Body">
+                        <Eraser className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="hover:text-white hover:bg-[#222] w-8 h-8" onClick={() => insertVariable('[Link Text](url)')} title="Insert Link">
+                        <LinkIcon className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="hover:text-white hover:bg-[#222] w-8 h-8" onClick={() => insertVariable('<b>Bold Text</b>')} title="Insert HTML">
+                        <Code className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+
+            <EmailPreviewModal
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                subject={activeVariant.subject}
+                body={activeVariant.body}
+                sampleLead={sampleLead}
+            />
+
+
+
+
+            <TemplatesModal
+                open={templatesOpen}
+                onOpenChange={setTemplatesOpen}
+                onSelectTemplate={handleApplyTemplate}
+            />
+
+            <AlertDialog open={deleteStepId !== null} onOpenChange={(open) => !open && setDeleteStepId(null)}>
+                <AlertDialogContent className="bg-[#1a1a1a] border-[#222] text-white">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-semibold text-center">Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-center text-gray-400">
+                            You&apos;re trying to delete a step for a launched campaign.
+                            <br /><br />
+                            This can cause issues with the campaign&apos;s analytics reporting - are you sure you want proceed?
+                            <br /><br />
+                            <span className="text-orange-400 font-medium">Warning: This action is irreversible once you save the campaign.</span>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="flex justify-center gap-3 sm:justify-center mt-4">
+                        <AlertDialogAction
+                            className="bg-red-600 hover:bg-red-700 text-white font-medium border-0"
+                            onClick={confirmDeleteStep}
+                        >
+                            Delete step
+                        </AlertDialogAction>
+                        <AlertDialogCancel
+                            className="bg-[#2a2a2a] text-white hover:bg-[#333] border-0"
+                            onClick={() => setDeleteStepId(null)}
+                        >
+                            Cancel
+                        </AlertDialogCancel>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
     )
 }

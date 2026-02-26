@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     try {
-        const { threadId, leadId, campaignId, replyBody } = await request.json()
+        const { threadId, leadId, campaignId, replyBody, attachmentIds } = await request.json()
 
         if (!leadId || !campaignId || !replyBody) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -91,11 +91,25 @@ export async function POST(request: Request) {
             auth: { user: account.smtpUser!, pass: account.smtpPass! }
         })
 
+        // Fetch attachments if any
+        let attachments: any[] = []
+        if (attachmentIds && Array.isArray(attachmentIds) && attachmentIds.length > 0) {
+            const dbAttachments = await prisma.attachment.findMany({
+                where: { id: { in: attachmentIds } }
+            })
+            attachments = dbAttachments.map(a => ({
+                filename: a.filename,
+                content: a.content,
+                contentType: a.mimeType
+            }))
+        }
+
         await transporter.sendMail({
             from: `"${account.firstName || ''} ${account.lastName || ''}" <${account.email}>`,
             to: lead.email,
             subject: subject,
             html: `<div style="white-space: pre-wrap;">${replyBody}</div>`,
+            attachments,
             // Threading headers
             ...(lastSentEvent?.messageId && {
                 inReplyTo: lastSentEvent.messageId,

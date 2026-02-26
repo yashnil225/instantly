@@ -142,11 +142,9 @@ export async function syncReplies(account: EmailAccount) {
                     const bodyText = parsed.text || ''
 
                     // --- CHECK FOR BOUNCE ---
-                    const isBounceSource = from === 'mailer-daemon@googlemail.com' ||
-                        from === 'postmaster' ||
+                    const isBounceSource =
                         from?.includes('mailer-daemon') ||
                         from?.includes('postmaster') ||
-                        from?.includes('bounce') ||
                         from?.includes('no-reply') ||
                         subject.includes('delivery status notification') ||
                         subject.includes('undelivered') ||
@@ -154,16 +152,25 @@ export async function syncReplies(account: EmailAccount) {
                         subject.includes('returned mail') ||
                         subject.includes('delivery failure') ||
                         subject.includes('failure notice') ||
-                        subject.includes('bounced')
+                        subject.includes('bounced') ||
+                        subject.includes('not delivered') ||
+                        subject.includes('could not be delivered') ||
+                        subject.includes('delivery failed') ||
+                        subject.includes('permanent failure') ||
+                        subject.includes('address not found') ||
+                        subject.includes('domain not found') ||
+                        bodyText.includes('diagnostic-code') ||
+                        bodyText.includes('final-recipient') ||
+                        bodyText.includes('status: 5.')
 
                     if (isBounceSource) {
                         const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/g
-                        const searchContent = bodyText + ' ' + (parsed.html || '')
-                        const foundEmails = searchContent.match(emailRegex) || []
+                        const searchContent = bodyText + ' ' + (parsed.html || '') + ' ' + (parsed.subject || '')
+                        const foundEmails = Array.from(new Set(searchContent.match(emailRegex) || []))
 
                         for (const bouncedEmail of foundEmails) {
                             const lead = await prisma.lead.findFirst({
-                                where: { email: bouncedEmail, campaignId: { not: undefined } }
+                                where: { email: bouncedEmail }
                             })
 
                             if (lead) {

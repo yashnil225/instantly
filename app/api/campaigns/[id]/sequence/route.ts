@@ -14,7 +14,11 @@ export async function GET(
 
     const sequences = await prisma.sequence.findMany({
         where: { campaignId: id },
-        include: { variants: true },
+        include: {
+            variants: {
+                include: { attachments: true }
+            }
+        },
         orderBy: { stepNumber: 'asc' }
     })
 
@@ -68,7 +72,7 @@ export async function POST(
 
                 if (step.variants && step.variants.length > 0) {
                     for (const v of step.variants) {
-                        await tx.sequenceVariant.create({
+                        const variant = await tx.sequenceVariant.create({
                             data: {
                                 sequenceId: sequence.id,
                                 subject: v.subject,
@@ -76,6 +80,13 @@ export async function POST(
                                 weight: 50 // Default split
                             }
                         })
+
+                        if (v.attachmentIds && Array.isArray(v.attachmentIds)) {
+                            await tx.attachment.updateMany({
+                                where: { id: { in: v.attachmentIds } },
+                                data: { sequenceVariantId: variant.id }
+                            })
+                        }
                     }
                 }
             }

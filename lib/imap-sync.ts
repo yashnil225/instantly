@@ -147,14 +147,19 @@ export async function syncReplies(account: EmailAccount) {
                         from?.includes('mailer-daemon') ||
                         from?.includes('postmaster') ||
                         from?.includes('bounce') ||
+                        from?.includes('no-reply') ||
                         subject.includes('delivery status notification') ||
                         subject.includes('undelivered') ||
                         subject.includes('undeliverable') ||
-                        subject.includes('returned mail')
+                        subject.includes('returned mail') ||
+                        subject.includes('delivery failure') ||
+                        subject.includes('failure notice') ||
+                        subject.includes('bounced')
 
                     if (isBounceSource) {
                         const emailRegex = /[\w\.-]+@[\w\.-]+\.\w+/g
-                        const foundEmails = bodyText.match(emailRegex) || []
+                        const searchContent = bodyText + ' ' + (parsed.html || '')
+                        const foundEmails = searchContent.match(emailRegex) || []
 
                         for (const bouncedEmail of foundEmails) {
                             const lead = await prisma.lead.findFirst({

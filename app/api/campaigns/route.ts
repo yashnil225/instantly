@@ -70,10 +70,14 @@ export async function GET(request: Request) {
 
         // Fetch unique event counts
         const eventCounts = await prisma.$queryRaw<{ campaignId: string, type: string, count: number | bigint }[]>`
-            SELECT "campaignId", "type", COUNT(DISTINCT "leadId") as count
+            SELECT "campaignId", "type", 
+                   CASE 
+                     WHEN "type" = 'sent' THEN COUNT(id) 
+                     ELSE COUNT(DISTINCT "leadId") 
+                   END as count
             FROM "SendingEvent"
             WHERE "campaignId" IN (${Prisma.join(campaignIds)})
-            AND "type" IN ('open', 'click', 'reply')
+            AND "type" IN ('sent', 'open', 'click', 'reply')
             GROUP BY "campaignId", "type"
         `
 
@@ -88,8 +92,6 @@ export async function GET(request: Request) {
 
         // Calculate rates and opportunities for each campaign
         const campaignsWithAnalytics = campaigns.map(campaign => {
-            const sentCount = campaign.sentCount || 0
-
             // Extract counts from query results safely handling BigInts
             const getUniqueCount = (type: string) => {
                 const match = eventCounts.find(e => e.campaignId === campaign.id && e.type === type)
@@ -101,6 +103,7 @@ export async function GET(request: Request) {
                 return match ? Number(match.count) : 0
             }
 
+            const sentCount = getUniqueCount('sent')
             const uniqueOpenCount = getUniqueCount('open')
             const uniqueClickCount = getUniqueCount('click')
             const uniqueReplyCount = getUniqueCount('reply')
@@ -108,6 +111,7 @@ export async function GET(request: Request) {
 
             return {
                 ...campaign,
+                sentCount, // Override static sentCount with source-of-truth from SendingEvent
                 openRate: !campaign.trackOpens ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueOpenCount / sentCount) * 100), 100) : 0}%`,
                 clickRate: !campaign.trackLinks ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueClickCount / sentCount) * 100), 100) : 0}%`,
                 replyRate: `${sentCount > 0 ? Math.min(Math.round((uniqueReplyCount / sentCount) * 100), 100) : 0}%`,

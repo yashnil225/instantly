@@ -265,10 +265,10 @@ export default function GlobalLeadsPage() {
                                 <DropdownMenuItem onClick={() => setStatusFilter('bounced')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'bounced' && "bg-blue-500/20 text-blue-400")}>
                                     <XCircle className="h-4 w-4 mr-2 text-red-500" /> Bounced
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setStatusFilter('opportunities')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'opportunities' && "bg-blue-500/20 text-blue-400")}>
+                                    <Zap className="h-4 w-4 mr-2 text-yellow-500" /> Opportunities
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => setStatusFilter('opportunities')} className={cn("cursor-pointer focus:bg-[#2a2a2a] focus:text-white", statusFilter === 'opportunities' && "bg-blue-500/20 text-blue-400")}>
-                                <Zap className="h-4 w-4 mr-2 text-yellow-500" /> Opportunities
-                            </DropdownMenuItem>
                         </DropdownMenu>
                     </div>
 

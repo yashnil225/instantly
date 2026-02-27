@@ -675,20 +675,49 @@ ${selectedEmail.body || selectedEmail.preview}
             const res = await fetch(`/api/leads/${email.id}`)
             if (res.ok) {
                 const data = await res.json()
-                const messages = (data.events || [])
-                    .filter((e: any) => e.name === 'email_sent' || e.name === 'email_received')
-                    .map((e: any) => ({
-                        id: e.id,
-                        isMe: e.name === 'email_sent',
-                        from: e.name === 'email_sent' ? 'Me' : (data.firstName ? `${data.firstName} ${data.lastName || ''}` : email.fromName),
-                        to: e.name === 'email_sent' ? (data.firstName || 'Lead') : 'Me',
-                        body: e.details,
-                        timestamp: e.createdAt
-                    }))
-                    .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
 
-                const lastEvent = data.events?.[0]
-                const emailContent = lastEvent?.details || data.body || data.text || email.preview
+                // Build the full thread from all sent + reply events (already ordered asc from API)
+                const messages = (data.events || [])
+                    .filter((e: any) => e.type === 'sent' || e.type === 'reply')
+                    .map((e: any) => {
+                        // Extract body: prefer details, then metadata bodyText/snippet
+                        let body = e.details || ''
+                        if (!body) {
+                            try {
+                                const meta = JSON.parse(e.metadata || '{}')
+                                body = meta.bodyText || meta.snippet || ''
+                            } catch { /* ignore */ }
+                        }
+
+                        const isMe = e.type === 'sent'
+                        return {
+                            id: e.id,
+                            isMe,
+                            type: e.type,
+                            from: isMe
+                                ? (e.emailAccount?.email || email.sentFrom || 'You')
+                                : (data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : email.from),
+                            to: isMe
+                                ? (data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : email.from)
+                                : (e.emailAccount?.email || email.sentFrom || 'Me'),
+                            body,
+                            timestamp: e.createdAt
+                        }
+                    })
+
+                // For the single-message fallback body, use the latest reply's body
+                const latestReply = [...(data.events || [])].reverse().find((e: any) => e.type === 'reply')
+                let emailContent = ''
+                if (latestReply) {
+                    emailContent = latestReply.details || ''
+                    if (!emailContent) {
+                        try {
+                            const meta = JSON.parse(latestReply.metadata || '{}')
+                            emailContent = meta.bodyText || meta.snippet || ''
+                        } catch { /* ignore */ }
+                    }
+                }
+                if (!emailContent) emailContent = email.preview
 
                 const updatedEmail = { ...email, body: emailContent, events: data.events, aiLabel: data.aiLabel, messages }
                 setEmails(emails.map(e => e.id === email.id ? updatedEmail : e))
@@ -1935,9 +1964,9 @@ ${selectedEmail.body || selectedEmail.preview}
                                     </div>
 
                                     <div className="text-xs text-[#71717a]">
-                                        From: <span className="text-[#a1a1aa]">{selectedEmail.fromName}</span> &lt;{selectedEmail.from}&gt;
+                                        From: <span className="text-[#a1a1aa]">{selectedEmail.fromName || selectedEmail.from}</span> &lt;{selectedEmail.from}&gt;
                                         <br />
-                                        to: <span className="text-[#a1a1aa]">{selectedEmail.recipient || "User"}</span> &lt;{selectedEmail.recipientEmail || "user@example.com"}&gt;
+                                        to: <span className="text-[#a1a1aa]">{selectedEmail.recipient || session?.user?.name || 'You'}</span> &lt;{selectedEmail.sentFrom || (selectedEmail as any).to || session?.user?.email || ''}&gt;
                                     </div>
 
                                     <div className="mt-4" onClick={e => e.stopPropagation()}>

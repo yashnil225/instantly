@@ -269,7 +269,13 @@ export async function GET(request: NextRequest) {
             if (replyEvent?.details) {
                 preview = replyEvent.details.trim()
             } else if (replyEvent) {
-                preview = "Replied to your email"
+                // Try extracting body from stored metadata (bodyText or snippet)
+                try {
+                    const meta = JSON.parse(replyEvent.metadata || '{}')
+                    preview = meta.bodyText?.trim() || meta.snippet?.trim() || "Replied to your email"
+                } catch {
+                    preview = "Replied to your email"
+                }
             }
 
             // Check if any event has attachments

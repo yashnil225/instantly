@@ -124,7 +124,7 @@ export async function syncReplies(account: EmailAccount) {
                 const since60Days = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
                 const searchCriteria = [['SINCE', since60Days]]
                 const fetchOptions = {
-                    bodies: ['HEADER', 'TEXT'],
+                    bodies: [''],   // Fetch full raw RFC822 message (headers + body + attachments)
                     markSeen: false
                 }
 
@@ -274,6 +274,8 @@ export async function syncReplies(account: EmailAccount) {
                             console.log(`⚡ Reply already recorded (msgId: ${parsed.messageId}), skipping`)
                         } else {
                             // Create reply event
+                            const bodyText = parsed.text || ''
+                            const htmlBody = parsed.html || parsed.textAsHtml || parsed.text || ''
                             const replyEvent = await prisma.sendingEvent.create({
                                 data: {
                                     type: 'reply',
@@ -285,9 +287,12 @@ export async function syncReplies(account: EmailAccount) {
                                         to: getAddressString(parsed.to),
                                         subject: parsed.subject,
                                         date: parsed.date,
-                                        messageId: parsed.messageId
+                                        messageId: parsed.messageId,
+                                        // Fallback fields for UI display when details is not rendered
+                                        bodyText: bodyText.slice(0, 500),
+                                        snippet: bodyText.slice(0, 200)
                                     }),
-                                    details: (typeof parsed.html === 'string' && parsed.html.trim().length > 0) ? parsed.html : (parsed.textAsHtml || parsed.text || "")
+                                    details: (typeof htmlBody === 'string' && htmlBody.trim().length > 0) ? htmlBody : bodyText
                                 }
                             })
 

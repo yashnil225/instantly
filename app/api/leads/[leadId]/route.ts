@@ -21,8 +21,13 @@ export async function GET(
             include: {
                 campaign: { select: { id: true, name: true } },
                 events: {
-                    orderBy: { createdAt: 'desc' },
-                    take: 20
+                    orderBy: { createdAt: 'asc' }, // Ascending so thread is chronological
+                    take: 50,
+                    include: {
+                        emailAccount: {
+                            select: { email: true, firstName: true, lastName: true }
+                        }
+                    }
                 }
             }
         })

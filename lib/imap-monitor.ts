@@ -146,10 +146,9 @@ export async function syncAccountInbox(
                 imap.openBox('INBOX', false, (err) => {
                     if (err) return safeReject(err)
 
-                    // Scan last 7 days (not just UNSEEN) so historical replies/bounces are backfilled.
-                    // markSeen: false ensures we never alter read-state in the inbox.
-                    const since7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-                    const searchCriteria = [['SINCE', since7Days]]
+                    // Scan last 2 days to reduce load instead of 7 days (cron runs frequently)
+                    const since2Days = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+                    const searchCriteria = [['SINCE', since2Days]]
 
                     imap.search(searchCriteria, (err, results) => {
                         if (err) return safeReject(err)
@@ -165,8 +164,9 @@ export async function syncAccountInbox(
                             msg.on('body', (stream) => {
                                 simpleParser(stream as unknown as Source, async (err, parsed) => {
                                     processedCount++
-                                    if (err) {
-                                        if (processedCount === results.length) safeResolve()
+                                    if (err || (guard && guard.isTimedOut())) {
+                                        if (guard?.isTimedOut()) console.warn(`[INBOX] Timeout reached while parsing, aborting. (${guard.elapsedSec()}s)`)
+                                        if (processedCount === results.length || (guard && guard.isTimedOut())) safeResolve()
                                         return
                                     }
 
@@ -453,8 +453,8 @@ async function syncSentFolder(account: EmailAccount): Promise<number> {
                         if (err) return tryNextFolder() // try next folder name
                         console.log(`[SENT] Scanning ${folder} for ${account.email}`)
 
-                        const since7Days = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-                        imap.search([['SINCE', since7Days]], (searchErr, results) => {
+                        const since2Days = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+                        imap.search([['SINCE', since2Days]], (searchErr, results) => {
                             if (searchErr || !results || results.length === 0) return safeEnd()
 
                             const fetch = imap.fetch(results, { bodies: '', markSeen: false })
@@ -464,6 +464,11 @@ async function syncSentFolder(account: EmailAccount): Promise<number> {
                                 msg.on('body', (stream) => {
                                     simpleParser(stream as unknown as Source, async (parseErr, parsed) => {
                                         processedCount++
+                                        if (guard && guard.isTimedOut()) {
+                                            console.warn(`[SENT] Timeout reached while parsing, aborting. (${guard.elapsedSec()}s)`)
+                                            safeEnd()
+                                            return
+                                        }
                                         if (!parseErr) {
                                             try {
                                                 // Get all 'to' emails from the sent message

@@ -381,9 +381,9 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     subject = chosenVariant.subject || ""
                     // @ts-ignore
                     body = chosenVariant.body
-                    selectedVariantId = chosenVariant.id
-                        // Extract attachments for the chosen variant
-                        (step as any).mailAttachments = (chosenVariant.attachments || []).map((a: any) => ({
+                    selectedVariantId = chosenVariant.id;
+                    // Extract attachments for the chosen variant
+                    ;(step as any).mailAttachments = (chosenVariant.attachments || []).map((a: any) => ({
                             filename: a.filename,
                             content: a.content,
                             contentType: a.mimeType

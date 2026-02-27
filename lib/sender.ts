@@ -231,6 +231,16 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 return { totalSent, errors, timedOut: true }
             }
 
+            // Skip invalid emails to prevent EENVELOPE errors
+            if (!lead.email || !lead.email.includes('@')) {
+                console.warn(`[Sender] Skipping lead ${lead.id} with invalid email: ${lead.email}`)
+                await prisma.lead.update({
+                    where: { id: lead.id },
+                    data: { status: 'bounced' }
+                })
+                continue
+            }
+
             if (sentForThisCampaign >= availableAccounts.length * 5) break
 
             // Determine Next Step
@@ -383,11 +393,11 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     body = chosenVariant.body
                     selectedVariantId = chosenVariant.id;
                     // Extract attachments for the chosen variant
-                    ;(step as any).mailAttachments = (chosenVariant.attachments || []).map((a: any) => ({
-                            filename: a.filename,
-                            content: a.content,
-                            contentType: a.mimeType
-                        }))
+                    ; (step as any).mailAttachments = (chosenVariant.attachments || []).map((a: any) => ({
+                        filename: a.filename,
+                        content: a.content,
+                        contentType: a.mimeType
+                    }))
                 } else {
                     // @ts-ignore
                     subject = step.subject || ""
@@ -415,9 +425,16 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 // Construct Email Body (Text vs HTML)
                 let finalHtml: string | undefined = `${body}`
 
-                // If it's plain text without block tags, convert newlines to <br /> to prevent cramped spacing
-                if (finalHtml && !finalHtml.includes('<p') && !finalHtml.includes('<div') && !finalHtml.includes('<br')) {
+                if (finalHtml) {
+                    // Normalize newlines to <br /> to ensure they render in email clients
                     finalHtml = finalHtml.replace(/\n/g, '<br />')
+
+                    // Emulate the editor's classes: min-h-[1.5em] for div and mb-2 for p
+                    finalHtml = finalHtml.replace(/<p>/g, '<p style="margin-bottom: 0.5em; margin-top: 0;">')
+                    finalHtml = finalHtml.replace(/<div>/g, '<div style="min-height: 1.5em;">')
+
+                    // Wrap in email-safe container with matching font and line spacing
+                    finalHtml = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #000000; font-size: 15px;">${finalHtml}</div>`
                 }
 
                 let finalText: string | undefined = undefined

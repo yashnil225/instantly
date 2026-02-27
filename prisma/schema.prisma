@@ -360,7 +360,7 @@ model SendingEvent {
   id   String @id @default(cuid())
   type String // "sent", "open", "click", "reply", "bounce"
 
-  lead   Lead   @relation(fields: [leadId], references: [id])
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
   leadId String
 
   campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)

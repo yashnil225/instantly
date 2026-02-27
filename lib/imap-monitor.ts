@@ -383,7 +383,7 @@ export async function syncAccountInbox(
         return { ...inboxResult, sentSynced: 0 }
     }
 
-    const sentSynced = await syncSentFolder(account)
+    const sentSynced = await syncSentFolder(account, guard)
 
     return { ...inboxResult, sentSynced }
 }
@@ -408,7 +408,7 @@ export async function checkForBounces(account: EmailAccount): Promise<number> {
  * Scan the SENT folder and create sent events for emails sent to known leads.
  * This makes user's manual Gmail replies show up in the Unibox conversation thread.
  */
-async function syncSentFolder(account: EmailAccount): Promise<number> {
+async function syncSentFolder(account: EmailAccount, guard?: { isTimedOut: () => boolean, elapsedSec: () => number }): Promise<number> {
     return withRetry(async (attempt) => {
         if (attempt === 0) {
             await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 500)))

@@ -15,6 +15,14 @@ export async function DELETE(
             return NextResponse.json({ error: 'No lead IDs provided' }, { status: 400 })
         }
 
+        // Manually delete dependent SendingEvent records first to bypass Turso constraint limits
+        await prisma.sendingEvent.deleteMany({
+            where: {
+                leadId: { in: leadIds },
+                campaignId: id
+            }
+        })
+
         // Delete leads that belong to this campaign
         const deleted = await prisma.lead.deleteMany({
             where: {

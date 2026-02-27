@@ -46,6 +46,25 @@ async function sync() {
         }
     }
 
+    const sequenceVariantColumnsToAdd = [
+        { name: "enabled", type: "BOOLEAN", default: "1" },
+        { name: "weight", type: "INTEGER", default: "50" },
+    ];
+
+    for (const column of sequenceVariantColumnsToAdd) {
+        try {
+            console.log(`Adding column ${column.name} to SequenceVariant...`);
+            await client.execute(`ALTER TABLE SequenceVariant ADD COLUMN ${column.name} ${column.type} DEFAULT ${column.default}`);
+            console.log(`✅ Column ${column.name} added to SequenceVariant.`);
+        } catch (error: any) {
+            if (error.message.includes("duplicate column name")) {
+                console.log(`ℹ️ Column ${column.name} already exists in SequenceVariant. Skipping.`);
+            } else {
+                console.warn(`⚠️ Error adding column ${column.name} to SequenceVariant: ${error.message}`);
+            }
+        }
+    }
+
     const leadColumnsToAdd = [
         { name: "isStarred", type: "BOOLEAN", default: "0" },
         { name: "isArchived", type: "BOOLEAN", default: "0" }

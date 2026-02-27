@@ -197,6 +197,7 @@ export async function sendWarmupEmails(guard?: { isTimedOut: () => boolean, elap
                 take: warmupLimit - alreadySent
             })
 
+            let sentCount = 0
             for (const recipient of otherAccounts) {
                 if (guard?.isTimedOut()) {
                     console.warn(`[Warmup] Timeout in recipient loop (${guard.elapsedSec()}s). Breaking.`)
@@ -204,6 +205,7 @@ export async function sendWarmupEmails(guard?: { isTimedOut: () => boolean, elap
                 }
 
                 await sendWarmupEmail(freshAccount, recipient)
+                sentCount++
 
                 // Update warmup sent count and timestamp
                 await prisma.emailAccount.update({
@@ -215,7 +217,12 @@ export async function sendWarmupEmails(guard?: { isTimedOut: () => boolean, elap
                 })
             }
 
-            console.log(`${account.email}: Sent ${otherAccounts.length} warmup emails`)
+            // Update health score once per account (not per email) to save DB round trips
+            if (sentCount > 0) {
+                await calculateAndUpdateHealthScore(freshAccount.id)
+            }
+
+            console.log(`${account.email}: Sent ${sentCount} warmup emails`)
         } catch (error) {
             console.error(`Warmup failed for ${account.email}:`, error)
         }
@@ -261,9 +268,7 @@ async function sendWarmupEmail(from: any, to: any) {
         `Sent warmup email to ${to.email}`,
         to.email
     )
-
-    // Update health score after successful send
-    await calculateAndUpdateHealthScore(from.id)
+    // NOTE: Health score is updated once per account in sendWarmupEmails(), not here.
 }
 
 // Reset daily counters at midnight

@@ -29,8 +29,9 @@ export async function GET(request: Request) {
 }
 
 async function runWarmupTasks() {
-    // 50s guard = 10s buffer before Hobby 60s hard kill
-    const guard = createTimeoutGuard(50_000)
+    // 45s guard = 15s buffer before Hobby 60s hard kill
+    // Extra headroom needed because a single in-flight SMTP send can take 5-10s after the guard trips.
+    const guard = createTimeoutGuard(45_000)
 
     // Rotate through phases: 1 → 2 → 3 → 1 → ...
     lastPhase = (lastPhase % 3) + 1

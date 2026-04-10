@@ -109,7 +109,7 @@ export async function GET(request: Request) {
                 return match ? Number(match.count) : 0
             }
 
-            const getOppCount = () => {
+            const getOppCount = (): number => {
                 const match = oppCount.find(e => e.campaignId === campaign.id)
                 return match ? Number(match.count) : 0
             }

@@ -60,6 +60,7 @@ function CampaignsPage() {
     const [createOpen, setCreateOpen] = useState(false)
     const [newCampaignName, setNewCampaignName] = useState("My Campaign")
     const [selectedIds, setSelectedIds] = useState<string[]>([])
+    const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null)
     const [isCreating, setIsCreating] = useState(false)
     const [selectedTags, setSelectedTags] = useState<string[]>([])
 
@@ -455,6 +456,11 @@ function CampaignsPage() {
         ) {
             return
         }
+        setExpandedCampaignId(prev => prev === id ? null : id)
+    }
+
+    const openCampaignSetup = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation()
         router.push(`/campaigns/${id}`)
     }
 
@@ -864,7 +870,11 @@ function CampaignsPage() {
                                     </div>
 
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <div className="font-semibold text-foreground/90 text-sm truncate" title={campaign.name}>
+                                        <div 
+                                            className="font-semibold text-foreground/90 text-sm truncate hover:text-blue-500 hover:underline cursor-pointer" 
+                                            title={campaign.name}
+                                            onClick={(e) => openCampaignSetup(e, campaign.id)}
+                                        >
                                             {campaign.name}
                                         </div>
                                         {/* Workspace Badges */}
@@ -893,19 +903,23 @@ function CampaignsPage() {
                                         </div>
                                     </div>
 
-                                    <div>
+                                    <div className="flex flex-col gap-1">
                                         <Badge
                                             variant="secondary"
                                             className={cn(
                                                 "font-medium capitalize px-2.5 py-0.5 min-w-[80px] justify-center rounded-lg border-0",
-                                                campaign.status === "active" && "bg-green-500/10 text-green-400 hover:bg-green-500/20",
+                                                campaign.status === "active" && campaign.dailyLimit && campaign.sentToday >= campaign.dailyLimit && "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20",
+                                                campaign.status === "active" && (!campaign.dailyLimit || campaign.sentToday < campaign.dailyLimit) && "bg-green-500/10 text-green-400 hover:bg-green-500/20",
                                                 campaign.status === "completed" && "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20",
                                                 campaign.status === "error" && "bg-red-500/10 text-red-400 hover:bg-red-500/20",
                                                 (campaign.status === "draft" || campaign.status === "paused") && "bg-muted text-muted-foreground hover:bg-[#333]"
                                             )}
                                         >
-                                            {campaign.status}
+                                            {campaign.status === "active" && campaign.dailyLimit && campaign.sentToday >= campaign.dailyLimit ? "limit reached" : campaign.status}
                                         </Badge>
+                                        {campaign.status === "active" && campaign.dailyLimit && campaign.sentToday >= campaign.dailyLimit && (
+                                            <span className="text-[9px] text-orange-500/70 font-bold uppercase tracking-tighter text-center">Resumes tomorrow</span>
+                                        )}
                                     </div>
 
                                     <div>
@@ -1003,6 +1017,39 @@ function CampaignsPage() {
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>
+                                    
+                                    {/* Expanded Funnel Section */}
+                                    {expandedCampaignId === campaign.id && (
+                                        <div className="col-span-10 mt-4 p-6 bg-secondary/20 rounded-xl border border-border/50 animate-in slide-in-from-top-2">
+                                            <div className="flex justify-between items-center mb-4">
+                                                <h3 className="font-semibold text-foreground">Campaign Funnel</h3>
+                                                <Button size="sm" variant="outline" onClick={(e) => openCampaignSetup(e, campaign.id)}>
+                                                    Open Campaign <ChevronLeft className="h-4 w-4 ml-2 rotate-180" />
+                                                </Button>
+                                            </div>
+                                            <div className="grid grid-cols-5 gap-4">
+                                                {[
+                                                    { label: "Sent", value: campaign.sentCount || 0, color: "bg-blue-500", raw: true },
+                                                    { label: "Opened", value: campaign.openRate === 'Disabled' ? 0 : parseInt(campaign.openRate) || 0, color: "bg-yellow-500" },
+                                                    { label: "Clicked", value: campaign.clickRate === 'Disabled' ? 0 : parseInt(campaign.clickRate) || 0, color: "bg-green-500" },
+                                                    { label: "Replied", value: parseInt(campaign.replyRate) || 0, color: "bg-emerald-500" },
+                                                    { label: "Opportunities", value: campaign.opportunities || 0, color: "bg-purple-500", raw: true }
+                                                ].map((stat, idx) => {
+                                                    const rawValue = stat.raw ? stat.value : Math.round(((campaign.sentCount || 0) * (stat.value as number)) / 100);
+                                                    return (
+                                                        <div key={idx} className="bg-card border border-border p-4 rounded-lg flex flex-col justify-between">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className={`w-2 h-2 rounded-full ${stat.color}`} />
+                                                                <span className="text-xs text-muted-foreground font-semibold uppercase">{stat.label}</span>
+                                                            </div>
+                                                            <div className="text-2xl font-bold tracking-tight">{rawValue}</div>
+                                                            {!stat.raw && <div className="text-xs text-muted-foreground mt-1">{stat.value}% rate</div>}
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         )}

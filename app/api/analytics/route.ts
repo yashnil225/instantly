@@ -121,25 +121,28 @@ export async function GET(request: Request) {
             positiveReplyRate = 'calculating...'
         }
 
-        // Calculate totals from events
-        const totalSent = events.filter(e => e.type === 'sent').length
-        const totalOpened = new Set(events.filter(e => e.type === 'open').map(e => e.leadId)).size
-        const totalClicked = new Set(events.filter(e => e.type === 'click').map(e => e.leadId)).size
-        const totalBounced = new Set(events.filter(e => e.type === 'bounce').map(e => e.leadId)).size
+        // Calculate all key aggregate counts from events
+        const sentEmailsCount = events.filter(e => e.type === 'sent').length
+        const uniqueLeadsContactedCount = new Set(events.filter(e => e.type === 'sent').map(e => e.leadId)).size
+        const totalOpenedCount = new Set(events.filter(e => e.type === 'open').map(e => e.leadId)).size
+        const totalClickedCount = new Set(events.filter(e => e.type === 'click').map(e => e.leadId)).size
+        const totalBouncedCount = new Set(events.filter(e => e.type === 'bounce').map(e => e.leadId)).size
+
+        // Delivered = sent - bounced (industry standard denominator)
+        const deliveredCount = Math.max(0, sentEmailsCount - totalBouncedCount)
 
         // Opportunities = interested, meeting_booked, or won
         const opportunityLeads = leads.filter(l =>
             l.status === 'won' || ['interested', 'meeting_booked'].includes(l.aiLabel || '')
         )
         const opportunitiesCount = opportunityLeads.length
-        const totalOpportunityValue = opportunitiesCount * (opportunityValue || 0)
 
         // Calculate conversions value
         const conversions = leads.filter(l => l.status === 'converted' || l.status === 'won')
         const conversionValue = conversions.length * opportunityValue
 
-        // Calculate rates
-        const bounceRate = totalSent > 0 ? Math.round((totalBounced / totalSent) * 100) : 0
+        // Calculate bounce rate (bounced / sent)
+        const bounceRate = sentEmailsCount > 0 ? Math.round((totalBouncedCount / sentEmailsCount) * 100) : 0
 
         // Calculate heatmap data
         const heatmapData = []
@@ -202,8 +205,9 @@ export async function GET(request: Request) {
             overallScore: Math.round(accountStats.reduce((acc, curr) => acc + curr.health, 0) / (accountStats.length || 1)),
             bounceRate,
             spamRate: 0.4,   // Placeholder for now
-            openRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
-            replyRate: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0,
+            // Use delivered as denominator (industry standard)
+            openRate: deliveredCount > 0 ? Math.min(Math.round((totalOpenedCount / deliveredCount) * 100), 100) : 0,
+            replyRate: deliveredCount > 0 ? Math.min(Math.round((totalReplied / deliveredCount) * 100), 100) : 0,
             domainHealth: Array.from(new Set(accountStats.map(a => a.email.split('@')[1]))).map(domain => ({
                 domain,
                 spf: true,
@@ -214,26 +218,59 @@ export async function GET(request: Request) {
             recentIssues: []
         }
 
-        const bounceCount = totalBounced
-
-        const delivered = totalSent - bounceCount
-        const deliveredPercentage = totalSent > 0 ? Math.round((delivered / totalSent) * 100) : 0
-
-        // Calculate funnel data with actual values
+        // Workspace-wide funnel using delivered as denominator
         const funnelData = [
-            { stage: "Sent", value: totalSent, percentage: 100 },
-            { stage: "Delivered", value: delivered, percentage: deliveredPercentage },
-            { stage: "Opened", value: totalOpened, percentage: totalSent > 0 ? Math.min(Math.round((totalOpened / totalSent) * 100), 100) : 0 },
-            { stage: "Clicked", value: totalClicked, percentage: totalSent > 0 ? Math.min(Math.round((totalClicked / totalSent) * 100), 100) : 0 },
-            { stage: "Replied", value: totalReplied, percentage: totalSent > 0 ? Math.min(Math.round((totalReplied / totalSent) * 100), 100) : 0 },
-            { stage: "Converted", value: leads.filter(l => l.status === 'converted' || l.status === 'won').length, percentage: totalSent > 0 ? Math.min(Math.round((leads.filter(l => l.status === 'converted' || l.status === 'won').length / totalSent) * 100), 100) : 0 }
+            { stage: "Sent", value: sentEmailsCount, percentage: 100 },
+            { stage: "Delivered", value: deliveredCount, percentage: sentEmailsCount > 0 ? Math.round((deliveredCount / sentEmailsCount) * 100) : 0 },
+            { stage: "Opened", value: totalOpenedCount, percentage: deliveredCount > 0 ? Math.min(Math.round((totalOpenedCount / deliveredCount) * 100), 100) : 0 },
+            { stage: "Clicked", value: totalClickedCount, percentage: deliveredCount > 0 ? Math.min(Math.round((totalClickedCount / deliveredCount) * 100), 100) : 0 },
+            { stage: "Replied", value: totalReplied, percentage: deliveredCount > 0 ? Math.min(Math.round((totalReplied / deliveredCount) * 100), 100) : 0 },
+            { stage: "Converted", value: conversions.length, percentage: deliveredCount > 0 ? Math.min(Math.round((conversions.length / deliveredCount) * 100), 100) : 0 }
         ]
 
+        // Per-campaign funnels — fetch campaigns in scope
+        const campaignsInScope = await prisma.campaign.findMany({
+            where: {
+                ...(workspaceId && workspaceId !== 'all' ? {
+                    campaignWorkspaces: { some: { workspaceId } }
+                } : {
+                    userId: session.user.id
+                })
+            },
+            select: { id: true, name: true }
+        })
+
+        const campaignFunnels = campaignsInScope.map(campaign => {
+            const cEvents = events.filter(e => e.campaignId === campaign.id)
+            const cSent = cEvents.filter(e => e.type === 'sent').length
+            const cBounced = new Set(cEvents.filter(e => e.type === 'bounce').map(e => e.leadId)).size
+            const cDelivered = Math.max(0, cSent - cBounced)
+            const cOpened = new Set(cEvents.filter(e => e.type === 'open').map(e => e.leadId)).size
+            const cClicked = new Set(cEvents.filter(e => e.type === 'click').map(e => e.leadId)).size
+            const cReplied = new Set(cEvents.filter(e => e.type === 'reply').map(e => e.leadId)).size
+            const cConverted = leads.filter(l => l.campaignId === campaign.id && (l.status === 'converted' || l.status === 'won')).length
+            return {
+                campaignId: campaign.id,
+                campaignName: campaign.name,
+                funnelData: [
+                    { stage: "Sent", value: cSent, percentage: 100 },
+                    { stage: "Delivered", value: cDelivered, percentage: cSent > 0 ? Math.round((cDelivered / cSent) * 100) : 0 },
+                    { stage: "Opened", value: cOpened, percentage: cDelivered > 0 ? Math.min(Math.round((cOpened / cDelivered) * 100), 100) : 0 },
+                    { stage: "Clicked", value: cClicked, percentage: cDelivered > 0 ? Math.min(Math.round((cClicked / cDelivered) * 100), 100) : 0 },
+                    { stage: "Replied", value: cReplied, percentage: cDelivered > 0 ? Math.min(Math.round((cReplied / cDelivered) * 100), 100) : 0 },
+                    { stage: "Converted", value: cConverted, percentage: cDelivered > 0 ? Math.min(Math.round((cConverted / cDelivered) * 100), 100) : 0 }
+                ]
+            }
+        })
+
         const result = {
-            totalSent,
-            opensRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
-            clickRate: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0,
-            replyRate: totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0,
+            totalSent: sentEmailsCount,
+            totalContacted: uniqueLeadsContactedCount,
+            totalDelivered: deliveredCount,
+            // All rates now use delivered (industry standard: unique actions / delivered * 100)
+            opensRate: deliveredCount > 0 ? Math.min(Math.round((totalOpenedCount / deliveredCount) * 100), 100) : 0,
+            clickRate: deliveredCount > 0 ? Math.min(Math.round((totalClickedCount / deliveredCount) * 100), 100) : 0,
+            replyRate: deliveredCount > 0 ? Math.min(Math.round((totalReplied / deliveredCount) * 100), 100) : 0,
             positiveReplyRate,
             opportunities: {
                 count: opportunitiesCount,
@@ -246,6 +283,7 @@ export async function GET(request: Request) {
             chartData: generateChartData(startDate, now, events),
             heatmapData,
             funnelData,
+            campaignFunnels,
             accountStats,
             deliverability,
             _needsClassification: needsClassification,

@@ -81,12 +81,14 @@ export async function GET(request: Request) {
             GROUP BY "campaignId", "type"
         `
 
-        // Fetch opportunity counts
-        const oppCounts = await prisma.$queryRaw<{ campaignId: string, count: number | bigint }[]>`
+        // Fetch today's sent counts (for limit reaching detection)
+        const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+        const sentTodayCounts = await prisma.$queryRaw<{ campaignId: string, count: number | bigint }[]>`
             SELECT "campaignId", COUNT(id) as count
-            FROM "Lead"
+            FROM "SendingEvent"
             WHERE "campaignId" IN (${Prisma.join(campaignIds)})
-            AND ("aiLabel" IN ('interested', 'meeting_booked') OR "status" IN ('won', 'converted'))
+            AND "type" = 'sent'
+            AND "createdAt" >= ${todayUTC.toISOString()}
             GROUP BY "campaignId"
         `
 
@@ -103,15 +105,22 @@ export async function GET(request: Request) {
                 return match ? Number(match.count) : 0
             }
 
+            const getSentTodayCount = () => {
+                const match = sentTodayCounts.find(e => e.campaignId === campaign.id)
+                return match ? Number(match.count) : 0
+            }
+
             const sentCount = getUniqueCount('sent')
             const uniqueOpenCount = getUniqueCount('open')
             const uniqueClickCount = getUniqueCount('click')
             const uniqueReplyCount = getUniqueCount('reply')
             const oppCount = getOppCount()
+            const sentToday = getSentTodayCount()
 
             return {
                 ...campaign,
                 sentCount, // Override static sentCount with source-of-truth from SendingEvent
+                sentToday,
                 openRate: !campaign.trackOpens ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueOpenCount / sentCount) * 100), 100) : 0}%`,
                 clickRate: !campaign.trackLinks ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueClickCount / sentCount) * 100), 100) : 0}%`,
                 replyRate: `${sentCount > 0 ? Math.min(Math.round((uniqueReplyCount / sentCount) * 100), 100) : 0}%`,

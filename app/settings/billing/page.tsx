@@ -217,15 +217,19 @@ export default function BillingPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
-                        {[1, 2, 3].map((i) => (
+                        {[1, 2, 3].map((i) => {
+                            const date = new Date();
+                            date.setMonth(date.getMonth() - i);
+                            const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            return (
                             <div key={i} className="flex items-center justify-between py-3 border-b border-[#222] last:border-0">
                                 <div className="flex items-center gap-4">
                                     <div className="h-10 w-10 bg-[#222] rounded flex items-center justify-center text-gray-400">
                                         <FileText className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-white">Invoice #{2024000 + i} - Light Speed Plan</p>
-                                        <p className="text-xs text-gray-500">Dec {19 - i}, 2024</p>
+                                        <p className="text-sm font-medium text-white">Invoice #{date.getFullYear()}{(date.getMonth() + 1).toString().padStart(2, '0')}0{i} - Light Speed Plan</p>
+                                        <p className="text-xs text-gray-500">{formattedDate}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-6">
@@ -240,7 +244,8 @@ export default function BillingPage() {
                                     </Button>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </CardContent>
             </Card>

@@ -46,9 +46,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
     const { filter } = options
     console.log("Starting batch processing...")
 
-    // Base URL for tracking (assume localhost if not set)
-    const BASE_URL = process.env.NEXTAUTH_URL || "http://localhost:3000"
-
+    // Base URL for tracking (use NEXT_PUBLIC_APP_URL or VERCEL_URL first for cloud deployments)
+    const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
     // 1. Fetch Active Campaigns with FILTERS
     const campaignWhere: any = { status: 'active' }
 
@@ -229,6 +228,25 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
             if (elapsed > TIMEOUT_SAFETY_MARGIN) {
                 console.warn(`[Sender] Approaching timeout in lead loop (${elapsed / 1000}s). Stopping batch.`)
                 return { totalSent, errors, timedOut: true }
+            }
+
+            // --- Atomic Event-Based Limit Check ---
+            if (campaign.dailyLimit) {
+                const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+                
+                const actualSentToday = await prisma.sendingEvent.count({
+                    where: {
+                        campaignId: campaign.id,
+                        type: { in: ['sent', 'pending', 'failed', 'delivered', 'bounced'] },
+                        createdAt: { gte: todayUTC }
+                    }
+                })
+
+                if (actualSentToday >= campaign.dailyLimit) {
+                    console.warn(`[Sender] Campaign ${campaign.id} reached daily limit (${campaign.dailyLimit}) mid-batch. Skipping core loop to prevent over-send.`)
+                    
+                    break // Stop processing this campaign immediately to prevent limit breach
+                }
             }
 
             // Skip invalid emails to prevent EENVELOPE errors
@@ -426,15 +444,23 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 let finalHtml: string | undefined = `${body}`
 
                 if (finalHtml) {
-                    // Normalize newlines to <br /> to ensure they render in email clients
-                    finalHtml = finalHtml.replace(/\n/g, '<br />')
+                    // Check if the body already contains block HTML tags (meaning it came from the Rich Text Editor)
+                    // Excluding `br` — a manual <br> in plain text should NOT prevent \n conversion.
+                    const isRichHtml = /<(p|div)\b/i.test(finalHtml)
 
-                    // Emulate the editor's classes: min-h-[1.5em] for div and mb-2 for p
-                    finalHtml = finalHtml.replace(/<p>/g, '<p style="margin-bottom: 0.5em; margin-top: 0;">')
-                    finalHtml = finalHtml.replace(/<div>/g, '<div style="min-height: 1.5em;">')
+                    if (!isRichHtml) {
+                        // It's plain text: Normalize newlines to <br /> to ensure they render in email clients
+                        finalHtml = finalHtml.replace(/\n/g, '<br />')
+                    }
+
+                    // Outlook-safe paragraph styling:
+                    // - Outlook desktop (Word engine) IGNORES CSS margin on <p> tags, causing cramped text.
+                    // - Use padding-bottom instead + explicit pixel line-height with mso-line-height-rule:exactly.
+                    finalHtml = finalHtml.replace(/<p\b[^>]*>/gi, '<p style="margin: 0; padding: 0; padding-bottom: 12px; line-height: 24px; mso-line-height-rule: exactly;">')
+                    finalHtml = finalHtml.replace(/<div\b[^>]*>/gi, '<div style="min-height: 24px; line-height: 24px; mso-line-height-rule: exactly;">')
 
                     // Wrap in email-safe container with matching font and line spacing
-                    finalHtml = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #000000; font-size: 15px;">${finalHtml}</div>`
+                    finalHtml = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 24px; mso-line-height-rule: exactly; color: #000000; font-size: 15px;">${finalHtml}</div>`
                 }
 
                 let finalText: string | undefined = undefined

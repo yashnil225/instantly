@@ -92,6 +92,15 @@ export async function GET(request: Request) {
             GROUP BY "campaignId"
         `
 
+        // Fetch opportunity counts (interested + won)
+        const oppCount = await prisma.$queryRaw<{ campaignId: string, count: number | bigint }[]>`
+            SELECT "campaignId", COUNT(DISTINCT "leadId") as count
+            FROM "Lead"
+            WHERE "campaignId" IN (${Prisma.join(campaignIds)})
+            AND "status" IN ('interested', 'won')
+            GROUP BY "campaignId"
+        `
+
         // Calculate rates and opportunities for each campaign
         const campaignsWithAnalytics = campaigns.map(campaign => {
             // Extract counts from query results safely handling BigInts
@@ -101,7 +110,7 @@ export async function GET(request: Request) {
             }
 
             const getOppCount = () => {
-                const match = oppCounts.find(e => e.campaignId === campaign.id)
+                const match = oppCount.find(e => e.campaignId === campaign.id)
                 return match ? Number(match.count) : 0
             }
 

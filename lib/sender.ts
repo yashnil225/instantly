@@ -243,7 +243,25 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 })
 
                 if (actualSentToday >= campaign.dailyLimit) {
-                    console.warn(`[Sender] Campaign ${campaign.id} reached daily limit (${campaign.dailyLimit}) mid-batch. Skipping core loop to prevent over-send.`)
+                    console.warn(`[Sender] Campaign ${campaign.id} reached daily limit (${campaign.dailyLimit}) mid-batch. Automatically pausing.`)
+                    
+                    // Auto-pause campaign to prevent further sends today
+                    // Calculate tomorrow midnight UTC
+                    const tomorrow = new Date()
+                    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
+                    tomorrow.setUTCHours(0, 0, 0, 0)
+
+                    await prisma.campaign.update({
+                        where: { id: campaign.id },
+                        data: {
+                            status: 'paused',
+                            settings: JSON.stringify({
+                                ...settings,
+                                autoResumeAt: tomorrow.toISOString(),
+                                autoResumeReason: 'daily_limit'
+                            })
+                        }
+                    })
                     
                     break // Stop processing this campaign immediately to prevent limit breach
                 }
@@ -445,8 +463,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
                 if (finalHtml) {
                     // Check if the body already contains block HTML tags (meaning it came from the Rich Text Editor)
-                    // Excluding `br` — a manual <br> in plain text should NOT prevent \n conversion.
-                    const isRichHtml = /<(p|div)\b/i.test(finalHtml)
+                    // Expanded to include `br` — if the body has line breaks, treat as rich HTML to avoid double-conversion.
+                    const isRichHtml = /<(p|div|br)\b/i.test(finalHtml)
 
                     if (!isRichHtml) {
                         // It's plain text: Normalize newlines to <br /> to ensure they render in email clients
@@ -455,9 +473,9 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
                     // Outlook-safe paragraph styling:
                     // - Outlook desktop (Word engine) IGNORES CSS margin on <p> tags, causing cramped text.
-                    // - Use padding-bottom instead + explicit pixel line-height with mso-line-height-rule:exactly.
-                    finalHtml = finalHtml.replace(/<p\b[^>]*>/gi, '<p style="margin: 0; padding: 0; padding-bottom: 12px; line-height: 24px; mso-line-height-rule: exactly;">')
-                    finalHtml = finalHtml.replace(/<div\b[^>]*>/gi, '<div style="min-height: 24px; line-height: 24px; mso-line-height-rule: exactly;">')
+                    // - Use padding-bottom + explicit pixel line-height + mso-margin-bottom-alt for best compatibility.
+                    finalHtml = finalHtml.replace(/<p\b[^>]*>/gi, '<p style="margin: 0; padding: 0; padding-bottom: 12px; line-height: 24px; mso-line-height-rule: exactly; mso-margin-bottom-alt: 12px;">')
+                    finalHtml = finalHtml.replace(/<div\b[^>]*>/gi, '<div style="line-height: 24px; mso-line-height-rule: exactly;">')
 
                     // Wrap in email-safe container with matching font and line spacing
                     finalHtml = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 24px; mso-line-height-rule: exactly; color: #000000; font-size: 15px;">${finalHtml}</div>`

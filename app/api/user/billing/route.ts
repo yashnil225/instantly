@@ -14,7 +14,8 @@ export async function GET() {
             select: {
                 id: true,
                 plan: true,
-                planExpiresAt: true
+                planExpiresAt: true,
+                createdAt: true
             }
         })
 

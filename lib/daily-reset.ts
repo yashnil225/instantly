@@ -49,6 +49,40 @@ export async function runDailyReset() {
         })
         console.log(`[Daily Reset] Cleared ${errorClearResult.count} stale error states`)
 
+        // Resume campaigns paused due to daily limits
+        const pausedCampaigns = await prisma.campaign.findMany({
+            where: { status: 'paused' }
+        })
+
+        let resumedCount = 0
+        const now = new Date()
+
+        for (const campaign of pausedCampaigns) {
+            try {
+                if (!campaign.settings) continue
+                const settings = JSON.parse(campaign.settings)
+                
+                if (settings.autoResumeAt && new Date(settings.autoResumeAt) <= now) {
+                    // Clear auto-resume fields and resume
+                    const newSettings = { ...settings }
+                    delete newSettings.autoResumeAt
+                    delete newSettings.autoResumeReason
+
+                    await prisma.campaign.update({
+                        where: { id: campaign.id },
+                        data: {
+                            status: 'active',
+                            settings: JSON.stringify(newSettings)
+                        }
+                    })
+                    resumedCount++
+                }
+            } catch (e) {
+                console.error(`[Daily Reset] Failed to auto-resume campaign ${campaign.id}:`, e)
+            }
+        }
+        console.log(`[Daily Reset] Auto-resumed ${resumedCount} campaigns`)
+
         const elapsed = Date.now() - startTime
         console.log(`[Daily Reset] Completed in ${elapsed}ms`)
 
@@ -57,6 +91,7 @@ export async function runDailyReset() {
             accountsReset: accountResult.count,
             warmupIncremented: warmupResult.count,
             errorsCleared: errorClearResult.count,
+            campaignsResumed: resumedCount,
             elapsedMs: elapsed
         }
     } catch (error) {

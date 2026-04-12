@@ -17,6 +17,7 @@ export default function BillingPage() {
     const [leadCount, setLeadCount] = useState<number | null>(null)
     const [emailCount, setEmailCount] = useState<number>(0)
     const [currentPlan, setCurrentPlan] = useState<string>("trial")
+    const [billingData, setBillingData] = useState<any>(null)
     // const [planLoading, setPlanLoading] = useState(true)
 
     const PLAN_LIMITS: Record<string, { emails: number, leads: number }> = {
@@ -25,6 +26,14 @@ export default function BillingPage() {
         hypergrowth: { emails: 25000, leads: 10000 },
         lightspeed: { emails: 100000, leads: 100000 },
         enterprise: { emails: 1000000, leads: 1000000 } // Custom
+    }
+
+    const PLAN_INFO: Record<string, { name: string, price: string }> = {
+        trial: { name: "Free Trial", price: "$0.00" },
+        growth: { name: "Growth Plan", price: "$37.00" },
+        hypergrowth: { name: "Hypergrowth Plan", price: "$97.00" },
+        lightspeed: { name: "Light Speed Plan", price: "$297.00" },
+        enterprise: { name: "Enterprise Plan", price: "Custom" }
     }
 
     const fetchBillingData = async () => {
@@ -41,6 +50,7 @@ export default function BillingPage() {
 
             if (billingRes.ok) {
                 const data = await billingRes.json()
+                setBillingData(data)
                 setCurrentPlan(data.plan || "trial")
                 if (data.emailCount !== undefined) {
                     setEmailCount(data.emailCount)
@@ -218,9 +228,12 @@ export default function BillingPage() {
                 <CardContent>
                     <div className="space-y-4">
                         {[1, 2, 3].map((i) => {
-                            const date = new Date();
-                            date.setMonth(date.getMonth() - i);
+                            const now = new Date();
+                            const billingDay = billingData?.createdAt ? new Date(billingData.createdAt).getDate() : 1;
+                            const date = new Date(now.getFullYear(), now.getMonth() - i, billingDay);
                             const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            const planDetails = PLAN_INFO[currentPlan] || PLAN_INFO.trial;
+                            
                             return (
                             <div key={i} className="flex items-center justify-between py-3 border-b border-[#222] last:border-0">
                                 <div className="flex items-center gap-4">
@@ -228,12 +241,12 @@ export default function BillingPage() {
                                         <FileText className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-medium text-white">Invoice #{date.getFullYear()}{(date.getMonth() + 1).toString().padStart(2, '0')}0{i} - Light Speed Plan</p>
+                                        <p className="text-sm font-medium text-white">Invoice #{date.getFullYear()}{(date.getMonth() + 1).toString().padStart(2, '0')}0{i} - {planDetails.name}</p>
                                         <p className="text-xs text-gray-500">{formattedDate}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-6">
-                                    <span className="text-sm text-white font-medium">$297.00</span>
+                                    <span className="text-sm text-white font-medium">{planDetails.price}</span>
                                     <Button
                                         variant="ghost"
                                         size="icon"

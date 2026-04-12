@@ -205,9 +205,9 @@ export async function GET(request: Request) {
             overallScore: Math.round(accountStats.reduce((acc, curr) => acc + curr.health, 0) / (accountStats.length || 1)),
             bounceRate,
             spamRate: 0.4,   // Placeholder for now
-            // Use delivered as denominator (industry standard)
-            openRate: deliveredCount > 0 ? Math.min(Math.round((totalOpenedCount / deliveredCount) * 100), 100) : 0,
-            replyRate: deliveredCount > 0 ? Math.min(Math.round((totalReplied / deliveredCount) * 100), 100) : 0,
+            // Use sent as denominator (standardizing across tool)
+            openRate: sentEmailsCount > 0 ? Math.min(Math.round((totalOpenedCount / sentEmailsCount) * 100), 100) : 0,
+            replyRate: sentEmailsCount > 0 ? Math.min(Math.round((totalReplied / sentEmailsCount) * 100), 100) : 0,
             domainHealth: Array.from(new Set(accountStats.map(a => a.email.split('@')[1]))).map(domain => ({
                 domain,
                 spf: true,
@@ -222,10 +222,10 @@ export async function GET(request: Request) {
         const funnelData = [
             { stage: "Sent", value: sentEmailsCount, percentage: 100 },
             { stage: "Delivered", value: deliveredCount, percentage: sentEmailsCount > 0 ? Math.round((deliveredCount / sentEmailsCount) * 100) : 0 },
-            { stage: "Opened", value: totalOpenedCount, percentage: deliveredCount > 0 ? Math.min(Math.round((totalOpenedCount / deliveredCount) * 100), 100) : 0 },
-            { stage: "Clicked", value: totalClickedCount, percentage: deliveredCount > 0 ? Math.min(Math.round((totalClickedCount / deliveredCount) * 100), 100) : 0 },
-            { stage: "Replied", value: totalReplied, percentage: deliveredCount > 0 ? Math.min(Math.round((totalReplied / deliveredCount) * 100), 100) : 0 },
-            { stage: "Converted", value: conversions.length, percentage: deliveredCount > 0 ? Math.min(Math.round((conversions.length / deliveredCount) * 100), 100) : 0 }
+            { stage: "Opened", value: totalOpenedCount, percentage: sentEmailsCount > 0 ? Math.min(Math.round((totalOpenedCount / sentEmailsCount) * 100), 100) : 0 },
+            { stage: "Clicked", value: totalClickedCount, percentage: sentEmailsCount > 0 ? Math.min(Math.round((totalClickedCount / sentEmailsCount) * 100), 100) : 0 },
+            { stage: "Replied", value: totalReplied, percentage: sentEmailsCount > 0 ? Math.min(Math.round((totalReplied / sentEmailsCount) * 100), 100) : 0 },
+            { stage: "Converted", value: conversions.length, percentage: sentEmailsCount > 0 ? Math.min(Math.round((conversions.length / sentEmailsCount) * 100), 100) : 0 }
         ]
 
         // Per-campaign funnels — fetch campaigns in scope
@@ -255,10 +255,10 @@ export async function GET(request: Request) {
                 funnelData: [
                     { stage: "Sent", value: cSent, percentage: 100 },
                     { stage: "Delivered", value: cDelivered, percentage: cSent > 0 ? Math.round((cDelivered / cSent) * 100) : 0 },
-                    { stage: "Opened", value: cOpened, percentage: cDelivered > 0 ? Math.min(Math.round((cOpened / cDelivered) * 100), 100) : 0 },
-                    { stage: "Clicked", value: cClicked, percentage: cDelivered > 0 ? Math.min(Math.round((cClicked / cDelivered) * 100), 100) : 0 },
-                    { stage: "Replied", value: cReplied, percentage: cDelivered > 0 ? Math.min(Math.round((cReplied / cDelivered) * 100), 100) : 0 },
-                    { stage: "Converted", value: cConverted, percentage: cDelivered > 0 ? Math.min(Math.round((cConverted / cDelivered) * 100), 100) : 0 }
+                    { stage: "Opened", value: cOpened, percentage: cSent > 0 ? Math.min(Math.round((cOpened / cSent) * 100), 100) : 0 },
+                    { stage: "Clicked", value: cClicked, percentage: cSent > 0 ? Math.min(Math.round((cClicked / cSent) * 100), 100) : 0 },
+                    { stage: "Replied", value: cReplied, percentage: cSent > 0 ? Math.min(Math.round((cReplied / cSent) * 100), 100) : 0 },
+                    { stage: "Converted", value: cConverted, percentage: cSent > 0 ? Math.min(Math.round((cConverted / cSent) * 100), 100) : 0 }
                 ]
             }
         })
@@ -267,10 +267,10 @@ export async function GET(request: Request) {
             totalSent: sentEmailsCount,
             totalContacted: uniqueLeadsContactedCount,
             totalDelivered: deliveredCount,
-            // All rates now use delivered (industry standard: unique actions / delivered * 100)
-            opensRate: deliveredCount > 0 ? Math.min(Math.round((totalOpenedCount / deliveredCount) * 100), 100) : 0,
-            clickRate: deliveredCount > 0 ? Math.min(Math.round((totalClickedCount / deliveredCount) * 100), 100) : 0,
-            replyRate: deliveredCount > 0 ? Math.min(Math.round((totalReplied / deliveredCount) * 100), 100) : 0,
+            // All rates now use sent (standardizing across tool)
+            opensRate: sentEmailsCount > 0 ? Math.min(Math.round((totalOpenedCount / sentEmailsCount) * 100), 100) : 0,
+            clickRate: sentEmailsCount > 0 ? Math.min(Math.round((totalClickedCount / sentEmailsCount) * 100), 100) : 0,
+            replyRate: sentEmailsCount > 0 ? Math.min(Math.round((totalReplied / sentEmailsCount) * 100), 100) : 0,
             positiveReplyRate,
             opportunities: {
                 count: opportunitiesCount,

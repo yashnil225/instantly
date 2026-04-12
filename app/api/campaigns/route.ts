@@ -123,7 +123,7 @@ export async function GET(request: Request) {
             const uniqueOpenCount = getUniqueCount('open')
             const uniqueClickCount = getUniqueCount('click')
             const uniqueReplyCount = getUniqueCount('reply')
-            const oppCount = getOppCount()
+            const campaignOppCount = getOppCount()
             const sentToday = getSentTodayCount()
 
             return {
@@ -133,7 +133,7 @@ export async function GET(request: Request) {
                 openRate: !campaign.trackOpens ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueOpenCount / sentCount) * 100), 100) : 0}%`,
                 clickRate: !campaign.trackLinks ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueClickCount / sentCount) * 100), 100) : 0}%`,
                 replyRate: `${sentCount > 0 ? Math.min(Math.round((uniqueReplyCount / sentCount) * 100), 100) : 0}%`,
-                opportunities: oppCount // Opportunities = Interested/Won
+                opportunities: campaignOppCount // Opportunities = Interested/Won
             }
         })
 

@@ -625,61 +625,18 @@ export default function AnalyticsPage() {
                                         </ResponsiveContainer>
                                     </div>
 
-                                    {/* Advanced Analytics Charts */}
-                                    <div className="bg-card border border-border rounded-lg p-6">
-                                        <ConversionFunnel data={data?.funnelData as any} />
+                                    {/* Advanced Analytics Charts (Always Visible) */}
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                        <div className="bg-card border border-border rounded-lg p-6 flex flex-col">
+                                            <ConversionFunnel data={data?.funnelData as any} />
+                                        </div>
+                                        <div className="bg-card border border-border rounded-lg p-6 flex flex-col">
+                                            <SendTimeHeatmap data={data?.heatmapData as any} />
+                                        </div>
                                     </div>
 
-                                    {activeTab === "campaign" && (
-                                        <div className="grid grid-cols-1 gap-6">
-                                            <div className="bg-card border border-border rounded-lg p-6">
-                                                <SendTimeHeatmap data={data?.heatmapData as any} />
-                                            </div>
-                                            
-                                            {/* Campaign Breakdowns */}
-                                            <div className="space-y-4">
-                                                <h3 className="text-lg font-semibold px-1">Campaign Funnel Breakdowns</h3>
-                                                <div className="space-y-3">
-                                                    {(data?.campaignFunnels || []).map(cf => (
-                                                        <div key={cf.campaignId} className="bg-card border border-border rounded-lg overflow-hidden transition-all">
-                                                            <button 
-                                                                onClick={() => toggleCampaignFunnel(cf.campaignId)}
-                                                                className="w-full flex items-center justify-between p-4 hover:bg-secondary/50 transition-colors"
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className={cn(
-                                                                        "w-6 h-6 rounded flex items-center justify-center transition-transform",
-                                                                        expandedCampaigns[cf.campaignId] ? "rotate-180" : ""
-                                                                    )}>
-                                                                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                                                    </div>
-                                                                    <span className="font-medium text-foreground">{cf.campaignName}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                                                    <span>Sent: {cf.funnelData[0].value}</span>
-                                                                    <span>Replied: {cf.funnelData[4].value} ({cf.funnelData[4].percentage}%)</span>
-                                                                </div>
-                                                            </button>
-                                                            
-                                                            {expandedCampaigns[cf.campaignId] && (
-                                                                <div className="p-6 pt-0 border-t border-border/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                                    <ConversionFunnel data={cf.funnelData as any} />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                    {(!data?.campaignFunnels || data.campaignFunnels.length === 0) && (
-                                                        <div className="text-center py-12 bg-secondary/20 rounded-lg border border-dashed border-border">
-                                                            <p className="text-muted-foreground text-sm">No campaign data available for this range.</p>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
                                     {/* Tabs */}
-                                    <div className="flex items-center gap-8 border-b border-border">
+                                    <div className="flex items-center gap-8 border-b border-border mt-2">
                                         <button
                                             onClick={() => setActiveTab("campaign")}
                                             className={cn(
@@ -723,6 +680,53 @@ export default function AnalyticsPage() {
                                             )}
                                         </button>
                                     </div>
+
+                                    {activeTab === "campaign" && (
+                                        <div className="pt-6 space-y-6">
+                                            {/* Campaign Breakdowns */}
+                                            <div className="bg-card border border-border rounded-lg overflow-hidden">
+                                                <div className="text-xs text-muted-foreground uppercase bg-secondary/50 border-b border-border px-6 py-4 flex justify-between font-semibold">
+                                                    <span>Campaign Breakdowns</span>
+                                                    <span>Stats</span>
+                                                </div>
+                                                <div className="divide-y divide-border">
+                                                    {(data?.campaignFunnels || []).map(cf => (
+                                                        <div key={cf.campaignId} className="transition-all">
+                                                            <button 
+                                                                onClick={() => toggleCampaignFunnel(cf.campaignId)}
+                                                                className="w-full flex items-center justify-between px-6 py-4 hover:bg-secondary/30 transition-colors group"
+                                                            >
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={cn(
+                                                                        "w-5 h-5 rounded flex items-center justify-center transition-transform",
+                                                                        expandedCampaigns[cf.campaignId] ? "rotate-180" : ""
+                                                                    )}>
+                                                                        <ChevronDown className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+                                                                    </div>
+                                                                    <span className="font-medium text-foreground">{cf.campaignName}</span>
+                                                                </div>
+                                                                <div className="flex items-center gap-6 text-sm text-foreground">
+                                                                    <span className="text-muted-foreground text-xs"><span className="text-foreground">{cf.funnelData[0].value}</span> Sent</span>
+                                                                    <span className="text-muted-foreground text-xs"><span className="text-foreground">{cf.funnelData[4].value}</span> Replied ({cf.funnelData[4].percentage}%)</span>
+                                                                </div>
+                                                            </button>
+                                                            
+                                                            {expandedCampaigns[cf.campaignId] && (
+                                                                <div className="p-6 pt-6 border-t border-border/50 bg-secondary/10 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                                    <ConversionFunnel data={cf.funnelData as any} />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    {(!data?.campaignFunnels || data.campaignFunnels.length === 0) && (
+                                                        <div className="text-center py-12">
+                                                            <p className="text-muted-foreground text-sm">No campaign data available for this range.</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Account Analytics Tab */}
                                     {activeTab === "account" && (

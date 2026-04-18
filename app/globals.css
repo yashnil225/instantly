@@ -621,7 +621,7 @@
 /* Dark mode: solid dark panel with diagonal left edge (matches reference Image 4) */
 [data-theme="dark"] .instantly-signup-illustration {
   background: #111118;
-  w clip-path: polygon(6% 0%, 100% 0%, 100% 100%, 0% 100%);
+  clip-path: polygon(6% 0%, 100% 0%, 100% 100%, 0% 100%);
 }
 
 @media (min-width: 768px) {

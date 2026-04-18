@@ -294,7 +294,7 @@ function SignupForm() {
                                     placeholder="Email"
                                     className={`instantly-form-control ${emailError ? "instantly-input-error" : ""}`}
                                     value={email}
-                                    }}
+
                                     disabled={!!iEmail}
                                     onInput={(e) => {
                                         const v = (e.target as HTMLInputElement).value

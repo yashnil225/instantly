@@ -32,6 +32,8 @@ export default function RootLayout({
             attribute="data-theme"
             defaultTheme="dark"
             enableSystem={true}
+            storageKey="theme"
+            enableColorScheme
             disableTransitionOnChange
           >
             <WorkspaceProvider>

@@ -136,45 +136,46 @@
 
 /* ─── CSS variables for auth colours ────────────────────────── */
 :root {
-  --auth-bg:              #ffffff;
-  --auth-overlay:         rgba(255,255,255,0.5);
-  --auth-card-bg:         #ffffff;
-  --auth-card-shadow:     0 3px 5px 0 rgba(222,222,222,0.5);
-  --auth-input-bg:        #ffffff;
-  --auth-input-color:     #3c4858;
-  --auth-input-border:    #dee2e6;
-  --auth-input-ph:        #adb5bd;
-  --auth-btn-bg:          #ffffff;
-  --auth-btn-border:      #dee2e6;
-  --auth-btn-text:        #3c4858;
-  --auth-btn-shadow:      0 3px 5px 0 rgba(222,222,222,0.3);
-  --auth-divider-line:    #dee2e6;
-  --auth-divider-text:    #8492a6;
-  --auth-link:            #006bff;
-  --auth-text-muted:      #6c757d;
-  --auth-heading:         #1a1a2e;
-  --auth-modal-bg:        #ffffff;
+  --auth-bg: #ffffff;
+  --auth-overlay: rgba(255, 255, 255, 0.5);
+  /* No card — elements float directly on page background (matches reference) */
+  --auth-card-bg: transparent;
+  --auth-card-shadow: none;
+  --auth-input-bg: #ffffff;
+  --auth-input-color: #3c4858;
+  --auth-input-border: #dee2e6;
+  --auth-input-ph: #adb5bd;
+  --auth-btn-bg: #ffffff;
+  --auth-btn-border: #dee2e6;
+  --auth-btn-text: #3c4858;
+  --auth-btn-shadow: 0 3px 5px 0 rgba(222, 222, 222, 0.3);
+  --auth-divider-line: #dee2e6;
+  --auth-divider-text: #8492a6;
+  --auth-link: #006bff;
+  --auth-text-muted: #6c757d;
+  --auth-heading: #1a1a2e;
+  --auth-modal-bg: #ffffff;
 }
 
 [data-theme="dark"] {
-  --auth-bg:              #0e0e11;
-  --auth-overlay:         rgba(0,0,0,0);
-  --auth-card-bg:         transparent;
-  --auth-card-shadow:     none;
-  --auth-input-bg:        #1c1c22;
-  --auth-input-color:     #e0e0e6;
-  --auth-input-border:    #2e2e38;
-  --auth-input-ph:        #555568;
-  --auth-btn-bg:          #1c1c22;
-  --auth-btn-border:      #2e2e38;
-  --auth-btn-text:        #d0d0d8;
-  --auth-btn-shadow:      0 3px 5px 0 rgba(0,0,0,0.4);
-  --auth-divider-line:    #2e2e38;
-  --auth-divider-text:    #666680;
-  --auth-link:            #4d9fff;
-  --auth-text-muted:      #888899;
-  --auth-heading:         #f0f0f5;
-  --auth-modal-bg:        #17171f;
+  --auth-bg: #0e0e11;
+  --auth-overlay: rgba(0, 0, 0, 0);
+  --auth-card-bg: transparent;
+  --auth-card-shadow: none;
+  --auth-input-bg: #1c1c22;
+  --auth-input-color: #e0e0e6;
+  --auth-input-border: #2e2e38;
+  --auth-input-ph: #555568;
+  --auth-btn-bg: #1c1c22;
+  --auth-btn-border: #2e2e38;
+  --auth-btn-text: #d0d0d8;
+  --auth-btn-shadow: 0 3px 5px 0 rgba(0, 0, 0, 0.4);
+  --auth-divider-line: #2e2e38;
+  --auth-divider-text: #666680;
+  --auth-link: #4d9fff;
+  --auth-text-muted: #888899;
+  --auth-heading: #f0f0f5;
+  --auth-modal-bg: #17171f;
 }
 
 /* ── Section (full-page wrapper) ─────────────────────────────── */
@@ -186,7 +187,14 @@
   justify-content: center;
   background-color: var(--auth-bg);
   font-family: 'Averta', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s;
+}
+
+/* On signup page (desktop), we align to the left to leave room for the fixed right panel */
+@media (min-width: 768px) {
+  .instantly-signup-page.instantly-auth-section {
+    justify-content: flex-start;
+  }
 }
 
 /* Overlay (only visible in light mode) */
@@ -206,55 +214,70 @@
   z-index: 10;
 }
 
-.instantly-home-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
-  background-color: rgba(0, 107, 255, 0.1) !important;
-  border: 1px solid rgba(0, 107, 255, 0.15) !important;
-  color: var(--auth-link) !important;
-  box-shadow: 0 3px 5px 0 rgba(0, 107, 255, 0.2);
-  transition: background 0.15s, box-shadow 0.15s;
-  text-decoration: none;
+/* ── Back to Home Icon Button (Ref: btn btn-icon btn-soft-primary) ── */
+.btn-icon {
+  height: 36px !important;
+  width: 36px !important;
+  line-height: 34px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease-in-out !important;
 }
 
-.instantly-home-btn:hover {
-  background-color: rgba(0, 107, 255, 0.2) !important;
-  box-shadow: 0 5px 10px 0 rgba(0, 107, 255, 0.3);
+.btn-soft-primary {
+  background-color: rgba(0, 107, 255, 0.1) !important;
+  border: 1px solid rgba(0, 107, 255, 0.1) !important;
+  color: #006bff !important;
+  box-shadow: 0 3px 5px 0 rgba(0, 107, 255, 0.1) !important;
+}
+
+.btn-soft-primary:hover {
+  background-color: #006bff !important;
+  border-color: #006bff !important;
+  color: #fff !important;
+  box-shadow: 0 3px 10px 0 rgba(0, 107, 255, 0.3) !important;
 }
 
 /* ── Centered form container ─────────────────────────────────── */
 .instantly-auth-container {
   position: relative;
-  z-index: 1;
+  z-index: 10;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 16px;
+  padding: 24px 16px;
   min-height: 100dvh;
 }
 
-/* Logo row — reference uses mb-5 = 3rem = 48px */
+/* On desktop, the form container only takes up the left 55% of the split layout */
+@media (min-width: 768px) {
+  .instantly-signup-page .instantly-auth-container {
+    width: 55%;
+    margin-right: 45%;
+  }
+}
+
+/* Logo row — reduced to 32px for no-scroll layout */
 .instantly-auth-logo-wrap {
-  margin-bottom: 48px;
+  margin-bottom: 32px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-/* ── Card ────────────────────────────────────────────────────── */
+/* ── Card — NO visible box, elements float on page background (matches reference) */
 .instantly-auth-card {
-  background-color: var(--auth-card-bg);
-  border-radius: 8px;
+  background-color: transparent;
+  border-radius: 0;
   border: none;
-  padding: 24px;
+  padding: 0;
   width: 100%;
-  box-shadow: var(--auth-card-shadow);
+  box-shadow: none;
 }
 
 /* ── SSO Buttons ────────────────────────────────────────────── */
@@ -325,6 +348,7 @@
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
   box-sizing: border-box;
+  font-weight: 500;
   margin-bottom: 0;
 }
 
@@ -349,29 +373,69 @@
 }
 
 /* Helper spacing utilities used inline */
-.mb-3 { margin-bottom: 12px; }
-.mt-3 { margin-top: 12px; }
-.mt-4 { margin-top: 16px; }
-.mb-0 { margin-bottom: 0 !important; }
-.w-100 { width: 100%; }
-.text-center { text-align: center; }
-.text-dark { color: var(--auth-heading) !important; }
-.position-relative { position: relative; }
-.d-flex { display: flex; }
-.align-items-center { align-items: center; }
+.mb-3 {
+  margin-bottom: 12px;
+}
+
+.mt-3 {
+  margin-top: 12px;
+}
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.mb-0 {
+  margin-bottom: 0 !important;
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-dark {
+  color: var(--auth-heading) !important;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.d-flex {
+  display: flex;
+}
+
+.align-items-center {
+  align-items: center;
+}
 
 /* card-title — used by signup heading */
-.card-title { margin-bottom: 0.75rem; }
+.card-title {
+  margin-bottom: 0.75rem;
+}
 
 /* hover-underline — used on terms links */
-.hover-underline:hover { text-decoration: underline; }
+.hover-underline:hover {
+  text-decoration: underline;
+}
 
 /* buttonText — hover turns blue, matching reference inline style */
-.buttonText:hover { color: #006bff !important; }
+.buttonText:hover {
+  color: #006bff !important;
+}
 
 /* Bootstrap-compatible color utilities used in field errors */
-.text-danger { color: #dc3545 !important; }
-.text-muted  { color: var(--auth-text-muted) !important; }
+.text-danger {
+  color: #dc3545 !important;
+}
+
+.text-muted {
+  color: var(--auth-text-muted) !important;
+}
 
 /* ── Submit button ───────────────────────────────────────────── */
 /* Matches Instantly's primary btn with padding:"16px 32px", border-radius:12px */
@@ -445,17 +509,26 @@
 }
 
 @keyframes instantly-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── fadeIn / fadeOut — matches reference CSS animation on field errors ── */
 @keyframes instantly-fadeIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .instantly-fadeIn {
-  animation: instantly-fadeIn 0.2s ease-out forwards;
+  animation: instantly-fadeIn 0.15s ease-out forwards;
   display: block !important;
 }
 
@@ -533,20 +606,22 @@
   top: 0;
   bottom: 0;
   width: 45%;
-  z-index: 0;
-  pointer-events: none;
+  z-index: 100;
+  pointer-events: auto;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 24px;
   padding: 40px 32px;
   text-align: center;
-  /* Diagonal dark panel for dark mode, subtle gradient for light */
-  background: linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.03) 100%);
+  /* Light mode: no panel visible — just elements on white bg */
+  background: transparent;
 }
 
+/* Dark mode: solid dark panel with diagonal left edge (matches reference Image 4) */
 [data-theme="dark"] .instantly-signup-illustration {
-  background: linear-gradient(135deg, #12121a 0%, #0e0e15 100%);
+  background: #111118;
+  w clip-path: polygon(6% 0%, 100% 0%, 100% 100%, 0% 100%);
 }
 
 @media (min-width: 768px) {
@@ -685,8 +760,15 @@
 }
 
 @keyframes authFadeUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-left-heading {
@@ -721,6 +803,7 @@
   pointer-events: none;
   z-index: 1;
 }
+
 .auth-glow-top {
   width: 40%;
   height: 40%;
@@ -728,6 +811,7 @@
   right: -10%;
   background: #006bff;
 }
+
 .auth-glow-bottom {
   width: 30%;
   height: 30%;
@@ -767,9 +851,10 @@
   background: #ffffff;
   color: #495057;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   z-index: 10;
 }
+
 .auth-home-link:hover {
   background: #f1f3f5;
   color: #006bff;
@@ -804,7 +889,7 @@
   background: #ffffff;
   border-radius: 14px;
   padding: 28px 24px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0,0,0,0.04);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(222, 226, 230, 0.6);
 }
 
@@ -836,7 +921,7 @@
 .auth-sso-btn:hover:not(:disabled) {
   background: #f8f9fa;
   border-color: #ced4da;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .auth-sso-btn:disabled {
@@ -907,6 +992,7 @@
   text-decoration: none;
   transition: opacity 0.15s;
 }
+
 .auth-forgot-link:hover {
   opacity: 0.8;
   text-decoration: underline;
@@ -961,6 +1047,7 @@
   justify-content: center;
   transition: color 0.15s;
 }
+
 .auth-pw-toggle:hover {
   color: #006bff;
 }
@@ -993,6 +1080,7 @@
   cursor: pointer;
   transition: opacity 0.15s;
 }
+
 .auth-terms-link:hover {
   opacity: 0.8;
   text-decoration: underline;
@@ -1041,14 +1129,16 @@
   display: inline-block;
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255,255,255,0.4);
+  border: 2px solid rgba(255, 255, 255, 0.4);
   border-top-color: #ffffff;
   border-radius: 50%;
   animation: authSpin 0.65s linear infinite;
 }
 
 @keyframes authSpin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── Footer text & link ───────────────────────────────────── */
@@ -1065,6 +1155,7 @@
   text-decoration: none;
   transition: color 0.15s;
 }
+
 .auth-footer-link:hover {
   color: #006bff;
 }

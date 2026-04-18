@@ -181,10 +181,10 @@ export default function LoginPage() {
             <div className="instantly-back-to-home">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="instantly-home-btn"
+                    className="btn btn-icon btn-soft-primary"
                     title="Back to Home"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icons">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                         <polyline points="9 22 9 12 15 12 15 22" />
                     </svg>
@@ -198,7 +198,7 @@ export default function LoginPage() {
                     {/* Logo — mb-5 (48px) above card, matching reference */}
                     <div className="instantly-auth-logo-wrap">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/images/logo.png" width={32} alt="Instantly" />
+                        <img src="/images/logo.png" width={40} height={40} alt="Instantly" />
                     </div>
 
                     {/* Card — 360px max-width matching Instantly */}

@@ -33,6 +33,7 @@ function SignupForm() {
     const router       = useRouter()
     const searchParams = useSearchParams()
 
+    const [showPasswordField, setShowPasswordField] = useState(false)
     const [email, setEmail]                 = useState("")
     const [password, setPassword]           = useState("")
     const [termsAccepted, setTermsAccepted] = useState(false)
@@ -188,10 +189,10 @@ function SignupForm() {
             <div className="instantly-back-to-home">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="instantly-home-btn"
+                    className="btn btn-icon btn-soft-primary"
                     title="Back to Home"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icons">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                         <polyline points="9 22 9 12 15 12 15 22" />
                     </svg>
@@ -199,8 +200,7 @@ function SignupForm() {
             </div>
 
             <section
-                className="instantly-auth-section"
-                style={{ justifyContent: "center", alignItems: "flex-start" }}
+                className="instantly-auth-section instantly-signup-page"
             >
                 {/* Fixed right-side illustration */}
                 <div className="instantly-signup-illustration">
@@ -237,19 +237,13 @@ function SignupForm() {
 
                 {/* Left/center form */}
                 <div className="instantly-auth-container">
-                    {/* Logo — mb-5 (48px) matching reference */}
-                    <div className="instantly-auth-logo-wrap">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/images/logo.png" width={32} alt="Instantly" />
-                    </div>
-
                     {/* Card */}
                     <div className="instantly-auth-card" style={{ maxWidth: "360px" }}>
 
-                        {/* Heading — h3 fontSize:32px class="card-title text-center" */}
+                        {/* Heading — left-aligned with exactly 24px left padding to match input content alignment */}
                         <h3
-                            className="card-title text-center"
-                            style={{ fontSize: "32px", marginBottom: "16px", color: "var(--auth-heading)", fontWeight: 700 }}
+                            className="card-title"
+                            style={{ fontSize: "32px", marginBottom: "16px", color: "var(--auth-heading)", fontWeight: 700, textAlign: "left", paddingLeft: "24px" }}
                         >
                             Create a new account
                         </h3>
@@ -289,21 +283,17 @@ function SignupForm() {
                             <span className="instantly-divider-text">OR</span>
                             <div className="instantly-divider-line" />
                         </div>
-
-                        {/* Form — Email only, progressive password reveal */}
+{/* Form — Email only, progressive password reveal */}
                         <form id="signupForm" onSubmit={handleSubmit}>
 
-                            {/* Email field — S18: disabled + opacity:0.5 when iemail param present */}
-                            <div className="position-relative mb-0">
+                            {/* Email input field */}
+                            <div className="mb-3 position-relative">
                                 <input
                                     type="email"
-                                    className={`instantly-form-control${emailError ? " instantly-input-error" : ""}`}
+                                    id="signup-email-input"
                                     placeholder="Email"
+                                    className={`instantly-form-control ${emailError ? "instantly-input-error" : ""}`}
                                     value={email}
-                                    style={{
-                                        ...INPUT_STYLE,
-                                        // S18: iemail param = locked field, exactly as reference
-                                        ...(iEmail ? { opacity: 0.5, cursor: "not-allowed" } : {}),
                                     }}
                                     disabled={!!iEmail}
                                     onInput={(e) => {

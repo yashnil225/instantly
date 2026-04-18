@@ -127,3 +127,944 @@
 ::-webkit-resizer {
   background: transparent;
 }
+
+/* ============================================================
+   AUTH PAGES  (login & signup)
+   Namespaced under .instantly-* — matches real Instantly.ai
+   Supports both light and dark mode correctly.
+   ============================================================ */
+
+/* ─── CSS variables for auth colours ────────────────────────── */
+:root {
+  --auth-bg:              #ffffff;
+  --auth-overlay:         rgba(255,255,255,0.5);
+  --auth-card-bg:         #ffffff;
+  --auth-card-shadow:     0 3px 5px 0 rgba(222,222,222,0.5);
+  --auth-input-bg:        #ffffff;
+  --auth-input-color:     #3c4858;
+  --auth-input-border:    #dee2e6;
+  --auth-input-ph:        #adb5bd;
+  --auth-btn-bg:          #ffffff;
+  --auth-btn-border:      #dee2e6;
+  --auth-btn-text:        #3c4858;
+  --auth-btn-shadow:      0 3px 5px 0 rgba(222,222,222,0.3);
+  --auth-divider-line:    #dee2e6;
+  --auth-divider-text:    #8492a6;
+  --auth-link:            #006bff;
+  --auth-text-muted:      #6c757d;
+  --auth-heading:         #1a1a2e;
+  --auth-modal-bg:        #ffffff;
+}
+
+[data-theme="dark"] {
+  --auth-bg:              #0e0e11;
+  --auth-overlay:         rgba(0,0,0,0);
+  --auth-card-bg:         transparent;
+  --auth-card-shadow:     none;
+  --auth-input-bg:        #1c1c22;
+  --auth-input-color:     #e0e0e6;
+  --auth-input-border:    #2e2e38;
+  --auth-input-ph:        #555568;
+  --auth-btn-bg:          #1c1c22;
+  --auth-btn-border:      #2e2e38;
+  --auth-btn-text:        #d0d0d8;
+  --auth-btn-shadow:      0 3px 5px 0 rgba(0,0,0,0.4);
+  --auth-divider-line:    #2e2e38;
+  --auth-divider-text:    #666680;
+  --auth-link:            #4d9fff;
+  --auth-text-muted:      #888899;
+  --auth-heading:         #f0f0f5;
+  --auth-modal-bg:        #17171f;
+}
+
+/* ── Section (full-page wrapper) ─────────────────────────────── */
+.instantly-auth-section {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--auth-bg);
+  font-family: 'Averta', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: background-color 0.2s;
+}
+
+/* Overlay (only visible in light mode) */
+.instantly-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: var(--auth-overlay);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Back-to-home button ──────────────────────────────────────── */
+.instantly-back-to-home {
+  position: absolute;
+  top: 4%;
+  right: 2%;
+  z-index: 10;
+}
+
+.instantly-home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background-color: rgba(0, 107, 255, 0.1) !important;
+  border: 1px solid rgba(0, 107, 255, 0.15) !important;
+  color: var(--auth-link) !important;
+  box-shadow: 0 3px 5px 0 rgba(0, 107, 255, 0.2);
+  transition: background 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+}
+
+.instantly-home-btn:hover {
+  background-color: rgba(0, 107, 255, 0.2) !important;
+  box-shadow: 0 5px 10px 0 rgba(0, 107, 255, 0.3);
+}
+
+/* ── Centered form container ─────────────────────────────────── */
+.instantly-auth-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+  min-height: 100dvh;
+}
+
+/* Logo row — reference uses mb-5 = 3rem = 48px */
+.instantly-auth-logo-wrap {
+  margin-bottom: 48px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+.instantly-auth-card {
+  background-color: var(--auth-card-bg);
+  border-radius: 8px;
+  border: none;
+  padding: 24px;
+  width: 100%;
+  box-shadow: var(--auth-card-shadow);
+}
+
+/* ── SSO Buttons ────────────────────────────────────────────── */
+/* Matches Instantly's outline-light buttons with box-shadow */
+.instantly-sso-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--auth-btn-border);
+  background-color: var(--auth-btn-bg);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--auth-btn-text);
+  cursor: pointer;
+  box-shadow: var(--auth-btn-shadow);
+  transition: background 0.15s, box-shadow 0.15s;
+  line-height: 1;
+}
+
+.instantly-sso-btn:hover:not(:disabled) {
+  background-color: #f8f9fa;
+  box-shadow: 0 5px 10px 0 rgba(0, 0, 0, 0.08);
+}
+
+.instantly-sso-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ── Divider ─────────────────────────────────────────────────── */
+.instantly-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.instantly-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--auth-divider-line);
+}
+
+.instantly-divider-text {
+  font-family: 'Averta', sans-serif;
+  font-size: 12px;
+  color: var(--auth-divider-text);
+  margin: 0;
+}
+
+/* ── Form controls ────────────────────────────────────────────── */
+/* Matches Instantly's .form-control with padding:"27px 24px" */
+.instantly-form-control {
+  display: block;
+  width: 100%;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--auth-input-color);
+  background-color: var(--auth-input-bg);
+  border: 1px solid var(--auth-input-border);
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  margin-bottom: 0;
+}
+
+.instantly-form-control:focus {
+  border-color: #006bff;
+  box-shadow: 0 0 0 3px rgba(0, 107, 255, 0.1);
+}
+
+.instantly-form-control::placeholder {
+  color: var(--auth-input-ph);
+}
+
+.instantly-input-error {
+  border-color: #dc3545 !important;
+}
+
+.instantly-field-error {
+  display: block;
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* Helper spacing utilities used inline */
+.mb-3 { margin-bottom: 12px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mb-0 { margin-bottom: 0 !important; }
+.w-100 { width: 100%; }
+.text-center { text-align: center; }
+.text-dark { color: var(--auth-heading) !important; }
+.position-relative { position: relative; }
+.d-flex { display: flex; }
+.align-items-center { align-items: center; }
+
+/* card-title — used by signup heading */
+.card-title { margin-bottom: 0.75rem; }
+
+/* hover-underline — used on terms links */
+.hover-underline:hover { text-decoration: underline; }
+
+/* buttonText — hover turns blue, matching reference inline style */
+.buttonText:hover { color: #006bff !important; }
+
+/* Bootstrap-compatible color utilities used in field errors */
+.text-danger { color: #dc3545 !important; }
+.text-muted  { color: var(--auth-text-muted) !important; }
+
+/* ── Submit button ───────────────────────────────────────────── */
+/* Matches Instantly's primary btn with padding:"16px 32px", border-radius:12px */
+.instantly-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 32px;
+  border-radius: 12px;
+  border: none;
+  background: #006bff;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  box-shadow: 0 4px 12px rgba(0, 107, 255, 0.2);
+  box-sizing: border-box;
+}
+
+.instantly-submit-btn:hover:not(:disabled) {
+  background: #0056d2;
+  box-shadow: 0 6px 18px rgba(0, 107, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.instantly-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.instantly-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Outline cancel button */
+.instantly-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  background: #ffffff;
+  color: #3c4858;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.instantly-btn-outline:hover {
+  background: #f8f9fa;
+}
+
+/* ── Spinner — matches reactstrap Spinner size="sm" color="light" ────── */
+.instantly-btn-spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 0.2em solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: instantly-spin 0.75s linear infinite;
+  flex-shrink: 0;
+  margin-right: 4px;
+  position: relative;
+}
+
+@keyframes instantly-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── fadeIn / fadeOut — matches reference CSS animation on field errors ── */
+@keyframes instantly-fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.instantly-fadeIn {
+  animation: instantly-fadeIn 0.2s ease-out forwards;
+  display: block !important;
+}
+
+.instantly-fadeOut {
+  display: none !important;
+}
+
+/* ── Forgot password text link ──────────────────────────────── */
+/* Matches: .buttonText:hover { color:#006bff !important } */
+.instantly-forgot-link {
+  color: #8492a6;
+  transition: color 0.15s;
+}
+
+.instantly-forgot-link:hover {
+  color: #006bff !important;
+}
+
+/* ── Nav link (Sign Up / Log In at bottom) ──────────────────── */
+.instantly-link-bold {
+  font-weight: 700;
+  color: #1a1a2e;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.instantly-link-bold:hover {
+  color: #006bff;
+}
+
+/* ── Terms row (signup) — matches reference d-flex align-items-center mt-4 ── */
+.instantly-terms-row {
+  display: flex;
+  align-items: center;
+  margin-top: 16px;
+  gap: 0;
+}
+
+/* Matches reference: padding:"0px", marginRight:"12px" */
+.instantly-checkbox {
+  padding: 0;
+  margin: 0 12px 0 0;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  accent-color: #8492a6;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Matches reference: fontSize:"16px", className="text-muted" */
+.instantly-terms-label {
+  font-size: 16px;
+  color: var(--auth-text-muted);
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.instantly-terms-link {
+  color: var(--auth-link);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.instantly-terms-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Signup right-side illustration ────────────────────────── */
+/* Matches: position:fixed; right:0; bottom:0; top:0; d-none d-md-block */
+.instantly-signup-illustration {
+  display: none;
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  z-index: 0;
+  pointer-events: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px 32px;
+  text-align: center;
+  /* Diagonal dark panel for dark mode, subtle gradient for light */
+  background: linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.03) 100%);
+}
+
+[data-theme="dark"] .instantly-signup-illustration {
+  background: linear-gradient(135deg, #12121a 0%, #0e0e15 100%);
+}
+
+@media (min-width: 768px) {
+  .instantly-signup-illustration {
+    display: flex;
+  }
+}
+
+.instantly-signup-illustration img {
+  width: 260px;
+  height: auto;
+  max-width: 80%;
+  object-fit: contain;
+}
+
+/* Marketing copy below illustration */
+.instantly-signup-marketing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 340px;
+}
+
+/* Matches reference: two separate divs each with fontSize 24px, lineHeight 36px, font-weight-bold */
+.instantly-signup-marketing-title {
+  font-family: 'Averta', 'Inter', sans-serif;
+  font-weight: 700;
+  color: var(--auth-heading);
+  margin: 0;
+  text-align: center;
+}
+
+/* Matches reference: fontSize 16px, lineHeight 32px, text-secondary color */
+.instantly-signup-marketing-text {
+  font-family: 'Averta', 'Inter', sans-serif;
+  color: var(--auth-text-muted);
+  margin: 0;
+  text-align: center;
+}
+
+/* ── Forgot password modal ──────────────────────────────────── */
+.instantly-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.instantly-modal {
+  background: var(--auth-modal-bg);
+  border-radius: 12px;
+  padding: 28px 24px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--auth-input-border);
+}
+
+.instantly-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--auth-heading);
+}
+
+.instantly-modal-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+
+.instantly-modal-close:hover {
+  color: #1a1a2e;
+  background: #f1f3f5;
+}
+
+
+/* ── Root layout ─────────────────────────────────────────── */
+.auth-page-root {
+  display: flex;
+  min-height: 100dvh;
+  font-family: 'Averta', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f8f9fa;
+  position: relative;
+}
+
+/* Override any app-level dark-mode background on auth pages */
+[data-theme="dark"] .auth-page-root {
+  background: #f8f9fa;
+}
+
+/* ── Left panel (dark / illustration side) ────────────────── */
+.auth-left-panel {
+  display: none;
+  position: relative;
+  overflow: hidden;
+  background: #0f0f14;
+  flex: 1;
+}
+
+@media (min-width: 1024px) {
+  .auth-left-panel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 48px;
+  }
+}
+
+.auth-left-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 480px;
+  text-align: center;
+}
+
+.auth-illustration {
+  width: 100%;
+  height: auto;
+  margin-bottom: 36px;
+  animation: authFadeUp 0.7s ease both;
+}
+
+@keyframes authFadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.auth-left-heading {
+  font-size: 2.25rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 12px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.auth-left-accent {
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: #006bff;
+  margin: 0 0 14px;
+}
+
+.auth-left-subtext {
+  font-size: 1rem;
+  color: #8492a6;
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* Decorative glows */
+.auth-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.25;
+  pointer-events: none;
+  z-index: 1;
+}
+.auth-glow-top {
+  width: 40%;
+  height: 40%;
+  top: -10%;
+  right: -10%;
+  background: #006bff;
+}
+.auth-glow-bottom {
+  width: 30%;
+  height: 30%;
+  bottom: -10%;
+  left: -10%;
+  background: #7c3aed;
+}
+
+/* ── Right panel (form side) ──────────────────────────────── */
+.auth-right-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: #f8f9fa;
+  position: relative;
+  overflow-y: auto;
+}
+
+[data-theme="dark"] .auth-right-panel {
+  background: #f8f9fa;
+}
+
+/* Home icon (absolute top-left of right panel) */
+.auth-home-link {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #dee2e6;
+  background: #ffffff;
+  color: #495057;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  z-index: 10;
+}
+.auth-home-link:hover {
+  background: #f1f3f5;
+  color: #006bff;
+  border-color: #006bff;
+}
+
+/* ── Form container (centered column) ────────────────────── */
+.auth-form-container {
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+/* Logo row */
+.auth-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.auth-logo-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #006bff;
+  letter-spacing: -0.02em;
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+.auth-card {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 28px 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07), 0 1px 4px rgba(0,0,0,0.04);
+  border: 1px solid rgba(222, 226, 230, 0.6);
+}
+
+/* ── SSO buttons ──────────────────────────────────────────── */
+.auth-sso-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-sso-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #dee2e6;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #343a40;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.auth-sso-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #ced4da;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.auth-sso-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.auth-sso-btn--apple {
+  color: #1a1a1a;
+}
+
+/* ── Divider ──────────────────────────────────────────────── */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #dee2e6;
+}
+
+.auth-divider-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8492a6;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Form ─────────────────────────────────────────────────── */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-name-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.auth-field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.auth-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.auth-forgot-link {
+  font-size: 12px;
+  color: #006bff;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.auth-forgot-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Input wrapper (for eye icon) */
+.auth-input-wrap {
+  position: relative;
+}
+
+.auth-input {
+  display: block;
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  background: #ffffff;
+  font-size: 14px;
+  color: #1a1a2e;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.auth-input:focus {
+  border-color: #006bff;
+  box-shadow: 0 0 0 3px rgba(0, 107, 255, 0.12);
+}
+
+.auth-input::placeholder {
+  color: #adb5bd;
+}
+
+/* Password wrapper input needs padding-right for the eye toggle */
+.auth-input-wrap .auth-input {
+  padding-right: 44px;
+}
+
+.auth-pw-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #8492a6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+.auth-pw-toggle:hover {
+  color: #006bff;
+}
+
+/* Terms row */
+.auth-terms-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.auth-checkbox {
+  width: 15px;
+  height: 15px;
+  min-width: 15px;
+  margin-top: 2px;
+  accent-color: #006bff;
+  cursor: pointer;
+}
+
+.auth-terms-label {
+  font-size: 12.5px;
+  color: #6c757d;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.auth-terms-link {
+  color: #006bff;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.auth-terms-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Submit button */
+.auth-submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: 10px;
+  background: #006bff;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  box-shadow: 0 4px 14px rgba(0, 107, 255, 0.25);
+  letter-spacing: 0.01em;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  background: #0057d9;
+  box-shadow: 0 6px 20px rgba(0, 107, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.auth-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 107, 255, 0.2);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Spinner */
+.auth-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: authSpin 0.65s linear infinite;
+}
+
+@keyframes authSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Footer text & link ───────────────────────────────────── */
+.auth-footer-text {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.auth-footer-link {
+  font-weight: 700;
+  color: #1a1a2e;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.auth-footer-link:hover {
+  color: #006bff;
+}

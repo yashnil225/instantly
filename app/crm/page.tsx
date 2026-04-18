@@ -47,7 +47,7 @@ import { DeleteConfirmationDialog } from "@/components/app/workspace/DeleteConfi
 
 export default function CRMPage() {
     const router = useRouter()
-    const { workspaces, refreshWorkspaces, updateWorkspace, deleteWorkspace, selectedWorkspaceId: contextWorkspaceId, switchWorkspace } = useWorkspaces()
+    const { workspaces, refreshWorkspaces, updateWorkspace, deleteWorkspace, selectedWorkspaceId: contextWorkspaceId, switchWorkspace, setSelectedWorkspaceId } = useWorkspaces()
     const [searchQuery, setSearchQuery] = useState("")
     const [leads, setLeads] = useState<any[]>([])
     const selectedWorkspaceId = contextWorkspaceId === null ? "all" : contextWorkspaceId

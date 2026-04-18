@@ -102,6 +102,7 @@ interface CampaignAnalytics {
     trackOpens?: boolean
     trackLinks?: boolean
     stopOnReply?: boolean
+    sendAsTextOnly?: boolean
     _needsClassification?: boolean
     _unclassifiedCount?: number
 }
@@ -540,6 +541,19 @@ export default function CampaignAnalyticsPage() {
                                 </div>
                             </TooltipContent>
                         </Tooltip>
+                        
+                        {data?.sendAsTextOnly && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Badge variant="outline" className="bg-orange-500/10 text-orange-400 border-orange-500/20 gap-1 rounded-full text-xs font-semibold py-1 ml-2 cursor-pointer">
+                                        Text-Only
+                                    </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-[#111] border-[#333] text-white">
+                                    Emails are sent as plain text without HTML formatting. Open tracking relies on an HTML pixel.
+                                </TooltipContent>
+                            </Tooltip>
+                        )}
                     </div>
 
                     <div className="flex gap-6">

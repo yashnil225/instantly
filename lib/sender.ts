@@ -17,25 +17,26 @@ function getSmtpDefaults(provider: string): { host: string; port: number } | nul
 }
 
 // Helper to rewrite links
-function injectTracking(html: string, eventId: string, baseUrl: string) {
+function injectTracking(html: string, eventId: string, baseUrl: string, trackLinks: boolean, trackOpens: boolean) {
     let newHtml = html
 
     // 1. Rewrite Links
-    // Matches href="http..." or href='http...'
-    // We use a simple regex for V1. Be careful with existing robust parsers.
-    const linkRegex = /href=["'](http[^"']+)["']/g
-    newHtml = newHtml.replace(linkRegex, (match, url) => {
-        const encodedUrl = encodeURIComponent(url)
-        const trackingUrl = `${baseUrl}/api/track/click?eid=${eventId}&url=${encodedUrl}`
-        return `href="${trackingUrl}"`
-    })
+    if (trackLinks) {
+        const linkRegex = /href=["'](http[^"']+)["']/g
+        newHtml = newHtml.replace(linkRegex, (match, url) => {
+            const encodedUrl = encodeURIComponent(url)
+            const trackingUrl = `${baseUrl}/api/track/click?eid=${eventId}&url=${encodedUrl}`
+            return `href="${trackingUrl}"`
+        })
+    }
 
     // 2. Inject Pixel
-    const pixelUrl = `${baseUrl}/api/track/open?eid=${eventId}`
-    const pixelImg = `<img src="${pixelUrl}" width="1" height="1" alt="" style="display:none;" />`
-
-    // Append to body
-    newHtml = newHtml + pixelImg
+    if (trackOpens) {
+        const pixelUrl = `${baseUrl}/api/track/open?eid=${eventId}`
+        const pixelImg = `<img src="${pixelUrl}" width="1" height="1" alt="" style="display:none;" />`
+        newHtml = newHtml + pixelImg
+    }
+    
     return newHtml
 }
 
@@ -322,7 +323,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 where: {
                     leadId: lead.id,
                     campaignId: campaign.id,
-                    type: 'sent',
+                    type: { in: ['sent', 'pending'] },
                     metadata: { contains: `"step":${nextStepNumber}` }
                 }
             })
@@ -488,13 +489,21 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
                 if (isTextOnly) {
                     finalText = body.replace(/<[^>]*>/g, '') // Strip HTML tags for text-only mode
+                    
+                    if (campaign.trackLinks) {
+                        const urlRegex = /(https?:\/\/[^\s"'<]+)/g
+                        finalText = finalText.replace(urlRegex, (url) => {
+                            const trackingUrl = `${BASE_URL}/api/track/click?eid=${sentEvent.id}&url=${encodeURIComponent(url)}`
+                            return trackingUrl
+                        })
+                    }
 
                     finalHtml = undefined // No HTML
                 } else {
 
                     // Inject Tracking if HTML
                     if (campaign.trackOpens || campaign.trackLinks) {
-                        finalHtml = injectTracking(finalHtml!, sentEvent.id, BASE_URL)
+                        finalHtml = injectTracking(finalHtml!, sentEvent.id, BASE_URL, campaign.trackLinks, campaign.trackOpens)
                     }
                 }
 

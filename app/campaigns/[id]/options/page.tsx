@@ -47,7 +47,7 @@ export default function CampaignOptionsPage() {
     const [linkTracking, setLinkTracking] = useState(false)
     const [openTracking, setOpenTracking] = useState(false)
     const [deliveryOpt, setDeliveryOpt] = useState(true) // "Free recommended" implied default
-    const [sendAsTextOnly, setSendAsTextOnly] = useState(true)
+    const [sendAsTextOnly, setSendAsTextOnly] = useState(false)
     const [sendFirstAsText, setSendFirstAsText] = useState(false)
     const [dailyLimit, setDailyLimit] = useState("60")
     const [owner, setOwner] = useState("Yashnii Shukla")
@@ -82,6 +82,10 @@ export default function CampaignOptionsPage() {
                     if (data.campaignAccounts) {
                         setSelectedAccounts(data.campaignAccounts.map((ca: any) => ca.emailAccountId))
                     }
+                    if (data.sendAsTextOnly !== undefined) setSendAsTextOnly(data.sendAsTextOnly)
+                    if (data.sendFirstAsText !== undefined) setSendFirstAsText(data.sendFirstAsText)
+                    if (data.autoOptimizeAZ !== undefined) setAutoOptimizeAZ(data.autoOptimizeAZ)
+                    if (data.prioritizeNewLeads !== undefined) setPrioritizeNewLeads(data.prioritizeNewLeads)
                 }
 
                 // Load available email accounts

@@ -230,7 +230,8 @@ export async function GET(
             dailyLimit: campaign.dailyLimit,
             trackOpens: campaign.trackOpens,
             trackLinks: campaign.trackLinks,
-            stopOnReply: campaign.stopOnReply
+            stopOnReply: campaign.stopOnReply,
+            sendAsTextOnly: campaign.settings ? (() => { try { return JSON.parse(campaign.settings).sendAsTextOnly } catch { return false } })() : false
         }
 
         return NextResponse.json(analyticsData)

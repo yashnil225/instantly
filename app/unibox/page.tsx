@@ -304,6 +304,9 @@ function UniboxPage() {
 
 
     const handleLabelChange = async (emailId: string, newLabel: string) => {
+        // Capture old label to revert on error
+        const originalLabel = emails.find(e => e.id === emailId)?.aiLabel || ''
+
         // Optimistic update
         setEmails(prev => prev.map(email =>
             email.id === emailId ? { ...email, aiLabel: newLabel } : email
@@ -328,9 +331,13 @@ function UniboxPage() {
                 throw new Error('Failed to update label')
             }
         } catch (error) {
+            // Revert on error
             setEmails(prev => prev.map(email =>
-                email.id === emailId ? { ...email, aiLabel: selectedEmail?.aiLabel || '' } : email
+                email.id === emailId ? { ...email, aiLabel: originalLabel } : email
             ))
+            if (selectedEmail?.id === emailId) {
+                setSelectedEmail(prev => prev ? { ...prev, aiLabel: originalLabel } : null)
+            }
             console.error("Failed to update label", error)
             toast({ title: "Error", description: "Failed to update label", variant: "destructive" })
         }
@@ -1280,7 +1287,7 @@ ${selectedEmail.body || selectedEmail.preview}
 
     return (
         <TooltipProvider>
-            <div className="flex h-screen bg-background text-[#a1a1aa] font-sans">
+            <div className="flex h-[100dvh] overflow-hidden bg-background text-[#a1a1aa] font-sans">
                 {/* Collapsible Sidebar */}
                 <div
                     className={cn(

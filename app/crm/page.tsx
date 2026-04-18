@@ -47,10 +47,10 @@ import { DeleteConfirmationDialog } from "@/components/app/workspace/DeleteConfi
 
 export default function CRMPage() {
     const router = useRouter()
-    const { workspaces, refreshWorkspaces, updateWorkspace, deleteWorkspace } = useWorkspaces()
+    const { workspaces, refreshWorkspaces, updateWorkspace, deleteWorkspace, selectedWorkspaceId: contextWorkspaceId, switchWorkspace } = useWorkspaces()
     const [searchQuery, setSearchQuery] = useState("")
     const [leads, setLeads] = useState<any[]>([])
-    const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("all")
+    const selectedWorkspaceId = contextWorkspaceId === null ? "all" : contextWorkspaceId
     const [createWorkspaceOpen, setCreateWorkspaceOpen] = useState(false)
 
     // Workspace management modal states
@@ -727,7 +727,7 @@ export default function CRMPage() {
     }
 
     const handleWorkspaceSelect = (workspaceId: string | null) => {
-        setSelectedWorkspaceId(workspaceId || "all")
+        switchWorkspace(workspaceId)
     }
 
     return (

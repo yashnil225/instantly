@@ -40,3 +40,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# UI and UX cloning
+Instantly app html files for ui and ux cloning/
+

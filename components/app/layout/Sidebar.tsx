@@ -148,7 +148,6 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
                                 "h-5 w-5 flex-shrink-0",
                                 isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                             )} />
-
                             <span className="hidden md:block truncate">{item.name}</span>
                         </Link>
                     )
@@ -156,208 +155,188 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
             </nav>
 
             {/* User Profile with Dropdown Menu */}
-             <div className="relative p-3 border-t border-border/40 mt-auto">
-                 <DropdownMenu>
-                     <DropdownMenuTrigger asChild>
-                         <button className={cn(
-                             "flex items-center rounded-2xl p-2.5 transition-all outline-none duration-300",
-                             "data-[state=open]:bg-primary/10 data-[state=open]:shadow-inner data-[state=open]:ring-1 data-[state=open]:ring-primary/20",
-                             "hover:bg-secondary/80 hover:shadow-sm group",
-                             width < 120 ? "justify-center w-full" : "gap-3.5 w-full"
-                         )}>
-                             <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-primary/60 flex items-center justify-center text-[13px] font-black text-white flex-shrink-0 shadow-lg shadow-primary/20 ring-2 ring-background group-hover:scale-105 transition-transform">
-                                 {userInitials}
-                             </div>
-                             {width >= 120 && (
-                                 <div className="overflow-hidden flex-1 text-left">
-                                     <p className="text-[13px] font-black text-foreground truncate tracking-tight">{userName}</p>
-                                     <p className="text-[11px] text-muted-foreground truncate font-bold opacity-60 tracking-tighter">{userEmail}</p>
-                                 </div>
-                             )}
-                         </button>
-                     </DropdownMenuTrigger>
-                     <DropdownMenuContent
-                         className="w-[280px] bg-card border-border/60 text-foreground p-0 overflow-hidden mb-3 ml-4 rounded-2xl shadow-2xl animate-in slide-in-from-left-2 duration-300"
-                         align="start"
-                         side="right"
-                         sideOffset={14}
-                         alignOffset={-14}
-                     >
-                         {/* User Info Header */}
-                         <div className="px-5 py-4 bg-accent/5 border-b border-border/40 relative overflow-hidden group/header">
-                             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-50" />
-                             <div className="flex items-center justify-between gap-3 relative z-10">
-                                 <div className="flex flex-col gap-0.5">
-                                     <p className="text-[15px] font-black text-foreground tracking-tight">{userName}</p>
-                                     <p className="text-[11px] text-muted-foreground font-bold tracking-tighter opacity-70">{userEmail}</p>
-                                 </div>
-                                 <div className="flex flex-col items-end gap-1.5">
-                                    <span className="bg-primary/20 text-primary text-[9px] px-2 py-0.5 rounded-full font-black border border-primary/20 whitespace-nowrap uppercase tracking-[0.05em] shadow-sm">
-                                        Light Speed
-                                    </span>
-                                 </div>
-                             </div>
-                         </div>
- 
-                         {/* Menu Items */}
-                         <div className="p-2 space-y-1">
-                             <DropdownMenuItem asChild>
-                                 <Link href="/invite" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer focus:bg-primary/5 focus:text-primary rounded-xl transition-all group/item">
-                                     <div className="h-8 w-8 rounded-lg bg-accent/50 flex items-center justify-center group-hover/item:bg-primary/10 transition-colors">
-                                        <Gift className="h-4 w-4 text-muted-foreground group-hover/item:text-primary transition-colors" />
-                                     </div>
-                                     <span className="text-[13px] font-black tracking-tight">Invite & Earn</span>
-                                 </Link>
-                             </DropdownMenuItem>
-                             <DropdownMenuSub>
-                                 <DropdownMenuSubTrigger className="flex items-center justify-between px-3 py-2.5 cursor-pointer focus:bg-primary/5 focus:text-primary rounded-xl w-full outline-none hover:bg-primary/5 data-[state=open]:bg-primary/5 data-[state=open]:text-primary group/item">
-                                     <div className="flex items-center gap-3">
-                                         <div className="h-8 w-8 rounded-lg bg-accent/50 flex items-center justify-center group-hover/item:bg-primary/10 transition-colors">
-                                            <Bell className="h-4 w-4 text-muted-foreground group-hover/item:text-primary transition-colors" />
-                                         </div>
-                                         <span className="text-[13px] font-black tracking-tight">Notifications</span>
-                                     </div>
-                                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-                                 </DropdownMenuSubTrigger>
-                                 <DropdownMenuSubContent
-                                     className="w-[340px] bg-card border-border/60 text-foreground p-0 overflow-hidden shadow-2xl ml-3 rounded-2xl animate-in slide-in-from-left-2 duration-200"
-                                     sideOffset={14}
-                                     alignOffset={-5}
-                                 >
-                                     <div className="px-5 py-4 border-b border-border/40 flex justify-between items-center bg-accent/5">
-                                         <span className="text-[14px] font-black tracking-tight uppercase">Activity</span>
-                                         <Link href="/notifications" className="text-[11px] text-primary hover:underline font-black uppercase tracking-widest">View all</Link>
-                                     </div>
-                                     <div className="max-h-[350px] overflow-y-auto scrollbar-thin">
-                                         {notifications.length === 0 ? (
-                                             <div className="p-12 text-center flex flex-col items-center justify-center gap-3 min-h-[200px]">
-                                                 <div className="h-12 w-12 rounded-full bg-accent/30 flex items-center justify-center">
-                                                    <Bell className="h-6 w-6 text-muted-foreground opacity-20" />
-                                                 </div>
-                                                 <span className="text-muted-foreground text-xs font-bold opacity-60">No recent activity.</span>
-                                             </div>
-                                         ) : (
-                                             notifications.map((n) => (
-                                                 <div key={n.id} className="p-4 border-b border-border/20 hover:bg-accent/30 transition-colors cursor-pointer group/notif relative">
-                                                     <div className="flex justify-between items-start mb-1.5">
-                                                         <div className="font-black text-[13px] tracking-tight">{n.title}</div>
-                                                         {!n.read && <div className="h-2 w-2 rounded-full bg-primary shadow-sm shadow-primary/40 mt-1" />}
-                                                     </div>
-                                                     <div className="text-[12px] text-muted-foreground line-clamp-2 leading-relaxed font-medium group-hover/notif:text-foreground transition-colors">{n.message}</div>
-                                                     <div className="text-[10px] text-muted-foreground/40 mt-2.5 flex justify-between items-center font-bold uppercase tracking-tighter">
-                                                         <span>{new Date(n.createdAt).toLocaleDateString()}</span>
-                                                     </div>
-                                                 </div>
-                                             ))
-                                         )}
-                                     </div>
-                                 </DropdownMenuSubContent>
-                             </DropdownMenuSub>
-                             <DropdownMenuItem asChild>
-                                 <Link href="/help" className="flex items-center justify-between px-3 py-2.5 cursor-pointer focus:bg-primary/5 focus:text-primary rounded-xl w-full group/item">
-                                     <div className="flex items-center gap-3">
-                                         <div className="h-8 w-8 rounded-lg bg-accent/50 flex items-center justify-center group-hover/item:bg-primary/10 transition-colors">
-                                            <HelpCircle className="h-4 w-4 text-muted-foreground group-hover/item:text-primary transition-colors" />
-                                         </div>
-                                         <span className="text-[13px] font-black tracking-tight">Help Center</span>
-                                     </div>
-                                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-                                 </Link>
-                             </DropdownMenuItem>
-                             <DropdownMenuSub>
-                                 <DropdownMenuSubTrigger className="flex items-center justify-between px-3 py-2.5 cursor-pointer focus:bg-primary/5 focus:text-primary rounded-xl w-full outline-none hover:bg-primary/5 data-[state=open]:bg-primary/5 data-[state=open]:text-primary group/item">
-                                     <div className="flex items-center gap-3">
-                                         <div className="h-8 w-8 rounded-lg bg-accent/50 flex items-center justify-center group-hover/item:bg-primary/10 transition-colors">
-                                            <Globe className="h-4 w-4 text-muted-foreground group-hover/item:text-primary transition-colors" />
-                                         </div>
-                                         <span className="text-[13px] font-black tracking-tight">Language</span>
-                                     </div>
-                                     <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
-                                 </DropdownMenuSubTrigger>
-                                 <DropdownMenuSubContent
-                                     className="w-[200px] bg-card border-border/60 text-foreground p-1.5 overflow-hidden shadow-2xl ml-3 rounded-2xl animate-in slide-in-from-left-2 duration-200"
-                                     sideOffset={14}
-                                     alignOffset={-5}
-                                 >
-                                     {[
-                                         { name: "English", id: "en" },
-                                         { name: "Portuguese", id: "pt" },
-                                         { name: "Spanish", id: "es" },
-                                         { name: "German", id: "de" },
-                                         { name: "French", id: "fr" }
-                                     ].map((lang) => (
-                                         <DropdownMenuItem
-                                             key={lang.id}
-                                             className="cursor-pointer hover:bg-accent focus:bg-primary/5 focus:text-primary rounded-xl px-4 py-2.5 text-[13px] font-black tracking-tight flex justify-between items-center group/lang"
-                                             onClick={() => { /* Placeholder for language switch */ }}
-                                         >
-                                             {lang.name}
-                                             {lang.id === 'en' && <div className="h-1.5 w-1.5 rounded-full bg-primary shadow-sm shadow-primary/30" />}
-                                         </DropdownMenuItem>
-                                     ))}
-                                 </DropdownMenuSubContent>
-                             </DropdownMenuSub>
-                         </div>
- 
-                         <div className="h-px bg-border/40 mx-4 my-1.5" />
- 
-                         {/* Theme Section */}
-                         <div className="px-5 py-4 pb-3">
-                             <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.1em] mb-4 opacity-70 px-1">Appearance</p>
-                             <div className="flex gap-2.5 p-1.5 bg-accent/20 rounded-2xl border border-border/30">
-                                 <button
-                                     onClick={() => setTheme("light")}
-                                     className={cn(
-                                         "flex-1 flex items-center justify-center gap-2.5 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all duration-300",
-                                         theme === "light"
-                                             ? "bg-background text-primary shadow-xl shadow-primary/10 ring-1 ring-border/20 scale-100"
-                                             : "text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100"
-                                     )}
-                                 >
-                                     <Sun className={cn("h-4 w-4", theme === "light" ? "fill-primary/10" : "")} />
-                                     Light
-                                 </button>
-                                 <button
-                                     onClick={() => setTheme("dark")}
-                                     className={cn(
-                                         "flex-1 flex items-center justify-center gap-2.5 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all duration-300",
-                                         theme === "dark"
-                                             ? "bg-background text-primary shadow-xl shadow-primary/10 ring-1 ring-border/20 scale-100"
-                                             : "text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100"
-                                     )}
-                                 >
-                                     <Moon className={cn("h-4 w-4", theme === "dark" ? "fill-primary/10" : "")} />
-                                     Dark
-                                 </button>
-                             </div>
-                         </div>
- 
-                         <div className="h-px bg-border/40 mx-4 my-1.5" />
- 
-                         {/* Settings & Logout */}
-                         <div className="p-2 space-y-1">
-                             <DropdownMenuItem asChild>
-                                 <Link href="/settings" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer focus:bg-primary/5 focus:text-primary rounded-xl group/item">
-                                     <div className="h-8 w-8 rounded-lg bg-accent/50 flex items-center justify-center group-hover/item:bg-primary/10 transition-colors">
-                                        <Settings className="h-4 w-4 text-muted-foreground group-hover/item:text-primary transition-colors" />
-                                     </div>
-                                     <span className="text-[13px] font-black tracking-tight">Settings</span>
-                                 </Link>
-                             </DropdownMenuItem>
-                             <DropdownMenuItem
-                                 onClick={handleLogout}
-                                 className="flex items-center gap-3 px-3 py-2.5 cursor-pointer focus:bg-destructive/5 focus:text-destructive rounded-xl w-full group/item"
-                             >
-                                 <div className="h-8 w-8 rounded-lg bg-destructive/5 flex items-center justify-center group-hover/item:bg-destructive/10 transition-colors">
-                                    <LogOut className="h-4 w-4 text-destructive opacity-70 group-hover/item:opacity-100 transition-opacity" />
-                                 </div>
-                                 <span className="text-[13px] font-black tracking-tight">Logout</span>
-                             </DropdownMenuItem>
-                         </div>
-                     </DropdownMenuContent>
-                 </DropdownMenu>
-             </div>
+            <div className="relative p-2 border-t border-border">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className={cn(
+                            "flex items-center rounded-lg p-2 transition-colors outline-none data-[state=open]:bg-secondary hover:bg-secondary",
+                            width < 120 ? "justify-center w-full" : "gap-3 w-full"
+                        )}>
+                            <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                                {userInitials}
+                            </div>
+                            {width >= 120 && (
+                                <div className="overflow-hidden flex-1 text-left">
+                                    <p className="text-sm font-medium text-foreground truncate">{userName}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+                                </div>
+                            )}
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        className="w-[260px] bg-popover border-border text-popover-foreground p-0 overflow-hidden mb-2 ml-4 rounded-xl shadow-2xl"
+                        align="start"
+                        side="right"
+                        sideOffset={10}
+                        alignOffset={-10}
+                    >
+                        {/* User Info Header */}
+                        <div className="px-4 py-3 border-b border-border">
+                            <div className="flex items-center justify-between gap-2">
+                                <div>
+                                    <p className="text-sm font-medium text-foreground">{userName}</p>
+                                    <p className="text-xs text-muted-foreground">{userEmail}</p>
+                                </div>
+                                <span className="bg-primary/10 text-primary text-[10px] px-2 py-0.5 rounded-full font-bold border border-primary/20 whitespace-nowrap">
+                                    Light Speed
+                                </span>
+                            </div>
+                        </div>
 
+                        {/* Menu Items */}
+                        <div className="p-1.5 space-y-0.5">
+                            <DropdownMenuItem asChild>
+                                <Link href="/invite" className="flex items-center gap-3 px-3 py-2 cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg">
+                                    <Gift className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm">Invite a Friend & Earn</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger className="flex items-center justify-between px-3 py-2 cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg w-full outline-none hover:bg-secondary data-[state=open]:bg-secondary data-[state=open]:text-foreground">
+                                    <div className="flex items-center gap-3">
+                                        <Bell className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm">Notifications</span>
+                                    </div>
+                                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent
+                                    className="w-[320px] bg-popover border-border text-popover-foreground p-0 overflow-hidden shadow-2xl ml-2 rounded-xl"
+                                    sideOffset={10}
+                                    alignOffset={-5}
+                                >
+                                    <div className="px-4 py-3 border-b border-border flex justify-between items-center bg-popover">
+                                        <span className="text-sm font-medium text-popover-foreground">Notifications</span>
+                                        <Link href="/notifications" className="text-xs text-primary hover:text-primary/80 font-medium">View all</Link>
+                                    </div>
+                                    <div className="max-h-[300px] overflow-y-auto">
+                                        {notifications.length === 0 ? (
+                                            <div className="p-8 text-center" style={{ minHeight: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <span className="text-muted-foreground text-sm">You don't have any new notifications at this time.</span>
+                                            </div>
+                                        ) : (
+                                            notifications.map((n) => (
+                                                <div key={n.id} className="p-3 border-b border-border hover:bg-secondary transition-colors cursor-pointer group">
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <div className="font-medium text-popover-foreground text-sm">{n.title}</div>
+                                                        {!n.read && <div className="h-1.5 w-1.5 rounded-full bg-primary mt-1" />}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground line-clamp-2 group-hover:text-foreground transition-colors">{n.message}</div>
+                                                    <div className="text-[10px] text-muted-foreground/60 mt-2 flex justify-between items-center">
+                                                        <span>{new Date(n.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            <DropdownMenuItem asChild>
+                                <Link href="/help" className="flex items-center justify-between px-3 py-2 cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg w-full">
+                                    <div className="flex items-center gap-3">
+                                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm">Help Center</span>
+                                    </div>
+                                    <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSub>
+                                <DropdownMenuSubTrigger className="flex items-center justify-between px-3 py-2 cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg w-full outline-none hover:bg-secondary data-[state=open]:bg-secondary data-[state=open]:text-foreground">
+                                    <div className="flex items-center gap-3">
+                                        <Globe className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm">Language</span>
+                                    </div>
+                                    <ChevronRight className="h-3 w-3 text-muted-foreground/60" />
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent
+                                    className="w-[180px] bg-popover border-border text-popover-foreground p-1 overflow-hidden shadow-2xl ml-2 rounded-xl"
+                                    sideOffset={10}
+                                    alignOffset={-5}
+                                >
+                                    {[
+                                        { name: "English", id: "en" },
+                                        { name: "Portuguese", id: "pt" },
+                                        { name: "Spanish", id: "es" },
+                                        { name: "German", id: "de" },
+                                        { name: "French", id: "fr" }
+                                    ].map((lang) => (
+                                        <DropdownMenuItem
+                                            key={lang.id}
+                                            className="cursor-pointer hover:bg-secondary rounded-lg px-3 py-2 text-sm text-popover-foreground focus:bg-secondary focus:text-foreground flex justify-between items-center group"
+                                            onClick={() => { /* Placeholder for language switch */ }}
+                                        >
+                                            {lang.name}
+                                            {/* Simulate 'English' being selected by default for UI correctness */}
+                                            {lang.id === 'en' && <div className="h-1.5 w-1.5 rounded-full bg-primary" />}
+                                        </DropdownMenuItem>
+                                    ))}
+                                </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                        </div>
+
+                        <div className="h-[1px] bg-border mx-3 my-1" />
+
+                        {/* Theme Section */}
+                        <div className="px-4 py-3 pb-2">
+                            <p className="text-xs font-medium text-muted-foreground mb-3">Theme</p>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setTheme("light")}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition-all",
+                                        theme === "light"
+                                            ? "bg-primary text-primary-foreground border-primary"
+                                            : "bg-secondary text-muted-foreground border-transparent hover:text-foreground"
+                                    )}
+                                >
+                                    <Sun className="h-3.5 w-3.5" />
+                                    Light
+                                </button>
+                                <button
+                                    onClick={() => setTheme("dark")}
+                                    className={cn(
+                                        "flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg border transition-all",
+                                        theme === "dark"
+                                            ? "bg-primary text-primary-foreground border-primary"
+                                            : "bg-secondary text-muted-foreground border-transparent hover:text-foreground"
+                                    )}
+                                >
+                                    <Moon className="h-3.5 w-3.5" />
+                                    Dark
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="h-[1px] bg-border mx-3 my-1" />
+
+                        {/* Settings & Logout */}
+                        <div className="p-1.5 space-y-0.5">
+                            <DropdownMenuItem asChild>
+                                <Link href="/settings" className="flex items-center gap-3 px-3 py-2 cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg">
+                                    <Settings className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-sm">Settings</span>
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={handleLogout}
+                                className="flex items-center gap-3 px-3 py-2 cursor-pointer focus:bg-secondary focus:text-foreground rounded-lg text-muted-foreground hover:text-foreground w-full"
+                            >
+                                <LogOut className="h-4 w-4" />
+                                <span className="text-sm">Logout</span>
+                            </DropdownMenuItem>
+                        </div>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
         </div>
     )
 }

@@ -4,421 +4,292 @@ import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
-import toast, { Toaster } from "react-hot-toast"
-
-// ── Exact toast messages from Instantly locale file (en/common.json) ──
-const T = {
-    signed_up:               "Signed up!",
-    accept_privacy_policy:   "Please accept the Instantly terms of use and privacy policy.",
-    google_sign_up_failed:   "Failed to Sign Up with Google",
-    apple_sign_up_failed:    "Failed to Sign Up with Apple",
-    account_exists:          "Account already exists",
-    email_exists:            "Email already exists",
-    password_length:         "Enter a password with at least 6 characters",
-    email_invalid:           "Enter a valid email address",
-    invalid_invitation:      "Invalid invitation.",
-    invitation_error:        "Error accepting invitation.",
-} as const
-
-const POS = { position: "bottom-center" } as const
-
-// Input style matching reference: padding 27px 24px, fontSize 16px
-const INPUT_STYLE: React.CSSProperties = { padding: "27px 24px", fontSize: "16px" }
-
-function isValidEmail(val: string) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())
-}
+import { useToast } from "@/components/ui/use-toast"
+import { Home, Apple } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 
 function SignupForm() {
-    const router       = useRouter()
+    const { toast } = useToast()
+    const router = useRouter()
     const searchParams = useSearchParams()
-
-    const [showPasswordField, setShowPasswordField] = useState(false)
-    const [email, setEmail]                 = useState("")
-    const [password, setPassword]           = useState("")
+    const [firstName, setFirstName] = useState("")
+    const [lastName, setLastName] = useState("")
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
     const [termsAccepted, setTermsAccepted] = useState(false)
-    const [loading, setLoading]             = useState(false)
+    const [error, setError] = useState("")
+    const [loading, setLoading] = useState(false)
 
-    // L27/S17 — field error states drive fadeIn/fadeOut class + inline error text
-    const [emailError, setEmailError]         = useState(false)
-    const [passwordError, setPasswordError]   = useState(false)
-
-    // Progressive reveal — password appears after valid email typed
-    const [showPassword, setShowPassword]     = useState(false)
-
-    // S18 — iemail URL param: pre-fills email, disables field with opacity:0.5
-    const iEmail = searchParams.get("iemail") ?? ""
-
+    // Check for redirect from login page
     useEffect(() => {
-        document.title = "Sign Up - Instantly"
+        const errorParam = searchParams.get('error')
+        const emailParam = searchParams.get('email')
+        const nameParam = searchParams.get('name')
 
-        const errorParam = searchParams.get("error")
-        const emailParam = searchParams.get("email")
-
-        // Pre-fill from iemail param (S18)
-        if (iEmail) {
-            setEmail(iEmail)
-            if (isValidEmail(iEmail)) setShowPassword(true)
-        }
-
-        if (errorParam === "no_account") {
-            toast("No account found — create one below.", {
-                icon: "ℹ️",
-                duration: 4000,
-                position: "bottom-center",
+        if (errorParam === 'no_account') {
+            toast({
+                title: "Account Not Found",
+                description: "No account exists with this email. Please sign up to create one.",
             })
-            if (emailParam && !iEmail) {
-                const decoded = decodeURIComponent(emailParam)
-                setEmail(decoded)
-                if (isValidEmail(decoded)) setShowPassword(true)
+
+            // Pre-fill email if provided
+            if (emailParam) {
+                setEmail(decodeURIComponent(emailParam))
+            }
+
+            // Pre-fill name if provided (from Google)
+            if (nameParam) {
+                const names = decodeURIComponent(nameParam).split(' ')
+                setFirstName(names[0] || '')
+                setLastName(names.slice(1).join(' ') || '')
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [searchParams, toast])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setError("")
 
         if (!termsAccepted) {
-            toast.error(T.accept_privacy_policy, { ...POS, duration: 4000 })
-            return
-        }
-
-        if (!isValidEmail(email)) {
-            setEmailError(true)
-            return
-        }
-
-        if (password.length < 6) {
-            // S17: show inline error AND toast, matching reference
-            setPasswordError(true)
-            toast.error(T.password_length, POS)
+            toast({
+                title: "Terms and Conditions",
+                description: "Please accept the terms and conditions to continue.",
+                variant: "destructive",
+            })
             return
         }
 
         setLoading(true)
 
         try {
+            const name = `${firstName} ${lastName}`.trim()
             const res = await fetch("/api/auth/signup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+                body: JSON.stringify({ name, email, password }),
             })
+
             const data = await res.json()
 
             if (res.status === 409 || (res.status === 400 && data.error === "User already exists")) {
-                toast.loading(T.account_exists + " — signing you in…", POS)
-                const signInResult = await signIn("credentials", { email, password, redirect: false })
-                toast.dismiss()
+                const signInResult = await signIn("credentials", {
+                    email,
+                    password,
+                    redirect: false,
+                })
+
                 if (signInResult?.error) {
-                    toast.error(T.email_exists, { ...POS, duration: 5000 })
+                    setError("User already exists. Please login with your password.")
                     return
                 }
-                toast.success(T.signed_up, POS)
-                localStorage.setItem("instantly_auth", "true")
+
+                localStorage.setItem('instantly_auth', 'true')
                 router.push("/campaigns?welcome=true")
                 router.refresh()
                 return
             }
 
             if (!res.ok) {
-                toast.error(data.error || T.invitation_error, { ...POS, duration: 5000 })
+                setError(data.error || "Signup failed")
                 return
             }
 
-            const signInResult = await signIn("credentials", { email, password, redirect: false })
-            toast.dismiss()
+            const signInResult = await signIn("credentials", {
+                email,
+                password,
+                redirect: false,
+            })
 
             if (signInResult?.error) {
-                toast.error("Account created! Please log in.", { ...POS, duration: 4000 })
                 router.push("/login")
             } else {
-                toast.success(T.signed_up, { ...POS, duration: 3000 })
-                localStorage.setItem("instantly_auth", "true")
+                localStorage.setItem('instantly_auth', 'true')
                 router.push("/campaigns?welcome=true")
                 router.refresh()
             }
-        } catch {
-            toast.error(T.invitation_error, { ...POS, duration: 4000 })
+
+        } catch (error) {
+            setError("An error occurred. Please try again.")
         } finally {
             setLoading(false)
         }
     }
 
-    /** SSO handlers check terms first — exactly matching reference behaviour */
     const handleGoogleSignIn = () => {
-        if (!termsAccepted) {
-            toast.error(T.accept_privacy_policy, { ...POS, duration: 4000 })
-            return
-        }
-        try {
-            signIn("google", { callbackUrl: "/campaigns?welcome=true" })
-        } catch {
-            toast.error(T.google_sign_up_failed, POS)
-        }
+        signIn("google", { callbackUrl: "/campaigns?welcome=true" })
     }
-
-    const handleAppleSignIn = () => {
-        if (!termsAccepted) {
-            toast.error(T.accept_privacy_policy, { ...POS, duration: 4000 })
-            return
-        }
-        toast.error(T.apple_sign_up_failed, POS)
-    }
-
-    // R5: Join Now disabled when email invalid or password too short or field errors active
-    const joinNowDisabled = loading || emailError || passwordError
 
     return (
-        <>
-            <Toaster
-                position="bottom-center"
-                toastOptions={{
-                    style: {
-                        borderRadius: "8px",
-                        fontFamily: "'Averta', 'Inter', sans-serif",
-                        fontSize: "14px",
-                        boxShadow: "0 3px 10px rgba(0,0,0,0.12), 0 3px 3px rgba(0,0,0,0.06)",
-                        padding: "12px 16px",
-                    },
-                    success: { iconTheme: { primary: "#006bff", secondary: "#fff" } },
-                }}
-            />
-
-            {/* Back to home — top-right, exactly like Instantly */}
-            <div className="instantly-back-to-home">
+        <div className="min-h-screen flex font-['Averta',_sans-serif]">
+            {/* Home Icon Redirect */}
+            <div className="back-to-home">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="btn btn-icon btn-soft-primary"
-                    title="Back to Home"
+                    className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10 flex items-center justify-center backdrop-blur-sm"
+                    title="Home"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icons">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        <polyline points="9 22 9 12 15 12 15 22" />
-                    </svg>
+                    <Home className="h-5 w-5 text-white" />
                 </a>
             </div>
 
-            <section
-                className="instantly-auth-section instantly-signup-page"
-            >
-                {/* Fixed right-side illustration */}
-                <div className="instantly-signup-illustration">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        id="instantly-signup-logo-vector"
-                        src="/images/auth/pixeltrue-welcome.svg"
-                        alt=""
-                        style={{ height: "200px", width: "auto" }}
+            {/* Left Side: Illustration & Marketing */}
+            <div className="hidden lg:flex flex-1 items-center justify-center p-12 instantly-dark relative overflow-hidden">
+                <div className="relative z-10 max-w-xl text-center">
+                    <img 
+                        src="/images/auth/side-illustration.svg" 
+                        alt="Outreach Illustration" 
+                        className="w-full h-auto mb-10 animate-fadeInUp"
                     />
-                    {/* Marketing copy — font sizes match reference exactly */}
-                    <div className="instantly-signup-marketing" style={{ marginTop: "40px" }}>
-                        <div
-                            style={{ fontSize: "24px", lineHeight: "36px" }}
-                            className="instantly-signup-marketing-title"
-                        >
-                            45,000+ clients
-                        </div>
-                        <div
-                            style={{ fontSize: "24px", lineHeight: "36px" }}
-                            className="instantly-signup-marketing-title"
-                        >
-                            are getting more replies!
-                        </div>
-                        <div
-                            style={{ fontSize: "16px", lineHeight: "32px", marginTop: "16px" }}
-                            className="instantly-signup-marketing-text"
-                        >
-                            Unlock the power of effective outreach with our cutting-edge platform, and
-                            experience a surge in responses and engagement rates like never before.
-                        </div>
-                    </div>
+                    <h2 className="text-4xl font-semibold text-white mb-4 leading-tight">
+                        30,000+ clients
+                    </h2>
+                    <p className="text-[#006bff] text-2xl font-medium mb-4">
+                        are getting more replies!
+                    </p>
+                    <p className="text-gray-400 text-lg leading-relaxed">
+                        Unlock the power of effective outreach with our cutting-edge platform, and experience a surge in responses and engagement rates.
+                    </p>
                 </div>
+                {/* Decorative gradients */}
+                <div className="absolute top-0 left-0 w-full h-full opacity-30">
+                    <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500 rounded-full blur-[120px]"></div>
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-purple-500 rounded-full blur-[100px]"></div>
+                </div>
+            </div>
 
-                {/* Left/center form */}
-                <div className="instantly-auth-container">
-                    {/* Card */}
-                    <div className="instantly-auth-card" style={{ maxWidth: "360px" }}>
+            {/* Right Side: Signup Form */}
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#f8f9fa] overflow-y-auto">
+                <div className="w-full max-w-[360px] mx-auto py-8">
+                    {/* Logo */}
+                    <div className="flex justify-center items-center gap-2 mb-8">
+                        <Logo size="lg" />
+                        <span className="text-2xl font-semibold text-[#006bff]">Instantly</span>
+                    </div>
 
-                        {/* Heading — left-aligned with exactly 24px left padding to match input content alignment */}
-                        <h3
-                            className="card-title"
-                            style={{ fontSize: "32px", marginBottom: "16px", color: "var(--auth-heading)", fontWeight: 700, textAlign: "left", paddingLeft: "24px" }}
-                        >
-                            Create a new account
-                        </h3>
-
-                        {/* Google SSO — checks terms first */}
-                        <button
-                            type="button"
-                            onClick={handleGoogleSignIn}
-                            className="instantly-sso-btn"
-                            id="signup-google-btn"
-                        >
-                            <svg width="20" height="20" viewBox="0 0 48 48" style={{ marginTop: "-1px" }}>
-                                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-                                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-                                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-                                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-                            </svg>
-                            Sign Up with Google
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleAppleSignIn}
-                            className="instantly-sso-btn"
-                            id="signup-apple-btn"
-                            style={{ marginTop: "12px" }}
-                        >
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style={{ marginTop: "-4px" }}>
-                                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                            </svg>
-                            Sign Up with Apple
-                        </button>
-
-                        {/* Divider */}
-                        <div className="instantly-divider">
-                            <div className="instantly-divider-line" />
-                            <span className="instantly-divider-text">OR</span>
-                            <div className="instantly-divider-line" />
-                        </div>
-{/* Form — Email only, progressive password reveal */}
-                        <form id="signupForm" onSubmit={handleSubmit}>
-
-                            {/* Email input field */}
-                            <div className="mb-3 position-relative">
-                                <input
-                                    type="email"
-                                    id="signup-email-input"
-                                    placeholder="Email"
-                                    className={`instantly-form-control ${emailError ? "instantly-input-error" : ""}`}
-                                    value={email}
-
-                                    disabled={!!iEmail}
-                                    onInput={(e) => {
-                                        const v = (e.target as HTMLInputElement).value
-                                        setEmail(v)
-                                        if (isValidEmail(v)) {
-                                            setEmailError(false)
-                                            setShowPassword(true)
-                                        }
-                                    }}
-                                    onBlur={() => {
-                                        if (email.length > 0 && !isValidEmail(email)) setEmailError(true)
-                                    }}
-                                    autoComplete="email"
-                                    required
-                                />
-                                {/* L27: fadeIn/fadeOut CSS animation on email error */}
-                                <small className={`text-danger mb-0 mt-3 ${emailError ? "instantly-fadeIn" : "instantly-fadeOut"}`}>
-                                    {T.email_invalid}
-                                </small>
-                            </div>
-
-                            {/* Password — progressive reveal via maxHeight transition */}
-                            <div
-                                className="mt-3 position-relative mb-0"
-                                style={{
-                                    maxHeight: showPassword ? "120px" : "0",
-                                    opacity: showPassword ? 1 : 0,
-                                    overflow: "hidden",
-                                    transition: "all 0.3s ease-in-out",
-                                }}
-                            >
-                                <input
-                                    type="password"
-                                    className="instantly-form-control"
-                                    placeholder="Password"
-                                    value={password}
-                                    style={INPUT_STYLE}
-                                    onInput={(e) => {
-                                        const v = (e.target as HTMLInputElement).value
-                                        setPassword(v)
-                                        // S17: inline error clears once valid
-                                        if (v.length >= 6) setPasswordError(false)
-                                    }}
-                                    onBlur={() => {
-                                        if (password.length > 0 && password.length < 6) setPasswordError(true)
-                                    }}
-                                    autoComplete="new-password"
-                                />
-                                {/* S17: inline password error — matches reference <small class="text-danger"> */}
-                                <small className={`text-danger mb-0 mt-3 ${passwordError ? "instantly-fadeIn" : "instantly-fadeOut"}`}>
-                                    {T.password_length}
-                                </small>
-                            </div>
-
-                            {/* Terms — S19: checkbox padding:0 marginRight:12px, label fontSize:16px text-muted */}
-                            <div className="instantly-terms-row">
-                                <input
-                                    type="checkbox"
-                                    id="signup-terms"
-                                    checked={termsAccepted}
-                                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                                    className="instantly-checkbox"
-                                />
-                                <label htmlFor="signup-terms" className="instantly-terms-label">
-                                    I agree to the Instantly{" "}
-                                    <a
-                                        className="instantly-terms-link hover-underline"
-                                        href="https://instantly.ai/terms"
-                                        target="blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        Terms of Use
-                                    </a>
-                                    {" "}and{" "}
-                                    <a
-                                        className="instantly-terms-link hover-underline"
-                                        href="https://instantly.ai/privacy"
-                                        target="blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        Privacy policy
-                                    </a>
-                                </label>
-                            </div>
-
-                            {/* R5: disabled when field errors active, matching reference */}
-                            <div className="mt-4 mb-0 text-center">
+                    <div className="instantly-card p-4 shadow-[0_3px_5px_0_rgba(222,222,222,0.3)] bg-white rounded-[12px]">
+                        <div className="space-y-6">
+                            {/* Social Logins */}
+                            <div className="space-y-3">
                                 <button
-                                    type="submit"
-                                    form="signupForm"
-                                    disabled={joinNowDisabled}
-                                    className="instantly-submit-btn w-100"
-                                    id="signup-submit-btn"
+                                    onClick={handleGoogleSignIn}
+                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-[#dee2e6] rounded-[12px] bg-white text-[15px] font-medium transition-all hover:bg-gray-50 shadow-[0_2px_4px_rgba(0,0,0,0.05)]"
                                 >
-                                    {loading && <span className="instantly-btn-spinner" />}
-                                    {loading ? "Creating account…" : "Join Now"}
+                                    <svg width="20" height="20" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                    </svg>
+                                    Sign up with Google
+                                </button>
+                                <button className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-[#dee2e6] rounded-[12px] bg-white text-[15px] font-medium transition-all hover:bg-gray-50 shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+                                    <Apple className="h-5 w-5 -mt-1" />
+                                    Sign up with Apple
                                 </button>
                             </div>
-                        </form>
 
-                        {/* Login link */}
-                        <p
-                            className="mb-0 text-dark text-center"
-                            style={{ fontSize: "16px", marginTop: "28px", cursor: "pointer" }}
-                        >
-                            Already have an account?{" "}
-                            <Link href="/login" className="instantly-link-bold">Log In</Link>
-                        </p>
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
+                                <span className="text-[12px] text-[#8492a6] font-medium uppercase">or</span>
+                                <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
+                            </div>
+
+                            {/* Credentials Form */}
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input
+                                        type="text"
+                                        placeholder="First Name"
+                                        value={firstName}
+                                        onChange={(e) => setFirstName(e.target.value)}
+                                        required
+                                        className="w-full px-4 py-[14px] bg-white border border-[#dee2e6] rounded-[8px] text-[16px] focus:outline-none focus:border-[#006bff] transition-all"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Last Name"
+                                        value={lastName}
+                                        onChange={(e) => setLastName(e.target.value)}
+                                        required
+                                        className="w-full px-4 py-[14px] bg-white border border-[#dee2e6] rounded-[8px] text-[16px] focus:outline-none focus:border-[#006bff] transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <input
+                                        type="email"
+                                        placeholder="Email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        className="w-full px-6 py-[14px] bg-white border border-[#dee2e6] rounded-[8px] text-[16px] focus:outline-none focus:border-[#006bff] transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <input
+                                        type="password"
+                                        placeholder="Password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        minLength={6}
+                                        className="w-full px-6 py-[14px] bg-white border border-[#dee2e6] rounded-[8px] text-[16px] focus:outline-none focus:border-[#006bff] transition-all"
+                                    />
+                                </div>
+
+                                <div className="flex items-start space-x-2 py-2">
+                                    <input
+                                        type="checkbox"
+                                        id="terms"
+                                        checked={termsAccepted}
+                                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                                        className="mt-1 h-4 w-4 rounded border-gray-300 text-[#006bff] focus:ring-[#006bff]"
+                                    />
+                                    <label htmlFor="terms" className="text-[13px] text-gray-500 leading-tight">
+                                        I agree to the Instantly <span className="text-[#006bff] hover:underline cursor-pointer">Terms of Use</span> and <span className="text-[#006bff] hover:underline cursor-pointer">Privacy policy</span>
+                                    </label>
+                                </div>
+
+                                {error && (
+                                    <p className="text-red-500 text-sm text-center">
+                                        {error}
+                                    </p>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full py-4 bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold rounded-[12px] text-[15px] transition-all disabled:opacity-50 shadow-[0_4px_12px_rgba(0,107,255,0.2)]"
+                                >
+                                    {loading ? "Creating account..." : "Join Now"}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div className="mt-8 text-center text-[16px]">
+                        Already have an account?{" "}
+                        <Link href="/login">
+                            <span className="font-bold text-gray-900 hover:text-[#006bff] cursor-pointer">Log In</span>
+                        </Link>
                     </div>
                 </div>
-            </section>
-
-            <style>{`.buttonText:hover { color: #006bff !important; }`}</style>
-        </>
+            </div>
+            
+            <style jsx>{`
+                .back-to-home {
+                    position: absolute;
+                    top: 24px;
+                    left: 24px;
+                    z-index: 50;
+                }
+            `}</style>
+        </div>
     )
 }
 
 export default function SignupPage() {
     return (
-        <Suspense fallback={
-            <section className="instantly-auth-section">
-                <div style={{ color: "#006bff", fontFamily: "'Averta', sans-serif" }}>Loading…</div>
-            </section>
-        }>
+        <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center font-['Averta',_sans-serif]"><div className="text-foreground">Loading...</div></div>}>
             <SignupForm />
         </Suspense>
     )

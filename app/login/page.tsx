@@ -4,368 +4,211 @@ import { useState, useEffect } from "react"
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import toast, { Toaster } from "react-hot-toast"
-
-
-// ── Exact toast messages from Instantly locale file (en/common.json) ──
-const T = {
-    logged_in:                    "Logged in!",
-    invalid_credentials:          "Invalid username or password",
-    login_error:                  "Error logging in! Please try again.",
-    google_login_failed:          "Failed to Log In with Google",
-    apple_login_failed:           "Failed to Log In with Apple",
-    password_reset_sent:          "Password reset email sent!",
-    password_reset_error:         "Error sending password reset email! Please try again.",
-    verification_sent:            "Verification email sent!",
-    verification_error_support:   "Error sending verification email! Please contact support.",
-    verification_error_retry:     "Error sending verification email! Please try again.",
-    invalid_email:                "Enter a valid email address",
-    no_account:                   "No account found with this email.",
-} as const
-
-const POS = { position: "bottom-center" } as const
-
-// Input style matching Instantly reference: padding 27px 24px, fontSize 16px
-const INPUT_STYLE: React.CSSProperties = { padding: "27px 24px", fontSize: "16px" }
-
-
+import { Home, Apple } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 
 export default function LoginPage() {
     const { status } = useSession()
     const router = useRouter()
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+    const [error, setError] = useState("")
+    const [loading, setLoading] = useState(false)
 
-    const [email, setEmail]           = useState("")
-    const [password, setPassword]     = useState("")
-    const [loading, setLoading]       = useState(false)
-    // L27: track email error separately to drive fadeIn/fadeOut CSS class
-    const [emailError, setEmailError] = useState(false)
-    const [showForgot, setShowForgot] = useState(false)
-    const [forgotEmail, setForgotEmail]     = useState("")
-    const [forgotLoading, setForgotLoading] = useState(false)
-
-
-
-    // L7: set page title matching reference "Log In - Instantly"
-    useEffect(() => {
-        document.title = "Log In - Instantly"
-    }, [])
-
+    // Redirect if already logged in according to session
     useEffect(() => {
         if (status === "authenticated") {
-            router.push("/campaigns")
+            router.push('/campaigns')
         }
     }, [status, router])
 
-    function isValidEmail(val: string) {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())
-    }
-
-    // L36: toggle modal — resets state, no fade animation (reference fade:false)
-    const toggleForgotModal = () => {
-        setShowForgot(v => !v)
-        setForgotEmail("")
-    }
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-
-        if (!isValidEmail(email)) {
-            setEmailError(true)
-            return
-        }
-
-        if (password.length < 6) {
-            toast.error(T.invalid_credentials, POS)
-            return
-        }
-
+        setError("")
         setLoading(true)
 
         try {
-            const checkResponse = await fetch("/api/auth/check-account", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: email.trim().toLowerCase() }),
+            const checkResponse = await fetch('/api/auth/check-account', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
             })
             const checkData = await checkResponse.json()
 
             if (!checkData.exists) {
-                toast.error(T.no_account, { ...POS, duration: 4000 })
-                setTimeout(() => {
-                    router.push("/signup?error=no_account&email=" + encodeURIComponent(email))
-                }, 1500)
+                router.push('/signup?error=no_account&email=' + encodeURIComponent(email))
                 return
             }
 
             const result = await signIn("credentials", {
-                email: email.trim().toLowerCase(),
+                email,
                 password,
                 redirect: false,
             })
 
             if (result?.error) {
-                toast.error(
-                    result.error === "CredentialsSignin" ? T.invalid_credentials : T.login_error,
-                    { ...POS, duration: 4000 }
-                )
+                setError(result.error === "CredentialsSignin" ? "invalid_credentials" : "general_error")
             } else {
-                toast.success(T.logged_in, { ...POS, duration: 2000 })
-                localStorage.setItem("instantly_auth", "true")
+                localStorage.setItem('instantly_auth', 'true')
                 router.push("/campaigns?welcome=true")
                 router.refresh()
             }
-        } catch {
-            toast.error(T.login_error, POS)
+        } catch (error) {
+            setError("general_error")
         } finally {
             setLoading(false)
         }
     }
 
     const handleGoogleSignIn = async () => {
+        setLoading(true)
+        setError("")
         try {
             await signIn("google", { callbackUrl: "/campaigns?welcome=true" })
-        } catch {
-            toast.error(T.google_login_failed, POS)
-        }
-    }
-
-    const handleAppleSignIn = () => {
-        toast.error(T.apple_login_failed, POS)
-    }
-
-    const handleForgotPassword = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!isValidEmail(forgotEmail)) {
-            toast.error(T.invalid_email, POS)
-            return
-        }
-        setForgotLoading(true)
-        try {
-            const res = await fetch("/api/auth/forgot-password", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() }),
-            })
-            if (res.ok) {
-                toast.success(T.password_reset_sent, { ...POS, duration: 4000 })
-                toggleForgotModal()
-            } else {
-                toast.error(T.password_reset_error, POS)
-            }
-        } catch {
-            toast.error(T.password_reset_error, POS)
-        } finally {
-            setForgotLoading(false)
+        } catch (error) {
+            console.error("Google sign-in exception:", error)
+            setError("google_error")
+            setLoading(false)
         }
     }
 
     return (
-        <>
-            <Toaster
-                position="bottom-center"
-                toastOptions={{
-                    style: {
-                        borderRadius: "8px",
-                        fontFamily: "'Averta', 'Inter', sans-serif",
-                        fontSize: "14px",
-                        boxShadow: "0 3px 10px rgba(0,0,0,0.12), 0 3px 3px rgba(0,0,0,0.06)",
-                        padding: "12px 16px",
-                    },
-                    success: { iconTheme: { primary: "#006bff", secondary: "#fff" } },
-                }}
-            />
-
-
-
-            {/* Back to home — top-right, matching Instantly's back-to-home placement */}
-            <div className="instantly-back-to-home">
+        <div className="min-h-screen flex font-['Averta',_sans-serif]">
+            {/* Home Icon Redirect */}
+            <div className="back-to-home">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="btn btn-icon btn-soft-primary"
-                    title="Back to Home"
+                    className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all border border-white/10 flex items-center justify-center backdrop-blur-sm"
+                    title="Home"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icons">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                        <polyline points="9 22 9 12 15 12 15 22" />
-                    </svg>
+                    <Home className="h-5 w-5 text-white" />
                 </a>
             </div>
 
-            <section className="instantly-auth-section">
-                <div className="instantly-bg-overlay" />
+            {/* Left Side: Illustration & Marketing */}
+            <div className="hidden lg:flex flex-1 items-center justify-center p-12 instantly-dark relative overflow-hidden">
+                <div className="relative z-10 max-w-xl text-center">
+                    <img 
+                        src="/images/auth/side-illustration.svg" 
+                        alt="Outreach Illustration" 
+                        className="w-full h-auto mb-10 animate-fadeInUp"
+                    />
+                    <h2 className="text-4xl font-semibold text-white mb-4 leading-tight">
+                        Ready to 10x your outreach?
+                    </h2>
+                    <p className="text-gray-400 text-lg">
+                        Scale your outreach campaigns with ease and automate your entire sales funnel.
+                    </p>
+                </div>
+                {/* Decorative gradients */}
+                <div className="absolute top-0 left-0 w-full h-full opacity-30">
+                    <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500 rounded-full blur-[120px]"></div>
+                    <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-purple-500 rounded-full blur-[100px]"></div>
+                </div>
+            </div>
 
-                <div className="instantly-auth-container">
-                    {/* Logo — mb-5 (48px) above card, matching reference */}
-                    <div className="instantly-auth-logo-wrap">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src="/images/logo.png" width={40} height={40} alt="Instantly" />
+            {/* Right Side: Login Form */}
+            <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#f8f9fa]">
+                <div className="w-full max-w-[360px] mx-auto">
+                    {/* Logo */}
+                    <div className="flex justify-center items-center gap-2 mb-8">
+                        <Logo size="lg" />
+                        <span className="text-2xl font-semibold text-[#006bff]">Instantly</span>
                     </div>
 
-                    {/* Card — 360px max-width matching Instantly */}
-                    <div className="instantly-auth-card" style={{ maxWidth: "360px" }}>
-
-                        {/* Google SSO */}
-                        <button
-                            type="button"
-                            onClick={handleGoogleSignIn}
-                            className="instantly-sso-btn"
-                            id="login-google-btn"
-                        >
-                            <svg width="20" height="20" viewBox="0 0 48 48" style={{ marginTop: "-1px" }}>
-                                <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-                                <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-                                <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-                                <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-                            </svg>
-                            Log In with Google
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleAppleSignIn}
-                            className="instantly-sso-btn"
-                            id="login-apple-btn"
-                            style={{ marginTop: "12px" }}
-                        >
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style={{ marginTop: "-4px" }}>
-                                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
-                            </svg>
-                            Log In with Apple
-                        </button>
-
-                        {/* Divider */}
-                        <div className="instantly-divider">
-                            <div className="instantly-divider-line" />
-                            <span className="instantly-divider-text">OR</span>
-                            <div className="instantly-divider-line" />
-                        </div>
-
-                        {/* Credentials form */}
-                        <form id="loginForm" onSubmit={handleSubmit}>
-                            <div className="mb-3 position-relative">
-                                <input
-                                    type="email"
-                                    className={`instantly-form-control${emailError ? " instantly-input-error" : ""}`}
-                                    placeholder="Email"
-                                    name="email"
-                                    autoComplete="email"
-                                    style={INPUT_STYLE}
-                                    value={email}
-                                    onInput={(e) => {
-                                        const v = (e.target as HTMLInputElement).value
-                                        setEmail(v)
-                                        if (isValidEmail(v)) setEmailError(false)
-                                    }}
-                                    onBlur={() => {
-                                        if (email.length > 0) setEmailError(!isValidEmail(email))
-                                    }}
-                                />
-                                {/* L27: fadeIn/fadeOut CSS animation on email error — matches reference */}
-                                <small className={`text-danger mb-0 mt-3 ${emailError ? "instantly-fadeIn" : "instantly-fadeOut"}`}>
-                                    {T.invalid_email}
-                                </small>
+                    <div className="instantly-card p-4 shadow-[0_3px_5px_0_rgba(222,222,222,0.3)] bg-white rounded-[12px]">
+                        <div className="space-y-6">
+                            {/* Social Logins */}
+                            <div className="space-y-3">
+                                <button
+                                    onClick={handleGoogleSignIn}
+                                    className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-[#dee2e6] rounded-[12px] bg-white text-[15px] font-medium transition-all hover:bg-gray-50 shadow-[0_2px_4px_rgba(0,0,0,0.05)]"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                                    </svg>
+                                    Log in with Google
+                                </button>
+                                <button className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-[#dee2e6] rounded-[12px] bg-white text-[15px] font-medium transition-all hover:bg-gray-50 shadow-[0_2px_4px_rgba(0,0,0,0.05)]">
+                                    <Apple className="h-5 w-5 -mt-1" />
+                                    Log in with Apple
+                                </button>
                             </div>
 
-                            <div className="mt-3 position-relative mb-0">
-                                <input
-                                    type="password"
-                                    className="instantly-form-control"
-                                    placeholder="Password"
-                                    name="password"
-                                    autoComplete="current-password"
-                                    style={INPUT_STYLE}
-                                    value={password}
-                                    onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
-                                />
+                            <div className="flex items-center gap-4">
+                                <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
+                                <span className="text-[12px] text-[#8492a6] font-medium uppercase">or</span>
+                                <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
                             </div>
 
-                            <div className="mt-4 mb-0 text-center">
+                            {/* Credentials Form */}
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <input
+                                        type="email"
+                                        placeholder="Email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        className="w-full px-6 py-[14px] bg-white border border-[#dee2e6] rounded-[8px] text-[16px] focus:outline-none focus:border-[#006bff] transition-all"
+                                    />
+                                </div>
+                                <div className="relative">
+                                    <input
+                                        type="password"
+                                        placeholder="Password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        className="w-full px-6 py-[14px] bg-white border border-[#dee2e6] rounded-[8px] text-[16px] focus:outline-none focus:border-[#006bff] transition-all"
+                                    />
+                                </div>
+
+                                {error && (
+                                    <p className="text-red-500 text-sm text-center">
+                                        {error === "invalid_credentials" ? "Invalid email or password." : "An error occurred."}
+                                    </p>
+                                )}
+
                                 <button
                                     type="submit"
-                                    form="loginForm"
                                     disabled={loading}
-                                    className="instantly-submit-btn w-100"
-                                    id="login-submit-btn"
+                                    className="w-full py-4 bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold rounded-[12px] text-[15px] transition-all disabled:opacity-50 shadow-[0_4px_12px_rgba(0,107,255,0.2)]"
                                 >
-                                    {/* L33: spinner matches reactstrap sm spinner — CSS driven */}
-                                    {loading && <span className="instantly-btn-spinner" />}
-                                    {loading ? "Signing in…" : "Log In"}
+                                    {loading ? "Logging in..." : "Log In"}
                                 </button>
+                            </form>
+
+                            <div className="text-center">
+                                <Link href="/forgot-password">
+                                    <span className="text-[14px] text-gray-500 hover:text-[#006bff] transition-colors cursor-pointer">
+                                        Forgot password?
+                                    </span>
+                                </Link>
                             </div>
-
-                            {/* Forgot password — below submit, text-muted, cursor pointer */}
-                            <p className="mb-0 mt-3 text-center">
-                                <small
-                                    className="instantly-forgot-link buttonText"
-                                    onClick={toggleForgotModal}
-                                    style={{ cursor: "pointer", fontSize: "14px" }}
-                                >
-                                    Forgot password?
-                                </small>
-                            </p>
-                        </form>
-
-                        {/* Sign up link */}
-                        <p
-                            className="mb-0 text-dark text-center"
-                            style={{ fontSize: "16px", marginTop: "28px", cursor: "pointer" }}
-                        >
-                            Don&apos;t have an account?{" "}
-                            <Link href="/signup" className="instantly-link-bold">Sign Up</Link>
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            {/* L36: Forgot password modal — no fade (reference fade:false), instant appear */}
-            {showForgot && (
-                <div
-                    className="instantly-modal-overlay"
-                    onClick={toggleForgotModal}
-                    style={{ animation: "none" }}
-                >
-                    <div className="instantly-modal" onClick={(e) => e.stopPropagation()}>
-                        <div className="instantly-modal-header">
-                            <span>Reset Password</span>
-                            <button onClick={toggleForgotModal} className="instantly-modal-close">✕</button>
                         </div>
-                        <form id="forgotPasswordForm" onSubmit={handleForgotPassword}>
-                            <p style={{ fontSize: "14px", color: "var(--auth-text-muted)", marginBottom: "16px" }}>
-                                Enter your email address and we&apos;ll send you a link to reset your password.
-                            </p>
-                            <input
-                                type="email"
-                                className="instantly-form-control"
-                                placeholder="Email"
-                                name="email"
-                                value={forgotEmail}
-                                onChange={(e) => setForgotEmail(e.target.value)}
-                                style={{ ...INPUT_STYLE, marginBottom: "16px" }}
-                            />
-                            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-                                <button
-                                    type="button"
-                                    onClick={toggleForgotModal}
-                                    className="instantly-btn-outline"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={forgotLoading}
-                                    className="instantly-submit-btn"
-                                    style={{ minWidth: "80px" }}
-                                >
-                                    {forgotLoading && <span className="instantly-btn-spinner" />}
-                                    {forgotLoading ? "" : "Submit"}
-                                </button>
-                            </div>
-                        </form>
+                    </div>
+
+                    <div className="mt-8 text-center text-[16px]">
+                        Don&apos;t have an account?{" "}
+                        <Link href="/signup">
+                            <span className="font-bold text-gray-900 hover:text-[#006bff] cursor-pointer">Sign Up</span>
+                        </Link>
                     </div>
                 </div>
-            )}
-
-            <style>{`.buttonText:hover { color: #006bff !important; }`}</style>
-        </>
+            </div>
+            
+            <style jsx>{`
+                .back-to-home {
+                    position: absolute;
+                    top: 24px;
+                    left: 24px;
+                    z-index: 50;
+                }
+            `}</style>
+        </div>
     )
 }

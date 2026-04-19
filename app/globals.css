@@ -20,8 +20,8 @@
 
 :root {
   /* Light Mode Colors (matching screenshot) */
-  --background: 0 0% 98%;
-  /* #fafafa - light gray background */
+  --background: 0 0% 100%;
+  /* #ffffff - rgb(255, 255, 255) */
   --foreground: 220 13% 18%;
   /* #282d35 - dark text */
   --card: 0 0% 100%;
@@ -42,7 +42,7 @@
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 100%;
   --border: 220 13% 91%;
-  /* #e5e7eb - light border */
+  /* #e9ecf2 equivalent */
   --input: 220 13% 91%;
   --ring: 217 91% 60%;
   --radius: 0.5rem;
@@ -58,14 +58,14 @@
 
 [data-theme="dark"] {
   /* Dark Mode Colors */
-  --background: 240 10% 6.5%;
-  /* #0f0f12 */
+  --background: 210 4% 10%;
+  /* rgb(25, 26, 27) */
   --foreground: 0 0% 95%;
-  --card: 240 9% 13%;
-  /* #1e1e24 */
+  --card: 210 4% 10%;
+  /* Matching background for dark theme layout */
   --card-foreground: 0 0% 95%;
-  --popover: 240 9% 10%;
-  /* darker popover */
+  --popover: 210 4% 11%;
+  /* slightly lighter popover */
   --popover-foreground: 0 0% 95%;
   --primary: 217 91% 60%;
   /* Blue accent */

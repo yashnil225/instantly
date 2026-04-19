@@ -1688,17 +1688,75 @@ ${selectedEmail.body || selectedEmail.preview}
                                                     loadEmailBody(email)
                                                 }}
                                                 className={cn(
-                                                    "relative p-4 cursor-pointer transition-colors hover:bg-[#1e1e24] flex gap-3 group",
-                                                    selectedEmail?.id === email.id ? "bg-[#1e1e24]" : "bg-transparent",
-                                                    !email.isRead && "bg-[#16161a]"
+                                                    "relative cursor-pointer transition-all border-b border-border/50 flex flex-col group",
+                                                    selectedEmail?.id === email.id ? "bg-accent/50" : "hover:bg-accent/30 bg-transparent",
+                                                    !email.isRead && "bg-primary/5"
                                                 )}
+                                                style={{
+                                                    borderLeft: (selectedEmail?.id === email.id || !email.isRead) ? '4px solid rgb(0, 107, 255)' : '4px solid transparent',
+                                                    padding: '12px 16px'
+                                                }}
                                             >
-                                                {/* Hover Actions */}
-                                                <div className="absolute right-2 top-2 hidden group-hover:flex items-center gap-1 bg-[#2a2a35] border border-[#3f3f46] rounded-md shadow-lg p-0.5 z-20">
+                                                {/* AI Label / Status Row */}
+                                                {(email.tags && email.tags.length > 0) ? (
+                                                    <div className="flex items-center gap-1 mb-1">
+                                                        <Zap className="h-3 w-3 text-green-500 fill-green-500" />
+                                                        <span className="text-[10px] font-bold text-green-600 uppercase tracking-tight">
+                                                            {email.tags[0].name}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="h-4" /> // Spacer to keep height consistent
+                                                )}
+
+                                                {/* Sender, Date, and Checkbox Row */}
+                                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                                    <div className="flex items-center gap-2 overflow-hidden">
+                                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                                            <Checkbox
+                                                                checked={selectedEmails.has(email.id)}
+                                                                onCheckedChange={() => toggleEmailSelection(email.id)}
+                                                                className="h-4 w-4 rounded-[4px] border-muted-foreground/30"
+                                                            />
+                                                        </div>
+                                                        <span className={cn(
+                                                            "text-sm font-bold truncate",
+                                                            !email.isRead ? "text-foreground" : "text-muted-foreground"
+                                                        )}>
+                                                            {email.fromName || email.from}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[11px] text-muted-foreground whitespace-nowrap font-medium">
+                                                        {new Date(email.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                    </span>
+                                                </div>
+
+                                                {/* Subject Row */}
+                                                <div className="flex items-center gap-1.5 mb-1">
+                                                    <span className={cn(
+                                                        "text-[13px] truncate",
+                                                        !email.isRead ? "font-bold text-foreground" : "font-medium text-foreground/80"
+                                                    )}>
+                                                        {email.subject}
+                                                    </span>
+                                                    {email.hasAttachment && (
+                                                        <Paperclip className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                                    )}
+                                                </div>
+
+                                                {/* Preview Snippet */}
+                                                <p className="text-[12px] text-muted-foreground line-clamp-1 leading-normal opacity-80 font-medium">
+                                                    {email.preview ? email.preview.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ') : (
+                                                        email.body ? email.body.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').substring(0, 100) : "No content"
+                                                    )}
+                                                </p>
+
+                                                {/* Hover Actions - Positioned absolutely like the reference */}
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-1 bg-card border border-border rounded-lg shadow-xl p-1 z-30">
                                                     <TooltipProvider delayDuration={0}>
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#a1a1aa] hover:text-foreground hover:bg-[#3f3f46]" onClick={(e) => { e.stopPropagation(); handleMarkAsRead(email.id, !email.isRead); }}>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={(e) => { e.stopPropagation(); handleMarkAsRead(email.id, !email.isRead); }}>
                                                                     {email.isRead ? <Mail className="h-4 w-4" /> : <MailOpen className="h-4 w-4" />}
                                                                 </Button>
                                                             </TooltipTrigger>
@@ -1707,7 +1765,7 @@ ${selectedEmail.body || selectedEmail.preview}
 
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#a1a1aa] hover:text-foreground hover:bg-[#3f3f46]" onClick={(e) => { handleArchive(email.id, false, e); }}>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent" onClick={(e) => { e.stopPropagation(); handleArchive(email.id, false, e); }}>
                                                                     <Archive className="h-4 w-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
@@ -1716,7 +1774,7 @@ ${selectedEmail.body || selectedEmail.preview}
 
                                                         <Tooltip>
                                                             <TooltipTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-[#a1a1aa] hover:text-foreground hover:bg-[#3f3f46] hover:text-red-400" onClick={(e) => { e.stopPropagation(); handleDeleteEmail(email.id); }}>
+                                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10" onClick={(e) => { e.stopPropagation(); handleDeleteEmail(email.id); }}>
                                                                     <Trash2 className="h-4 w-4" />
                                                                 </Button>
                                                             </TooltipTrigger>
@@ -1827,51 +1885,51 @@ ${selectedEmail.body || selectedEmail.preview}
                                                     </TooltipProvider>
                                                 </div>
                                                 <div className="flex items-center gap-2 mt-1">
-                                                    {/* Status Dropdown - Enhanced */}
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <button className="px-2 py-0.5 bg-[#1e1e24] border border-[#2a2a35] text-[10px] text-[#a1a1aa] rounded hover:bg-[#272730] flex items-center gap-1.5 transition-colors group">
-                                                                <Zap className={cn("h-3 w-3 fill-current", allStatusOptions.find(s => s.value === (selectedEmail?.aiLabel || 'interested'))?.color || "text-green-400")} />
-                                                                <span className="capitalize">{(selectedEmail?.aiLabel || 'interested').replace('_', ' ')}</span>
-                                                                {selectedEmail?.aiLabel && (
-                                                                    <span className="ml-0.5 px-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-[2px] text-[8px] font-bold">AI</span>
-                                                                )}
+                                                            <button className="h-8 bg-card border border-border px-3 rounded-md hover:bg-accent text-[12px] font-bold flex items-center gap-2 transition-all shadow-sm group">
+                                                                <Zap className={cn("h-4 w-4 fill-current", allStatusOptions.find(s => s.value === selectedEmail.status)?.color || "text-gray-400")} />
+                                                                {allStatusOptions.find(s => s.value === selectedEmail.status)?.name || "Set Status"}
                                                                 <ChevronDown className="h-3 w-3 opacity-50 group-hover:opacity-100" />
                                                             </button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent className="w-48 bg-[#1e1e24] border-[#2a2a35] text-foreground shadow-xl p-0">
-                                                            <div className="p-2 border-b border-[#2a2a35]">
-                                                                <Input
-                                                                    placeholder="Search..."
-                                                                    className="bg-background border-[#2a2a35] text-foreground text-xs h-7 placeholder:text-[#52525b]"
-                                                                />
+                                                        <DropdownMenuContent className="w-56 bg-card border-border shadow-2xl p-1 rounded-xl">
+                                                            <div className="p-2 border-b border-border/50">
+                                                                <div className="relative">
+                                                                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                                                    <Input
+                                                                        placeholder="Search labels..."
+                                                                        className="bg-accent/30 border-none text-xs h-8 pl-8 focus-visible:ring-1 focus-visible:ring-primary/50"
+                                                                    />
+                                                                </div>
                                                             </div>
-                                                            <div className="py-1 max-h-64 overflow-y-auto">
+                                                            <div className="py-1 max-h-64 overflow-y-auto scrollbar-thin">
                                                                 {allStatusOptions.map(s => (
                                                                     <DropdownMenuItem
                                                                         key={s.value}
                                                                         onClick={() => selectedEmail && handleLabelChange(selectedEmail.id, s.value)}
-                                                                        className="cursor-pointer hover:bg-[#2a2a35] focus:bg-[#2a2a35] mx-1 rounded"
+                                                                        className="cursor-pointer hover:bg-accent focus:bg-accent mx-1 rounded-md py-2 px-3 gap-2"
                                                                     >
-                                                                        <Zap className={cn("h-4 w-4 mr-2 fill-current", s.color)} />
-                                                                        {s.name}
+                                                                        <Zap className={cn("h-4 w-4 fill-current", s.color)} />
+                                                                        <span className="text-sm font-medium">{s.name}</span>
                                                                     </DropdownMenuItem>
                                                                 ))}
                                                             </div>
-                                                            <DropdownMenuSeparator className="bg-[#2a2a35]" />
+                                                            <DropdownMenuSeparator className="bg-border/50" />
                                                             <DropdownMenuItem
-                                                                className="cursor-pointer hover:bg-[#2a2a35] focus:bg-[#2a2a35] text-blue-400 mx-1 mb-1 rounded"
+                                                                className="cursor-pointer hover:bg-primary/5 focus:bg-primary/5 text-primary mx-1 mb-1 rounded-md py-2 px-3 gap-2 font-bold"
                                                                 onClick={() => setLabelModalOpen(true)}
                                                             >
-                                                                <Plus className="h-4 w-4 mr-2" />
+                                                                <Plus className="h-4 w-4" />
                                                                 Create Label
                                                             </DropdownMenuItem>
                                                         </DropdownMenuContent>
                                                     </DropdownMenu>
 
-                                                    <button className="p-1 px-2 border border-[#2a2a35] rounded bg-[#1e1e24] hover:bg-[#272730] transition-colors" onClick={() => setReminderModalOpen(true)}>
-                                                        <Calendar className="h-3 w-3 text-[#a1a1aa]" />
-                                                    </button>
+                                                    <Button variant="outline" size="sm" className="h-8 bg-card border-border hover:bg-accent text-muted-foreground" onClick={() => setReminderModalOpen(true)}>
+                                                        <Calendar className="h-3.5 w-3.5 mr-1" />
+                                                        <span className="text-xs font-bold text-foreground/80">Reminder</span>
+                                                    </Button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1879,12 +1937,20 @@ ${selectedEmail.body || selectedEmail.preview}
                                             <TooltipProvider>
                                                 <Tooltip delayDuration={0}>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-[#a1a1aa] hover:text-foreground hover:bg-[#272730]" onClick={() => handleToggleStar(selectedEmail.id, selectedEmail.isStarred || false)}>
-                                                            <Star className={cn("h-4 w-4", selectedEmail.isStarred ? "fill-yellow-400 text-yellow-400" : "")} />
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            className={cn(
+                                                                "h-8 w-8 transition-all duration-200 border-border bg-card",
+                                                                selectedEmail.isStarred ? "text-yellow-400 border-yellow-400/30 bg-yellow-400/5 shadow-yellow-400/10" : "text-muted-foreground hover:bg-accent"
+                                                            )}
+                                                            onClick={() => handleToggleStar(selectedEmail.id, selectedEmail.isStarred || false)}
+                                                        >
+                                                            <Star className={cn("h-4 w-4", selectedEmail.isStarred ? "fill-current" : "")} />
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">
-                                                        {selectedEmail.isStarred ? "Starred" : "Not starred"}
+                                                    <TooltipContent className="bg-card border-border text-foreground">
+                                                        {selectedEmail.isStarred ? "Conversation marked as important" : "Mark as important"}
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
@@ -1892,11 +1958,11 @@ ${selectedEmail.body || selectedEmail.preview}
                                             <TooltipProvider>
                                                 <Tooltip delayDuration={0}>
                                                     <TooltipTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-[#a1a1aa] hover:text-foreground hover:bg-[#272730]" onClick={() => handleArchive(selectedEmail.id)}>
-                                                            <Archive className={cn("h-4 w-4", selectedEmail.isArchived ? "text-green-500" : "")} />
+                                                        <Button variant="outline" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent border-border bg-card" onClick={() => handleArchive(selectedEmail.id)}>
+                                                            <Archive className="h-4 w-4" />
                                                         </Button>
                                                     </TooltipTrigger>
-                                                    <TooltipContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">Archive</TooltipContent>
+                                                    <TooltipContent className="bg-card border-border text-foreground">Archive conversation</TooltipContent>
                                                 </Tooltip>
                                             </TooltipProvider>
                                             <DropdownMenu>
@@ -1919,25 +1985,26 @@ ${selectedEmail.body || selectedEmail.preview}
 
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="outline" size="icon" className="bg-[#1e1e24] border-[#2a2a35] text-[#a1a1aa] hover:text-foreground hover:bg-[#272730] h-8 w-8 shadow-sm">
+                                                    <Button variant="outline" size="icon" className="bg-card border-border text-muted-foreground hover:text-foreground hover:bg-accent h-8 w-8 shadow-sm">
                                                         <MoreHorizontal className="h-4 w-4" />
                                                     </Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-56 bg-[#1e1e24] border-[#2a2a35] text-foreground shadow-xl">
+                                                <DropdownMenuContent align="end" className="w-56 bg-card border-border text-foreground shadow-2xl p-1 rounded-xl">
                                                     <DropdownMenuItem
-                                                        className="cursor-pointer focus:bg-[#2a2a35] focus:text-foreground"
+                                                        className="cursor-pointer focus:bg-accent rounded-md py-2"
                                                         onClick={handleFindSimilar}
                                                     >
-                                                        <Users className="h-4 w-4 mr-2 text-[#a1a1aa]" />
+                                                        <Users className="h-4 w-4 mr-2 text-muted-foreground" />
                                                         Find similar leads
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
-                                                        className="cursor-pointer focus:bg-[#2a2a35] focus:text-foreground text-red-500 hover:text-red-400"
+                                                        className="cursor-pointer focus:bg-destructive/10 focus:text-destructive text-destructive rounded-md py-2"
                                                         onClick={handleDeleteLead}
                                                     >
                                                         <Trash2 className="h-4 w-4 mr-2" />
-                                                        Delete lead
+                                                        Delete lead & block
                                                     </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-border/50 mx-1" />
                                                     <DropdownMenuItem
                                                         className="cursor-pointer focus:bg-[#2a2a35] focus:text-foreground"
                                                         onClick={handleSetReminder}
@@ -1951,32 +2018,45 @@ ${selectedEmail.body || selectedEmail.preview}
                                                         onClick={() => handleDeleteEmail(selectedEmail.id)}
                                                     >
                                                         <Trash2 className="h-4 w-4 mr-2" />
-                                                        Delete email
+                                                        Delete conversation
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
                                     </div>
 
-                                    {/* Subject Line */}
-                                    <div className="flex items-center justify-between mb-1">
-                                        <div className="flex items-center gap-2">
-                                            <h2 className="text-xl font-bold text-foreground tracking-tight">{selectedEmail.subject}</h2>
-                                        </div>
-                                        <div className="flex items-center gap-4 text-[#71717a] text-xs font-medium">
-                                            <span>
-                                                {new Date(selectedEmail.timestamp).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })} at {new Date(selectedEmail.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-                                            </span>
+                                    {/* Subject Row */}
+                                    <div className="flex flex-col gap-1 mb-4">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <h2 className="text-xl font-extrabold text-foreground tracking-tight leading-tight flex-1">
+                                                {selectedEmail.subject}
+                                            </h2>
+                                            <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-extrabold uppercase tracking-widest bg-accent/40 px-2 py-1 rounded-md border border-border/10 whitespace-nowrap">
+                                                <Calendar className="h-3 w-3" />
+                                                {new Date(selectedEmail.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                <span className="opacity-20 mx-0.5">•</span>
+                                                {new Date(selectedEmail.timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="text-xs text-[#71717a]">
-                                        From: <span className="text-[#a1a1aa]">{selectedEmail.fromName || selectedEmail.from}</span> &lt;{selectedEmail.from}&gt;
-                                        <br />
-                                        to: <span className="text-[#a1a1aa]">{selectedEmail.recipient || session?.user?.name || 'You'}</span> &lt;{selectedEmail.sentFrom || (selectedEmail as any).to || session?.user?.email || ''}&gt;
+                                    {/* Sender Information Row */}
+                                    <div className="flex items-center justify-between text-[12px] text-muted-foreground border-b border-border/30 pb-5 mb-1">
+                                        <div className="flex flex-wrap gap-x-6 gap-y-2">
+                                            <div>
+                                                <span className="font-bold uppercase tracking-tighter opacity-40 mr-2">From</span>
+                                                <span className="text-foreground font-bold">{selectedEmail.fromName || selectedEmail.from}</span>
+                                                <span className="ml-1 opacity-50">&lt;{selectedEmail.from}&gt;</span>
+                                            </div>
+                                            <div>
+                                                <span className="font-bold uppercase tracking-tighter opacity-40 mr-2">To</span>
+                                                <span className="text-foreground font-bold">{selectedEmail.recipient || session?.user?.name || 'You'}</span>
+                                                <span className="ml-1 opacity-50">&lt;{selectedEmail.sentFrom || (selectedEmail as any).to || session?.user?.email || ''}&gt;</span>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="mt-4" onClick={e => e.stopPropagation()}>
+                                    <div className="mt-4 flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                         <TagManager
                                             entityId={selectedEmail.id}
                                             entityType="lead"
@@ -1989,48 +2069,56 @@ ${selectedEmail.body || selectedEmail.preview}
                                 {/* Detail Body */}
                                 <div className="flex-1 overflow-y-auto p-8 bg-background space-y-8">
                                     {selectedEmail.messages && selectedEmail.messages.length > 0 ? (
-                                        <div className="space-y-6">
+                                        <div className="space-y-8 max-w-4xl mx-auto py-4">
                                             {selectedEmail.messages.map((msg, idx) => (
                                                 <div key={msg.id} className={cn(
-                                                    "animate-in fade-in slide-in-from-bottom-2 duration-500",
-                                                    "border rounded-lg overflow-hidden",
-                                                    msg.isMe ? "border-[#2a2a35] bg-[#1e1e24]" : "border-[#2a2a35] bg-[#16161a]"
+                                                    "animate-in fade-in slide-in-from-bottom-3 duration-500",
+                                                    "border-b border-border/20 last:border-0 pb-8",
                                                 )}>
-                                                    <div className="px-4 py-3 border-b border-[#2a2a35] flex items-center justify-between gap-4 bg-[#272730]/30">
-                                                        <div className="flex items-center gap-3 overflow-hidden">
+                                                    <div className="flex items-start justify-between gap-4 mb-5">
+                                                        <div className="flex items-center gap-4 min-w-0">
                                                             <div className={cn(
-                                                                "h-8 w-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold",
-                                                                msg.isMe ? "bg-blue-600 text-white" : "bg-purple-600 text-white"
+                                                                "h-10 w-10 rounded-full flex items-center justify-center shrink-0 text-[13px] font-extrabold shadow-sm ring-2 ring-offset-2 ring-offset-background",
+                                                                msg.isMe ? "bg-primary text-primary-foreground ring-primary/20" : "bg-accent text-accent-foreground ring-accent/20"
                                                             )}>
-                                                                {msg.isMe ? "ME" : (msg.from?.[0]?.toUpperCase() || selectedEmail.fromName?.[0]?.toUpperCase() || "?")}
+                                                                {msg.isMe ? "M" : (msg.from?.[0]?.toUpperCase() || selectedEmail.fromName?.[0]?.toUpperCase() || "?")}
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <div className="text-sm font-semibold text-foreground truncate">
-                                                                    {msg.isMe ? "You" : (msg.from || selectedEmail.fromName)}
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[15px] font-extrabold text-foreground truncate">
+                                                                        {msg.isMe ? "You" : (msg.from || selectedEmail.fromName)}
+                                                                    </span>
+                                                                    {msg.isMe && (
+                                                                        <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-[10px] font-extrabold uppercase tracking-tighter rounded">Sent</span>
+                                                                    )}
                                                                 </div>
-                                                                <div className="text-xs text-muted-foreground truncate">
+                                                                <div className="text-[12px] text-muted-foreground truncate opacity-70">
                                                                     to {msg.to || "Me"}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="text-xs text-[#71717a] whitespace-nowrap shrink-0">
-                                                            {new Date(msg.timestamp).toLocaleString(undefined, {
-                                                                month: 'short', day: 'numeric',
-                                                                hour: 'numeric', minute: '2-digit'
-                                                            })}
+                                                        <div className="flex flex-col items-end gap-1 shrink-0">
+                                                            <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                                                                {new Date(msg.timestamp).toLocaleString(undefined, {
+                                                                    month: 'short', day: 'numeric',
+                                                                    hour: 'numeric', minute: '2-digit'
+                                                                })}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div className="p-5 text-sm leading-relaxed text-[#d4d4d8] font-sans">
-                                                        {/* Render HTML content safely */}
-                                                        <div dangerouslySetInnerHTML={{ __html: msg.body }} />
+                                                    <div className="pl-14">
+                                                        <div
+                                                            className="prose prose-sm dark:prose-invert max-w-none text-[15px] leading-[1.7] text-foreground/90 font-medium"
+                                                            dangerouslySetInnerHTML={{ __html: msg.body }}
+                                                        />
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
                                         <div
-                                            className="prose prose-invert max-w-none text-foreground leading-relaxed"
-                                            style={{ fontSize: '14px', lineHeight: '1.6', color: '#e4e4e7' }}
+                                            className="max-w-4xl mx-auto py-8 prose dark:prose-invert max-w-none text-foreground/90 leading-[1.7]"
+                                            style={{ fontSize: '15px' }}
                                         >
                                             {selectedEmail.body ? (
                                                 selectedEmail.body.includes('<') && selectedEmail.body.includes('>') ? (
@@ -2039,35 +2127,35 @@ ${selectedEmail.body || selectedEmail.preview}
                                                     <div style={{ whiteSpace: 'pre-wrap' }}>{selectedEmail.body}</div>
                                                 )
                                             ) : (
-                                                <div style={{ whiteSpace: 'pre-wrap', color: '#a1a1aa' }}>{selectedEmail.preview}</div>
+                                                <div style={{ whiteSpace: 'pre-wrap', color: 'hsl(var(--muted-foreground))' }}>{selectedEmail.preview}</div>
                                             )}
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Detail Footer */}
-                                <div className="p-4 bg-background border-t border-[#2a2a35]">
+                                <div className="p-6 bg-background border-t border-border/40">
                                     {replyMode ? (
-                                        <div className="border border-[#2a2a35] rounded-xl bg-[#1e1e24] shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
-                                            <div className="flex flex-col gap-0 border-b border-[#2a2a35] bg-[#272730]/50">
+                                        <div className="border border-border/60 rounded-2xl bg-card shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-300">
+                                            <div className="flex flex-col gap-0 border-b border-border/40 bg-accent/10">
                                                 {/* Forward Fields */}
                                                 {replyMode === 'forward' && (
-                                                    <div className="p-3 space-y-2 border-b border-[#2a2a35] bg-[#1e1e24]">
-                                                        <div className="flex items-center gap-2">
-                                                            <Label className="text-xs text-[#71717a] w-12 font-medium">To:</Label>
+                                                    <div className="p-4 space-y-3 border-b border-border/40 bg-card">
+                                                        <div className="flex items-center gap-3">
+                                                            <Label className="text-[11px] text-muted-foreground w-12 font-bold uppercase tracking-widest">To</Label>
                                                             <Input
                                                                 value={forwardTo}
                                                                 onChange={(e) => setForwardTo(e.target.value)}
-                                                                className="flex-1 bg-transparent border-none text-sm text-foreground focus-visible:ring-0 h-6 p-0 placeholder:text-[#52525b]"
+                                                                className="flex-1 bg-transparent border-none text-sm text-foreground focus-visible:ring-0 h-7 p-0 placeholder:text-muted-foreground/40 font-bold"
                                                                 placeholder="recipient@example.com"
                                                             />
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <Label className="text-xs text-[#71717a] w-12 font-medium">Subject:</Label>
+                                                        <div className="flex items-center gap-3">
+                                                            <Label className="text-[11px] text-muted-foreground w-12 font-bold uppercase tracking-widest">Sub</Label>
                                                             <Input
                                                                 value={forwardSubject}
                                                                 onChange={(e) => setForwardSubject(e.target.value)}
-                                                                className="flex-1 bg-transparent border-none text-sm text-foreground focus-visible:ring-0 h-6 p-0 placeholder:text-[#52525b]"
+                                                                className="flex-1 bg-transparent border-none text-sm text-foreground focus-visible:ring-0 h-7 p-0 placeholder:text-muted-foreground/40 font-bold"
                                                                 placeholder="Subject"
                                                             />
                                                         </div>
@@ -2075,8 +2163,11 @@ ${selectedEmail.body || selectedEmail.preview}
                                                 )}
 
                                                 {/* Smart Replies */}
-                                                <div className="flex items-center gap-2 px-4 py-2 border-b border-[#2a2a35] bg-[#272730]/30 overflow-x-auto scroller-hidden">
-                                                    <span className="text-[10px] text-[#71717a] font-bold uppercase tracking-wider whitespace-nowrap">Smart Reply:</span>
+                                                <div className="flex items-center gap-2.5 px-5 py-3 border-b border-border/40 bg-card overflow-x-auto scrollbar-none">
+                                                    <div className="flex items-center gap-1.5 shrink-0 mr-1">
+                                                        <Zap className="h-3.5 w-3.5 text-primary animate-pulse" />
+                                                        <span className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.1em] whitespace-nowrap">AI Suggestions</span>
+                                                    </div>
                                                     {[
                                                         { label: "Interested", text: "I'm interested, tell me more!" },
                                                         { label: "Meeting?", text: "Would you be open to a quick call tomorrow?" },
@@ -2086,18 +2177,18 @@ ${selectedEmail.body || selectedEmail.preview}
                                                         <button
                                                             key={suggest.label}
                                                             onClick={() => setReplyBody(suggest.text + (replyBody.includes('--') ? replyBody.substring(replyBody.indexOf('<br><br>--')) : ''))}
-                                                            className="px-2 py-1 rounded-full bg-[#333] hover:bg-[#444] text-[11px] text-[#a1a1aa] transition-colors whitespace-nowrap"
+                                                            className="px-3 py-1.5 rounded-full bg-accent/50 hover:bg-primary/10 border border-border/50 text-[11px] text-foreground font-bold transition-all whitespace-nowrap hover:border-primary/30"
                                                         >
                                                             {suggest.label}
                                                         </button>
                                                     ))}
                                                 </div>
 
-                                                <div className="bg-[#1e1e24] min-h-[200px] flex flex-col relative">
+                                                <div className="bg-card min-h-[250px] flex flex-col relative group">
                                                     <Button
-                                                        variant="ghost"
+                                                        variant="outline"
                                                         size="icon"
-                                                        className="absolute right-2 top-2 h-6 w-6 text-[#a1a1aa] hover:text-foreground z-10"
+                                                        className="absolute right-4 top-4 h-7 w-7 rounded-full bg-card border-border hover:bg-destructive/10 hover:text-destructive z-10 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
                                                         onClick={() => setReplyMode(null)}
                                                     >
                                                         <X className="h-4 w-4" />
@@ -2106,25 +2197,26 @@ ${selectedEmail.body || selectedEmail.preview}
                                                         value={replyBody}
                                                         onChange={(e) => setReplyBody(e.target.value)}
                                                         placeholder={replyMode === 'forward' ? "Forward message..." : "Type your reply..."}
-                                                        className="flex-1 bg-transparent border-none focus-visible:ring-0 resize-none p-4 text-base leading-relaxed text-gray-200 min-h-[150px]"
+                                                        className="flex-1 bg-transparent border-none focus-visible:ring-0 resize-none p-6 text-[15px] leading-relaxed text-foreground font-medium min-h-[180px] placeholder:text-muted-foreground/30"
                                                     />
 
                                                     {/* Attachments List */}
                                                     {attachments.length > 0 && (
-                                                        <div className="px-4 pb-2 flex flex-wrap gap-2">
+                                                        <div className="px-6 pb-4 flex flex-wrap gap-2.5">
                                                             {attachments.map((file, idx) => (
-                                                                <div key={idx} className="flex items-center bg-[#272730] border border-[#2a2a35] rounded-md px-3 py-1 text-xs text-[#a1a1aa]">
-                                                                    <span className="max-w-[150px] truncate mr-2">{file.name}</span>
-                                                                    <button onClick={() => removeAttachment(idx)} className="hover:text-foreground">
-                                                                        <X className="h-3 w-3" />
+                                                                <div key={idx} className="flex items-center bg-accent/40 border border-border/60 rounded-lg px-4 py-1.5 text-xs text-foreground font-bold animate-in zoom-in-95 duration-200">
+                                                                    <Paperclip className="h-3 w-3 mr-2 text-primary" />
+                                                                    <span className="max-w-[200px] truncate mr-2">{file.name}</span>
+                                                                    <button onClick={() => removeAttachment(idx)} className="hover:text-destructive ml-1">
+                                                                        <X className="h-3.5 w-3.5" />
                                                                     </button>
                                                                 </div>
                                                             ))}
                                                         </div>
                                                     )}
 
-                                                    <div className="px-4 py-3 border-t border-[#2a2a35] flex items-center justify-between">
-                                                        <div className="flex gap-2 items-center">
+                                                    <div className="px-6 py-4 border-t border-border/40 flex items-center justify-between bg-accent/5">
+                                                        <div className="flex gap-1.5 items-center">
                                                             <input
                                                                 type="file"
                                                                 id="file-upload"
@@ -2135,69 +2227,78 @@ ${selectedEmail.body || selectedEmail.preview}
                                                             <TooltipProvider delayDuration={0}>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Button variant="ghost" size="icon" className="text-[#a1a1aa] hover:text-foreground h-8 w-8" onClick={() => document.getElementById('file-upload')?.click()}>
-                                                                            <Paperclip className="h-4 w-4" />
+                                                                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-9 w-9 rounded-full" onClick={() => document.getElementById('file-upload')?.click()}>
+                                                                            <Paperclip className="h-4.5 w-4.5" />
                                                                         </Button>
                                                                     </TooltipTrigger>
-                                                                    <TooltipContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">Attach files</TooltipContent>
+                                                                    <TooltipContent className="bg-card border-border text-foreground font-bold">Attach files</TooltipContent>
                                                                 </Tooltip>
                                                             </TooltipProvider>
                                                             <TooltipProvider delayDuration={0}>
                                                                 <Tooltip>
                                                                     <TooltipTrigger asChild>
-                                                                        <Button variant="ghost" size="icon" className="text-[#a1a1aa] hover:text-red-400 h-8 w-8" onClick={() => {
+                                                                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-9 w-9 rounded-full" onClick={() => {
                                                                             setReplyBody("")
                                                                             setAttachments([])
                                                                             setReplyMode(null)
                                                                         }}>
-                                                                            <Trash2 className="h-4 w-4" />
+                                                                            <Trash2 className="h-4.5 w-4.5" />
                                                                         </Button>
                                                                     </TooltipTrigger>
-                                                                    <TooltipContent className="bg-[#1e1e24] border-[#2a2a35] text-foreground">Discard draft</TooltipContent>
+                                                                    <TooltipContent className="bg-card border-border text-destructive font-bold">Discard message</TooltipContent>
                                                                 </Tooltip>
                                                             </TooltipProvider>
                                                         </div>
-                                                        <Button
-                                                            onClick={handleSendReply}
-                                                            className="bg-blue-600 hover:bg-blue-700 text-white h-9 px-6 font-bold shadow-lg shadow-blue-500/20 rounded-md transition-all"
-                                                            disabled={sendingReply}
-                                                        >
-                                                            {sendingReply ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send"}
-                                                        </Button>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="flex items-center gap-2 group/send">
+                                                                <Button
+                                                                    onClick={handleSendReply}
+                                                                    className="bg-primary hover:bg-primary/90 text-primary-foreground h-10 px-8 font-black uppercase tracking-[0.1em] shadow-xl shadow-primary/20 rounded-xl transition-all active:scale-95 flex items-center gap-2"
+                                                                    disabled={sendingReply}
+                                                                >
+                                                                    {sendingReply ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                                                                        <>
+                                                                            <span>Send</span>
+                                                                            <Send className="h-4 w-4 group-hover/send:translate-x-1 transition-transform" />
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="flex gap-3">
-                                            <DropdownMenu>
-                                                <div className="flex">
-                                                    <Button
-                                                        className="bg-blue-600 hover:bg-blue-700 text-foreground px-6 rounded-r-none shadow-lg shadow-blue-900/20"
-                                                        onClick={() => setReplyMode('reply')}
-                                                    >
-                                                        <Reply className="h-4 w-4 mr-2" /> Reply
-                                                    </Button>
+                                        <div className="flex gap-4">
+                                            <div className="flex items-center bg-primary p-0.5 rounded-xl shadow-xl shadow-primary/20">
+                                                <Button
+                                                    className="bg-transparent hover:bg-white/10 text-primary-foreground px-8 h-11 font-black uppercase tracking-[0.1em] rounded-l-[10px] rounded-r-none border-r border-white/10"
+                                                    onClick={() => setReplyMode('reply')}
+                                                >
+                                                    <Reply className="h-4.5 w-4.5 mr-2.5" /> Reply
+                                                </Button>
+                                                <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button className="bg-blue-600 hover:bg-blue-700 text-foreground px-2 rounded-l-none border-l border-blue-500/50">
-                                                            <ChevronDown className="h-4 w-4" />
+                                                        <Button className="bg-transparent hover:bg-white/10 text-primary-foreground px-3 h-11 rounded-r-[10px] rounded-l-none">
+                                                            <ChevronDown className="h-4.5 w-4.5" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
-                                                </div>
-                                                <DropdownMenuContent align="start" className="bg-[#1e1e24] border-[#2a2a35] text-foreground shadow-xl">
-                                                    <DropdownMenuItem
-                                                        className="cursor-pointer focus:bg-[#2a2a35] focus:text-foreground"
-                                                        onClick={() => setReplyMode('reply-all')}
-                                                    >
-                                                        <Users className="h-4 w-4 mr-2" />
-                                                        Reply All
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                    <DropdownMenuContent align="start" className="w-48 bg-card border-border shadow-2xl p-1 rounded-xl">
+                                                        <DropdownMenuItem
+                                                            className="cursor-pointer hover:bg-accent focus:bg-accent rounded-lg py-2.5 px-3 gap-3"
+                                                            onClick={() => setReplyMode('reply-all')}
+                                                        >
+                                                            <Users className="h-4 w-4 text-muted-foreground" />
+                                                            <span className="font-bold text-sm">Reply All</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
 
                                             <Button
                                                 variant="outline"
-                                                className="bg-transparent border-[#2a2a35] text-[#a1a1aa] hover:bg-[#1e1e24] hover:text-foreground px-6"
+                                                className="bg-card border-border hover:bg-accent text-foreground px-8 h-12 font-black uppercase tracking-[0.1em] rounded-xl shadow-sm transition-all active:scale-95"
                                                 onClick={() => {
                                                     setReplyMode('forward')
                                                     setForwardSubject(`Fwd: ${selectedEmail.subject}`)
@@ -2212,26 +2313,31 @@ ${selectedEmail.body || selectedEmail.preview}
                                                 `.trim())
                                                 }}
                                             >
-                                                <Forward className="h-4 w-4 mr-2" /> Forward
+                                                <Forward className="h-4.5 w-4.5 mr-2.5 text-muted-foreground" /> Forward
                                             </Button>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex-1 hidden md:flex items-center justify-center bg-[#141418] text-[#a1a1aa] flex-col gap-6">
+                            <div className="flex-1 hidden md:flex items-center justify-center bg-background text-muted-foreground flex-col gap-8 animate-in fade-in duration-700">
                                 <div className="relative">
-                                    <div className="h-36 w-36 bg-gradient-to-br from-[#2a2a35] to-[#1e1e24] p-3 rounded-xl shadow-2xl border border-[#3a3a45]">
-                                        <div className="h-full w-full bg-white rounded-md p-2">
-                                            <QrCode className="h-full w-full text-[#0f0f12]" strokeWidth={1.5} />
-                                        </div>
+                                    <div className="absolute inset-0 bg-primary/10 blur-[80px] rounded-full" />
+                                    <div className="relative h-48 w-48 bg-card border border-border/40 rounded-3xl shadow-2xl flex items-center justify-center group overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
+                                        <Mail className="h-20 w-20 text-primary/20 group-hover:scale-110 transition-transform duration-500 ease-out" strokeWidth={1} />
                                     </div>
                                 </div>
-                                <div className="text-center space-y-2 max-w-xs">
-                                    <h3 className="text-foreground font-semibold text-base">Stay connected. Take Unibox with you anywhere.</h3>
-                                    <p className="text-xs text-[#71717a] leading-relaxed">
-                                        Scan the QR code with your phone to download the Unibox mobile app.
+                                <div className="text-center space-y-3 max-w-sm px-6">
+                                    <h3 className="text-foreground font-black text-xl tracking-tight">Your Inbox is Ready</h3>
+                                    <p className="text-[13px] text-muted-foreground leading-relaxed font-medium">
+                                        Select a conversation from the list to start replying or managing your leads. Stay productive with Unibox.
                                     </p>
+                                </div>
+                                <div className="flex items-center gap-3 mt-4">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary/40 animate-pulse" />
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary/20 animate-pulse delay-150" />
+                                    <div className="h-1.5 w-1.5 rounded-full bg-primary/10 animate-pulse delay-300" />
                                 </div>
                             </div>
                         )}

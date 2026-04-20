@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Play, Pause, MoreHorizontal, Zap, ChevronDown, AlertTriangle } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { useWorkspaces } from "@/contexts/WorkspaceContext"
 
 import { cn } from "@/lib/utils"
 import {
@@ -52,14 +53,14 @@ export default function CampaignLayout({
     const [leadsCount, setLeadsCount] = useState(0)
 
     // Workspace state
-    const [workspaces, setWorkspaces] = useState<any[]>([])
-    const [currentWorkspace, setCurrentWorkspace] = useState("My Organization")
+    const { workspaces, selectedWorkspaceId, switchWorkspace } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
+
+    const currentWorkspaceName = workspaces.find(w => w.id === selectedWorkspaceId)?.name || "My Organization"
 
     console.log('[CampaignLayout] Render', { campaignId, pathname, params })
 
     useEffect(() => {
-        loadWorkspaces()
         if (campaignId) {
             fetch(`/api/campaigns/${campaignId}`)
                 .then(res => res.json())
@@ -67,27 +68,6 @@ export default function CampaignLayout({
                 .catch(() => setCampaign({ id: campaignId, name: 'Campaign', status: 'draft' }))
         }
     }, [campaignId])
-
-    const loadWorkspaces = async () => {
-        try {
-            const res = await fetch('/api/workspaces')
-            if (res.ok) {
-                const data = await res.json()
-                setWorkspaces(data)
-                const savedWorkspace = localStorage.getItem('activeWorkspace')
-                if (savedWorkspace) {
-                    setCurrentWorkspace(savedWorkspace)
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load workspaces:", error)
-        }
-    }
-
-    const switchWorkspace = (workspaceName: string) => {
-        setCurrentWorkspace(workspaceName)
-        localStorage.setItem('activeWorkspace', workspaceName)
-    }
 
     const filteredWorkspaces = workspaces.filter((w: any) =>
         w.name.toLowerCase().includes(workspaceSearch.toLowerCase())
@@ -211,7 +191,7 @@ export default function CampaignLayout({
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" className="border-[#2a2a2a] bg-[#1a1a1a] text-white hover:text-white hover:bg-[#2a2a2a] gap-2">
                                 <Zap className="h-4 w-4 text-blue-500" />
-                                {currentWorkspace}
+                                {currentWorkspaceName}
                                 <ChevronDown className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
@@ -225,13 +205,23 @@ export default function CampaignLayout({
                                 />
                             </div>
                             <DropdownMenuSeparator className="bg-[#2a2a2a]" />
+                            <DropdownMenuItem
+                                onClick={() => switchWorkspace(null)}
+                                className={cn(
+                                    "cursor-pointer focus:bg-[#2a2a2a] focus:text-white",
+                                    !selectedWorkspaceId && "bg-blue-500/20 text-blue-400"
+                                )}
+                            >
+                                <Zap className="h-4 w-4 mr-2 text-blue-500" />
+                                My Organization
+                            </DropdownMenuItem>
                             {filteredWorkspaces.map((workspace) => (
                                 <DropdownMenuItem
-                                    key={workspace.id || workspace.name}
-                                    onClick={() => switchWorkspace(workspace.name)}
+                                    key={workspace.id}
+                                    onClick={() => switchWorkspace(workspace.id)}
                                     className={cn(
                                         "cursor-pointer focus:bg-[#2a2a2a] focus:text-white",
-                                        currentWorkspace === workspace.name && "bg-blue-500/20 text-blue-400"
+                                        selectedWorkspaceId === workspace.id && "bg-blue-500/20 text-blue-400"
                                     )}
                                 >
                                     <Zap className="h-4 w-4 mr-2 text-blue-500" />

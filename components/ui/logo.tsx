@@ -1,6 +1,5 @@
 "use client"
 
-import { Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
@@ -8,17 +7,26 @@ import { useEffect, useState } from "react"
 interface LogoProps {
     className?: string
     iconClassName?: string
-    size?: "sm" | "md" | "lg" | "xl"
+    size?: "sm" | "md" | "lg" | "xl" | "sidebar"
     variant?: "circle" | "icon"
+    showText?: boolean
+    style?: React.CSSProperties
 }
+
+// --- High-Fidelity Instantly.ai Logo Path ---
+const InstantlyBoltPath = () => (
+    <path d="M276.12 438.81h-101.8c-3.58 0-5.83-3.87-4.05-6.98l163.07-284.97h238.63c3.87 0 6.06 4.44 3.69 7.51L459.07 305.59c-2.36 3.07-.18 7.51 3.69 7.51h124.51c4.2 0 6.26 5.11 3.23 8.02L235.8 662.51c-3.37 3.24-8.88.06-7.76-4.48l52.61-213.45c.72-2.93-1.5-5.77-4.53-5.77z" fill="currentColor" />
+)
 
 export function Logo({
     className,
     iconClassName,
     size = "md",
-    variant = "circle"
+    variant = "circle",
+    showText = false,
+    style
 }: LogoProps) {
-    const { theme, resolvedTheme } = useTheme()
+    const { resolvedTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
 
     // Avoid hydration mismatch
@@ -31,6 +39,7 @@ export function Logo({
         md: "h-8 w-8",
         lg: "h-10 w-10",
         xl: "h-12 w-12",
+        sidebar: "h-[35px] w-[35px]"
     }
 
     const iconSizeClasses = {
@@ -38,47 +47,49 @@ export function Logo({
         md: "h-5 w-5",
         lg: "h-6 w-6",
         xl: "h-8 w-8",
+        sidebar: "h-[20px] w-[20px]"
     }
 
-    if (!mounted) return <div className={cn(sizeClasses[size], className)} />
+    if (!mounted) return <div className={cn(sizeClasses[size === "sidebar" ? "sidebar" : size], className)} style={style} />
 
     const isDarkMode = resolvedTheme === "dark"
 
-    // Logic based on user request:
-    // "if the background is black then black and if whit then blue as shown in the image"
-    // Interpretation: 
-    // - On white background: Logo is Blue (Blue circle, white bolt).
-    // - On black background: Logo is "Black"? (Maybe they meant white or a specific dark themed version).
-    // Given the image, the 'blue' version is the circle one.
-
     if (variant === "icon") {
         return (
-            <Zap
+            <svg 
+                viewBox="0 0 766.8 766.8" 
                 className={cn(
-                    iconSizeClasses[size],
-                    isDarkMode ? "text-foreground fill-none" : "text-blue-500 fill-blue-500",
+                    iconSizeClasses[size === "sidebar" ? "sidebar" : size],
+                    isDarkMode ? "text-foreground" : "text-blue-500",
                     iconClassName
                 )}
-            />
+                style={style}
+            >
+                <InstantlyBoltPath />
+            </svg>
         )
     }
 
     return (
-        <div className={cn(
-            "flex items-center justify-center rounded-full transition-colors",
-            sizeClasses[size],
-            // If background is white (light mode) -> Blue (as in image)
-            // If background is black (dark mode) -> "Black" (maybe a dark circle or dark bolt)
-            // But a black logo on black bg is invisible. 
-            // We'll use the provided blue for light mode and an adaptive version for dark mode.
-            !isDarkMode ? "bg-[#3B82F6]" : "bg-foreground", // In dark mode, foreground is light gray/white
-            className
-        )}>
-            <Zap className={cn(
-                iconSizeClasses[size],
-                !isDarkMode ? "text-white fill-white" : "text-background fill-background", // In dark mode, background is black
-                iconClassName
-            )} />
+        <div 
+            className={cn(
+                "flex items-center justify-center rounded-full transition-colors",
+                sizeClasses[size === "sidebar" ? "sidebar" : size],
+                !isDarkMode ? "bg-[#0081ff]" : "bg-foreground",
+                className
+            )}
+            style={style}
+        >
+            <svg 
+                viewBox="0 0 766.8 766.8" 
+                className={cn(
+                    "w-[60%] h-[60%]", // Scaling the bolt inside the circle
+                    !isDarkMode ? "text-white" : "text-background",
+                    iconClassName
+                )}
+            >
+                <InstantlyBoltPath />
+            </svg>
         </div>
     )
 }

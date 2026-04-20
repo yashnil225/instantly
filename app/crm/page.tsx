@@ -168,29 +168,20 @@ export default function CRMPage() {
                 setOpportunityValue(prefData.defaultOpportunityValue)
             }
 
-            let currentWsId = selectedWorkspaceId
-            if (workspaces.length > 0 && selectedWorkspaceId === "all") {
-                const defaultWs = workspaces.find((w: any) => w.isDefault) || workspaces[0]
-                currentWsId = defaultWs.id
-                setSelectedWorkspaceId(currentWsId)
-            }
-
-            if (!currentWsId || currentWsId === 'all') {
-                setLoading(false)
-                return
-            }
-
             // Construct Leads URL with filters
             const params = new URLSearchParams({
                 page: page.toString(),
                 limit: rowsPerPage.toString(),
-                workspaceId: currentWsId,
                 sortField,
                 sortOrder,
                 aiLabels: selectedLabels.join(','),
                 userIds: selectedUsers.join(','),
                 search: searchQuery
             })
+
+            if (selectedWorkspaceId && selectedWorkspaceId !== 'all') {
+                params.append('workspaceId', selectedWorkspaceId)
+            }
 
             // Date logic
             const now = new Date()

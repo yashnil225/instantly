@@ -485,12 +485,6 @@ Happy sending!`,
         loadAccounts()
         loadTags()
 
-        // Load saved workspace from localStorage
-        const savedWorkspace = localStorage.getItem('activeWorkspace')
-        if (savedWorkspace) {
-            switchWorkspace(savedWorkspace as string)
-        }
-
         return () => {
             window.removeEventListener('resize', handleResize)
         }

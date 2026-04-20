@@ -44,19 +44,35 @@ export async function POST(
         })
 
         // Queue emails for the first sequence step
-        const firstSequence = campaign.sequences[0]
+        const firstSequence = await prisma.sequence.findFirst({
+            where: { campaignId: campaign.id, stepNumber: 1 },
+            include: { variants: { where: { enabled: true } } }
+        })
+
+        if (!firstSequence) {
+            return NextResponse.json({ error: 'No first sequence step found.' }, { status: 400 })
+        }
+
+        const variants = firstSequence.variants
         let queued = 0
 
-        for (const lead of campaign.leads) {
+        for (let i = 0; i < campaign.leads.length; i++) {
+            const lead = campaign.leads[i]
             try {
                 const queue = getEmailQueue()
                 if (queue) {
+                    // Round-robin selection of variant
+                    const variant = variants.length > 0
+                        ? variants[i % variants.length]
+                        : null
+
                     await queue.add('send-email', {
                         campaignId: campaign.id,
                         leadId: lead.id,
                         sequenceId: firstSequence.id,
-                        subject: firstSequence.subject || 'No Subject',
-                        emailBody: firstSequence.body
+                        variantId: variant?.id,
+                        subject: variant?.subject || firstSequence.subject || 'No Subject',
+                        emailBody: variant?.body || firstSequence.body || ''
                     }, {
                         attempts: 3,
                         backoff: { type: 'exponential', delay: 60000 }

@@ -121,21 +121,39 @@ export const startWorker = () => {
                 // 4. A/B Testing - Select Variant
                 let finalSubject = subject
                 let finalBody = emailBody
+                let finalVariantId = job.data.variantId
 
-                if (campaign.sequences && campaign.sequences.length > 1) {
-                    // Multiple variants exist for this step
-                    const variants = campaign.sequences.map(seq => ({
-                        id: seq.id,
-                        subject: seq.subject || '',
-                        body: seq.body || ''
-                    }))
+                // If variantId was provided at queue time, we use it
+                // Otherwise, we perform selection logic
+                const currentSequence = campaign.sequences[0]
+                if (currentSequence) {
+                    const dbSequence = await prisma.sequence.findUnique({
+                        where: { id: sequenceId },
+                        include: { variants: { where: { enabled: true } } }
+                    })
 
-                    const selectedVariant = selectVariant(variants)
-                    finalSubject = selectedVariant.subject
-                    finalBody = selectedVariant.body
-
-                    console.log(`A/B Test: Selected variant with subject "${finalSubject.substring(0, 30)}..."`)
+                    if (dbSequence && dbSequence.variants.length > 0) {
+                        if (finalVariantId) {
+                            const assignedVariant = dbSequence.variants.find(v => v.id === finalVariantId)
+                            if (assignedVariant) {
+                                finalSubject = assignedVariant.subject || finalSubject
+                                finalBody = assignedVariant.body
+                            }
+                        } else {
+                            // Fallback to random selection if no specific variant was assigned
+                            const variant = selectVariant(dbSequence.variants.map(v => ({
+                                id: v.id,
+                                subject: v.subject || '',
+                                body: v.body
+                            })))
+                            finalSubject = variant.subject || finalSubject
+                            finalBody = variant.body
+                            finalVariantId = variant.id
+                        }
+                    }
                 }
+
+                console.log(`Processing with variant: ${finalVariantId || 'default'}`)
 
                 // 5. Personalize Email - Replace ALL lead variables dynamically
                 finalSubject = replaceVariables(finalSubject, lead)

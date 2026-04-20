@@ -45,10 +45,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<string | null>(null)
+    const isInitializedRef = React.useRef(false)
 
     // Initialize selected workspace from storage and run migration
     useEffect(() => {
-        if (workspaces.length > 0) {
+        if (workspaces.length > 0 && !isInitializedRef.current) {
             const migratedId = migrateWorkspaceStorage(workspaces)
             const storedId = getSelectedWorkspaceId()
             
@@ -61,6 +62,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                 // Default to null (My Organization - show all)
                 setSelectedWorkspaceIdState(null)
             }
+            
+            isInitializedRef.current = true
         }
     }, [workspaces])
 

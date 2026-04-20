@@ -85,27 +85,6 @@ export default function LoginPage() {
                 </a>
             </div>
 
-            {/* Left Side: Illustration & Marketing */}
-            <div className="hidden lg:flex flex-1 items-center justify-center p-12 instantly-dark relative overflow-hidden">
-                <div className="relative z-10 max-w-xl text-center">
-                    <img 
-                        src="/images/auth/side-illustration.svg" 
-                        alt="Outreach Illustration" 
-                        className="w-full h-auto mb-10 animate-fadeInUp"
-                    />
-                    <h2 className="text-4xl font-semibold text-white mb-4 leading-tight">
-                        Ready to 10x your outreach?
-                    </h2>
-                    <p className="text-gray-400 text-lg">
-                        Scale your outreach campaigns with ease and automate your entire sales funnel.
-                    </p>
-                </div>
-                {/* Decorative gradients */}
-                <div className="absolute top-0 left-0 w-full h-full opacity-30">
-                    <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500 rounded-full blur-[120px]"></div>
-                    <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-purple-500 rounded-full blur-[100px]"></div>
-                </div>
-            </div>
 
             {/* Right Side: Login Form */}
             <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[#f8f9fa]">

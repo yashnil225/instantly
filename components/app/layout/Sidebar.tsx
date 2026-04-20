@@ -208,12 +208,17 @@ const NAV_ITEMS = [
     { name: "Automation Workflows", href: "/automation", icon: AutomationIcon },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+    width?: number;
+    onResize?: (width: number) => void;
+}
+
+export function Sidebar({ width = 90, onResize }: SidebarProps) {
     const pathname = usePathname()
     const { theme } = useTheme()
     const { data: session } = useSession()
     
-    const sidebarWidth = 90
+    const sidebarWidth = width
     const headerHeight = 76
 
     const userName = session?.user?.name || "User"

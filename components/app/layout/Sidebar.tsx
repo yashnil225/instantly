@@ -212,11 +212,11 @@ interface SidebarProps {
     onResize?: (width: number) => void;
 }
 
-export function Sidebar({ width = 100, onResize }: SidebarProps) {
+export function Sidebar({ width = 150, onResize }: SidebarProps) {
     const pathname = usePathname()
     const { theme } = useTheme()
     const { data: session } = useSession()
-    
+
     const sidebarWidth = width
     const headerHeight = 76
 
@@ -240,7 +240,7 @@ export function Sidebar({ width = 100, onResize }: SidebarProps) {
                 style={{ width: sidebarWidth }}
             >
                 {/* Logo Area */}
-                <div 
+                <div
                     className="flex items-center justify-center"
                     style={{ height: headerHeight }}
                 >
@@ -262,28 +262,27 @@ export function Sidebar({ width = 100, onResize }: SidebarProps) {
                                         href={item.href}
                                         className={cn(
                                             "flex items-center justify-center w-[35px] h-[35px] rounded-full transition-all duration-200 group relative overflow-hidden",
-                                            isActive ? "bg-transparent text-[#3289ff]" : "hover:text-[#d8d8d8] text-inherit",
-                                            "animate-swing-hover"
+                                            isActive ? "bg-[#3289ff]/10 text-[#3289ff]" : "hover:bg-[#1f2937]/10 dark:hover:bg-white/10 text-inherit"
                                         )}
                                         style={{ marginBottom: '10px' }}
                                     >
                                         <TouchRipple />
-                                        <div 
+                                        <div
                                             className="transition-colors duration-200 flex items-center justify-center pointer-events-none"
                                             style={{ color: iconColor }}
                                         >
                                             <item.icon />
                                         </div>
-                                        
+
                                         <span className="absolute top-0 right-0 flex h-2 w-2">
                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-0 group-hover:opacity-0"></span>
                                             <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500 opacity-0 group-hover:opacity-0"></span>
                                         </span>
                                     </Link>
                                 </TooltipTrigger>
-                                <TooltipContent 
-                                    side="right" 
-                                    sideOffset={14} 
+                                <TooltipContent
+                                    side="right"
+                                    sideOffset={14}
                                     className="border-none"
                                 >
                                     {item.name}
@@ -295,9 +294,9 @@ export function Sidebar({ width = 100, onResize }: SidebarProps) {
 
                 {/* Bottom Actions */}
                 <div className="flex flex-col items-center gap-2 mb-4">
-                     <Tooltip>
+                    <Tooltip>
                         <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-[35px] h-[35px] rounded-full hover:bg-transparent transition-all animate-swing-hover text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">
+                            <button className="flex items-center justify-center w-[35px] h-[35px] rounded-full hover:bg-[rgba(0,0,0,0.1)] dark:hover:bg-[rgba(255,255,255,0.1)] transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">
                                 <TouchRipple />
                                 <FeedbackOriginalIcon />
                             </button>
@@ -310,7 +309,7 @@ export function Sidebar({ width = 100, onResize }: SidebarProps) {
                 <div className="p-4 flex flex-col items-center gap-4 mt-auto mb-4 border-none">
                     <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
-                            <button 
+                            <button
                                 id="sidebar_icon_userMenu"
                                 className={cn(
                                     "flex items-center justify-center w-[35px] h-[35px] rounded-full bg-[#1b2638] text-[15px] font-medium text-white shadow-sm border-none transition-all relative overflow-hidden",
@@ -406,7 +405,7 @@ export function Sidebar({ width = 100, onResize }: SidebarProps) {
                                         <span className="text-[14px] font-medium text-[#111827] dark:text-white">User Settings</span>
                                     </Link>
                                 </DropdownMenuItem>
-                                
+
                                 <DropdownMenuItem onClick={handleLogout} className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[11px] cursor-pointer text-[#dc2626] rounded-[8px] outline-none border-none">
                                     <div className="flex-shrink-0"><LogoutNavIcon /></div>
                                     <span className="text-[14px] font-medium truncate">Logout</span>

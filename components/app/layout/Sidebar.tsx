@@ -212,7 +212,7 @@ interface SidebarProps {
     onResize?: (width: number) => void;
 }
 
-export function Sidebar({ width = 225, onResize }: SidebarProps) {
+export function Sidebar({ width = 240, onResize }: SidebarProps) {
     const pathname = usePathname()
     const { theme } = useTheme()
     const { data: session } = useSession()
@@ -222,7 +222,7 @@ export function Sidebar({ width = 225, onResize }: SidebarProps) {
 
     const userName = session?.user?.name || "User"
     const userEmail = session?.user?.email || "user@example.com"
-    const userInitials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U"
+    const initials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "Y"
 
     const handleLogout = async () => {
         await signOut({ callbackUrl: "/login" })
@@ -232,6 +232,10 @@ export function Sidebar({ width = 225, onResize }: SidebarProps) {
         if (isActive) return "#3289ff"
         return theme === "dark" ? "#b6aea0" : "#a2acb4"
     }
+
+    // Neutral hover tint as requested (rgba(0,0,0,0.04) or white/10)
+    const hoverBg = theme === "dark" ? "hover:bg-white/10" : "hover:bg-[#1f2937]/10"
+    const activeBg = theme === "dark" ? "bg-white/10" : "bg-[#1f2937]/10"
 
     return (
         <TooltipProvider delayDuration={0}>
@@ -262,9 +266,10 @@ export function Sidebar({ width = 225, onResize }: SidebarProps) {
                                         href={item.href}
                                         className={cn(
                                             "flex items-center justify-center w-[42px] h-[42px] rounded-[10px] transition-all duration-200 group relative overflow-hidden",
-                                            isActive ? "bg-[#1f2937]/10 dark:bg-white/10 text-[#3289ff]" : "hover:bg-[#1f2937]/10 dark:hover:bg-white/10 text-inherit"
+                                            isActive ? activeBg : hoverBg,
+                                            isActive ? "text-[#3289ff]" : "text-inherit"
                                         )}
-                                        style={{ marginBottom: '8px' }}
+                                        style={{ marginBottom: '14px' }} // Increased gap
                                     >
                                         <TouchRipple />
                                         <div
@@ -293,10 +298,13 @@ export function Sidebar({ width = 225, onResize }: SidebarProps) {
                 </nav>
 
                 {/* Bottom Actions Cluster (Feedback + Profile) */}
-                <div className="flex flex-col items-center mt-auto mb-3 gap-2">
+                <div className="flex flex-col items-center mt-auto mb-3 gap-3">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-[42px] h-[42px] rounded-[10px] hover:bg-[#1f2937]/10 dark:hover:bg-white/10 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">
+                            <button className={cn(
+                                "flex items-center justify-center w-[42px] h-[42px] rounded-[10px] transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden",
+                                hoverBg
+                            )}>
                                 <TouchRipple />
                                 <FeedbackOriginalIcon />
                             </button>
@@ -309,12 +317,15 @@ export function Sidebar({ width = 225, onResize }: SidebarProps) {
                             <button
                                 id="sidebar_icon_userMenu"
                                 className={cn(
-                                    "flex items-center justify-center w-[42px] h-[42px] rounded-[10px] bg-[#374151] text-[15px] font-medium text-white shadow-sm border-none transition-all relative overflow-hidden mt-2",
-                                    "hover:bg-[#1f2937]/10 dark:hover:bg-white/10"
+                                    "flex items-center justify-center w-[42px] h-[42px] rounded-[10px] transition-all relative overflow-hidden",
+                                    hoverBg
                                 )}
                             >
                                 <TouchRipple />
-                                {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "N"}
+                                {/* Circular PFP inside the 42x42 squircle container */}
+                                <div className="w-[24px] h-[24px] rounded-full bg-[#374151] flex items-center justify-center text-[11px] font-medium text-white shadow-sm">
+                                    {initials}
+                                </div>
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
@@ -327,7 +338,7 @@ export function Sidebar({ width = 225, onResize }: SidebarProps) {
                             <div className="profile-dropdown-header px-[1.75rem] py-[1.4rem] border-b border-border/50">
                                 <div className="flex items-center gap-3">
                                     <div className="w-[25px] h-[25px] rounded-full bg-[#111827] flex items-center justify-center text-[10px] text-white font-bold">
-                                        {userInitials}
+                                        {initials}
                                     </div>
                                     <div className="flex flex-col min-w-0">
                                         <p className="text-[14px] font-bold text-[#0F172A] dark:text-white leading-[1.2] truncate">{userName}</p>

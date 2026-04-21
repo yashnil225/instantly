@@ -410,7 +410,7 @@ export default function CRMPage() {
         }
     }
 
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
     const [unreadCount, setUnreadCount] = useState(0)
     const [campaignSearch, setCampaignSearch] = useState("")
     const [campaignsOpen, setCampaignsOpen] = useState(false)

@@ -168,23 +168,12 @@ function ThemeToggle() {
     return (
         <div className="px-4 py-2 border-t border-border/50">
             <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2 tracking-wider">Appearance</p>
-            <div className="theme-pill-container" style={{ backgroundColor: '#F3F4F6', borderRadius: '10px', padding: '6px', display: 'flex', gap: '4px' }}>
+            <div className="theme-pill-container">
                 {options.map((opt) => (
                     <button
                         key={opt.key}
                         onClick={() => setTheme(opt.key)}
-                        style={{ 
-                            flex: 1, 
-                            height: '36px', 
-                            borderRadius: '8px', 
-                            fontSize: '14px', 
-                            fontWeight: 600,
-                            transition: 'all 0.2s ease',
-                            backgroundColor: theme === opt.key ? '#FFFFFF' : 'transparent',
-                            color: theme === opt.key ? '#0F172A' : '#4B5563',
-                            boxShadow: theme === opt.key ? '0px 2px 6px rgba(15, 23, 42, 0.12)' : 'none',
-                            border: theme === opt.key ? '1px solid rgba(15, 23, 42, 0.15)' : '1px solid transparent'
-                        }}
+                        className={cn("theme-pill-btn", theme === opt.key && "active")}
                     >
                         {opt.label}
                     </button>
@@ -237,19 +226,13 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
     return (
         <TooltipProvider delayDuration={0}>
             <div
-                className="flex flex-col h-screen border-r border-border fixed left-0 top-0 z-[1009] transition-all duration-300"
-                style={{ 
-                    width: sidebarWidth,
-                    backgroundColor: theme === 'dark' ? '#1d1d1d' : '#ffffff' 
-                }}
+                className="flex flex-col h-screen border-r border-border fixed left-0 top-0 z-[1009] transition-all duration-300 bg-background"
+                style={{ width: sidebarWidth }}
             >
                 {/* Logo Area */}
                 <div 
-                    className="flex items-center justify-center border-b"
-                    style={{ 
-                        height: headerHeight,
-                        borderBottomColor: 'hsla(0,0%,68%,.2)'
-                    }}
+                    className="flex items-center justify-center"
+                    style={{ height: headerHeight }}
                 >
                     <Link href="/accounts" className="flex items-center justify-center">
                         <Logo size="sidebar" />

@@ -56,8 +56,8 @@
 }
 
 [data-theme="dark"] {
-  /* Dark Mode Colors (matching requirement) */
-  --background: 210 4% 10%;
+  /* Dark Mode Colors - EXACT RGB(25, 26, 27) */
+  --background: 210 3.8% 10.2%;
   /* #191a1b */
   --foreground: 0 0% 95%;
   --card: 210 4% 13%;
@@ -100,6 +100,10 @@
 @layer utilities {
   .animate-swing-hover:hover {
     animation: swing 0.5s ease;
+  }
+  .instantly-dark {
+    background-color: #0b0c10;
+    min-height: 100vh;
   }
 }
 
@@ -239,10 +243,4 @@ button:active,
 
 ::-webkit-resizer {
   background: transparent;
-}
-
-/* --- Auth Page Style Parity --- */
-.instantly-dark {
-  background-color: #0b0c10 !important;
-  color: #ffffff !important;
 }

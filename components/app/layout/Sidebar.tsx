@@ -212,7 +212,7 @@ interface SidebarProps {
     onResize?: (width: number) => void;
 }
 
-export function Sidebar({ width = 240, onResize }: SidebarProps) {
+export function Sidebar({ width = 90, onResize }: SidebarProps) {
     const pathname = usePathname()
     const { theme } = useTheme()
     const { data: session } = useSession()
@@ -264,7 +264,7 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
                                             "flex items-center justify-center w-[42px] h-[42px] min-w-[42px] aspect-square flex-shrink-0 rounded-[10px] transition-all duration-200 group relative overflow-hidden",
                                             isActive ? "bg-[#1f2937]/10 dark:bg-white/10 text-[#3289ff]" : "hover:bg-[#1f2937]/10 dark:hover:bg-white/10 text-inherit"
                                         )}
-                                        style={{ marginBottom: '10px' }}
+                                        style={{ marginBottom: '4px' }}
                                     >
                                         <TouchRipple />
                                         <div
@@ -293,7 +293,7 @@ export function Sidebar({ width = 240, onResize }: SidebarProps) {
                 </nav>
 
                 {/* Bottom Actions Cluster (Feedback + Profile) */}
-                <div className="flex flex-col items-center mt-auto mb-3 gap-[14px]">
+                <div className="flex flex-col items-center mt-auto mb-3 gap-2">
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <button className="flex items-center justify-center w-[42px] h-[42px] min-w-[42px] aspect-square flex-shrink-0 rounded-[10px] hover:bg-[#1f2937]/10 dark:hover:bg-white/10 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">

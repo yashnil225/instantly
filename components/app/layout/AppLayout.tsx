@@ -15,7 +15,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     // We no longer need client-side redirect logic here as middleware handles it.
     // This prevents conflicts between client-side and server-side navigation.
 
-    const [sidebarWidth, setSidebarWidth] = useState(72)
+    const [sidebarWidth, setSidebarWidth] = useState(240)
     const [isMobile, setIsMobile] = useState(false)
 
     // Load saved width and detect mobile

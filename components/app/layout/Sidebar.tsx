@@ -261,7 +261,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     <Link
                                         href={item.href}
                                         className={cn(
-                                            "flex items-center justify-center w-[42px] h-[42px] min-w-[42px] aspect-square flex-shrink-0 rounded-[10px] transition-all duration-200 group relative overflow-hidden",
+                                            "flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[6px] transition-all duration-200 group relative overflow-hidden",
                                             isActive ? "bg-[#1f2937]/10 dark:bg-white/10 text-[#3289ff]" : "hover:bg-[#1f2937]/10 dark:hover:bg-white/10 text-inherit"
                                         )}
                                         style={{ marginBottom: '4px' }}
@@ -296,7 +296,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 <div className="flex flex-col items-center mt-auto mb-3 gap-2">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-[42px] h-[42px] min-w-[42px] aspect-square flex-shrink-0 rounded-[10px] hover:bg-[#1f2937]/10 dark:hover:bg-white/10 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">
+                            <button className="flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[6px] hover:bg-[#1f2937]/10 dark:hover:bg-white/10 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">
                                 <TouchRipple />
                                 <FeedbackOriginalIcon />
                             </button>
@@ -309,12 +309,12 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             <button
                                 id="sidebar_icon_userMenu"
                                 className={cn(
-                                    "flex items-center justify-center w-[42px] h-[42px] min-w-[42px] aspect-square flex-shrink-0 rounded-[10px] text-[12px] font-medium transition-all relative overflow-hidden",
+                                    "flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[6px] text-[12px] font-medium transition-all relative overflow-hidden",
                                     "hover:bg-[#1f2937]/10 dark:hover:bg-white/10"
                                 )}
                             >
                                 <TouchRipple />
-                                <div className="w-[24px] h-[24px] rounded-full bg-[#374151] flex items-center justify-center text-white">
+                                <div className="w-[20px] h-[20px] rounded-full bg-[#374151] flex items-center justify-center text-white">
                                     {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "N"}
                                 </div>
                             </button>

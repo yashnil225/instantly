@@ -12,6 +12,7 @@ import {
 import { Logo } from "@/components/ui/logo"
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
+import { TouchRipple } from "@/components/ui/touch-ripple"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -150,6 +151,15 @@ const BellNavIcon = () => (
     </svg>
 )
 
+const FeedbackOriginalIcon = () => (
+    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 9h8" />
+        <path d="M8 13h6" />
+        <path d="M13 20l-1 1l-3 -3h-3a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v5.5" />
+        <path d="M19 16l-2 3h4l-2 3" />
+    </svg>
+)
+
 // --- Theme Toggle Component (Premium Segmented Pill) ---
 
 function ThemeToggle() {
@@ -202,7 +212,7 @@ interface SidebarProps {
     onResize?: (width: number) => void;
 }
 
-export function Sidebar({ width = 90, onResize }: SidebarProps) {
+export function Sidebar({ width = 100, onResize }: SidebarProps) {
     const pathname = usePathname()
     const { theme } = useTheme()
     const { data: session } = useSession()
@@ -251,19 +261,21 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     <Link
                                         href={item.href}
                                         className={cn(
-                                            "flex items-center justify-center w-[45px] h-[45px] rounded-full transition-all duration-200 group relative",
-                                            isActive ? "bg-[#3289ff]/10" : "hover:bg-secondary/50",
-                                            "animate-swing-hover active:scale-96"
+                                            "flex items-center justify-center w-[35px] h-[35px] rounded-full transition-all duration-200 group relative overflow-hidden",
+                                            isActive ? "bg-transparent text-[#3289ff]" : "hover:text-[#d8d8d8] text-inherit",
+                                            "animate-swing-hover"
                                         )}
+                                        style={{ marginBottom: '10px' }}
                                     >
+                                        <TouchRipple />
                                         <div 
-                                            className="transition-colors duration-200 flex items-center justify-center"
+                                            className="transition-colors duration-200 flex items-center justify-center pointer-events-none"
                                             style={{ color: iconColor }}
                                         >
                                             <item.icon />
                                         </div>
                                         
-                                        <span className="absolute top-[10px] right-[10px] flex h-2 w-2">
+                                        <span className="absolute top-0 right-0 flex h-2 w-2">
                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-0 group-hover:opacity-0"></span>
                                             <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500 opacity-0 group-hover:opacity-0"></span>
                                         </span>
@@ -271,8 +283,8 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                 </TooltipTrigger>
                                 <TooltipContent 
                                     side="right" 
-                                    sideOffset={20} 
-                                    className="font-bold px-3 py-1.5 bg-[#14171f] text-white border-none shadow-2xl rounded-md text-xs"
+                                    sideOffset={14} 
+                                    className="border-none"
                                 >
                                     {item.name}
                                 </TooltipContent>
@@ -285,34 +297,28 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 <div className="flex flex-col items-center gap-2 mb-4">
                      <Tooltip>
                         <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-[45px] h-[45px] rounded-full hover:bg-secondary/50 transition-all animate-swing-hover active:scale-96 text-[#a2acb4] dark:text-[#b6aea0]">
-                                <MessageSquare size={20} />
+                            <button className="flex items-center justify-center w-[35px] h-[35px] rounded-full hover:bg-transparent transition-all animate-swing-hover text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">
+                                <TouchRipple />
+                                <FeedbackOriginalIcon />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={20} className="font-bold bg-[#14171f] text-xs">Feedback</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-[45px] h-[45px] rounded-full hover:bg-secondary/50 transition-all animate-swing-hover active:scale-96 text-[#a2acb4] dark:text-[#b6aea0]">
-                                <LifeBuoy size={20} />
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={20} className="font-bold bg-[#14171f] text-xs">Support</TooltipContent>
+                        <TooltipContent side="right" sideOffset={14} className="border-none">Feedback</TooltipContent>
                     </Tooltip>
                 </div>
 
                 {/* User Profile Dropdown (The Masterpiece) */}
-                <div className="p-4 flex flex-col items-center gap-4 mt-auto mb-4 border-t border-border/10">
+                <div className="p-4 flex flex-col items-center gap-4 mt-auto mb-4 border-none">
                     <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                             <button 
                                 id="sidebar_icon_userMenu"
                                 className={cn(
-                                    "flex items-center justify-center w-[52px] h-[52px] rounded-[12px] bg-gradient-to-br from-blue-500 to-indigo-600 text-[10px] font-bold text-white shadow-sm border-2 border-background transition-all active:scale-96",
-                                    "hover:shadow-md hover:scale-105"
+                                    "flex items-center justify-center w-[35px] h-[35px] rounded-full bg-[#1b2638] text-[15px] font-medium text-white shadow-sm border-none transition-all relative overflow-hidden",
+                                    "hover:shadow-md"
                                 )}
                             >
-                                {userInitials}
+                                <TouchRipple />
+                                {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "N"}
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent

@@ -212,7 +212,7 @@ interface SidebarProps {
     onResize?: (width: number) => void;
 }
 
-export function Sidebar({ width = 175, onResize }: SidebarProps) {
+export function Sidebar({ width = 225, onResize }: SidebarProps) {
     const pathname = usePathname()
     const { theme } = useTheme()
     const { data: session } = useSession()
@@ -236,7 +236,7 @@ export function Sidebar({ width = 175, onResize }: SidebarProps) {
     return (
         <TooltipProvider delayDuration={0}>
             <div
-                className="flex flex-col h-screen fixed left-0 top-0 z-[1009] transition-all duration-300 bg-background"
+                className="flex flex-col h-screen fixed left-0 top-0 z-[1009] transition-all duration-300 bg-background border-r border-[rgb(242,242,242)] dark:border-[rgb(28,30,31)]"
                 style={{ width: sidebarWidth }}
             >
                 {/* Logo Area */}
@@ -262,7 +262,7 @@ export function Sidebar({ width = 175, onResize }: SidebarProps) {
                                         href={item.href}
                                         className={cn(
                                             "flex items-center justify-center w-[42px] h-[42px] rounded-[10px] transition-all duration-200 group relative overflow-hidden",
-                                            isActive ? "bg-[#3289ff]/10 text-[#3289ff]" : "hover:bg-[#1f2937]/10 dark:hover:bg-white/10 text-inherit"
+                                            isActive ? "bg-[#1f2937]/10 dark:bg-white/10 text-[#3289ff]" : "hover:bg-[#1f2937]/10 dark:hover:bg-white/10 text-inherit"
                                         )}
                                         style={{ marginBottom: '8px' }}
                                     >
@@ -293,10 +293,10 @@ export function Sidebar({ width = 175, onResize }: SidebarProps) {
                 </nav>
 
                 {/* Bottom Actions Cluster (Feedback + Profile) */}
-                <div className="flex flex-col items-center mt-auto mb-6 gap-2">
+                <div className="flex flex-col items-center mt-auto mb-3 gap-2">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-[42px] h-[42px] rounded-[10px] hover:bg-[rgba(0,0,0,0.1)] dark:hover:bg-[rgba(255,255,255,0.1)] transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">
+                            <button className="flex items-center justify-center w-[42px] h-[42px] rounded-[10px] hover:bg-[#1f2937]/10 dark:hover:bg-white/10 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">
                                 <TouchRipple />
                                 <FeedbackOriginalIcon />
                             </button>
@@ -309,8 +309,8 @@ export function Sidebar({ width = 175, onResize }: SidebarProps) {
                             <button
                                 id="sidebar_icon_userMenu"
                                 className={cn(
-                                    "flex items-center justify-center w-[32px] h-[32px] rounded-full bg-[#374151] text-[13px] font-medium text-white shadow-sm border-none transition-all relative overflow-hidden mt-2",
-                                    "hover:shadow-md"
+                                    "flex items-center justify-center w-[42px] h-[42px] rounded-[10px] bg-[#374151] text-[15px] font-medium text-white shadow-sm border-none transition-all relative overflow-hidden mt-2",
+                                    "hover:bg-[#1f2937]/10 dark:hover:bg-white/10"
                                 )}
                             >
                                 <TouchRipple />

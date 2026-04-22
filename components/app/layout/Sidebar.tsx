@@ -194,17 +194,17 @@ function ThemeToggle() {
 }
 
 const NAV_ITEMS = [
-    { name: "Copilot", href: "/copilot", icon: CopilotIcon },
-    { name: "AI Agents", href: "/ai-agents", icon: AIAgentsIcon },
-    { name: "Lead Finder", href: "/lead-finder", icon: LeadFinderIcon },
-    { name: "Accounts", href: "/accounts", icon: AccountsIcon },
+    { name: "Instantly copilot", href: "/copilot", icon: CopilotIcon },
+    { name: "Ai Agents", href: "/ai-agents", icon: AIAgentsIcon },
+    { name: "Supersearch", href: "/lead-finder", icon: LeadFinderIcon },
+    { name: "Email Accounts", href: "/accounts", icon: AccountsIcon },
     { name: "Campaigns", href: "/campaigns", icon: CampaignsIcon },
     { name: "Unibox", href: "/unibox", icon: UniboxIcon },
     { name: "Analytics", href: "/analytics", icon: AnalyticsIcon },
     { name: "CRM", href: "/crm", icon: CRMIcon },
     { name: "Website Visitors", href: "/visitors", icon: WebsiteVisitorsIcon },
     { name: "Inbox Placement", href: "/inbox-placement", icon: InboxPlacementIcon },
-    { name: "Automation Workflows", href: "/automation", icon: AutomationIcon },
+    { name: "Automations", href: "/automation", icon: AutomationIcon },
 ]
 
 interface SidebarProps {
@@ -258,14 +258,14 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     <Link
                                         href={item.href}
                                         className={cn(
-                                            "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] aspect-square flex-shrink-0 rounded-[10px] transition-all duration-200 group relative overflow-hidden",
+                                            "flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[10px] transition-all duration-200 group relative overflow-hidden",
                                             isActive ? "bg-[#1f2937]/5 dark:bg-white/5 text-[#3289ff]" : "hover:bg-[#1f2937]/5 dark:hover:bg-white/5 text-inherit"
                                         )}
                                         style={{ marginBottom: '4px' }}
                                     >
                                         <TouchRipple />
                                         <div
-                                            className="transition-colors duration-200 flex items-center justify-center pointer-events-none [&>svg]:w-[21px] [&>svg]:h-[21px]"
+                                            className="transition-colors duration-200 flex items-center justify-center pointer-events-none [&>svg]:w-[20px] [&>svg]:h-[20px]"
                                             style={{ color: iconColor }}
                                         >
                                             <item.icon />
@@ -293,12 +293,12 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 <div className="w-full flex flex-col items-center mt-2 mb-3 gap-2">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-[32px] h-[32px] min-w-[32px] aspect-square flex-shrink-0 rounded-[10px] hover:bg-[#1f2937]/5 dark:hover:bg-white/5 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden [&>svg]:w-[21px] [&>svg]:h-[21px]">
+                            <button className="flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[10px] hover:bg-[#1f2937]/5 dark:hover:bg-white/5 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden [&>svg]:w-[20px] [&>svg]:h-[20px]">
                                 <TouchRipple />
                                 <FeedbackOriginalIcon />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={14} className="border-none">Feedback</TooltipContent>
+                        <TooltipContent side="right" sideOffset={14} className="border-none max-w-[180px]">Submit bugs, feedback, and feature requests</TooltipContent>
                     </Tooltip>
 
                     <DropdownMenu modal={false}>
@@ -306,31 +306,30 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             <button
                                 id="sidebar_icon_userMenu"
                                 className={cn(
-                                    "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] aspect-square flex-shrink-0 rounded-[10px] text-[12px] font-medium transition-all relative overflow-hidden",
+                                    "flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[10px] text-[12px] font-medium transition-all relative overflow-hidden",
                                     "hover:bg-[#1f2937]/5 dark:hover:bg-white/5"
                                 )}
                             >
                                 <TouchRipple />
-                                <div className="w-[25px] h-[25px] rounded-full bg-[#374151] flex items-center justify-center text-white text-[10px]">
+                                <div className="w-[20px] h-[20px] rounded-full bg-[#374151] flex items-center justify-center text-white text-[9px]">
                                     {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "N"}
                                 </div>
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
-                            className="premium-popover w-[260px] bg-white dark:bg-[#1d1d1d] p-0 overflow-hidden mb-2 ml-4"
+                            className="premium-popover w-[260px] bg-white dark:bg-[#1d1d1d] p-0 overflow-hidden mb-2 ml-4 animate-in fade-in-0 zoom-in-98 slide-in-from-left-2 duration-200"
                             align="start"
                             side="right"
                             sideOffset={15}
                         >
                             {/* Header Partition */}
-                            <div className="profile-dropdown-header px-[1.75rem] py-[1.4rem] border-b border-border/50">
+                            <div className="profile-dropdown-header px-[1.75rem] py-[1.2rem] border-b border-border/50">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-[25px] h-[25px] rounded-full bg-[#111827] flex items-center justify-center text-[10px] text-white font-bold">
+                                    <div className="w-[20px] h-[20px] rounded-full bg-[#111827] flex items-center justify-center text-[9px] text-white font-bold">
                                         {userInitials}
                                     </div>
                                     <div className="flex flex-col min-w-0">
-                                        <p className="text-[14px] font-bold text-[#0F172A] dark:text-white leading-[1.2] truncate">{userName}</p>
-                                        <p className="text-[12px] text-[#6B7280] leading-[1.4] truncate font-medium">{userEmail}</p>
+                                        <p className="text-[14px] font-bold text-[#0F172A] dark:text-white leading-[1.2] truncate">{userEmail}</p>
                                     </div>
                                 </div>
                             </div>
@@ -339,12 +338,12 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             <div className="p-1.5 space-y-0.5">
                                 <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none">
                                     <div className="text-[#4B5563] dark:text-[#b6aea0] flex-shrink-0"><InviteIcon /></div>
-                                    <span className="text-[14px] font-medium text-[#111827] dark:text-white flex-1 truncate">Invite Friends & Earn</span>
+                                    <span className="text-[14px] font-medium text-[#111827] dark:text-white flex-1 truncate">Invite a Friend & Earn</span>
                                 </DropdownMenuItem>
 
                                 <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none">
                                     <div className="text-[#4B5563] dark:text-[#b6aea0] flex-shrink-0"><WhatsNewIcon /></div>
-                                    <span className="text-[14px] font-medium text-[#111827] dark:text-white flex-1 truncate">What's New</span>
+                                    <span className="text-[14px] font-medium text-[#111827] dark:text-white flex-1 truncate">See what's new</span>
                                 </DropdownMenuItem>
 
                                 <DropdownMenuSub>
@@ -364,12 +363,11 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none w-full">
                                         <div className="flex items-center gap-[12px]">
                                             <div className="text-[#4B5563] dark:text-[#b6aea0] flex-shrink-0"><HelpIcon /></div>
-                                            <span className="text-[14px] font-medium text-[#111827] dark:text-white">Help & Support</span>
+                                            <span className="text-[14px] font-medium text-[#111827] dark:text-white">Help Center</span>
                                         </div>
                                         <ChevronRight size={14} className="text-[#4B5563]" />
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent className="premium-popover bg-white dark:bg-[#1d1d1d] p-1.5 min-w-[220px] ml-2 mt-1">
-                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">Help Center</DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">Knowledge Base</DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">Chat with us</DropdownMenuItem>
                                     </DropdownMenuSubContent>
@@ -385,20 +383,25 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent className="premium-popover bg-white dark:bg-[#1d1d1d] p-1.5 min-w-[220px] ml-2 mt-1">
                                         <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg font-bold">English</DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">Portuguese</DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">Spanish</DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">German</DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">French</DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
 
-                                {/* Theme Toggle Switch (eh.wc Parity) */}
-                                <ThemeToggle />
+                                {/* Theme Section */}
+                                <div className="px-3 py-2">
+                                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Theme</p>
+                                    <ThemeToggle />
+                                </div>
 
                                 <div className="h-[1px] bg-border/50 my-1 mx-2"></div>
 
                                 <DropdownMenuItem asChild>
                                     <Link href="/settings" className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none">
                                         <div className="text-[#4B5563] dark:text-[#b6aea0] flex-shrink-0"><SettingsNavIcon /></div>
-                                        <span className="text-[14px] font-medium text-[#111827] dark:text-white">User Settings</span>
+                                        <span className="text-[14px] font-medium text-[#111827] dark:text-white">Settings</span>
                                     </Link>
                                 </DropdownMenuItem>
 

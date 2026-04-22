@@ -247,7 +247,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="w-full flex-1 pt-3 pb-4 px-0 space-y-1 overflow-hidden flex flex-col items-center">
+                <nav className="w-full flex-1 pt-2 pb-4 px-0 space-y-1 overflow-hidden flex flex-col items-center">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname.startsWith(item.href)
                         const iconColor = getIconColor(isActive)
@@ -259,13 +259,13 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                         href={item.href}
                                         className={cn(
                                             "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] aspect-square flex-shrink-0 rounded-[10px] transition-all duration-200 group relative overflow-hidden",
-                                            isActive ? "bg-[#1f2937]/10 dark:bg-white/10 text-[#3289ff]" : "hover:bg-[#1f2937]/10 dark:hover:bg-white/10 text-inherit"
+                                            isActive ? "bg-[#1f2937]/5 dark:bg-white/5 text-[#3289ff]" : "hover:bg-[#1f2937]/5 dark:hover:bg-white/5 text-inherit"
                                         )}
                                         style={{ marginBottom: '4px' }}
                                     >
                                         <TouchRipple />
                                         <div
-                                            className="transition-colors duration-200 flex items-center justify-center pointer-events-none [&>svg]:w-[19px] [&>svg]:h-[19px]"
+                                            className="transition-colors duration-200 flex items-center justify-center pointer-events-none [&>svg]:w-[21px] [&>svg]:h-[21px]"
                                             style={{ color: iconColor }}
                                         >
                                             <item.icon />
@@ -293,7 +293,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 <div className="w-full flex flex-col items-center mt-2 mb-3 gap-2">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-[32px] h-[32px] min-w-[32px] aspect-square flex-shrink-0 rounded-[10px] hover:bg-[#1f2937]/10 dark:hover:bg-white/10 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden [&>svg]:w-[19px] [&>svg]:h-[19px]">
+                            <button className="flex items-center justify-center w-[32px] h-[32px] min-w-[32px] aspect-square flex-shrink-0 rounded-[10px] hover:bg-[#1f2937]/5 dark:hover:bg-white/5 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden [&>svg]:w-[21px] [&>svg]:h-[21px]">
                                 <TouchRipple />
                                 <FeedbackOriginalIcon />
                             </button>
@@ -307,7 +307,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                 id="sidebar_icon_userMenu"
                                 className={cn(
                                     "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] aspect-square flex-shrink-0 rounded-[10px] text-[12px] font-medium transition-all relative overflow-hidden",
-                                    "hover:bg-[#1f2937]/10 dark:hover:bg-white/10"
+                                    "hover:bg-[#1f2937]/5 dark:hover:bg-white/5"
                                 )}
                             >
                                 <TouchRipple />

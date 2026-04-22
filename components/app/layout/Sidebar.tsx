@@ -265,7 +265,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     >
                                         <TouchRipple />
                                         <div
-                                            className="transition-colors duration-200 flex items-center justify-center pointer-events-none"
+                                            className="transition-colors duration-200 flex items-center justify-center pointer-events-none w-[18px] h-[18px] [&>svg]:w-full [&>svg]:h-full"
                                             style={{ color: iconColor }}
                                         >
                                             <item.icon />
@@ -311,7 +311,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                 )}
                             >
                                 <TouchRipple />
-                                <div className="w-[20px] h-[20px] rounded-full bg-[#374151] flex items-center justify-center text-white">
+                                <div className="w-[25px] h-[25px] rounded-full bg-[#374151] flex items-center justify-center text-white text-[10px]">
                                     {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "N"}
                                 </div>
                             </button>

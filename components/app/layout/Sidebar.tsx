@@ -250,7 +250,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 py-4 px-0 gap-4 mt-1 overflow-hidden flex flex-col items-center">
+                <nav className="flex-1 py-4 px-0 space-y-1 mt-1 overflow-hidden flex flex-col items-center">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname.startsWith(item.href)
                         const iconColor = getIconColor(isActive)
@@ -264,6 +264,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                             "flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[6px] transition-all duration-200 group relative overflow-hidden",
                                             isActive ? "bg-[#1f2937]/10 dark:bg-white/10 text-[#3289ff]" : "hover:bg-[#1f2937]/10 dark:hover:bg-white/10 text-inherit"
                                         )}
+                                        style={{ marginBottom: '4px' }}
                                     >
                                         <TouchRipple />
                                         <div
@@ -292,7 +293,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 </nav>
 
                 {/* Bottom Actions Cluster (Feedback + Profile) */}
-                <div className="flex flex-col items-center mt-auto mb-3 gap-4">
+                <div className="flex flex-col items-center mt-auto mb-3 gap-2">
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <button className="flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[6px] hover:bg-[#1f2937]/10 dark:hover:bg-white/10 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">

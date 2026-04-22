@@ -265,7 +265,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     >
                                         <TouchRipple />
                                         <div
-                                            className="transition-colors duration-200 flex items-center justify-center pointer-events-none"
+                                            className="transition-colors duration-200 flex items-center justify-center pointer-events-none [&>svg]:w-[18px] [&>svg]:h-[18px]"
                                             style={{ color: iconColor }}
                                         >
                                             <item.icon />
@@ -293,7 +293,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 <div className="w-full flex flex-col items-center mt-2 mb-3 gap-2">
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <button className="flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[6px] hover:bg-[#1f2937]/10 dark:hover:bg-white/10 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden">
+                            <button className="flex items-center justify-center w-[35px] h-[35px] min-w-[35px] aspect-square flex-shrink-0 rounded-[6px] hover:bg-[#1f2937]/10 dark:hover:bg-white/10 transition-all text-[#a2acb4] dark:text-[#b6aea0] relative overflow-hidden [&>svg]:w-[18px] [&>svg]:h-[18px]">
                                 <TouchRipple />
                                 <FeedbackOriginalIcon />
                             </button>

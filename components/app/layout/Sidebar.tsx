@@ -361,8 +361,8 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             className="premium-popover w-[260px] bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-0 overflow-hidden ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left z-[2000]"
                             align="end"
                             side="right"
-                            sideOffset={-36}
-                            alignOffset={10}
+                            sideOffset={-32}
+                            alignOffset={15}
                         >
                             {/* Header Container (Dark Rounded Box) */}
                             <div className="m-1.5 mb-0">
@@ -390,7 +390,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     <span className="text-[14px] font-medium text-foreground dark:text-white flex-1 truncate">See what's new</span>
                                 </DropdownMenuItem>
 
-                                 <DropdownMenuSub>
+                                <DropdownMenuSub>
                                     <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none w-full">
                                         <div className="flex items-center gap-[12px]">
                                             <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><BellNavIcon /></div>
@@ -433,7 +433,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
 
-                                 <DropdownMenuSub>
+                                <DropdownMenuSub>
                                     <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none w-full">
                                         <div className="flex items-center gap-[12px]">
                                             <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><LanguageIcon /></div>
@@ -466,9 +466,11 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     </Link>
                                 </DropdownMenuItem>
 
-                                <DropdownMenuItem onSelect={handleLogout} className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer text-foreground dark:text-white rounded-[8px] outline-none border-none">
-                                    <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><LogoutNavIcon /></div>
-                                    <span className="text-[14px] font-medium truncate">Logout</span>
+                                <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+                                    <div onClick={handleLogout} className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer text-foreground dark:text-white rounded-[8px] outline-none border-none">
+                                        <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><LogoutNavIcon /></div>
+                                        <span className="text-[14px] font-medium truncate">Logout</span>
+                                    </div>
                                 </DropdownMenuItem>
                             </div>
                         </DropdownMenuContent>

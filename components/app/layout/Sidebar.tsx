@@ -362,7 +362,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             align="end"
                             side="right"
                             sideOffset={-32}
-                            alignOffset={15}
+                            alignOffset={20}
                         >
                             {/* Header Container (Dark Rounded Box) */}
                             <div className="m-1.5 mb-0">

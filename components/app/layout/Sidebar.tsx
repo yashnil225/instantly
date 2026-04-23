@@ -352,23 +352,23 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                 )}
                             >
                                 <TouchRipple />
-                                <div className="w-[22px] h-[22px] rounded-full bg-[#111827] flex items-center justify-center text-white text-[9px] font-bold ring-1 ring-white/10">
+                                <div className="w-[22px] h-[22px] rounded-full bg-[#3289ff] flex items-center justify-center text-[10px] text-white font-semibold ring-1 ring-white/10">
                                     {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "N"}
                                 </div>
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
-                            className="premium-popover w-[260px] bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-0 overflow-hidden ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left z-[2000]"
+                            className="premium-popover w-[260px] bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-0 overflow-hidden animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left z-[2000]"
                             align="end"
                             side="right"
                             sideOffset={-45}
-                            alignOffset={48}
+                            alignOffset={30}
                         >
                             {/* Header Container (Dark Rounded Box) */}
                             <div className="m-1.5 mb-0">
                                 <div className="bg-gradient-to-b from-[#f8fafc]/95 to-[#f8fafc]/10 dark:from-[#1f2122]/95 dark:to-[#1f2122]/10 px-5 py-3 rounded-t-xl border-b border-black/5 dark:border-white/5">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-[22px] h-[22px] rounded-full bg-white dark:bg-[#0c0c0c] flex items-center justify-center text-[9px] text-foreground dark:text-white font-bold ring-1 ring-black/5 dark:ring-white/5">
+                                        <div className="w-[22px] h-[22px] rounded-full bg-[#3289ff] flex items-center justify-center text-[10px] text-white font-semibold ring-1 ring-white/10">
                                             {userInitials}
                                         </div>
                                         <p className="text-[13px] font-bold text-foreground dark:text-white leading-none truncate tracking-tight">{userEmail}</p>

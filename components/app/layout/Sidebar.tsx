@@ -32,6 +32,8 @@ import {
 
 // --- High-Fidelity Sidebar Navigation Icons (Phosphor Style) ---
 
+let lastMenuOpenTime = 0;
+
 const CopilotIcon = () => (
     <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 256 256" height="20" width="20" xmlns="http://www.w3.org/2000/svg">
         <path d="M229.5,113,166.06,89.94,143,26.5a16,16,0,0,0-30,0L89.94,89.94,26.5,113a16,16,0,0,0,0,30l63.44,23.07L113,229.5a16,16,0,0,0,30,0l23.07-63.44L229.5,143a16,16,0,0,0,0-30ZM157.08,152.3a8,8,0,0,0-4.78,4.78L128,223.9l-24.3-66.82a8,8,0,0,0-4.78-4.78L32.1,128l66.82-24.3a8,8,0,0,0,4.78-4.78L128,32.1l24.3,66.82a8,8,0,0,0,4.78,4.78L223.9,128Z" />
@@ -265,7 +267,11 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
     const userEmail = session?.user?.email || "user@example.com"
     const userInitials = userName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U"
 
-    const handleLogout = async () => {
+    const handleLogout = async (e?: any) => {
+        if (e && e.preventDefault) e.preventDefault();
+        // Prevent accidental logout if the menu was just opened (overlap bug)
+        if (Date.now() - lastMenuOpenTime < 500) return;
+        
         await signOut({ callbackUrl: "/login" })
     }
 
@@ -342,7 +348,9 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                         <TooltipContent side="right" sideOffset={14} className="border-none max-w-none">Submit bugs, feedback, and feature requests</TooltipContent>
                     </Tooltip>
 
-                    <DropdownMenu>
+                    <DropdownMenu onOpenChange={(open) => {
+                        if (open) lastMenuOpenTime = Date.now();
+                    }}>
                         <DropdownMenuTrigger asChild>
                             <button
                                 id="sidebar_icon_userMenu"
@@ -466,11 +474,9 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     </Link>
                                 </DropdownMenuItem>
 
-                                <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
-                                    <div onClick={handleLogout} className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer text-foreground dark:text-white rounded-[8px] outline-none border-none">
-                                        <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><LogoutNavIcon /></div>
-                                        <span className="text-[14px] font-medium truncate">Logout</span>
-                                    </div>
+                                <DropdownMenuItem onSelect={handleLogout} className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer text-foreground dark:text-white rounded-[8px] outline-none border-none">
+                                    <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><LogoutNavIcon /></div>
+                                    <span className="text-[14px] font-medium truncate">Logout</span>
                                 </DropdownMenuItem>
                             </div>
                         </DropdownMenuContent>

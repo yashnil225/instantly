@@ -361,7 +361,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             className="premium-popover w-[260px] bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-0 overflow-hidden ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left z-[2000]"
                             align="end"
                             side="right"
-                            sideOffset={-32}
+                            sideOffset={-34}
                             alignOffset={20}
                         >
                             {/* Header Container (Dark Rounded Box) */}

@@ -288,7 +288,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="w-full flex-1 pt-5 pb-4 px-0 space-y-1 overflow-hidden flex flex-col items-center">
+                <nav className="w-full flex-1 pt-4 pb-4 px-0 space-y-1 overflow-hidden flex flex-col items-center">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname.startsWith(item.href)
                         const iconColor = getIconColor(isActive)
@@ -361,8 +361,8 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             className="premium-popover w-[260px] bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-0 overflow-hidden ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left z-[2000]"
                             align="end"
                             side="right"
-                            sideOffset={-28}
-                            alignOffset={20}
+                            sideOffset={-36}
+                            alignOffset={10}
                         >
                             {/* Header Container (Dark Rounded Box) */}
                             <div className="m-1.5 mb-0">

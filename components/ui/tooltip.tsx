@@ -19,13 +19,13 @@ const TooltipContent = React.forwardRef<
         ref={ref}
         sideOffset={sideOffset}
         className={cn(
-            "z-50 overflow-visible rounded-[4px] bg-[#0a0a0a] dark:bg-[#0a0a0a] px-[14px] py-[7px] text-[13px] font-bold tracking-wide leading-[1.4] text-white shadow-2xl animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            "z-50 overflow-visible rounded-[4px] bg-[#0a0a0a] dark:bg-[#0a0a0a] px-[16px] py-[8px] text-[13px] font-bold tracking-wide leading-[1.4] text-white shadow-2xl animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
             className
         )}
         {...props}
     >
         {children}
-        <TooltipPrimitive.Arrow className="fill-[#0a0a0a]" width={10} height={5} />
+        <TooltipPrimitive.Arrow className="fill-white" width={10} height={5} />
     </TooltipPrimitive.Content>
 ))
 TooltipContent.displayName = TooltipPrimitive.Content.displayName

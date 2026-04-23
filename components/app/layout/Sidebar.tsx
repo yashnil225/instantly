@@ -237,14 +237,14 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 style={{ width: sidebarWidth }}
             >
                 {/* Logo Area */}
-                <div className="flex w-full items-center justify-center pt-5 pb-2 h-[76px] flex-shrink-0">
+                <div className="flex w-full items-center justify-center pt-1 pb-1 h-[65px] flex-shrink-0">
                     <Link href="/accounts" className="flex items-center justify-center">
                         <Logo size="sidebar" />
                     </Link>
                 </div>
 
                 {/* Navigation */}
-                <nav className="w-full flex-1 pt-2 pb-4 px-0 space-y-1 overflow-hidden flex flex-col items-center">
+                <nav className="w-full flex-1 pt-1 pb-4 px-0 space-y-[2px] overflow-hidden flex flex-col items-center">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname.startsWith(item.href)
                         const iconColor = getIconColor(isActive)
@@ -295,7 +295,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                 <FeedbackOriginalIcon />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={14} className="border-none max-w-[180px]">Submit bugs, feedback, and feature requests</TooltipContent>
+                        <TooltipContent side="right" sideOffset={14} className="border-none max-w-none">Submit bugs, feedback, and feature requests</TooltipContent>
                     </Tooltip>
 
                     <DropdownMenu modal={false}>
@@ -308,20 +308,20 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                 )}
                             >
                                 <TouchRipple />
-                                <div className="w-[24px] h-[24px] rounded-full bg-[#111827] flex items-center justify-center text-white text-[10px] font-bold ring-1 ring-white/10">
+                                <div className="w-[22px] h-[22px] rounded-full bg-[#111827] flex items-center justify-center text-white text-[9px] font-bold ring-1 ring-white/10">
                                     {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : "N"}
                                 </div>
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
-                            className="premium-popover w-[260px] bg-[#0c0c0c] border-[#1f1f1f] p-0 overflow-hidden mb-2 ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left"
-                            align="start"
+                            className="premium-popover w-[280px] bg-[#0c0c0c] border-[#1f1f1f] p-0 overflow-hidden mb-[10px] ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left"
+                            align="end"
                             side="right"
-                            sideOffset={-65}
+                            sideOffset={-40}
                         >
                             {/* Header Container (Dark Rounded Box) */}
                             <div className="m-1.5 mb-0">
-                                <div className="bg-[#1a1a1a] px-4 py-3 rounded-t-xl border-b border-white/5">
+                                <div className="bg-[#1f2122] px-4 py-3 rounded-t-xl border-b border-white/5">
                                     <div className="flex items-center gap-3">
                                         <div className="w-[22px] h-[22px] rounded-full bg-[#0c0c0c] flex items-center justify-center text-[9px] text-white font-bold ring-1 ring-white/5">
                                             {userInitials}
@@ -335,12 +335,12 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
 
                             {/* Menu Items Area */}
                             <div className="p-1.5 space-y-0.5">
-                                <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none">
+                                <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[12px] cursor-pointer rounded-[8px] outline-none">
                                     <div className="text-white flex-shrink-0 opacity-90"><InviteIcon /></div>
                                     <span className="text-[14px] font-medium text-white flex-1 truncate">Invite a Friend & Earn</span>
                                 </DropdownMenuItem>
 
-                                <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none">
+                                <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[12px] cursor-pointer rounded-[8px] outline-none">
                                     <div className="text-white flex-shrink-0 opacity-90"><WhatsNewIcon /></div>
                                     <span className="text-[14px] font-medium text-white flex-1 truncate">See what's new</span>
                                 </DropdownMenuItem>

@@ -110,44 +110,88 @@ const AutomationIcon = () => (
 // --- Profile Dropdown SVGs (Phosphor Style) ---
 
 const InviteIcon = () => (
-    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 256 256" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
-        <path d="M216,72H180V64a40,40,0,0,0-80,0v8H40A16,16,0,0,0,24,88v96a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V88A16,16,0,0,0,216,72ZM116,64a24,24,0,0,1,48,0v8H116ZM216,184H40V88H80v8a8,8,0,0,0,16,0V88h64v8a8,8,0,0,0,16,0V88h40v96Z" />
+    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+        <polyline points="20 12 20 22 4 22 4 12" />
+        <rect x="2" y="7" width="20" height="5" />
+        <line x1="12" y1="22" x2="12" y2="7" />
+        <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
+        <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
     </svg>
 )
 
 const WhatsNewIcon = () => (
-    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 256 256" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
-        <path d="M224,128a96,96,0,1,1-96-96A96.11,96.11,0,0,1,224,128ZM208,128a80,80,0,1,0-80,80A80.09,80.09,0,0,0,208,128Zm-40,0a40,40,0,1,1-40-40A40,40,0,0,1,168,128Z" opacity="0.2" /><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm40-88a40,40,0,1,1-40-40A40,40,0,0,1,168,128Zm-16,0a24,24,0,1,0-24,24A24,24,0,0,0,152,128Z" />
+    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
 )
 
 const HelpIcon = () => (
-    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 256 256" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
-        <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm12-100a12,12,0,1,1-12-12A12,12,0,0,1,140,116Zm-28,48a12,12,0,1,1,24,0,12,12,0,0,1-24,0Z" />
+    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
 )
 
 const LanguageIcon = () => (
-    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 256 256" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
-        <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216ZM136,56v32h32V56Zm-48,0v32h32V56Zm112,72H168v32h32Zm0-48H168v32h32Zm-48,96H120v32h32Zm-48,0H72v32h32ZM56,128H88V96H56ZM56,176H88V144H56Zm112,0v32H136V176Zm-48,0v32H88V176Z" />
+    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="2" y1="12" x2="22" y2="12" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+)
+
+const HelpGuideIcon = () => (
+    <svg viewBox="0 0 24 24" height="18" width="18" fill="currentColor">
+        <path d="M6 22h15v-2H6.012C5.55 19.988 5 19.805 5 19s.55-.988 1.012-1H21V4c0-1.103-.897-2-2-2H6c-1.206 0-3 .799-3 3v14c0 2.201 1.794 3 3 3zM5 8V5c0-.805.55-.988 1-1h13v12H5V8z" />
+        <path d="M8 6h9v2H8z" />
+    </svg>
+)
+
+const ContactExpertIcon = () => (
+    <svg viewBox="0 0 24 24" height="18" width="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8,11 C10.7614237,11 13,8.76142375 13,6 C13,3.23857625 10.7614237,1 8,1 C5.23857625,1 3,3.23857625 3,6 C3,8.76142375 5.23857625,11 8,11 Z M14.6431888,15.6961461 C14.3091703,14.6675626 13.7524493,13.7598949 13.0233822,13.0234994 C11.7718684,11.7594056 10.0125018,11 8,11 C4,11 1,14 1,18 L1,23 L11,23 M12,18.8235294 L16.1904762,22 L23,13" />
+    </svg>
+)
+
+const MessageIcon = () => (
+    <svg viewBox="0 0 24 24" height="18" width="18" fill="currentColor">
+        <path d="M20 2H4c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h3v3.767L13.277 18H20c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2zm0 14h-7.277L9 18.233V16H4V4h16v12z" />
+        <path d="M7 7h10v2H7zm0 4h7v2H7z" />
+    </svg>
+)
+
+const SlackIcon = () => (
+    <svg viewBox="0 0 24 24" height="18" width="18" fill="currentColor">
+        <path d="M6.52739 14.5136C6.52739 15.5966 5.64264 16.4814 4.55959 16.4814C3.47654 16.4814 2.5918 15.5966 2.5918 14.5136C2.5918 13.4305 3.47654 12.5458 4.55959 12.5458H6.52739V14.5136ZM7.51892 14.5136C7.51892 13.4305 8.40366 12.5458 9.48671 12.5458C10.5698 12.5458 11.4545 13.4305 11.4545 14.5136V19.4407C11.4545 20.5238 10.5698 21.4085 9.48671 21.4085C8.40366 21.4085 7.51892 20.5238 7.51892 19.4407V14.5136ZM9.48671 6.52715C8.40366 6.52715 7.51892 5.6424 7.51892 4.55935C7.51892 3.4763 8.40366 2.59155 9.48671 2.59155C10.5698 2.59155 11.4545 3.4763 11.4545 4.55935V6.52715H9.48671ZM9.48671 7.51867C10.5698 7.51867 11.4545 8.40342 11.4545 9.48647C11.4545 10.5695 10.5698 11.4543 9.48671 11.4543H4.55959C3.47654 11.4543 2.5918 10.5695 2.5918 9.48647C2.5918 8.40342 3.47654 7.51867 4.55959 7.51867H9.48671ZM17.4732 9.48647C17.4732 8.40342 18.3579 7.51867 19.4409 7.51867C20.524 7.51867 21.4087 8.40342 21.4087 9.48647C21.4087 10.5695 20.524 11.4543 19.4409 11.4543H17.4732V9.48647ZM16.4816 9.48647C16.4816 10.5695 15.5969 11.4543 14.5138 11.4543C13.4308 11.4543 12.546 10.5695 12.546 9.48647V4.55935C12.546 3.4763 13.4308 2.59155 14.5138 2.59155C15.5969 2.59155 16.4816 3.4763 16.4816 4.55935V9.48647ZM14.5138 17.4729C15.5969 17.4729 16.4816 18.3577 16.4816 19.4407C16.4816 20.5238 15.5969 21.4085 14.5138 21.4085C13.4308 21.4085 12.546 20.5238 12.546 19.4407V17.4729H14.5138ZM14.5138 16.4814C13.4308 16.4814 12.546 15.5966 12.546 14.5136C12.546 13.4305 13.4308 12.5458 14.5138 12.5458H19.4409C20.524 12.5458 21.4087 13.4305 21.4087 14.5136C21.4087 15.5966 20.524 16.4814 19.4409 16.4814H14.5138Z" />
+    </svg>
+)
+
+const FacebookIcon = () => (
+    <svg viewBox="0 0 24 24" height="18" width="18" fill="currentColor">
+        <path d="M13.001 19.9381C16.9473 19.446 20.001 16.0796 20.001 12C20.001 7.58172 16.4193 4 12.001 4C7.5827 4 4.00098 7.58172 4.00098 12C4.00098 16.0796 7.05467 19.446 11.001 19.9381V14H9.00098V12H11.001V10.3458C11.001 9.00855 11.1402 8.52362 11.4017 8.03473C11.6631 7.54584 12.0468 7.16216 12.5357 6.9007C12.9184 6.69604 13.3931 6.57252 14.2227 6.51954C14.5519 6.49851 14.9781 6.52533 15.501 6.6V8.5H15.001C14.0837 8.5 13.7052 8.54332 13.4789 8.66433C13.3386 8.73939 13.2404 8.83758 13.1653 8.97793C13.0443 9.20418 13.001 9.42853 13.001 10.3458V12H15.501L15.001 14H13.001V19.9381ZM12.001 22C6.47813 22 2.00098 17.5228 2.00098 12C2.00098 6.47715 6.47813 2 12.001 2C17.5238 2 22.001 6.47715 22.001 12C22.001 17.5228 17.5238 22 12.001 22Z" />
     </svg>
 )
 
 const SettingsNavIcon = () => (
-    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 256 256" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
-        <path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88,0a16,16,0,1,1,16-16A16,16,0,0,1,216,160ZM40,160a16,16,0,1,1,16-16A16,16,0,0,1,40,160Zm176-64a16,16,0,1,1,16-16A16,16,0,0,1,216,96ZM40,96a16,16,0,1,1,16-16A16,16,0,0,1,40,96ZM128,48a16,16,0,1,1,16-16A16,16,0,0,1,128,48Zm0,176a16,16,0,1,1,16-16A16,16,0,0,1,128,224Z" />
+    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
 )
 
 const LogoutNavIcon = () => (
-    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 256 256" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
-        <path d="M112,216a8,8,0,0,1-8,8H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32h56a8,8,0,0,1,0,16H48V208h56A8,8,0,0,1,112,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L196.69,120H104a8,8,0,0,0,0,16h92.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,221.66,122.34Z" />
+    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
 )
 
 const BellNavIcon = () => (
-    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 256 256" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
-        <path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z" />
+    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
 )
 
@@ -244,7 +288,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="w-full flex-1 pt-1 pb-4 px-0 space-y-1 overflow-hidden flex flex-col items-center">
+                <nav className="w-full flex-1 pt-6 pb-4 px-0 space-y-1 overflow-hidden flex flex-col items-center">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname.startsWith(item.href)
                         const iconColor = getIconColor(isActive)
@@ -321,7 +365,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                         >
                             {/* Header Container (Dark Rounded Box) */}
                             <div className="m-1.5 mb-0">
-                                <div className="bg-[#1f2122] px-4 py-3 rounded-t-xl border-b border-white/5">
+                                <div className="bg-gradient-to-b from-[#1f2122]/95 to-[#1f2122]/10 px-4 py-3 rounded-t-xl border-b border-white/5">
                                     <div className="flex items-center gap-3">
                                         <div className="w-[22px] h-[22px] rounded-full bg-[#0c0c0c] flex items-center justify-center text-[9px] text-white font-bold ring-1 ring-white/5">
                                             {userInitials}
@@ -335,57 +379,72 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
 
                             {/* Menu Items Area */}
                             <div className="p-1.5 space-y-0.5">
-                                <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[12px] cursor-pointer rounded-[8px] outline-none">
+                                <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none">
                                     <div className="text-white flex-shrink-0 opacity-90"><InviteIcon /></div>
                                     <span className="text-[14px] font-medium text-white flex-1 truncate">Invite a Friend & Earn</span>
                                 </DropdownMenuItem>
 
-                                <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[12px] cursor-pointer rounded-[8px] outline-none">
+                                <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none">
                                     <div className="text-white flex-shrink-0 opacity-90"><WhatsNewIcon /></div>
                                     <span className="text-[14px] font-medium text-white flex-1 truncate">See what's new</span>
                                 </DropdownMenuItem>
 
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none w-full">
+                                 <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none w-full">
                                         <div className="flex items-center gap-[12px]">
                                             <div className="text-white flex-shrink-0 opacity-90"><BellNavIcon /></div>
                                             <span className="text-[14px] font-medium text-white">Notifications</span>
                                         </div>
-                                        <ChevronRight size={14} className="text-white/40" />
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent className="premium-popover bg-[#0c0c0c] border-[#1f1f1f] p-1.5 min-w-[220px] ml-2 mt-1">
-                                        <div className="p-3 text-center text-[12px] text-white/50">No new notifications</div>
+                                    <DropdownMenuSubContent className="premium-popover bg-[#0c0c0c] border-[#1f1f1f] p-1.5 min-w-[280px] ml-2 mt-1">
+                                        <div className="p-5 text-center text-[12px] text-white/50 leading-relaxed">You don't have any new notifications at this time.</div>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
 
                                 <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none w-full">
+                                    <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none w-full">
                                         <div className="flex items-center gap-[12px]">
                                             <div className="text-white flex-shrink-0 opacity-90"><HelpIcon /></div>
                                             <span className="text-[14px] font-medium text-white">Help Center</span>
                                         </div>
-                                        <ChevronRight size={14} className="text-white/40" />
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent className="premium-popover bg-[#0c0c0c] border-[#1f1f1f] p-1.5 min-w-[220px] ml-2 mt-1">
-                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">Knowledge Base</DropdownMenuItem>
-                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">Chat with us</DropdownMenuItem>
+                                    <DropdownMenuSubContent className="premium-popover bg-[#0c0c0c] border-[#1f1f1f] p-1.5 min-w-[280px] ml-2 mt-1">
+                                        <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
+                                            <div className="text-white flex-shrink-0 opacity-90"><HelpGuideIcon /></div>
+                                            <span className="text-[14px] font-medium text-white">Help & support guide</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
+                                            <div className="text-white flex-shrink-0 opacity-90"><ContactExpertIcon /></div>
+                                            <span className="text-[14px] font-medium text-white">Contact an Expert</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
+                                            <div className="text-white flex-shrink-0 opacity-90"><MessageIcon /></div>
+                                            <span className="text-[14px] font-medium text-white">Send us a message</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
+                                            <div className="text-white flex-shrink-0 opacity-90"><SlackIcon /></div>
+                                            <span className="text-[14px] font-medium text-white">Join the Slack Community</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
+                                            <div className="text-white flex-shrink-0 opacity-90"><FacebookIcon /></div>
+                                            <span className="text-[14px] font-medium text-white">Join Facebook Group</span>
+                                        </DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
 
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none w-full">
+                                 <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none w-full">
                                         <div className="flex items-center gap-[12px]">
                                             <div className="text-white flex-shrink-0 opacity-90"><LanguageIcon /></div>
                                             <span className="text-[14px] font-medium text-white">Language</span>
                                         </div>
-                                        <ChevronRight size={14} className="text-white/40" />
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent className="premium-popover bg-[#0c0c0c] border-[#1f1f1f] p-1.5 min-w-[220px] ml-2 mt-1">
-                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg font-bold">English</DropdownMenuItem>
-                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">Portuguese</DropdownMenuItem>
-                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">Spanish</DropdownMenuItem>
-                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">German</DropdownMenuItem>
-                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[11px] text-[14px] rounded-lg">French</DropdownMenuItem>
+                                    <DropdownMenuSubContent className="premium-popover bg-[#0c0c0c] border-[#1f1f1f] p-1.5 min-w-[280px] ml-2 mt-1">
+                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[12px] text-[14px] rounded-lg font-bold">English</DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[12px] text-[14px] rounded-lg">Portuguese</DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[12px] text-[14px] rounded-lg">Spanish</DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[12px] text-[14px] rounded-lg">German</DropdownMenuItem>
+                                        <DropdownMenuItem className="profile-item-hover px-[12px] py-[12px] text-[14px] rounded-lg">French</DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
 
@@ -400,13 +459,13 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                 <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
 
                                 <DropdownMenuItem asChild>
-                                    <Link href="/settings" className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[11px] cursor-pointer rounded-[8px] outline-none">
+                                    <Link href="/settings" className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none">
                                         <div className="text-white flex-shrink-0 opacity-90"><SettingsNavIcon /></div>
                                         <span className="text-[14px] font-medium text-white">Settings</span>
                                     </Link>
                                 </DropdownMenuItem>
 
-                                <DropdownMenuItem onClick={handleLogout} className="profile-item-hover flex items-center gap-[12px] min-h-[44px] px-[12px] py-[11px] cursor-pointer text-white rounded-[8px] outline-none border-none">
+                                <DropdownMenuItem onClick={handleLogout} className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer text-white rounded-[8px] outline-none border-none">
                                     <div className="text-white flex-shrink-0 opacity-90"><LogoutNavIcon /></div>
                                     <span className="text-[14px] font-medium truncate">Logout</span>
                                 </DropdownMenuItem>

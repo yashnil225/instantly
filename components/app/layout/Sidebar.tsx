@@ -358,15 +358,15 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
-                            className="premium-popover w-[280px] bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-0 overflow-hidden ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left z-[2000]"
+                            className="premium-popover w-[260px] bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-0 overflow-hidden ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left z-[2000]"
                             align="end"
                             side="right"
-                            sideOffset={-50}
-                            alignOffset={50}
+                            sideOffset={-45}
+                            alignOffset={48}
                         >
                             {/* Header Container (Dark Rounded Box) */}
                             <div className="m-1.5 mb-0">
-                                <div className="bg-gradient-to-b from-[#f8fafc]/95 to-[#f8fafc]/10 dark:from-[#1f2122]/95 dark:to-[#1f2122]/10 px-4 py-3 rounded-t-xl border-b border-black/5 dark:border-white/5">
+                                <div className="bg-gradient-to-b from-[#f8fafc]/95 to-[#f8fafc]/10 dark:from-[#1f2122]/95 dark:to-[#1f2122]/10 px-5 py-3 rounded-t-xl border-b border-black/5 dark:border-white/5">
                                     <div className="flex items-center gap-3">
                                         <div className="w-[22px] h-[22px] rounded-full bg-white dark:bg-[#0c0c0c] flex items-center justify-center text-[9px] text-foreground dark:text-white font-bold ring-1 ring-black/5 dark:ring-white/5">
                                             {userInitials}
@@ -381,54 +381,54 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             {/* Menu Items Area */}
                             <div className="p-1.5 space-y-0.5">
                                 <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none">
-                                    <div className="text-white flex-shrink-0 opacity-90"><InviteIcon /></div>
-                                    <span className="text-[14px] font-medium text-white flex-1 truncate">Invite a Friend & Earn</span>
+                                    <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><InviteIcon /></div>
+                                    <span className="text-[14px] font-medium text-foreground dark:text-white flex-1 truncate">Invite a Friend & Earn</span>
                                 </DropdownMenuItem>
 
                                 <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none">
-                                    <div className="text-white flex-shrink-0 opacity-90"><WhatsNewIcon /></div>
-                                    <span className="text-[14px] font-medium text-white flex-1 truncate">See what's new</span>
+                                    <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><WhatsNewIcon /></div>
+                                    <span className="text-[14px] font-medium text-foreground dark:text-white flex-1 truncate">See what's new</span>
                                 </DropdownMenuItem>
 
                                  <DropdownMenuSub>
                                     <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none w-full">
                                         <div className="flex items-center gap-[12px]">
-                                            <div className="text-white flex-shrink-0 opacity-90"><BellNavIcon /></div>
-                                            <span className="text-[14px] font-medium text-white">Notifications</span>
+                                            <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><BellNavIcon /></div>
+                                            <span className="text-[14px] font-medium text-foreground dark:text-white">Notifications</span>
                                         </div>
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent className="premium-popover bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-1.5 min-w-[280px] ml-2 mt-1">
-                                        <div className="p-5 text-center text-[12px] text-white/50 leading-relaxed">You don't have any new notifications at this time.</div>
+                                    <DropdownMenuSubContent className="premium-popover bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-1.5 min-w-[260px] ml-2 mt-1">
+                                        <div className="p-5 text-center text-[12px] text-foreground/50 dark:text-white/50 leading-relaxed">You don't have any new notifications at this time.</div>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
 
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none w-full">
                                         <div className="flex items-center gap-[12px]">
-                                            <div className="text-white flex-shrink-0 opacity-90"><HelpIcon /></div>
-                                            <span className="text-[14px] font-medium text-white">Help Center</span>
+                                            <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><HelpIcon /></div>
+                                            <span className="text-[14px] font-medium text-foreground dark:text-white">Help Center</span>
                                         </div>
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent className="premium-popover bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-1.5 min-w-[280px] ml-2 mt-1">
+                                    <DropdownMenuSubContent className="premium-popover bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-1.5 min-w-[260px] ml-2 mt-1">
                                         <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
-                                            <div className="text-white flex-shrink-0 opacity-90"><HelpGuideIcon /></div>
-                                            <span className="text-[14px] font-medium text-white">Help & support guide</span>
+                                            <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><HelpGuideIcon /></div>
+                                            <span className="text-[14px] font-medium text-foreground dark:text-white">Help & support guide</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
-                                            <div className="text-white flex-shrink-0 opacity-90"><ContactExpertIcon /></div>
-                                            <span className="text-[14px] font-medium text-white">Contact an Expert</span>
+                                            <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><ContactExpertIcon /></div>
+                                            <span className="text-[14px] font-medium text-foreground dark:text-white">Contact an Expert</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
-                                            <div className="text-white flex-shrink-0 opacity-90"><MessageIcon /></div>
-                                            <span className="text-[14px] font-medium text-white">Send us a message</span>
+                                            <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><MessageIcon /></div>
+                                            <span className="text-[14px] font-medium text-foreground dark:text-white">Send us a message</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
-                                            <div className="text-white flex-shrink-0 opacity-90"><SlackIcon /></div>
-                                            <span className="text-[14px] font-medium text-white">Join the Slack Community</span>
+                                            <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><SlackIcon /></div>
+                                            <span className="text-[14px] font-medium text-foreground dark:text-white">Join the Slack Community</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover flex items-center gap-[12px] min-h-[50px] px-[12px] py-[12px] cursor-pointer rounded-lg outline-none">
-                                            <div className="text-white flex-shrink-0 opacity-90"><FacebookIcon /></div>
-                                            <span className="text-[14px] font-medium text-white">Join Facebook Group</span>
+                                            <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><FacebookIcon /></div>
+                                            <span className="text-[14px] font-medium text-foreground dark:text-white">Join Facebook Group</span>
                                         </DropdownMenuItem>
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
@@ -436,11 +436,11 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                  <DropdownMenuSub>
                                     <DropdownMenuSubTrigger className="profile-item-hover flex items-center justify-between min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none w-full">
                                         <div className="flex items-center gap-[12px]">
-                                            <div className="text-white flex-shrink-0 opacity-90"><LanguageIcon /></div>
-                                            <span className="text-[14px] font-medium text-white">Language</span>
+                                            <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><LanguageIcon /></div>
+                                            <span className="text-[14px] font-medium text-foreground dark:text-white">Language</span>
                                         </div>
                                     </DropdownMenuSubTrigger>
-                                    <DropdownMenuSubContent className="premium-popover bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-1.5 min-w-[280px] ml-2 mt-1">
+                                    <DropdownMenuSubContent className="premium-popover bg-white dark:bg-[#0c0c0c] border-[#e5e7eb] dark:border-[#1f1f1f] p-1.5 min-w-[260px] ml-2 mt-1">
                                         <DropdownMenuItem className="profile-item-hover px-[12px] py-[12px] text-[14px] rounded-lg font-bold text-foreground dark:text-white">English</DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover px-[12px] py-[12px] text-[14px] rounded-lg text-foreground dark:text-white">Portuguese</DropdownMenuItem>
                                         <DropdownMenuItem className="profile-item-hover px-[12px] py-[12px] text-[14px] rounded-lg text-foreground dark:text-white">Spanish</DropdownMenuItem>
@@ -449,20 +449,20 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     </DropdownMenuSubContent>
                                 </DropdownMenuSub>
 
-                                <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
+                                <div className="h-[1px] bg-black/5 dark:bg-white/5 my-1 mx-2"></div>
 
                                 {/* Theme Section */}
                                 <div className="px-3 py-2">
-                                    <p className="text-[11px] font-bold text-white/40 uppercase tracking-wider mb-2">Theme</p>
+                                    <p className="text-[11px] font-bold text-foreground/40 dark:text-white/40 uppercase tracking-wider mb-2">Theme</p>
                                     <ThemeToggle />
                                 </div>
 
-                                <div className="h-[1px] bg-white/5 my-1 mx-2"></div>
+                                <div className="h-[1px] bg-black/5 dark:bg-white/5 my-1 mx-2"></div>
 
                                 <DropdownMenuItem asChild>
                                     <Link href="/settings" className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer rounded-[8px] outline-none">
-                                        <div className="text-white flex-shrink-0 opacity-90"><SettingsNavIcon /></div>
-                                        <span className="text-[14px] font-medium text-white">Settings</span>
+                                        <div className="text-foreground dark:text-white flex-shrink-0 opacity-90"><SettingsNavIcon /></div>
+                                        <span className="text-[14px] font-medium text-foreground dark:text-white">Settings</span>
                                     </Link>
                                 </DropdownMenuItem>
 

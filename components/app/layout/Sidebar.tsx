@@ -281,14 +281,14 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                 style={{ width: sidebarWidth }}
             >
                 {/* Logo Area */}
-                <div className="flex w-full items-center justify-center pt-2 pb-1 h-[68px] flex-shrink-0">
+                <div className="flex w-full items-center justify-center pt-5 pb-1 h-[68px] flex-shrink-0">
                     <Link href="/accounts" className="flex items-center justify-center">
                         <Logo size="sidebar" />
                     </Link>
                 </div>
 
                 {/* Navigation */}
-                <nav className="w-full flex-1 pt-6 pb-4 px-0 space-y-1 overflow-hidden flex flex-col items-center">
+                <nav className="w-full flex-1 pt-1 pb-4 px-0 space-y-1 overflow-hidden flex flex-col items-center">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname.startsWith(item.href)
                         const iconColor = getIconColor(isActive)
@@ -342,7 +342,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                         <TooltipContent side="right" sideOffset={14} className="border-none max-w-none">Submit bugs, feedback, and feature requests</TooltipContent>
                     </Tooltip>
 
-                    <DropdownMenu modal={false}>
+                    <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <button
                                 id="sidebar_icon_userMenu"
@@ -358,7 +358,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
-                            className="premium-popover w-[280px] bg-[#0c0c0c] border-[#1f1f1f] p-0 overflow-hidden mb-[10px] ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left z-[2000]"
+                            className="premium-popover w-[280px] bg-[#0c0c0c] border-[#1f1f1f] p-0 overflow-hidden ml-4 animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200 origin-bottom-left z-[2000]"
                             align="end"
                             side="right"
                             sideOffset={-40}
@@ -465,7 +465,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     </Link>
                                 </DropdownMenuItem>
 
-                                <DropdownMenuItem onClick={handleLogout} className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer text-white rounded-[8px] outline-none border-none">
+                                <DropdownMenuItem onSelect={handleLogout} className="profile-item-hover flex items-center gap-[12px] min-h-[52px] px-[12px] py-[14px] cursor-pointer text-white rounded-[8px] outline-none border-none">
                                     <div className="text-white flex-shrink-0 opacity-90"><LogoutNavIcon /></div>
                                     <span className="text-[14px] font-medium truncate">Logout</span>
                                 </DropdownMenuItem>

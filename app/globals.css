@@ -88,6 +88,75 @@
     border-color: hsl(var(--border));
   }
 
+  .bg-instantly-waves {
+    background-image: url("/images/auth/wavy-bg.svg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* Ripple Effect */
+  .ripple-container {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ripple-effect {
+    position: absolute;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.1);
+    transform: scale(0);
+    animation: ripple-animation 600ms linear;
+    pointer-events: none;
+  }
+
+  @keyframes ripple-animation {
+    to {
+      transform: scale(4);
+      opacity: 0;
+    }
+  }
+
+  /* Auth Input Glow & Polish */
+  .auth-input {
+    @apply w-full px-[24px] py-[18px] text-[16px] border-[#dee2e6] rounded-[12px] transition-all bg-white text-gray-900;
+    font-family: 'Averta', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .auth-input:focus {
+    @apply outline-none border-[#006bff] ring-1 ring-[#006bff]/10;
+    box-shadow: 0 0 0 4px rgba(0, 107, 255, 0.08);
+  }
+
+  /* Social Button Polish */
+  .social-btn {
+    @apply flex items-center justify-center gap-2 w-full py-[14px] px-[32px] rounded-[12px] border border-[#eef2f6] bg-white transition-all duration-150 ease-out hover:bg-[#f8f9fa] hover:border-[#dee2e6] text-slate-700;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  }
+
+  .social-btn:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Hollow Checkbox */
+  .hollow-checkbox {
+    @apply appearance-none h-4 w-4 border-2 border-slate-300 rounded transition-all cursor-pointer bg-transparent;
+  }
+
+  .hollow-checkbox:checked {
+    @apply border-[#006bff] bg-transparent relative;
+  }
+
+  .hollow-checkbox:checked::after {
+    content: "";
+    @apply absolute left-[3px] top-[0px] w-[5px] h-[8px] border-b-2 border-r-2 border-[#006bff] rotate-45;
+  }
+
+  .auth-no-scroll {
+    @apply h-screen overflow-hidden;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
@@ -100,30 +169,11 @@
     @apply bg-white rounded-[12px] border-0;
     box-shadow: 0 3px 5px 0 rgb(222 222 222 / 30%);
   }
-
-  .auth-input {
-    @apply w-full px-[24px] py-[20px] text-[16px] border-[#dee2e6] rounded-[12px] transition-all bg-white text-gray-900;
-    font-family: 'Averta', sans-serif;
-  }
-
-  .auth-input:focus {
-    @apply outline-none border-[#006bff] ring-1 ring-[#006bff]/10;
-    box-shadow: 0 0 0 4px rgba(0, 107, 255, 0.05);
-  }
-
-  .social-btn {
-    @apply flex items-center justify-center gap-2 w-full py-[16px] px-[32px] rounded-[12px] border border-[#dee2e6] bg-white transition-all hover:bg-[#f8f9fa] hover:border-[#ced4da] text-gray-700;
-    box-shadow: 0 3px 5px 0 rgb(222 222 222 / 30%);
-  }
-
-  .social-btn:hover {
-    box-shadow: 0 5px 8px 0 rgb(200 200 200 / 40%);
-  }
 }
 
 @layer utilities {
   .bg-instantly-waves {
-    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2OTIiIGhlaWdodD0iOTIwIiBmaWxsPSJub25lIiB4bWxuczp2PSJodHRwczovL3ZlY3RhLmlvL25hbm8iPjxwYXRoIGQ9Ik00MDIuMzk2IDUxMy43NDFIMTcuNjU5Yy0xMy41MyAwLTIyLjAzNC0xNC42NTgtMTUuMzA2LTI2LjQzN0w2MTguNjUxLTU5Mmg5MDEuODY5YzE0LjYyIDAgMjIuOSAxNi44MTYgMTMuOTQgMjguNDQ0TDEwOTMuODMgOS4xNzljLTguOTIgMTEuNjI3LS42OCAyOC40NDQgMTMuOTQgMjguNDQ0hDQ3MC41N2MxNS44NyAwIDIzLjY2IDE5LjM1NCAxMi4yMSAzMC4zNzVMMjUwLjAxMyAxMzYwLjk5Yy0xMi43MzYgMTIuMjctMzMuNTYuMjMtMjkuMzI3LTE2Ljk3bDE5OC44MzEtODA4LjQyNmMyLjcyMS0xMS4wOTctNS42NjktMjEuODUzLTE3LjEyMS0yMS44NTN6IiBmaWxsPSIjZjFmOWZmIi8+PC9zdmc+");
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2OTIiIGhlaWdodD0iOTIwIiBmaWxsPSJub25lIiB4bWxuczp2PSJodHRwczovL3ZlY3RhLmlvL25hbm8iPjxwYXRoIGQ9Ik00MDIuMzk2IDUxMy43NDFIMTcuNjU5Yy0xMy41MyAwLTIyLjAzNC0xNC42NTgtMTUuMzA2LTI2LjQzN0w2MTguNjUxLTU5Mmg5MDEuODY5YzE0LjYyIDAgMjIuOSAxNi44MTYgMTMuOTQgMjguNDQ0TDEwOTMuODMgOS4xNzljLTguOTIgMTEuNjI3LC42OCAyOC40NDQgMTMuOTQgMjguNDQ0hDQ3MC41N2MxNS44NyAwIDIzLjY2IDE5LjM1NCAxMi4yMSAzMC4zNzVMMjUwLjAxMyAxMzYwLjk5Yy0xMi43MzYgMTIuMjctMzMuNTYuMjMtMjkuMzI3LTE2Ljk3bDE5OC44MzEtODA4LjQyNmMyLjcyMS0xMS4wOTctNS42NjktMjEuODUzLTE3LjEyMS0yMS44NTN6IiBmaWxsPSIjZjFmOWZmIi8+PC9zdmc+");
     background-size: cover;
     background-position: center;
   }

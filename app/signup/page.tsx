@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, MouseEvent } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
@@ -15,6 +15,7 @@ function SignupForm() {
     const [termsAccepted, setTermsAccepted] = useState(false)
     const [loading, setLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [emailValid, setEmailValid] = useState(true)
 
     // Check for redirect from login page
     useEffect(() => {
@@ -24,14 +25,36 @@ function SignupForm() {
         }
     }, [searchParams])
 
-    // Dynamic Password Field Visibility
+    // Dynamic Validation & Password Visibility
     useEffect(() => {
         if (email.length > 0) {
             setShowPassword(true)
+            const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+            setEmailValid(isValid)
         } else {
             setShowPassword(false)
+            setEmailValid(true)
         }
     }, [email])
+
+    const createRipple = (event: MouseEvent<HTMLElement>) => {
+        const button = event.currentTarget
+        const ripple = document.createElement("span")
+        const diameter = Math.max(button.clientWidth, button.clientHeight)
+        const radius = diameter / 2
+
+        ripple.style.width = ripple.style.height = `${diameter}px`
+        ripple.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`
+        ripple.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`
+        ripple.classList.add("ripple-effect")
+
+        const oldRipple = button.getElementsByClassName("ripple-effect")[0]
+        if (oldRipple) {
+            oldRipple.remove()
+        }
+
+        button.appendChild(ripple)
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -48,12 +71,15 @@ function SignupForm() {
         }, 1000)
     }
 
-    const handleGoogleSignIn = () => {
-        signIn("google", { callbackUrl: "/campaigns?welcome=true" })
+    const handleGoogleSignIn = (e: MouseEvent<HTMLButtonElement>) => {
+        createRipple(e)
+        setTimeout(() => {
+            signIn("google", { callbackUrl: "/campaigns?welcome=true" })
+        }, 300)
     }
 
     return (
-        <div className="h-screen w-screen flex font-['Averta',_sans-serif] bg-white overflow-hidden select-none">
+        <div className="auth-no-scroll flex font-['Averta',_sans-serif] bg-white select-none">
             <Toaster position="bottom-center" />
             
             {/* Left Side: Signup Form (7 parts) */}
@@ -66,7 +92,8 @@ function SignupForm() {
                         <div className="space-y-3">
                             <button
                                 onClick={handleGoogleSignIn}
-                                className="social-btn border-[#eef2f6] hover:bg-[#f8f9fa] py-[14px]"
+                                className="social-btn ripple-container"
+                                onMouseDown={createRipple}
                             >
                                 <svg width="20" height="20" viewBox="0 0 24 24" className="mt-[-1px]">
                                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -77,7 +104,10 @@ function SignupForm() {
                                 <span className="text-[15px] font-semibold text-slate-700">Sign Up with Google</span>
                             </button>
                             
-                            <button className="social-btn border-[#eef2f6] hover:bg-[#f8f9fa] py-[14px]">
+                            <button 
+                                className="social-btn ripple-container"
+                                onMouseDown={createRipple}
+                            >
                                 <img src="/apple-icon.png" alt="Apple" className="h-[20px] w-[20px] mt-[-2px]" />
                                 <span className="text-[15px] font-semibold text-slate-700">Sign Up with Apple</span>
                             </button>
@@ -92,14 +122,21 @@ function SignupForm() {
 
                         {/* Signup Form */}
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            <input
-                                type="email"
-                                placeholder="Email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="auth-input focus:shadow-md"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="email"
+                                    placeholder="Email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : ''}`}
+                                />
+                                {!emailValid && (
+                                    <p className="text-red-500 text-[11px] font-semibold mt-1.5 ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                        Enter a valid email address
+                                    </p>
+                                )}
+                            </div>
 
                             {showPassword && (
                                 <div className="animate-in slide-in-from-top-2 fade-in duration-300">
@@ -110,31 +147,34 @@ function SignupForm() {
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
                                         minLength={6}
-                                        className="auth-input focus:shadow-md"
+                                        className="auth-input"
                                     />
                                 </div>
                             )}
 
                             {/* Terms Checkbox */}
                             <div className="flex items-start space-x-3 py-2">
-                                <div className="flex items-center h-5 mt-1">
+                                <div className="flex items-center h-5 mt-1.5 ripple-container p-1 rounded-full">
                                     <input
                                         type="checkbox"
                                         id="terms"
                                         checked={termsAccepted}
                                         onChange={(e) => setTermsAccepted(e.target.checked)}
-                                        className="h-4 w-4 rounded border-gray-200 text-[#006bff] focus:ring-[#006bff]/20 transition-all cursor-pointer"
+                                        onMouseDown={createRipple}
+                                        className="hollow-checkbox"
                                     />
                                 </div>
                                 <label htmlFor="terms" className="text-[13px] text-slate-500 leading-[1.6]">
-                                    I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="buttonText transition-colors font-semibold">Terms of Use</a> and <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="buttonText transition-colors font-semibold">Privacy policy</a>
+                                    I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="buttonText transition-colors font-semibold">Terms of Use</a> and<br />
+                                    <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="buttonText transition-colors font-semibold">Privacy policy</a>
                                 </label>
                             </div>
 
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-[18px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-2 shadow-[0_4px_12px_rgba(0,107,255,0.2)] active:scale-[0.98]"
+                                onMouseDown={createRipple}
+                                className="w-full py-[18px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-2 shadow-[0_4px_12px_rgba(0,107,255,0.2)] ripple-container"
                             >
                                 {loading ? "Processing..." : "Join Now"}
                             </button>
@@ -142,7 +182,7 @@ function SignupForm() {
                     </div>
 
                     {/* Footer Login Link */}
-                    <div className="mt-12 text-center text-[16px] text-slate-600">
+                    <div className="mt-10 text-center text-[16px] text-slate-600">
                         Already have an account?{" "}
                         <Link href="/login">
                             <span className="font-bold cursor-pointer buttonText transition-colors">Log In</span>
@@ -156,21 +196,21 @@ function SignupForm() {
                 {/* Wavy Logo Background Overlay */}
                 <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none" />
                 
-                {/* Home Icon Button (Top Right) - No border, No bg */}
-                <div className="absolute top-10 right-10 z-50">
+                {/* Home Icon Button (Top Right) - 5px offset as requested */}
+                <div className="absolute top-[5px] right-[5px] z-50">
                     <a
                         href="https://instantly-ai.vercel.app"
-                        className="p-2 hover:bg-slate-200/50 rounded-lg transition-all flex items-center justify-center"
+                        className="p-4 hover:bg-slate-200/40 rounded-lg transition-all flex items-center justify-center"
                         title="Home"
                     >
-                        <Home className="h-7 w-7 text-slate-600" />
+                        <Home className="h-6 w-6 text-slate-600" />
                     </a>
                 </div>
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center">
-                    {/* Illustration */}
+                    {/* Illustration - FIXED PATH */}
                     <img
-                        src="/_next/static/images/getting-started-body.svg"
+                        src="/images/auth/side-illustration.svg"
                         alt="Marketing Illustration"
                         className="w-[360px] h-auto mb-16 animate-in slide-in-from-bottom-4 duration-1000"
                     />

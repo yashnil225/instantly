@@ -102,7 +102,7 @@
   }
 
   .auth-input {
-    @apply w-full px-[24px] py-[20px] text-[16px] border-[#dee2e6] rounded-[12px] transition-all;
+    @apply w-full px-[24px] py-[20px] text-[16px] border-[#dee2e6] rounded-[12px] transition-all bg-white text-gray-900;
     font-family: 'Averta', sans-serif;
   }
 
@@ -112,7 +112,7 @@
   }
 
   .social-btn {
-    @apply flex items-center justify-center gap-2 w-full py-[16px] px-[32px] rounded-[12px] border border-[#dee2e6] bg-white transition-all hover:bg-[#f8f9fa] hover:border-[#ced4da];
+    @apply flex items-center justify-center gap-2 w-full py-[16px] px-[32px] rounded-[12px] border border-[#dee2e6] bg-white transition-all hover:bg-[#f8f9fa] hover:border-[#ced4da] text-gray-700;
     box-shadow: 0 3px 5px 0 rgb(222 222 222 / 30%);
   }
 

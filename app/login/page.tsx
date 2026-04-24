@@ -115,7 +115,7 @@ export default function LoginPage() {
                             </button>
                             
                             <button className="social-btn">
-                                <Apple className="h-[22px] w-[22px] mt-[-4px]" />
+                                <img src="/apple-icon.png" alt="Apple" className="h-[20px] w-[20px] mt-[-2px]" />
                                 <span className="text-[15px] font-medium text-gray-700">Log In with Apple</span>
                             </button>
                         </div>

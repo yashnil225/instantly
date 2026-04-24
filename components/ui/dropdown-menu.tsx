@@ -7,6 +7,25 @@ import { cn } from "@/lib/utils"
 
 const DropdownMenu = DropdownMenuPrimitive.Root
 
+const createRipple = (event: React.MouseEvent<HTMLElement>) => {
+    const button = event.currentTarget
+    const ripple = document.createElement("span")
+    const diameter = Math.max(button.clientWidth, button.clientHeight)
+    const radius = diameter / 2
+
+    ripple.style.width = ripple.style.height = `${diameter}px`
+    ripple.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`
+    ripple.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`
+    ripple.classList.add("ripple-effect")
+
+    const oldRipple = button.getElementsByClassName("ripple-effect")[0]
+    if (oldRipple) {
+        oldRipple.remove()
+    }
+
+    button.appendChild(ripple)
+}
+
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
 
 const DropdownMenuGroup = DropdownMenuPrimitive.Group
@@ -22,11 +41,15 @@ const DropdownMenuSubTrigger = React.forwardRef<
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {
         inset?: boolean
     }
->(({ className, inset, children, ...props }, ref) => (
+>(({ className, inset, children, onMouseDown, ...props }, ref) => (
     <DropdownMenuPrimitive.SubTrigger
         ref={ref}
+        onMouseDown={(e) => {
+            createRipple(e)
+            onMouseDown?.(e)
+        }}
         className={cn(
-            "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent",
+            "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent data-[state=open]:bg-accent ripple-container",
             inset && "pl-8",
             className
         )}
@@ -78,11 +101,15 @@ const DropdownMenuItem = React.forwardRef<
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {
         inset?: boolean
     }
->(({ className, inset, ...props }, ref) => (
+>(({ className, inset, onMouseDown, ...props }, ref) => (
     <DropdownMenuPrimitive.Item
         ref={ref}
+        onMouseDown={(e) => {
+            createRipple(e)
+            onMouseDown?.(e)
+        }}
         className={cn(
-            "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ripple-container",
             inset && "pl-8",
             className
         )}
@@ -94,11 +121,15 @@ DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName
 const DropdownMenuCheckboxItem = React.forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.CheckboxItem>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>
->(({ className, children, checked, ...props }, ref) => (
+>(({ className, children, checked, onMouseDown, ...props }, ref) => (
     <DropdownMenuPrimitive.CheckboxItem
         ref={ref}
+        onMouseDown={(e) => {
+            createRipple(e)
+            onMouseDown?.(e)
+        }}
         className={cn(
-            "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ripple-container",
             className
         )}
         checked={checked}
@@ -118,11 +149,15 @@ DropdownMenuCheckboxItem.displayName =
 const DropdownMenuRadioItem = React.forwardRef<
     React.ElementRef<typeof DropdownMenuPrimitive.RadioItem>,
     React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onMouseDown, ...props }, ref) => (
     <DropdownMenuPrimitive.RadioItem
         ref={ref}
+        onMouseDown={(e) => {
+            createRipple(e)
+            onMouseDown?.(e)
+        }}
         className={cn(
-            "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+            "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 ripple-container",
             className
         )}
         {...props}

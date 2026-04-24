@@ -89,10 +89,14 @@
   }
 
   .bg-instantly-waves {
-    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2OTIiIGhlaWdodD0iOTIwIiBmaWxsPSJub25lIiB4bWxuczp2PSJodHRwczovL3ZlY3RhLmlvL25hbm8iPjxwYXRoIGQ9Ik00MDIuMzk2IDUxMy43NDFIMTcuNjU5Yy0xMy41MyAwLTIyLjAzNC0xNC42NTgtMTUuMzA2LTI2LjQzN0w2MTguNjUxLTU5Mmg5MDEuODY5YzE0LjYyIDAgMjIuOSAxNi44MTYgMTMuOTQgMjguNDQ0TDEwOTMuODMgOS4xNzljLTguOTIgMTEuNjI3LC42OCAyOC40NDQgMTMuOTQgMjguNDQ0hDQ3MC41N2MxNS44NyAwIDIzLjY2IDE5LjM1NCAxMi4yMSAzMC4zNzVMMjUwLjAxMyAxMzYwLjk5Yy0xMi43MzYgMTIuMjctMzMuNTYuMjMtMjkuMzI3LTE2Ljk3bDE5OC44MzEtODA4LjQyNmMyLjcyMS0xMS4wOTctNS42NjktMjEuODUzLTE3LjEyMS0yMS44NTN6IiBmaWxsPSIjZjFmOWZmIi8+PC9zdmc+");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='692' height='920' fill='none'%3E%3Cpath d='M402.396 513.741H17.659c-13.53 0-22.034-14.658-15.306-26.437L618.651-592h901.869c14.62 0 22.9 16.816 13.94 28.444L1093.83 9.179c-8.92 11.627-.68 28.444 13.94 28.444h470.57c15.87 0 23.66 19.354 12.21 30.375L250.013 1360.99c-12.736 12.27-33.56.23-29.327-16.97l198.831-808.426c2.721-11.097-5.669-21.853-17.121-21.853z' fill='%23f1f9ff'/%3E%3C/svg%3E");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+  }
+
+  [data-theme="dark"] .bg-instantly-waves {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='692' height='920' fill='none'%3E%3Cpath d='M402.396 513.741H17.659c-13.53 0-22.034-14.658-15.306-26.437L618.651-592h901.869c14.62 0 22.9 16.816 13.94 28.444L1093.83 9.179c-8.92 11.627-.68 28.444 13.94 28.444h470.57c15.87 0 23.66 19.354 12.21 30.375L250.013 1360.99c-12.736 12.27-33.56.23-29.327-16.97l198.831-808.426c2.721-11.097-5.669-21.853-17.121-21.853z' fill='%23202122'/%3E%3C/svg%3E");
   }
 
   /* Ripple Effect */
@@ -119,24 +123,22 @@
 
   /* Auth Input Glow & Polish */
   .auth-input {
-    @apply w-full px-[24px] py-[18px] text-[16px] border-[#dee2e6] rounded-[12px] transition-all bg-white text-gray-900;
+    @apply w-full px-[24px] py-[18px] text-[16px] border-[#dee2e6] rounded-[12px] transition-all bg-white text-gray-900 placeholder:text-slate-400;
     font-family: 'Averta', sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 
   .auth-input:focus {
-    @apply outline-none border-[#006bff] ring-1 ring-[#006bff]/10;
-    box-shadow: 0 0 0 4px rgba(0, 107, 255, 0.08);
+    @apply outline-none border-[#006bff];
   }
 
   /* Social Button Polish */
   .social-btn {
-    @apply flex items-center justify-center gap-2 w-full py-[14px] px-[32px] rounded-[12px] border border-[#eef2f6] bg-white transition-all duration-150 ease-out hover:bg-[#f8f9fa] hover:border-[#dee2e6] text-slate-700;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    @apply flex items-center justify-center gap-2 w-full py-[14px] px-[32px] rounded-[12px] border border-[#dee2e6] bg-white transition-all duration-150 ease-out hover:bg-[#f8f9fa] text-slate-700;
   }
 
   .social-btn:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+    @apply border-[#ced4da];
   }
 
   /* Hollow Checkbox */
@@ -172,11 +174,7 @@
 }
 
 @layer utilities {
-  .bg-instantly-waves {
-    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2OTIiIGhlaWdodD0iOTIwIiBmaWxsPSJub25lIiB4bWxuczp2PSJodHRwczovL3ZlY3RhLmlvL25hbm8iPjxwYXRoIGQ9Ik00MDIuMzk2IDUxMy43NDFIMTcuNjU5Yy0xMy41MyAwLTIyLjAzNC0xNC42NTgtMTUuMzA2LTI2LjQzN0w2MTguNjUxLTU5Mmg5MDEuODY5YzE0LjYyIDAgMjIuOSAxNi44MTYgMTMuOTQgMjguNDQ0TDEwOTMuODMgOS4xNzljLTguOTIgMTEuNjI3LC42OCAyOC40NDQgMTMuOTQgMjguNDQ0hDQ3MC41N2MxNS44NyAwIDIzLjY2IDE5LjM1NCAxMi4yMSAzMC4zNzVMMjUwLjAxMyAxMzYwLjk5Yy0xMi43MzYgMTIuMjctMzMuNTYuMjMtMjkuMzI3LTE2Ljk3bDE5OC44MzEtODA4LjQyNmMyLjcyMS0xMS4wOTctNS42NjktMjEuODUzLTE3LjEyMS0yMS44NTN6IiBmaWxsPSIjZjFmOWZmIi8+PC9zdmc+");
-    background-size: cover;
-    background-position: center;
-  }
+
 
   .buttonText:hover {
     color: #006bff !important;
@@ -307,6 +305,7 @@ button:active,
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   color: #64748b;
   border: 1px solid transparent;
+  @apply ripple-container;
 }
 
 .theme-pill-btn.active {

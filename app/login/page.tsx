@@ -106,18 +106,18 @@ export default function LoginPage() {
             {/* Full Page Wavy Background Overlay */}
             <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none" />
             
-            {/* Home Icon Button (Top Right) - 5px offset */}
-            <div className="absolute top-[5px] right-[5px] z-50">
+            {/* Home Icon Button (Top Right) - 15px offset */}
+            <div className="absolute top-[15px] right-[15px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="p-4 hover:bg-slate-200/40 rounded-lg transition-all flex items-center justify-center"
+                    className="p-4 transition-all flex items-center justify-center"
                     title="Home"
                 >
-                    <Home className="h-7 w-7 text-slate-600" />
+                    <Home className="h-8 w-8 text-black" />
                 </a>
             </div>
 
-            <div className="relative z-10 w-full max-w-[380px] px-6 py-12 flex flex-col items-center animate-in fade-in duration-700">
+            <div className="relative z-10 w-full max-w-[420px] px-6 py-12 flex flex-col items-center animate-in fade-in duration-700">
                 {/* Logo Section */}
                 <div className="mb-10 flex flex-col items-center gap-2">
                     <Logo style={{ width: '48px', height: '48px' }} />
@@ -146,7 +146,7 @@ export default function LoginPage() {
                                 className="social-btn ripple-container"
                                 onMouseDown={createRipple}
                             >
-                                <img src="/apple-icon.png" alt="Apple" className="h-[20px] w-[20px] mt-[-2px]" />
+                                <img src="/apple-icon.png?v=1" alt="Apple" className="h-[20px] w-[20px] mt-[-2px]" />
                                 <span className="text-[15px] font-semibold text-slate-700">Log In with Apple</span>
                             </button>
                         </div>
@@ -197,7 +197,7 @@ export default function LoginPage() {
                         {/* Forgot Password Link */}
                         <div className="text-center">
                             <Link href="/forgot-password">
-                                <span className="text-[14px] text-slate-400 hover:text-[#006bff] transition-colors cursor-pointer font-medium">
+                                <span className="text-[14px] text-slate-400 hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]">
                                     Forgot password?
                                 </span>
                             </Link>
@@ -206,7 +206,7 @@ export default function LoginPage() {
                 </div>
 
                 {/* Footer Sign Up Link */}
-                <div className="mt-12 text-center text-[16px] text-slate-600">
+                <div className="mt-6 text-center text-[16px] text-slate-600">
                     Don&apos;t have an account?{" "}
                     <Link href="/signup">
                         <span className="font-bold cursor-pointer buttonText transition-colors">Sign Up</span>

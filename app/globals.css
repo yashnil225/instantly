@@ -89,7 +89,7 @@
   }
 
   .bg-instantly-waves {
-    background-image: url("/images/auth/wavy-bg.svg");
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2OTIiIGhlaWdodD0iOTIwIiBmaWxsPSJub25lIiB4bWxuczp2PSJodHRwczovL3ZlY3RhLmlvL25hbm8iPjxwYXRoIGQ9Ik00MDIuMzk2IDUxMy43NDFIMTcuNjU5Yy0xMy41MyAwLTIyLjAzNC0xNC42NTgtMTUuMzA2LTI2LjQzN0w2MTguNjUxLTU5Mmg5MDEuODY5YzE0LjYyIDAgMjIuOSAxNi44MTYgMTMuOTQgMjguNDQ0TDEwOTMuODMgOS4xNzljLTguOTIgMTEuNjI3LC42OCAyOC40NDQgMTMuOTQgMjguNDQ0hDQ3MC41N2MxNS44NyAwIDIzLjY2IDE5LjM1NCAxMi4yMSAzMC4zNzVMMjUwLjAxMyAxMzYwLjk5Yy0xMi43MzYgMTIuMjctMzMuNTYuMjMtMjkuMzI3LTE2Ljk3bDE5OC44MzEtODA4LjQyNmMyLjcyMS0xMS4wOTctNS42NjktMjEuODUzLTE3LjEyMS0yMS44NTN6IiBmaWxsPSIjZjFmOWZmIi8+PC9zdmc+");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -141,7 +141,7 @@
 
   /* Hollow Checkbox */
   .hollow-checkbox {
-    @apply appearance-none h-4 w-4 border-2 border-slate-300 rounded transition-all cursor-pointer bg-transparent;
+    @apply appearance-none h-[20px] w-[20px] border-2 border-slate-300 rounded-[4px] transition-all cursor-pointer bg-transparent;
   }
 
   .hollow-checkbox:checked {
@@ -150,7 +150,7 @@
 
   .hollow-checkbox:checked::after {
     content: "";
-    @apply absolute left-[3px] top-[0px] w-[5px] h-[8px] border-b-2 border-r-2 border-[#006bff] rotate-45;
+    @apply absolute left-[5px] top-[1px] w-[6px] h-[10px] border-b-[2px] border-r-[2px] border-[#006bff] rotate-45;
   }
 
   .auth-no-scroll {

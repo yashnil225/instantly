@@ -81,13 +81,13 @@ function SignupForm() {
     return (
         <div className="auth-no-scroll flex font-['Averta',_sans-serif] bg-white select-none">
             <Toaster position="bottom-center" />
-            
+
             {/* Left Side: Signup Form (7 parts) */}
             <div className="flex-[7] flex flex-col items-center justify-center p-6 md:p-12 bg-white relative h-full">
-                <div className="w-full max-w-[380px] mx-auto animate-in fade-in duration-700">
-                    <div className="space-y-6">
-                        <h1 className="text-[30px] font-bold text-center text-slate-900 mb-2 tracking-tight">Create a new account</h1>
-                        
+                <div className="w-full max-w-[320px] mx-auto animate-in fade-in duration-700">
+                    <div className="space-y-4">
+                        <h1 className="text-[28px] font-bold text-center text-slate-900 mb-2 tracking-tight">Create a new account</h1>
+
                         {/* Social Signups */}
                         <div className="space-y-3">
                             <button
@@ -103,12 +103,12 @@ function SignupForm() {
                                 </svg>
                                 <span className="text-[15px] font-semibold text-slate-700">Sign Up with Google</span>
                             </button>
-                            
-                            <button 
+
+                            <button
                                 className="social-btn ripple-container"
                                 onMouseDown={createRipple}
                             >
-                                <img src="/apple-icon.png" alt="Apple" className="h-[20px] w-[20px] mt-[-2px]" />
+                                <img src="/apple-icon.png?v=1" alt="Apple" className="h-[20px] w-[20px] mt-[-2px]" />
                                 <span className="text-[15px] font-semibold text-slate-700">Sign Up with Apple</span>
                             </button>
                         </div>
@@ -165,8 +165,8 @@ function SignupForm() {
                                     />
                                 </div>
                                 <label htmlFor="terms" className="text-[13px] text-slate-500 leading-[1.6]">
-                                    I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="buttonText transition-colors font-semibold">Terms of Use</a> and<br />
-                                    <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="buttonText transition-colors font-semibold">Privacy policy</a>
+                                    I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] hover:text-[#0056d2] transition-colors font-semibold">Terms of Use</a> and<br />
+                                    <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] hover:text-[#0056d2] transition-colors font-semibold">Privacy policy</a>
                                 </label>
                             </div>
 
@@ -195,22 +195,22 @@ function SignupForm() {
             <div className="hidden lg:flex flex-[5] bg-[#f1f9ff] relative flex-col items-center justify-center p-12 h-full overflow-hidden border-l border-[#eef2f6]">
                 {/* Wavy Logo Background Overlay */}
                 <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none" />
-                
-                {/* Home Icon Button (Top Right) - 5px offset as requested */}
-                <div className="absolute top-[5px] right-[5px] z-50">
+
+                {/* Home Icon Button (Top Right) - 15px offset as requested */}
+                <div className="absolute top-[15px] right-[15px] z-50">
                     <a
                         href="https://instantly-ai.vercel.app"
-                        className="p-4 hover:bg-slate-200/40 rounded-lg transition-all flex items-center justify-center"
+                        className="p-4 transition-all flex items-center justify-center"
                         title="Home"
                     >
-                        <Home className="h-6 w-6 text-slate-600" />
+                        <Home className="h-8 w-8 text-black" />
                     </a>
                 </div>
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center">
                     {/* Illustration - FIXED PATH */}
                     <img
-                        src="/images/auth/side-illustration.svg"
+                        src="/images/auth/side-illustration.svg?v=1"
                         alt="Marketing Illustration"
                         className="w-[360px] h-auto mb-16 animate-in slide-in-from-bottom-4 duration-1000"
                     />

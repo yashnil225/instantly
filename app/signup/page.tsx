@@ -135,9 +135,9 @@ function SignupForm() {
             {/* Left Side: Illustration & Marketing */}
             <div className="hidden lg:flex flex-1 items-center justify-center p-12 instantly-dark relative overflow-hidden">
                 <div className="relative z-10 max-w-xl text-center">
-                    <img 
-                        src="/images/auth/side-illustration.svg" 
-                        alt="Outreach Illustration" 
+                    <img
+                        src="/images/auth/side-illustration.svg"
+                        alt="Outreach Illustration"
                         className="w-full h-auto mb-10 animate-fadeInUp"
                     />
                     <h2 className="text-4xl font-semibold text-white mb-4 leading-tight">
@@ -274,7 +274,7 @@ function SignupForm() {
                     </div>
                 </div>
             </div>
-            
+
             <style jsx>{`
                 .back-to-home {
                     position: absolute;

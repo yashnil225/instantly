@@ -85,11 +85,11 @@ function SignupForm() {
             {/* Left Side: Signup Form (58vw) */}
             <div className="w-[58vw] flex flex-col items-center justify-center p-6 md:p-12 bg-white relative h-full">
                 <div className="w-full max-w-[360px] mx-auto animate-in fade-in duration-700">
-                    <div className="space-y-5">
-                        <h1 className="text-[32px] font-bold text-center text-slate-900 mb-2 tracking-tight">Create a new account</h1>
+                    <div className="space-y-4">
+                        <h1 className="text-[32px] font-bold text-center text-slate-900 mb-1 tracking-tight">Create a new account</h1>
 
                         {/* Social Signups */}
-                        <div className="space-y-2.5">
+                        <div className="space-y-2">
                             <button
                                 onClick={handleGoogleSignIn}
                                 className="social-btn ripple-container"
@@ -116,14 +116,14 @@ function SignupForm() {
                         </div>
 
                         {/* Divider */}
-                        <div className="flex items-center gap-4 py-1">
-                            <div className="flex-1 h-[1px] bg-[#f1f3f4]"></div>
-                            <span className="text-[11px] text-slate-400 font-bold tracking-widest">OR</span>
-                            <div className="flex-1 h-[1px] bg-[#f1f3f4]"></div>
+                        <div className="flex items-center gap-6 py-0.5">
+                            <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
+                            <span className="text-[11px] text-[#dee2e6] font-bold tracking-widest uppercase">OR</span>
+                            <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
                         </div>
 
                         {/* Signup Form */}
-                        <form onSubmit={handleSubmit} className="space-y-3">
+                        <form onSubmit={handleSubmit} className="space-y-2.5">
                             <div className="relative">
                                 <input
                                     type="email"
@@ -176,7 +176,7 @@ function SignupForm() {
                                 type="submit"
                                 disabled={loading}
                                 onMouseDown={createRipple}
-                                className="w-full py-[18px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-3 ripple-container"
+                                className="w-full py-[16px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-2 ripple-container shadow-lg shadow-blue-500/30"
                             >
                                 {loading ? "Processing..." : "Join Now"}
                             </button>
@@ -194,18 +194,18 @@ function SignupForm() {
             </div>
 
             {/* Right Side: Marketing (42vw) */}
-            <div className="hidden lg:flex w-[42vw] bg-white relative flex-col items-center justify-center p-12 h-full overflow-hidden border-l border-[#eef2f6]">
-                {/* Wavy Logo Background Overlay */}
-                <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none" />
+            <div className="hidden lg:flex w-[42vw] bg-white relative flex-col items-center justify-center p-12 h-full">
+                {/* Wavy Logo Background Overlay - Increased size and shifted down */}
+                <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none scale-110 translate-y-[50px]" />
 
-                {/* Home Icon Button (Top Right) - Even Larger and more Cornered */}
+                {/* Home Icon Button (Top Right) - Refined Size */}
                 <div className="absolute top-[15px] right-[15px] z-50">
                     <a
                         href="https://instantly-ai.vercel.app"
                         className="transition-all flex items-center justify-center p-2.5 hover:bg-slate-50/50 rounded-full"
                         title="Home"
                     >
-                        <Home className="h-9 w-9 text-black" />
+                        <Home className="w-[25px] h-[25px] text-black" />
                     </a>
                 </div>
 

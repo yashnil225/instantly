@@ -4,7 +4,7 @@ import { useState, useEffect, MouseEvent } from "react"
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Home } from "lucide-react"
+import { Home, X } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import toast, { Toaster } from 'react-hot-toast'
 
@@ -15,6 +15,8 @@ export default function LoginPage() {
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
     const [emailValid, setEmailValid] = useState(true)
+    const [isForgotModalOpen, setIsForgotModalOpen] = useState(false)
+    const [resetEmail, setResetEmail] = useState("")
 
     // Redirect if already logged in according to session
     useEffect(() => {
@@ -110,7 +112,7 @@ export default function LoginPage() {
                     className="transition-all flex items-center justify-center p-2.5 hover:bg-slate-50 rounded-full"
                     title="Home"
                 >
-                    <Home className="h-9 w-9 text-black" />
+                    <Home className="w-[25px] h-[25px] text-black" />
                 </a>
             </div>
 
@@ -122,9 +124,9 @@ export default function LoginPage() {
 
                 {/* Login Form Container */}
                 <div className="w-full bg-transparent p-0">
-                    <div className="space-y-5">
+                    <div className="space-y-4">
                         {/* Social Login Buttons */}
-                        <div className="space-y-2.5">
+                        <div className="space-y-2">
                             <button
                                 onClick={handleGoogleSignIn}
                                 className="social-btn ripple-container"
@@ -151,14 +153,14 @@ export default function LoginPage() {
                         </div>
 
                         {/* Divider */}
-                        <div className="flex items-center gap-4 py-1">
-                            <div className="flex-1 h-[1px] bg-[#eef2f6]"></div>
-                            <span className="text-[11px] text-[#94a3b8] font-bold tracking-widest uppercase">OR</span>
-                            <div className="flex-1 h-[1px] bg-[#eef2f6]"></div>
+                        <div className="flex items-center gap-6 py-0.5">
+                            <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
+                            <span className="text-[11px] text-[#dee2e6] font-bold tracking-widest uppercase">OR</span>
+                            <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
                         </div>
 
                         {/* Credentials Form */}
-                        <form onSubmit={handleSubmit} className="space-y-3">
+                        <form onSubmit={handleSubmit} className="space-y-2.5">
                             <div className="relative">
                                 <input
                                     type="email"
@@ -187,7 +189,7 @@ export default function LoginPage() {
                                 type="submit"
                                 disabled={loading}
                                 onMouseDown={createRipple}
-                                className="w-full py-[18px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-3 ripple-container"
+                                className="w-full py-[16px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-2 ripple-container shadow-lg shadow-blue-500/30"
                             >
                                 {loading ? "Logging in..." : "Log In"}
                             </button>
@@ -195,11 +197,12 @@ export default function LoginPage() {
 
                         {/* Forgot Password Link */}
                         <div className="text-center">
-                            <Link href="/forgot-password">
-                                <span className="text-[14px] text-slate-400 hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]">
-                                    Forgot password?
-                                </span>
-                            </Link>
+                            <button 
+                                onClick={() => setIsForgotModalOpen(true)}
+                                className="text-[14px] text-slate-400 hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]"
+                            >
+                                Forgot password?
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -212,6 +215,65 @@ export default function LoginPage() {
                     </Link>
                 </div>
             </div>
+
+            {/* Forgot Password Modal */}
+            {isForgotModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-300">
+                    <div 
+                        className="w-full max-w-[500px] bg-white rounded-[12px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-8 py-6 border-b border-[#dee2e6]">
+                            <h2 className="text-[22px] font-bold text-slate-900 tracking-tight">Reset your password</h2>
+                            <button 
+                                onClick={() => setIsForgotModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="px-8 py-8 space-y-6">
+                            <p className="text-[15px] text-slate-500 leading-relaxed">
+                                Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
+                            </p>
+
+                            <div className="relative">
+                                <input
+                                    type="email"
+                                    placeholder="Email"
+                                    value={resetEmail}
+                                    onChange={(e) => setResetEmail(e.target.value)}
+                                    className="auth-input"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 pt-2">
+                                <button
+                                    onClick={() => setIsForgotModalOpen(false)}
+                                    className="px-6 py-2.5 text-[15px] font-bold text-slate-600 hover:bg-slate-50 rounded-[10px] transition-colors border border-[#dee2e6]"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        toast.success("Reset link sent!")
+                                        setIsForgotModalOpen(false)
+                                    }}
+                                    className="px-8 py-2.5 bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[10px] text-[15px] transition-all shadow-lg shadow-blue-500/30"
+                                >
+                                    Submit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Backdrop Click */}
+                    <div className="absolute inset-0 -z-10" onClick={() => setIsForgotModalOpen(false)} />
+                </div>
+            )}
         </div>
     )
 }

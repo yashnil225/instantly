@@ -100,34 +100,31 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="auth-no-scroll relative flex items-center justify-center bg-[#f8f9fa] font-['Averta',_sans-serif] select-none">
+        <div className="auth-no-scroll relative flex items-center justify-center bg-white font-['Averta',_sans-serif] select-none">
             <Toaster position="bottom-center" />
             
-            {/* Full Page Wavy Background Overlay */}
-            <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none" />
-            
-            {/* Home Icon Button (Top Right) - 15px offset */}
-            <div className="absolute top-[30px] right-[40px] z-50">
+            {/* Home Icon Button (Top Right) - Even Larger and more Cornered */}
+            <div className="absolute top-[15px] right-[15px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="transition-all flex items-center justify-center"
+                    className="transition-all flex items-center justify-center p-2.5 hover:bg-slate-50 rounded-full"
                     title="Home"
                 >
-                    <Home className="h-5 w-5 text-black" />
+                    <Home className="h-9 w-9 text-black" />
                 </a>
             </div>
 
             <div className="relative z-10 w-full max-w-[420px] px-6 py-12 flex flex-col items-center animate-in fade-in duration-700">
                 {/* Logo Section */}
-                <div className="mb-10 flex flex-col items-center gap-2">
+                <div className="mb-8 flex flex-col items-center gap-2">
                     <Logo style={{ width: '48px', height: '48px' }} />
                 </div>
 
                 {/* Login Form Container */}
                 <div className="w-full bg-transparent p-0">
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                         {/* Social Login Buttons */}
-                        <div className="space-y-3">
+                        <div className="space-y-2.5">
                             <button
                                 onClick={handleGoogleSignIn}
                                 className="social-btn ripple-container"
@@ -154,14 +151,14 @@ export default function LoginPage() {
                         </div>
 
                         {/* Divider */}
-                        <div className="flex items-center gap-4 py-2">
+                        <div className="flex items-center gap-4 py-1">
                             <div className="flex-1 h-[1px] bg-[#eef2f6]"></div>
                             <span className="text-[11px] text-[#94a3b8] font-bold tracking-widest uppercase">OR</span>
                             <div className="flex-1 h-[1px] bg-[#eef2f6]"></div>
                         </div>
 
                         {/* Credentials Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="space-y-3">
                             <div className="relative">
                                 <input
                                     type="email"
@@ -190,7 +187,7 @@ export default function LoginPage() {
                                 type="submit"
                                 disabled={loading}
                                 onMouseDown={createRipple}
-                                className="w-full py-[18px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-4 shadow-[0_4px_12px_rgba(0,107,255,0.2)] ripple-container"
+                                className="w-full py-[18px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-3 ripple-container"
                             >
                                 {loading ? "Logging in..." : "Log In"}
                             </button>

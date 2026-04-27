@@ -237,10 +237,10 @@ function SignupForm() {
                 </div>
             </div>
 
-            {/* Right Side: Marketing (42vw) */}
-            <div className="hidden lg:flex w-[42vw] bg-[rgb(241,249,255)] relative flex-col items-center justify-center p-12 h-full">
-                {/* Wavy Logo Background Overlay - 100% scale */}
-                <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none scale-100 -translate-y-[100px]" />
+            {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary */}
+            <div className="hidden lg:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full">
+                {/* Wavy Logo Background Overlay - Scaled to create diagonal border */}
+                <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none scale-[2.5] origin-right -translate-y-[100px]" />
 
                 {/* Home Icon Button (Top Right) - Refined Size */}
                 <div className="absolute top-[15px] right-[15px] z-50">

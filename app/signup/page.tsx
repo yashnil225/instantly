@@ -84,12 +84,12 @@ function SignupForm() {
 
             {/* Left Side: Signup Form (58vw) */}
             <div className="w-[58vw] flex flex-col items-center justify-center p-6 md:p-12 bg-white relative h-full">
-                <div className="w-full max-w-[360px] mx-auto animate-in fade-in duration-700">
-                    <div className="space-y-4">
+                <div className="relative z-10 w-full max-w-[420px] px-6 py-12 flex flex-col items-center animate-in fade-in duration-700">
+                    <div className="space-y-6">
                         <h1 className="text-[32px] font-bold text-center text-slate-900 mb-1 tracking-tight">Create a new account</h1>
 
                         {/* Social Signups */}
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             <button
                                 onClick={handleGoogleSignIn}
                                 className="social-btn ripple-container"
@@ -108,7 +108,7 @@ function SignupForm() {
                                 className="social-btn ripple-container"
                                 onMouseDown={createRipple}
                             >
-                                <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-black">
+                                <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-[rgb(60,72,88)]">
                                     <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
                                 </svg>
                                 <span className="text-[15px] font-semibold text-slate-700">Sign Up with Apple</span>
@@ -123,7 +123,7 @@ function SignupForm() {
                         </div>
 
                         {/* Signup Form */}
-                        <form onSubmit={handleSubmit} className="space-y-2.5">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="relative">
                                 <input
                                     type="email"
@@ -155,48 +155,48 @@ function SignupForm() {
                             )}
 
                             {/* Terms Checkbox */}
-                            <div className="flex items-start space-x-3 py-2">
-                                <div className="flex items-center h-5 mt-1.5 ripple-container p-1 rounded-full">
+                            <div className="flex items-start gap-3 mt-8">
+                                <div className="relative flex items-center justify-center p-2 -ml-2 rounded-full hover:bg-slate-50 transition-all cursor-pointer ripple-container" onMouseDown={createRipple}>
                                     <input
                                         type="checkbox"
                                         id="terms"
                                         checked={termsAccepted}
                                         onChange={(e) => setTermsAccepted(e.target.checked)}
-                                        onMouseDown={createRipple}
                                         className="hollow-checkbox"
+                                        required
                                     />
                                 </div>
-                                <label htmlFor="terms" className="text-[13px] text-slate-500 leading-[1.6]">
-                                    I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] hover:text-[#0056d2] transition-colors font-semibold">Terms of Use</a> and<br />
-                                    <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] hover:text-[#0056d2] transition-colors font-semibold">Privacy policy</a>
+                                <label htmlFor="terms" className="text-[15px] text-slate-500 leading-snug cursor-pointer font-['Averta',_sans-serif]">
+                                    I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Terms of Use</a> and<br />
+                                    <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Privacy policy</a>
                                 </label>
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                onMouseDown={createRipple}
-                                className="w-full py-[16px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-2 ripple-container shadow-lg shadow-blue-500/30"
-                            >
-                                {loading ? "Processing..." : "Join Now"}
-                            </button>
+                             <button
+                                 type="submit"
+                                 disabled={loading}
+                                 onMouseDown={createRipple}
+                                 className="w-full py-[14px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[8px] text-[16px] transition-all disabled:opacity-50 mt-4 ripple-container shadow-lg shadow-blue-500/30"
+                             >
+                                 {loading ? "Processing..." : "Join Now"}
+                             </button>
                         </form>
                     </div>
 
                     {/* Footer Login Link */}
-                    <div className="mt-10 text-center text-[16px] text-slate-600">
-                        Already have an account?{" "}
-                        <Link href="/login">
-                            <span className="font-bold cursor-pointer buttonText transition-colors">Log In</span>
-                        </Link>
-                    </div>
+                     <div className="mt-8 text-center text-[16px] text-[rgb(83,94,108)]">
+                         Already have an account?{" "}
+                         <Link href="/login">
+                             <span className="buttonText">Log In</span>
+                         </Link>
+                     </div>
                 </div>
             </div>
 
             {/* Right Side: Marketing (42vw) */}
-            <div className="hidden lg:flex w-[42vw] bg-white relative flex-col items-center justify-center p-12 h-full">
-                {/* Wavy Logo Background Overlay - Increased size and shifted down */}
-                <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none scale-110 translate-y-[50px]" />
+            <div className="hidden lg:flex w-[42vw] bg-[rgb(241,249,255)] relative flex-col items-center justify-center p-12 h-full">
+                {/* Wavy Logo Background Overlay - Significantly increased size and shifted up */}
+                <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none scale-[2.75] -translate-y-[100px]" />
 
                 {/* Home Icon Button (Top Right) - Refined Size */}
                 <div className="absolute top-[15px] right-[15px] z-50">
@@ -210,8 +210,8 @@ function SignupForm() {
                 </div>
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center">
-                    {/* Illustration - Resized to match HTML parity */}
-                    <div className="w-[300px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
+                    {/* Illustration - Resized to 50% smaller */}
+                    <div className="w-[150px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
                         <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 200" className="w-full h-full">
                             <g clipPath="url(#a)"><path d="M98 4.1c-39.7 0-85.6 27-85.6 64.8 0 33.7 19.3 44.7 26.7 63.2 11.6 29 23.5 57.7 69.6 57.7 51 0 34.6-39.6 45.5-69.8 7.4-20.6 23.2-36.5 23.2-63.2C177.4 30.2 161.5 4 98 4Z" fill="#4580F7"/></g>
                             <g clipPath="url(#b)"><path d="M194 125.4h-51c-3.6 0-6.6-3-6.6-6.6v-95c0-3.6 3-6.6 6.6-6.6h51c3.6 0 6.5 3 6.5 6.6v95c0 3.6-3 6.6-6.5 6.6Z" fill="#14171F"/><path d="M194 125.7h-51c-3.8 0-6.9-3-6.9-6.9v-95c0-3.8 3-6.9 6.9-6.9h51c3.7 0 6.8 3 6.8 6.9v95c0 3.8-3 6.9-6.8 6.9ZM143 17.6a6.2 6.2 0 0 0-6.2 6.2v95c0 3.5 2.7 6.2 6.2 6.2h51c3.4 0 6.2-2.7 6.2-6.2v-95c0-3.5-2.8-6.2-6.2-6.2h-51Z" fill="#14171F"/><path d="M200.5 28.5h-64v-4.7c0-3.6 2.9-6.6 6.5-6.6h51c3.6 0 6.5 3 6.5 6.6v4.7Z" fill="#fff"/><path d="M200.5 28.5h-63V24c0-3.1 2.5-5.6 5.6-5.6H195c3 0 5.6 2.5 5.6 5.6v4.5Z" fill="#DBDFEA"/><path d="M200.5 28.9h-64a.3.3 0 0 1-.4-.4v-4.7c0-3.8 3-6.9 6.9-6.9h51c3.7 0 6.8 3 6.8 6.9v4.7a.3.3 0 0 1-.3.4Zm-63.7-.7h63.4v-4.4c0-3.5-2.8-6.2-6.2-6.2h-51a6.2 6.2 0 0 0-6.2 6.2v4.4Z" fill="#14171F"/><path d="M190 25.8a.3.3 0 0 1-.3-.2v-.2l.1-.1L195 20a.3.3 0 0 1 .4 0 .3.3 0 0 1 .2.1.3.3 0 0 1 0 .3l-.1.1-5.2 5.2-.1.1h-.2Z" fill="#14171F"/><path d="M195.3 25.8a.3.3 0 0 1-.3 0l-5.2-5.3a.3.3 0 1 1 .5-.5l5.2 5.3v.1a.3.3 0 0 1 0 .4h-.2Z" fill="#14171F"/></g>
@@ -234,11 +234,11 @@ function SignupForm() {
                         </svg>
                     </div>
 
-                    {/* Marketing Text - Size Refinement */}
-                    <h2 className="text-[32px] font-bold text-slate-900 mb-1 leading-tight tracking-tight">
+                    {/* Marketing Text - Heading made all black */}
+                    <h2 className="text-[32px] font-bold text-black mb-1 leading-tight tracking-tight">
                         45,000+ clients
                     </h2>
-                    <p className="text-[#006bff] text-[24px] font-bold mb-6">
+                    <p className="text-black text-[32px] font-bold mb-6">
                         are getting more replies!
                     </p>
                     <p className="text-slate-600 text-[16px] leading-[1.6] max-w-sm font-medium">

@@ -102,23 +102,23 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="auth-no-scroll relative flex items-center justify-center bg-white font-['Averta',_sans-serif] select-none">
+        <div className="auth-no-scroll relative flex items-center justify-center bg-white font-['Averta',_sans-serif]">
             <Toaster position="bottom-center" />
             
-            {/* Home Icon Button (Top Right) - Even Larger and more Cornered */}
-            <div className="absolute top-[15px] right-[15px] z-50">
+            {/* Home Icon Button (Top Right) - Refined Position and Stroke */}
+            <div className="absolute top-[16px] right-[16px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
                     className="transition-all flex items-center justify-center p-2.5 hover:bg-slate-50 rounded-full"
                     title="Home"
                 >
-                    <Home className="w-[25px] h-[25px] text-black" />
+                    <Home className="w-[25px] h-[25px] text-black" strokeWidth={1.5} />
                 </a>
             </div>
 
             <div className="relative z-10 w-full max-w-[420px] px-6 py-12 flex flex-col items-center animate-in fade-in duration-700">
                 {/* Logo Section */}
-                <div className="mb-8 flex flex-col items-center gap-2">
+                <div className="mb-10 flex flex-col items-center gap-2">
                     <Logo style={{ width: '48px', height: '48px' }} />
                 </div>
 
@@ -145,7 +145,7 @@ export default function LoginPage() {
                                 className="social-btn ripple-container"
                                 onMouseDown={createRipple}
                             >
-                                <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-black">
+                                <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-[rgb(60,72,88)]">
                                     <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
                                 </svg>
                                 <span className="text-[15px] font-semibold text-slate-700">Log In with Apple</span>
@@ -154,13 +154,13 @@ export default function LoginPage() {
 
                         {/* Divider */}
                         <div className="flex items-center gap-6 py-0.5">
-                            <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
-                            <span className="text-[11px] text-[#dee2e6] font-bold tracking-widest uppercase">OR</span>
-                            <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
+                            <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
+                            <span className="text-[11px] text-[rgb(153,165,181)] font-bold tracking-widest uppercase">OR</span>
+                            <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                         </div>
 
                         {/* Credentials Form */}
-                        <form onSubmit={handleSubmit} className="space-y-2.5">
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="relative">
                                 <input
                                     type="email"
@@ -189,7 +189,7 @@ export default function LoginPage() {
                                 type="submit"
                                 disabled={loading}
                                 onMouseDown={createRipple}
-                                className="w-full py-[16px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[12px] text-[16px] transition-all disabled:opacity-50 mt-2 ripple-container shadow-lg shadow-blue-500/30"
+                                className="w-full py-[14px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[8px] text-[16px] transition-all disabled:opacity-50 mt-4 ripple-container shadow-lg shadow-blue-500/30"
                             >
                                 {loading ? "Logging in..." : "Log In"}
                             </button>
@@ -199,7 +199,7 @@ export default function LoginPage() {
                         <div className="text-center">
                             <button 
                                 onClick={() => setIsForgotModalOpen(true)}
-                                className="text-[14px] text-slate-400 hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]"
+                                className="text-[14px] text-[rgb(153,165,181)] hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]"
                             >
                                 Forgot password?
                             </button>
@@ -208,10 +208,10 @@ export default function LoginPage() {
                 </div>
 
                 {/* Footer Sign Up Link */}
-                <div className="mt-6 text-center text-[16px] text-slate-600">
+                <div className="mt-8 text-center text-[16px] text-[rgb(83,94,108)]">
                     Don&apos;t have an account?{" "}
                     <Link href="/signup">
-                        <span className="font-bold cursor-pointer buttonText transition-colors">Sign Up</span>
+                        <span className="buttonText">Sign Up</span>
                     </Link>
                 </div>
             </div>

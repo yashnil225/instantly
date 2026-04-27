@@ -79,18 +79,18 @@ function SignupForm() {
     }
 
     return (
-        <div className="auth-no-scroll flex font-['Averta',_sans-serif] bg-white">
+        <div className="auth-no-scroll flex bg-white h-screen overflow-hidden" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif', fontWeight: 500 }}>
             <Toaster position="bottom-center" />
 
             {/* Left Side: Form — form starts at 218px from left edge */}
             <div className="flex-shrink-0 bg-white relative h-full" style={{ width: '58vw' }}>
                 <div className="flex flex-col items-start h-full overflow-y-auto" style={{ paddingLeft: '218px' }}>
 
-                    {/* Top of Screen → Heading: 82px */}
-                    <div style={{ height: '82px' }} />
+                    {/* Top of Screen → Heading: 62px */}
+                    <div style={{ height: '62px' }} />
 
                     {/* Heading */}
-                    <h1 className="text-[32px] font-bold text-slate-900 tracking-tight font-['Averta',_sans-serif]">
+                    <h1 className="text-[32px] font-bold text-slate-900 tracking-tight">
                         Create a new account
                     </h1>
 
@@ -102,7 +102,7 @@ function SignupForm() {
                         onClick={handleGoogleSignIn}
                         onMouseDown={createRipple}
                         className="social-btn ripple-container"
-                        style={{ width: '358px', height: '52px', borderRadius: '9999px', padding: '0 24px' }}
+                        style={{ width: '358px', height: '52px', borderRadius: '8px', padding: '0 24px' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" className="mt-[-1px]">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -119,7 +119,7 @@ function SignupForm() {
                     <button
                         className="social-btn ripple-container"
                         onMouseDown={createRipple}
-                        style={{ width: '358px', height: '52px', borderRadius: '9999px', padding: '0 24px' }}
+                        style={{ width: '358px', height: '52px', borderRadius: '8px', padding: '0 24px' }}
                     >
                         <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-[rgb(60,72,88)]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
@@ -200,7 +200,7 @@ function SignupForm() {
                                     required
                                 />
                             </div>
-                            <label htmlFor="terms" className="text-[15px] text-slate-500 leading-snug cursor-pointer font-['Averta',_sans-serif]">
+                            <label htmlFor="terms" className="text-[15px] text-slate-500 leading-snug cursor-pointer">
                                 I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Terms of Use</a> and<br />
                                 <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Privacy policy</a>
                             </label>
@@ -240,7 +240,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) */}
             <div className="hidden lg:flex w-[42vw] bg-[rgb(241,249,255)] relative flex-col items-center justify-center p-12 h-full">
                 {/* Wavy Logo Background Overlay - Significantly increased size and shifted up */}
-                <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none scale-[2.75] -translate-y-[100px]" />
+                <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none scale-[1.75] -translate-y-[100px]" />
 
                 {/* Home Icon Button (Top Right) - Refined Size */}
                 <div className="absolute top-[15px] right-[15px] z-50">
@@ -296,7 +296,7 @@ function SignupForm() {
 
 export default function SignupPage() {
     return (
-        <Suspense fallback={<div className="h-screen bg-white flex items-center justify-center font-['Averta',_sans-serif]"><div className="text-slate-900">Loading...</div></div>}>
+        <Suspense fallback={<div className="h-screen bg-white flex items-center justify-center"><div className="text-slate-900">Loading...</div></div>}>
             <SignupForm />
         </Suspense>
     )

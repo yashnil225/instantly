@@ -84,7 +84,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="auth-no-scroll relative flex items-start justify-center bg-white font-['Averta',_sans-serif] overflow-y-auto">
+        <div className="auth-no-scroll relative flex items-start justify-center bg-white overflow-hidden h-screen" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif', fontWeight: 500 }}>
             <Toaster position="bottom-center" />
 
             {/* Home Icon — 20px from top */}
@@ -94,7 +94,7 @@ export default function LoginPage() {
                     className="transition-all flex items-center justify-center p-2 hover:bg-slate-50 rounded-full"
                     title="Home"
                 >
-                    <Home className="w-[22px] h-[22px] text-black" strokeWidth={1.5} />
+                    <Home className="w-[26px] h-[26px] text-black" strokeWidth={1.5} />
                 </a>
             </div>
 
@@ -115,7 +115,7 @@ export default function LoginPage() {
                         onClick={handleGoogleSignIn}
                         onMouseDown={createRipple}
                         className="social-btn ripple-container"
-                        style={{ width: '358px', height: '52px', borderRadius: '9999px', padding: '0 24px' }}
+                        style={{ width: '358px', height: '52px', borderRadius: '8px', padding: '0 24px' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" className="mt-[-1px]">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -132,7 +132,7 @@ export default function LoginPage() {
                     <button
                         className="social-btn ripple-container"
                         onMouseDown={createRipple}
-                        style={{ width: '358px', height: '52px', borderRadius: '9999px', padding: '0 24px' }}
+                        style={{ width: '358px', height: '52px', borderRadius: '8px', padding: '0 24px' }}
                     >
                         <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-[rgb(60,72,88)]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
@@ -206,13 +206,13 @@ export default function LoginPage() {
                     {/* Forgot Password */}
                     <button
                         onClick={() => setIsForgotModalOpen(true)}
-                        className="text-[14px] text-[rgb(153,165,181)] hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]"
+                        className="text-[14px] text-[rgb(153,165,181)] hover:text-[#006bff] transition-colors cursor-pointer font-medium"
                     >
                         Forgot password?
                     </button>
 
-                    {/* Forgot Password → Footer: 47px */}
-                    <div style={{ height: '47px' }} />
+                    {/* Forgot Password → Footer: 27px */}
+                    <div style={{ height: '27px' }} />
 
                     {/* Footer */}
                     <div className="text-center text-[16px] text-[rgb(83,94,108)]">

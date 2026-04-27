@@ -102,11 +102,11 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="auth-no-scroll relative flex items-center justify-center bg-white font-['Averta',_sans-serif]">
+        <div className="auth-no-scroll relative flex flex-col items-center justify-start bg-white font-['Averta',_sans-serif] pt-[39px] pb-[47px]">
             <Toaster position="bottom-center" />
             
             {/* Home Icon Button (Top Right) - Refined Position and Stroke */}
-            <div className="absolute top-[16px] right-[16px] z-50">
+            <div className="absolute top-[20px] right-[16px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
                     className="transition-all flex items-center justify-center p-2.5 hover:bg-slate-50 rounded-full"
@@ -116,17 +116,17 @@ export default function LoginPage() {
                 </a>
             </div>
 
-            <div className="relative z-10 w-full max-w-[420px] px-6 py-12 flex flex-col items-center animate-in fade-in duration-700">
+            <div className="relative z-10 w-full max-w-[420px] px-6 flex flex-col items-center animate-in fade-in duration-700">
                 {/* Logo Section */}
-                <div className="mb-10 flex flex-col items-center gap-2">
-                    <Logo style={{ width: '48px', height: '48px' }} />
+                <div className="mb-[49px] flex flex-col items-center gap-2">
+                    <Logo style={{ width: '34px', height: '34px' }} />
                 </div>
 
                 {/* Login Form Container */}
                 <div className="w-full bg-transparent p-0">
-                    <div className="space-y-4">
+                    <div>
                         {/* Social Login Buttons */}
-                        <div className="space-y-2">
+                        <div className="space-y-[12px]">
                             <button
                                 onClick={handleGoogleSignIn}
                                 className="social-btn ripple-container"
@@ -153,14 +153,14 @@ export default function LoginPage() {
                         </div>
 
                         {/* Divider */}
-                        <div className="flex items-center gap-6 py-0.5">
+                        <div className="flex items-center gap-6 py-0.5 mt-[24px]">
                             <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                             <span className="text-[11px] text-[rgb(153,165,181)] font-bold tracking-widest uppercase">OR</span>
                             <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                         </div>
 
                         {/* Credentials Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="mt-[24px] space-y-[16px]">
                             <div className="relative">
                                 <input
                                     type="email"
@@ -189,26 +189,29 @@ export default function LoginPage() {
                                 type="submit"
                                 disabled={loading}
                                 onMouseDown={createRipple}
-                                className="w-full py-[14px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[8px] text-[16px] transition-all disabled:opacity-50 mt-4 ripple-container shadow-lg shadow-blue-500/30"
+                                className="primary-auth-btn mt-[36px]"
                             >
                                 {loading ? "Logging in..." : "Log In"}
                             </button>
                         </form>
 
-                        {/* Forgot Password Link */}
-                        <div className="text-center">
-                            <button 
-                                onClick={() => setIsForgotModalOpen(true)}
-                                className="text-[14px] text-[rgb(153,165,181)] hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]"
-                            >
-                                Forgot password?
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                         {/* Forgot Password Link */}
+                         <div className="text-center mt-[22px]">
+                             <button 
+                                 onClick={() => setIsForgotModalOpen(true)}
+                                 className="text-[14px] text-[rgb(153,165,181)] hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]"
+                             >
+                                 Forgot password?
+                             </button>
+                         </div>
+                     </div>
+                 </div>
 
-                {/* Footer Sign Up Link */}
-                <div className="mt-8 text-center text-[16px] text-[rgb(83,94,108)]">
+                 {/* Spacer to push footer to bottom based on measurements */}
+                 <div className="flex-grow" />
+
+                 {/* Footer Sign Up Link */}
+                 <div className="text-center text-[16px] text-[rgb(83,94,108)]">
                     Don&apos;t have an account?{" "}
                     <Link href="/signup">
                         <span className="buttonText">Sign Up</span>

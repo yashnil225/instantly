@@ -79,17 +79,17 @@ function SignupForm() {
     }
 
     return (
-        <div className="auth-no-scroll flex font-['Averta',_sans-serif] bg-white select-none">
+        <div className="auth-no-scroll flex font-['Averta',_sans-serif] bg-white pb-[30px]">
             <Toaster position="bottom-center" />
 
             {/* Left Side: Signup Form (58vw) */}
-            <div className="w-[58vw] flex flex-col items-center justify-center p-6 md:p-12 bg-white relative h-full">
-                <div className="relative z-10 w-full max-w-[420px] px-6 py-12 flex flex-col items-center animate-in fade-in duration-700">
-                    <div className="space-y-6">
-                        <h1 className="text-[32px] font-bold text-center text-slate-900 mb-1 tracking-tight">Create a new account</h1>
+            <div className="w-[58vw] flex flex-col items-start justify-start pt-[82px] pl-[218px] bg-white relative h-full">
+                <div className="relative z-10 w-full max-w-[420px] flex flex-col items-start animate-in fade-in duration-700">
+                    <div className="w-full">
+                        <h1 className="text-[32px] font-bold text-slate-900 mb-[36px] tracking-tight">Create a new account</h1>
 
                         {/* Social Signups */}
-                        <div className="space-y-3">
+                        <div className="space-y-[12px]">
                             <button
                                 onClick={handleGoogleSignIn}
                                 className="social-btn ripple-container"
@@ -116,14 +116,14 @@ function SignupForm() {
                         </div>
 
                         {/* Divider */}
-                        <div className="flex items-center gap-6 py-0.5">
+                        <div className="flex items-center gap-6 py-0.5 mt-[24px]">
                             <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
                             <span className="text-[11px] text-[#dee2e6] font-bold tracking-widest uppercase">OR</span>
                             <div className="flex-1 h-[1px] bg-[#dee2e6]"></div>
                         </div>
 
                         {/* Signup Form */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                        <form onSubmit={handleSubmit} className="mt-[24px]">
                             <div className="relative">
                                 <input
                                     type="email"
@@ -141,7 +141,7 @@ function SignupForm() {
                             </div>
 
                             {showPassword && (
-                                <div className="animate-in slide-in-from-top-2 fade-in duration-300">
+                                <div className="animate-in slide-in-from-top-2 fade-in duration-300 mt-[40px]">
                                     <input
                                         type="password"
                                         placeholder="Password"
@@ -154,8 +154,8 @@ function SignupForm() {
                                 </div>
                             )}
 
-                            {/* Terms Checkbox */}
-                            <div className="flex items-start gap-3 mt-8">
+                            {/* Terms Checkbox - Dynamic Gap */}
+                            <div className={`flex items-start gap-3 ${showPassword ? 'mt-[40px]' : 'mt-[50px]'}`}>
                                 <div className="relative flex items-center justify-center p-2 -ml-2 rounded-full hover:bg-slate-50 transition-all cursor-pointer ripple-container" onMouseDown={createRipple}>
                                     <input
                                         type="checkbox"
@@ -176,7 +176,7 @@ function SignupForm() {
                                  type="submit"
                                  disabled={loading}
                                  onMouseDown={createRipple}
-                                 className="w-full py-[14px] bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[8px] text-[16px] transition-all disabled:opacity-50 mt-4 ripple-container shadow-lg shadow-blue-500/30"
+                                 className="primary-auth-btn mt-[30px]"
                              >
                                  {loading ? "Processing..." : "Join Now"}
                              </button>
@@ -184,7 +184,7 @@ function SignupForm() {
                     </div>
 
                     {/* Footer Login Link */}
-                     <div className="mt-8 text-center text-[16px] text-[rgb(83,94,108)]">
+                     <div className="mt-[34px] text-center text-[16px] text-[rgb(83,94,108)]">
                          Already have an account?{" "}
                          <Link href="/login">
                              <span className="buttonText">Log In</span>
@@ -195,11 +195,14 @@ function SignupForm() {
 
             {/* Right Side: Marketing (42vw) */}
             <div className="hidden lg:flex w-[42vw] bg-[rgb(241,249,255)] relative flex-col items-center justify-center p-12 h-full">
-                {/* Wavy Logo Background Overlay - Significantly increased size and shifted up */}
-                <div className="absolute inset-0 bg-instantly-waves opacity-100 pointer-events-none scale-[2.75] -translate-y-[100px]" />
+                {/* Wavy Logo Background Overlay - Resized to exact measurement */}
+                <div 
+                    className="absolute bg-instantly-waves opacity-100 pointer-events-none" 
+                    style={{ width: '695px', height: '647px', top: '50%', right: '0', transform: 'translateY(-50%)' }}
+                />
 
                 {/* Home Icon Button (Top Right) - Refined Size */}
-                <div className="absolute top-[15px] right-[15px] z-50">
+                <div className="absolute top-[20px] right-[15px] z-50">
                     <a
                         href="https://instantly-ai.vercel.app"
                         className="transition-all flex items-center justify-center p-2.5 hover:bg-slate-50/50 rounded-full"

@@ -150,9 +150,9 @@
   /* Custom Checkbox (Tick Box) */
   .hollow-checkbox {
     @apply appearance-none border-[1.5px] border-[rgb(102,102,102)] transition-all cursor-pointer bg-transparent relative;
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
     flex-shrink: 0;
   }
 
@@ -162,7 +162,7 @@
 
   .hollow-checkbox:checked::after {
     content: "";
-    @apply absolute left-[6px] top-[2px] w-[5px] h-[10px] border-b-[2px] border-r-[2px] border-white rotate-45;
+    @apply absolute left-[6px] top-[1px] w-[5px] h-[12px] border-b-[2px] border-r-[2px] border-white rotate-45;
   }
 
   .auth-no-scroll {

@@ -84,7 +84,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="auth-no-scroll relative flex items-start justify-center bg-white overflow-hidden h-screen" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif', fontWeight: 500 }}>
+        <div className="auth-no-scroll relative flex items-start justify-center bg-white overflow-hidden h-screen" style={{ fontFamily: '"Averta", sans-serif', fontWeight: 600 }}>
             <Toaster position="bottom-center" />
 
             {/* Home Icon — 20px from top */}

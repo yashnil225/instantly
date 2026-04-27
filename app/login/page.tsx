@@ -40,24 +40,18 @@ export default function LoginPage() {
         const ripple = document.createElement("span")
         const diameter = Math.max(button.clientWidth, button.clientHeight)
         const radius = diameter / 2
-
         ripple.style.width = ripple.style.height = `${diameter}px`
         ripple.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`
         ripple.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`
         ripple.classList.add("ripple-effect")
-
         const oldRipple = button.getElementsByClassName("ripple-effect")[0]
-        if (oldRipple) {
-            oldRipple.remove()
-        }
-
+        if (oldRipple) oldRipple.remove()
         button.appendChild(ripple)
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setLoading(true)
-
         try {
             const checkResponse = await fetch('/api/auth/check-account', {
                 method: 'POST',
@@ -65,29 +59,19 @@ export default function LoginPage() {
                 body: JSON.stringify({ email })
             })
             const checkData = await checkResponse.json()
-
             if (!checkData.exists) {
                 router.push('/signup?error=no_account&email=' + encodeURIComponent(email))
                 return
             }
-
-            const result = await signIn("credentials", {
-                email,
-                password,
-                redirect: false,
-            })
-
+            const result = await signIn("credentials", { email, password, redirect: false })
             if (result?.error) {
                 toast.error("Invalid username or password")
             } else {
                 localStorage.setItem('instantly_auth', 'true')
                 toast.success("Logged in!")
-                setTimeout(() => {
-                    router.push("/campaigns?welcome=true")
-                    router.refresh()
-                }, 800)
+                setTimeout(() => { router.push("/campaigns?welcome=true"); router.refresh() }, 800)
             }
-        } catch (error) {
+        } catch {
             toast.error("Error logging in! Please try again.")
         } finally {
             setLoading(false)
@@ -96,153 +80,173 @@ export default function LoginPage() {
 
     const handleGoogleSignIn = (e: MouseEvent<HTMLButtonElement>) => {
         createRipple(e)
-        setTimeout(() => {
-            signIn("google", { callbackUrl: "/campaigns?welcome=true" })
-        }, 300)
+        setTimeout(() => { signIn("google", { callbackUrl: "/campaigns?welcome=true" }) }, 300)
     }
 
     return (
-        <div className="auth-no-scroll relative flex flex-col items-center justify-start bg-white font-['Averta',_sans-serif] pt-[39px] pb-[47px]">
+        <div className="auth-no-scroll relative flex items-start justify-center bg-white font-['Averta',_sans-serif] overflow-y-auto">
             <Toaster position="bottom-center" />
-            
-            {/* Home Icon Button (Top Right) - Refined Position and Stroke */}
-            <div className="absolute top-[20px] right-[16px] z-50">
+
+            {/* Home Icon — 20px from top */}
+            <div className="absolute top-[20px] right-[20px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="transition-all flex items-center justify-center p-2.5 hover:bg-slate-50 rounded-full"
+                    className="transition-all flex items-center justify-center p-2 hover:bg-slate-50 rounded-full"
                     title="Home"
                 >
-                    <Home className="w-[25px] h-[25px] text-black" strokeWidth={1.5} />
+                    <Home className="w-[22px] h-[22px] text-black" strokeWidth={1.5} />
                 </a>
             </div>
 
-            <div className="relative z-10 w-full max-w-[420px] px-6 flex flex-col items-center animate-in fade-in duration-700">
-                {/* Logo Section */}
-                <div className="mb-[49px] flex flex-col items-center gap-2">
+            {/* Main content — centered horizontally, padded from top per spec */}
+            <div className="flex flex-col items-center w-full">
+
+                {/* Top of Screen → Logo: 39px */}
+                <div style={{ marginTop: '39px' }}>
+                    {/* Logo: 34px × 34px */}
                     <Logo style={{ width: '34px', height: '34px' }} />
                 </div>
 
-                {/* Login Form Container */}
-                <div className="w-full bg-transparent p-0">
-                    <div>
-                        {/* Social Login Buttons */}
-                        <div className="space-y-[12px]">
-                            <button
-                                onClick={handleGoogleSignIn}
-                                className="social-btn ripple-container"
-                                onMouseDown={createRipple}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" className="mt-[-1px]">
-                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                                </svg>
-                                <span className="text-[15px] font-semibold text-slate-700">Log In with Google</span>
-                            </button>
-                            
-                            <button 
-                                className="social-btn ripple-container"
-                                onMouseDown={createRipple}
-                            >
-                                <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-[rgb(60,72,88)]">
-                                    <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
-                                </svg>
-                                <span className="text-[15px] font-semibold text-slate-700">Log In with Apple</span>
-                            </button>
-                        </div>
+                {/* Logo → Social Buttons: 49px */}
+                <div style={{ marginTop: '49px', width: '358px' }} className="flex flex-col items-center">
 
-                        {/* Divider */}
-                        <div className="flex items-center gap-6 py-0.5 mt-[24px]">
-                            <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                            <span className="text-[11px] text-[rgb(153,165,181)] font-bold tracking-widest uppercase">OR</span>
-                            <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                        </div>
+                    {/* Social Buttons: 358px W × 52px H | Fully Rounded */}
+                    <button
+                        onClick={handleGoogleSignIn}
+                        onMouseDown={createRipple}
+                        className="social-btn ripple-container"
+                        style={{ width: '358px', height: '52px', borderRadius: '9999px', padding: '0 24px' }}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" className="mt-[-1px]">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                        </svg>
+                        <span className="text-[15px] font-semibold text-slate-700">Log In with Google</span>
+                    </button>
 
-                        {/* Credentials Form */}
-                        <form onSubmit={handleSubmit} className="mt-[24px] space-y-[16px]">
-                            <div className="relative">
-                                <input
-                                    type="email"
-                                    placeholder="Email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400 focus:ring-red-100' : ''}`}
-                                />
-                                {!emailValid && (
-                                    <p className="text-red-500 text-[11px] font-semibold mt-1.5 ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                                        Enter a valid email address
-                                    </p>
-                                )}
-                            </div>
-                            <input
-                                type="password"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="auth-input"
-                            />
+                    {/* Between Social Buttons: 12px */}
+                    <div style={{ height: '12px' }} />
 
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                onMouseDown={createRipple}
-                                className="primary-auth-btn mt-[36px]"
-                            >
-                                {loading ? "Logging in..." : "Log In"}
-                            </button>
-                        </form>
+                    <button
+                        className="social-btn ripple-container"
+                        onMouseDown={createRipple}
+                        style={{ width: '358px', height: '52px', borderRadius: '9999px', padding: '0 24px' }}
+                    >
+                        <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-[rgb(60,72,88)]">
+                            <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
+                        </svg>
+                        <span className="text-[15px] font-semibold text-slate-700">Log In with Apple</span>
+                    </button>
 
-                         {/* Forgot Password Link */}
-                         <div className="text-center mt-[22px]">
-                             <button 
-                                 onClick={() => setIsForgotModalOpen(true)}
-                                 className="text-[14px] text-[rgb(153,165,181)] hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]"
-                             >
-                                 Forgot password?
-                             </button>
-                         </div>
-                     </div>
-                 </div>
+                    {/* Social Buttons → OR Divider: 24px */}
+                    <div style={{ height: '24px' }} />
 
-                 {/* Spacer to push footer to bottom based on measurements */}
-                 <div className="flex-grow" />
+                    {/* OR Divider */}
+                    <div className="flex items-center gap-4" style={{ width: '358px' }}>
+                        <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
+                        <span className="text-[11px] text-[rgb(153,165,181)] font-bold tracking-widest uppercase">OR</span>
+                        <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
+                    </div>
 
-                 {/* Footer Sign Up Link */}
-                 <div className="text-center text-[16px] text-[rgb(83,94,108)]">
-                    Don&apos;t have an account?{" "}
-                    <Link href="/signup">
-                        <span className="buttonText">Sign Up</span>
-                    </Link>
+                    {/* OR Divider → Email Field: 24px */}
+                    <div style={{ height: '24px' }} />
+
+                    {/* Email Input: 358px W × 54px H */}
+                    <div className="relative" style={{ width: '358px' }}>
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            style={{ width: '358px', height: '54px', borderRadius: '8px' }}
+                            className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400' : ''}`}
+                        />
+                        {!emailValid && (
+                            <p className="text-red-500 text-[11px] font-semibold mt-1.5 ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                Enter a valid email address
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Email Field → Password Field: 16px */}
+                    <div style={{ height: '16px' }} />
+
+                    {/* Password Input: 358px W × 54px H */}
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        style={{ width: '358px', height: '54px', borderRadius: '8px' }}
+                        className="auth-input"
+                    />
+
+                    {/* Password Field → Login Button: 36px */}
+                    <div style={{ height: '36px' }} />
+
+                    {/* Primary Action Button: 360px W × 58px H | 8px radius */}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        onMouseDown={createRipple}
+                        onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
+                        style={{ width: '360px', height: '58px', borderRadius: '8px' }}
+                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-bold text-[16px] transition-all disabled:opacity-50 ripple-container shadow-lg shadow-blue-500/30"
+                    >
+                        {loading ? "Logging in..." : "Log In"}
+                    </button>
+
+                    {/* Login Button → Forgot Password: 22px */}
+                    <div style={{ height: '22px' }} />
+
+                    {/* Forgot Password */}
+                    <button
+                        onClick={() => setIsForgotModalOpen(true)}
+                        className="text-[14px] text-[rgb(153,165,181)] hover:text-[#006bff] transition-colors cursor-pointer font-medium font-['Averta',_sans-serif]"
+                    >
+                        Forgot password?
+                    </button>
+
+                    {/* Forgot Password → Footer: 47px */}
+                    <div style={{ height: '47px' }} />
+
+                    {/* Footer */}
+                    <div className="text-center text-[16px] text-[rgb(83,94,108)]">
+                        Don&apos;t have an account?{" "}
+                        <Link href="/signup">
+                            <span className="buttonText">Sign Up</span>
+                        </Link>
+                    </div>
+
+                    {/* Footer → Bottom of Screen: 47px */}
+                    <div style={{ height: '47px' }} />
                 </div>
             </div>
 
             {/* Forgot Password Modal */}
             {isForgotModalOpen && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-300">
-                    <div 
+                    <div
                         className="w-full max-w-[500px] bg-white rounded-[12px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Modal Header */}
                         <div className="flex items-center justify-between px-8 py-6 border-b border-[#dee2e6]">
                             <h2 className="text-[22px] font-bold text-slate-900 tracking-tight">Reset your password</h2>
-                            <button 
+                            <button
                                 onClick={() => setIsForgotModalOpen(false)}
                                 className="text-slate-400 hover:text-slate-600 transition-colors p-1"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-
-                        {/* Modal Body */}
                         <div className="px-8 py-8 space-y-6">
                             <p className="text-[15px] text-slate-500 leading-relaxed">
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>
-
                             <div className="relative">
                                 <input
                                     type="email"
@@ -253,7 +257,6 @@ export default function LoginPage() {
                                     required
                                 />
                             </div>
-
                             <div className="flex items-center justify-end gap-3 pt-2">
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
@@ -273,7 +276,6 @@ export default function LoginPage() {
                             </div>
                         </div>
                     </div>
-                    {/* Backdrop Click */}
                     <div className="absolute inset-0 -z-10" onClick={() => setIsForgotModalOpen(false)} />
                 </div>
             )}

@@ -239,8 +239,8 @@ function SignupForm() {
 
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary */}
             <div className="hidden lg:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
-                {/* Wavy Logo Background Overlay - Uses width instead of scale to spill over naturally */}
-                <div className="absolute top-0 bottom-0 right-0 w-[140%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left center' }} />
+                {/* Wavy Logo Background Overlay - Adjusted to 75% size and lowered position */}
+                <div className="absolute top-0 bottom-0 right-0 w-[140%] bg-instantly-waves opacity-100 pointer-events-none -z-10 scale-[0.75] translate-y-[150px]" style={{ backgroundSize: 'cover', backgroundPosition: 'left center' }} />
 
                 {/* Home Icon Button (Top Right) - Refined Size */}
                 <div className="absolute top-[15px] right-[15px] z-50">

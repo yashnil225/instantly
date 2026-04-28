@@ -149,20 +149,25 @@
 
   /* Custom Checkbox (Tick Box) */
   .hollow-checkbox {
-    @apply appearance-none border-[1.5px] border-[rgb(102,102,102)] transition-all cursor-pointer bg-transparent relative;
-    width: 20px;
-    height: 20px;
+    @apply appearance-none transition-all cursor-pointer bg-transparent relative;
+    width: 18px;
+    height: 18px;
     border-radius: 4px;
+    border: 2px solid #a5aab6;
     flex-shrink: 0;
   }
 
-  .hollow-checkbox:checked {
-    @apply border-[#006bff] bg-[#006bff];
+  .hollow-checkbox:hover {
+    border-color: #006bff;
   }
 
-  .hollow-checkbox:checked::after {
-    content: "";
-    @apply absolute left-[7px] top-[2px] w-[5px] h-[12px] border-b-[2px] border-r-[2px] border-white rotate-45;
+  .hollow-checkbox:checked {
+    border-color: #006bff;
+    background-color: #006bff;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpath fill='%23fff' d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3e%3c/svg%3e");
+    background-size: 14px 14px;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
   .auth-no-scroll {

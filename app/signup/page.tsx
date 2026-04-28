@@ -162,7 +162,7 @@ function SignupForm() {
                         {/* Expandable Password Container */}
                         <div
                             className="transition-[height] duration-300 ease-in-out flex flex-col justify-center overflow-hidden"
-                            style={{ height: showPassword ? '136px' : '50px', width: '360px' }}
+                            style={{ height: showPassword ? '100px' : '30px', width: '360px' }}
                         >
                             {showPassword && (
                                 <div className="animate-in fade-in slide-in-from-top-2 duration-300">
@@ -192,7 +192,6 @@ function SignupForm() {
                                     id="terms"
                                     checked={termsAccepted}
                                     onChange={(e) => setTermsAccepted(e.target.checked)}
-                                    style={{ width: '16px', height: '16px', borderRadius: '4px' }}
                                     className="hollow-checkbox"
                                     required
                                 />
@@ -237,7 +236,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary */}
             <div className="hidden lg:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Decreased size */}
-                <div className="absolute -top-[16px] bottom-0 right-0 w-[120%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
+                <div className="absolute top-[16px] bottom-0 right-0 w-[130%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
 
                 {/* Home Icon Button (Top Right) - Refined Size */}
                 <div className="absolute top-[17px] right-[15px] z-50">
@@ -250,7 +249,7 @@ function SignupForm() {
                     </a>
                 </div>
 
-                <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-100px]">
+                <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-130px]">
                     {/* Illustration - Increased Size */}
                     <div className="w-[220px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
                         <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 200" className="w-full h-full">
@@ -282,7 +281,7 @@ function SignupForm() {
                     <p className="text-black text-[24px] font-semibold mb-6">
                         are getting more replies!
                     </p>
-                    <p className="text-slate-600 text-[16px] leading-[1.6] max-w-sm font-medium">
+                    <p className="text-slate-600 text-[16px] leading-[2.0] max-w-sm font-medium">
                         Unlock the power of effective outreach with our cutting-edge platform, and experience a surge in responses and engagement rates like never before.
                     </p>
                 </div>

@@ -91,10 +91,10 @@ export default function LoginPage() {
             <div className="absolute top-[20px] right-[20px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="transition-all flex items-center justify-center p-2 hover:bg-slate-50 rounded-[6px] border border-[#dee2e6]"
+                    className="transition-all flex items-center justify-center p-2 rounded-[6px]"
                     title="Home"
                 >
-                    <Home className="w-[24px] h-[24px] text-black" strokeWidth={1.5} />
+                    <Home className="w-[26px] h-[26px] text-black" strokeWidth={1.5} />
                 </a>
             </div>
 
@@ -151,7 +151,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* OR Divider → Email Field: 24px */}
-                    <div style={{ height: '24px' }} />
+                    <div style={{ height: '16px' }} />
 
                     {/* Email Input: 358px W × 54px H */}
                     <div className="relative" style={{ width: '358px' }}>

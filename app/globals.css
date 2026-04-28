@@ -167,6 +167,17 @@
 
   .auth-no-scroll {
     @apply h-screen overflow-hidden;
+    font-family: 'Averta', sans-serif !important;
+    font-weight: 600 !important;
+  }
+
+  .auth-no-scroll *,
+  .auth-no-scroll input,
+  .auth-no-scroll button,
+  .auth-no-scroll label,
+  .auth-no-scroll span,
+  .auth-no-scroll a {
+    font-family: 'Averta', sans-serif !important;
   }
 
   body {

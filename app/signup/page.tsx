@@ -89,8 +89,8 @@ function SignupForm() {
                     {/* Top of Screen → Heading: 62px */}
                     <div style={{ height: '62px' }} />
 
-                    {/* Heading */}
-                    <h1 className="text-[32px] font-bold text-slate-900 tracking-tight">
+                    {/* Heading — centered over the 358px form width */}
+                    <h1 className="text-[32px] font-bold text-slate-900 tracking-tight text-center" style={{ width: '358px' }}>
                         Create a new account
                     </h1>
 
@@ -239,8 +239,8 @@ function SignupForm() {
 
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary */}
             <div className="hidden lg:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
-                {/* Wavy Logo Background Overlay - Full size, touching right wall and top */}
-                <div className="absolute -top-[20px] bottom-0 right-0 w-[140%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
+                {/* Wavy Logo Background Overlay - Decreased size */}
+                <div className="absolute -top-[20px] bottom-0 right-0 w-[120%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
 
                 {/* Home Icon Button (Top Right) - Refined Size */}
                 <div className="absolute top-[15px] right-[15px] z-50">
@@ -278,11 +278,11 @@ function SignupForm() {
                         </svg>
                     </div>
 
-                    {/* Marketing Text - Heading made all black */}
-                    <h2 className="text-[32px] font-bold text-black mb-1 leading-tight tracking-tight">
+                    {/* Marketing Text - Smaller heading to match target */}
+                    <h2 className="text-[24px] font-bold text-black mb-1 leading-tight tracking-tight">
                         45,000+ clients
                     </h2>
-                    <p className="text-black text-[32px] font-bold mb-6">
+                    <p className="text-black text-[24px] font-bold mb-6">
                         are getting more replies!
                     </p>
                     <p className="text-slate-600 text-[16px] leading-[1.6] max-w-sm font-medium">

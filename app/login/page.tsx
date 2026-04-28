@@ -91,7 +91,7 @@ export default function LoginPage() {
             <div className="absolute top-[20px] right-[20px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="transition-all flex items-center justify-center p-2 hover:bg-slate-50 rounded-[6px]"
+                    className="transition-all flex items-center justify-center p-2 hover:bg-slate-50 rounded-[6px] border border-[#dee2e6]"
                     title="Home"
                 >
                     <Home className="w-[24px] h-[24px] text-black" strokeWidth={1.5} />
@@ -123,7 +123,7 @@ export default function LoginPage() {
                             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                         </svg>
-                        <span className="text-[15px] font-semibold text-slate-700">Log In with Google</span>
+                        <span className="text-[16px] font-semibold text-slate-700">Log In with Google</span>
                     </button>
 
                     {/* Between Social Buttons: 12px */}
@@ -137,11 +137,11 @@ export default function LoginPage() {
                         <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-[rgb(60,72,88)]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
                         </svg>
-                        <span className="text-[15px] font-semibold text-slate-700">Log In with Apple</span>
+                        <span className="text-[16px] font-semibold text-slate-700">Log In with Apple</span>
                     </button>
 
                     {/* Social Buttons → OR Divider: 24px */}
-                    <div style={{ height: '24px' }} />
+                    <div style={{ height: '16px' }} />
 
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>

@@ -183,26 +183,18 @@ function SignupForm() {
                             <div style={{ height: '50px' }} />
                         )}
 
-                        {/* Terms Checkbox — 18px × 18px | 4px radius */}
-                        <div className="flex items-start gap-3">
-                            <div
-                                className="relative flex items-center justify-center rounded-full hover:bg-slate-50 transition-all cursor-pointer ripple-container"
-                                style={{ padding: '7px', marginLeft: '-7px', marginTop: '-2px' }}
-                                onMouseDown={createRipple}
-                            >
-                                <input
-                                    type="checkbox"
-                                    id="terms"
-                                    checked={termsAccepted}
-                                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                                    style={{ width: '16px', height: '16px', borderRadius: '4px' }}
-                                    className="hollow-checkbox"
-                                    required
-                                />
-                            </div>
-                            <label htmlFor="terms" className="text-[15px] text-slate-500 leading-snug cursor-pointer">
-                                I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Terms of Use</a> and<br />
-                                <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Privacy policy</a>
+                        {/* Terms Checkbox — 14px × 14px | 2px border | Centered */}
+                        <div className="flex items-center mt-4">
+                            <input
+                                type="checkbox"
+                                id="terms"
+                                checked={termsAccepted}
+                                onChange={(e) => setTermsAccepted(e.target.checked)}
+                                className="hollow-checkbox mr-[12px]"
+                                required
+                            />
+                            <label htmlFor="terms" className="text-[16px] text-[#6c757d] cursor-pointer">
+                                I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="hover-underline transition-colors">Terms of Use</a> and <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="hover-underline transition-colors">Privacy policy</a>
                             </label>
                         </div>
 
@@ -243,7 +235,7 @@ function SignupForm() {
                 <div className="absolute -top-[20px] bottom-0 right-0 w-[120%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
 
                 {/* Home Icon Button (Top Right) - Refined Size */}
-                <div className="absolute top-[15px] right-[15px] z-50">
+                <div className="absolute top-[17px] right-[15px] z-50">
                     <a
                         href="https://instantly-ai.vercel.app"
                         className="transition-all flex items-center justify-center p-2.5 hover:bg-slate-50/50 rounded-full"
@@ -254,8 +246,8 @@ function SignupForm() {
                 </div>
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center">
-                    {/* Illustration - Resized to 50% smaller */}
-                    <div className="w-[150px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
+                    {/* Illustration - Increased Size */}
+                    <div className="w-[180px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
                         <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 200" className="w-full h-full">
                             <g clipPath="url(#a)"><path d="M98 4.1c-39.7 0-85.6 27-85.6 64.8 0 33.7 19.3 44.7 26.7 63.2 11.6 29 23.5 57.7 69.6 57.7 51 0 34.6-39.6 45.5-69.8 7.4-20.6 23.2-36.5 23.2-63.2C177.4 30.2 161.5 4 98 4Z" fill="#4580F7" /></g>
                             <g clipPath="url(#b)"><path d="M194 125.4h-51c-3.6 0-6.6-3-6.6-6.6v-95c0-3.6 3-6.6 6.6-6.6h51c3.6 0 6.5 3 6.5 6.6v95c0 3.6-3 6.6-6.5 6.6Z" fill="#14171F" /><path d="M194 125.7h-51c-3.8 0-6.9-3-6.9-6.9v-95c0-3.8 3-6.9 6.9-6.9h51c3.7 0 6.8 3 6.8 6.9v95c0 3.8-3 6.9-6.8 6.9ZM143 17.6a6.2 6.2 0 0 0-6.2 6.2v95c0 3.5 2.7 6.2 6.2 6.2h51c3.4 0 6.2-2.7 6.2-6.2v-95c0-3.5-2.8-6.2-6.2-6.2h-51Z" fill="#14171F" /><path d="M200.5 28.5h-64v-4.7c0-3.6 2.9-6.6 6.5-6.6h51c3.6 0 6.5 3 6.5 6.6v4.7Z" fill="#fff" /><path d="M200.5 28.5h-63V24c0-3.1 2.5-5.6 5.6-5.6H195c3 0 5.6 2.5 5.6 5.6v4.5Z" fill="#DBDFEA" /><path d="M200.5 28.9h-64a.3.3 0 0 1-.4-.4v-4.7c0-3.8 3-6.9 6.9-6.9h51c3.7 0 6.8 3 6.8 6.9v4.7a.3.3 0 0 1-.3.4Zm-63.7-.7h63.4v-4.4c0-3.5-2.8-6.2-6.2-6.2h-51a6.2 6.2 0 0 0-6.2 6.2v4.4Z" fill="#14171F" /><path d="M190 25.8a.3.3 0 0 1-.3-.2v-.2l.1-.1L195 20a.3.3 0 0 1 .4 0 .3.3 0 0 1 .2.1.3.3 0 0 1 0 .3l-.1.1-5.2 5.2-.1.1h-.2Z" fill="#14171F" /><path d="M195.3 25.8a.3.3 0 0 1-.3 0l-5.2-5.3a.3.3 0 1 1 .5-.5l5.2 5.3v.1a.3.3 0 0 1 0 .4h-.2Z" fill="#14171F" /></g>

@@ -94,7 +94,7 @@ export default function LoginPage() {
                     className="transition-all flex items-center justify-center p-2 hover:bg-slate-50 rounded-full"
                     title="Home"
                 >
-                    <Home className="w-[26px] h-[26px] text-black" strokeWidth={1.5} />
+                    <Home className="w-[24px] h-[24px] text-black" strokeWidth={1.5} />
                 </a>
             </div>
 
@@ -103,8 +103,8 @@ export default function LoginPage() {
 
                 {/* Top of Screen → Logo: 39px */}
                 <div style={{ marginTop: '39px' }}>
-                    {/* Logo: 34px × 34px */}
-                    <Logo style={{ width: '34px', height: '34px' }} />
+                    {/* Logo: 28px × 28px (Reduced) */}
+                    <Logo style={{ width: '32px', height: '32px' }} />
                 </div>
 
                 {/* Logo → Social Buttons: 49px */}

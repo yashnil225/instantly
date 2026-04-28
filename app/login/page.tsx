@@ -94,7 +94,7 @@ export default function LoginPage() {
                     className="transition-all flex items-center justify-center p-2 rounded-[6px]"
                     title="Home"
                 >
-                    <Home className="w-[26px] h-[26px] text-black" strokeWidth={1.5} />
+                    <Home className="w-[24px] h-[24px] text-black" strokeWidth={1.5} />
                 </a>
             </div>
 
@@ -146,7 +146,7 @@ export default function LoginPage() {
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                        <span className="text-[11px] text-[rgb(153,165,181)] font-bold tracking-widest uppercase">OR</span>
+                        <span className="text-[11px] text-[rgb(153,165,181)] font-semibold tracking-widest uppercase">OR</span>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                     </div>
 
@@ -195,7 +195,7 @@ export default function LoginPage() {
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
                         style={{ width: '360px', height: '58px', borderRadius: '8px' }}
-                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-bold text-[16px] transition-all disabled:opacity-50 ripple-container shadow-lg shadow-blue-500/30"
+                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log In"}
                     </button>
@@ -215,7 +215,7 @@ export default function LoginPage() {
                     <div style={{ height: '27px' }} />
 
                     {/* Footer */}
-                    <div className="text-center text-[16px] text-[rgb(83,94,108)]">
+                    <div className="text-center text-[15px] text-[rgb(83,94,108)]">
                         Don&apos;t have an account?{" "}
                         <Link href="/signup">
                             <span className="buttonText">Sign Up</span>
@@ -235,7 +235,7 @@ export default function LoginPage() {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between px-8 py-6 border-b border-[#dee2e6]">
-                            <h2 className="text-[22px] font-bold text-slate-900 tracking-tight">Reset your password</h2>
+                            <h2 className="text-[22px] font-semibold text-slate-900 tracking-tight">Reset your password</h2>
                             <button
                                 onClick={() => setIsForgotModalOpen(false)}
                                 className="text-slate-400 hover:text-slate-600 transition-colors p-1"
@@ -260,7 +260,7 @@ export default function LoginPage() {
                             <div className="flex items-center justify-end gap-3 pt-2">
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
-                                    className="px-6 py-2.5 text-[15px] font-bold text-slate-600 hover:bg-slate-50 rounded-[10px] transition-colors border border-[#dee2e6]"
+                                    className="px-6 py-2.5 text-[15px] font-semibold text-slate-600 hover:bg-slate-50 rounded-[10px] transition-colors border border-[#dee2e6]"
                                 >
                                     Cancel
                                 </button>
@@ -269,7 +269,7 @@ export default function LoginPage() {
                                         toast.success("Reset link sent!")
                                         setIsForgotModalOpen(false)
                                     }}
-                                    className="px-8 py-2.5 bg-[#006bff] hover:bg-[#0056d2] text-white font-bold rounded-[10px] text-[15px] transition-all shadow-lg shadow-blue-500/30"
+                                    className="px-8 py-2.5 bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold rounded-[10px] text-[15px] transition-all"
                                 >
                                     Submit
                                 </button>

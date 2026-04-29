@@ -91,10 +91,23 @@ export default function LoginPage() {
             <div className="absolute top-[20px] right-[20px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
-                    className="transition-all flex items-center justify-center p-2 rounded-[6px]"
+                    className="flex items-center justify-center p-2 rounded-[8px]"
                     title="Home"
                 >
-                    <Home className="w-[24px] h-[24px] text-black" strokeWidth={1.5} />
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="black"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                    >
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                        <polyline points="9 22 9 12 15 12 15 22" />
+                    </svg>
                 </a>
             </div>
 
@@ -110,12 +123,12 @@ export default function LoginPage() {
                 {/* Logo → Social Buttons: 49px */}
                 <div style={{ marginTop: '49px', width: '358px' }} className="flex flex-col items-center">
 
-                    {/* Social Buttons: 358px W × 52px H | Fully Rounded */}
+
                     <button
                         onClick={handleGoogleSignIn}
                         onMouseDown={createRipple}
                         className="social-btn ripple-container"
-                        style={{ width: '360px', height: '54px', borderRadius: '8px', padding: '0 24px' }}
+                        style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 3px 5px 0 rgb(222 222 222 / 30%)' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" className="mt-[-1px]">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -132,9 +145,9 @@ export default function LoginPage() {
                     <button
                         className="social-btn ripple-container"
                         onMouseDown={createRipple}
-                        style={{ width: '360px', height: '54px', borderRadius: '8px', padding: '0 24px' }}
+                        style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 3px 5px 0 rgb(222 222 222 / 30%)' }}
                     >
-                        <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-2px] text-[rgb(60,72,88)]">
+                        <svg viewBox="0 0 384 512" width="22" height="22" className="mt-[-4px] text-[rgb(60,72,88)]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
                         </svg>
                         <span className="text-[16px] font-semibold text-slate-700">Log In with Apple</span>
@@ -146,7 +159,7 @@ export default function LoginPage() {
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                        <span className="text-[11px] text-[rgb(153,165,181)] font-semibold tracking-widest uppercase">OR</span>
+                        <span className="text-[12px] text-[#8492a6] font-semibold uppercase">OR</span>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                     </div>
 
@@ -161,7 +174,7 @@ export default function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            style={{ width: '360px', height: '56px', borderRadius: '8px' }}
+                            style={{ width: '360px', height: '56px', borderRadius: '12px', padding: '27px 24px' }}
                             className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400' : ''}`}
                         />
                         {!emailValid && (
@@ -181,7 +194,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        style={{ width: '360px', height: '56px', borderRadius: '8px' }}
+                        style={{ width: '360px', height: '56px', borderRadius: '12px', padding: '27px 24px' }}
                         className="auth-input"
                     />
 
@@ -194,14 +207,14 @@ export default function LoginPage() {
                         disabled={loading}
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                        style={{ width: '360px', height: '58px', borderRadius: '8px' }}
+                        style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 107, 255, 0.3)' }}
                         className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log In"}
                     </button>
 
                     {/* Login Button → Forgot Password: 22px */}
-                    <div style={{ height: '22px' }} />
+                    <div style={{ height: '16px' }} />
 
                     {/* Forgot Password */}
                     <button
@@ -215,7 +228,7 @@ export default function LoginPage() {
                     <div style={{ height: '27px' }} />
 
                     {/* Footer */}
-                    <div className="text-center text-[15px] text-[rgb(83,94,108)]">
+                    <div className="text-center text-[16px] text-[rgb(83,94,108)]" style={{ marginTop: '28px' }}>
                         Don&apos;t have an account?{" "}
                         <Link href="/signup">
                             <span className="buttonText">Sign Up</span>
@@ -260,7 +273,7 @@ export default function LoginPage() {
                             <div className="flex items-center justify-end gap-3 pt-2">
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
-                                    className="px-6 py-2.5 text-[15px] font-semibold text-slate-600 hover:bg-slate-50 rounded-[10px] transition-colors border border-[#dee2e6]"
+                                    className="px-6 py-2.5 text-[15px] font-semibold text-slate-600 hover:bg-slate-50 rounded-[12px] transition-colors border border-[#dee2e6]"
                                 >
                                     Cancel
                                 </button>
@@ -269,7 +282,8 @@ export default function LoginPage() {
                                         toast.success("Reset link sent!")
                                         setIsForgotModalOpen(false)
                                     }}
-                                    className="px-8 py-2.5 bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold rounded-[10px] text-[15px] transition-all"
+                                    className="px-8 py-2.5 bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold rounded-[12px] text-[15px] transition-all"
+                                    style={{ boxShadow: '0 10px 15px -3px rgba(0, 107, 255, 0.3)' }}
                                 >
                                     Submit
                                 </button>

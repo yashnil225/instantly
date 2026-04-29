@@ -101,7 +101,7 @@ export default function LoginPage() {
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="black"
-                        strokeWidth="1.5"
+                        strokeWidth="2.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                     >
@@ -136,7 +136,7 @@ export default function LoginPage() {
                             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                         </svg>
-                        <span className="text-[16px] font-semibold text-slate-700">Log In with Google</span>
+                        <span className="text-[16px] font-semibold text-slate-700 tracking-[0.5px]">Log In with Google</span>
                     </button>
 
                     {/* Between Social Buttons: 12px */}
@@ -150,7 +150,7 @@ export default function LoginPage() {
                         <svg viewBox="0 0 384 512" width="22" height="22" className="mt-[-4px] text-[rgb(60,72,88)]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
                         </svg>
-                        <span className="text-[16px] font-semibold text-slate-700">Log In with Apple</span>
+                        <span className="text-[16px] font-semibold text-slate-700 tracking-[0.5px]">Log In with Apple</span>
                     </button>
 
                     {/* Social Buttons → OR Divider: 24px */}
@@ -167,14 +167,17 @@ export default function LoginPage() {
                     <div style={{ height: '16px' }} />
 
                     {/* Email Input: 358px W × 54px H */}
-                    <div className="relative" style={{ width: '358px' }}>
+                    <div 
+                        className="relative transition-all duration-300" 
+                        style={{ width: '358px', marginTop: !emailValid ? '-20px' : '0px' }}
+                    >
                         <input
                             type="email"
                             placeholder="Email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            style={{ width: '360px', height: '56px', borderRadius: '12px', padding: '27px 24px' }}
+                            style={{ width: '360px', height: '56px', borderRadius: '8px', padding: '27px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
                             className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400' : ''}`}
                         />
                         {!emailValid && (
@@ -194,7 +197,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        style={{ width: '360px', height: '56px', borderRadius: '12px', padding: '27px 24px' }}
+                        style={{ width: '360px', height: '56px', borderRadius: '8px', padding: '27px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
                         className="auth-input"
                     />
 
@@ -207,14 +210,14 @@ export default function LoginPage() {
                         disabled={loading}
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                        style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 107, 255, 0.3)' }}
+                        style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
                         className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log In"}
                     </button>
 
                     {/* Login Button → Forgot Password: 22px */}
-                    <div style={{ height: '16px' }} />
+                    <div style={{ height: '22px' }} />
 
                     {/* Forgot Password */}
                     <button
@@ -228,7 +231,7 @@ export default function LoginPage() {
                     <div style={{ height: '27px' }} />
 
                     {/* Footer */}
-                    <div className="text-center text-[16px] text-[rgb(83,94,108)]" style={{ marginTop: '28px' }}>
+                    <div className="text-center text-[15px] text-[rgb(83,94,108)]" style={{ marginTop: '28px' }}>
                         Don&apos;t have an account?{" "}
                         <Link href="/signup">
                             <span className="buttonText">Sign Up</span>
@@ -242,38 +245,67 @@ export default function LoginPage() {
 
             {/* Forgot Password Modal */}
             {isForgotModalOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-300">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={() => setIsForgotModalOpen(false)}>
+                    {/* Backdrop — 50% black, no blur, matching reference */}
+                    <div className="absolute inset-0 bg-black/50" />
                     <div
-                        className="w-full max-w-[500px] bg-white rounded-[12px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300"
+                        className="relative w-full max-w-[500px] bg-white overflow-hidden mx-4"
+                        style={{ borderRadius: '0.3rem', border: '1px solid rgba(0,0,0,0.2)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between px-8 py-6 border-b border-[#dee2e6]">
-                            <h2 className="text-[22px] font-semibold text-slate-900 tracking-tight">Reset your password</h2>
+                        {/* Modal Header — 1rem padding, border-bottom, flex-start alignment */}
+                        <div
+                            className="flex items-start justify-between"
+                            style={{ padding: '1rem', borderBottom: '1px solid #dee2e6' }}
+                        >
+                            <h5 className="text-[1.25rem] font-medium text-[#212529] leading-[1.5] mb-0">Reset your password</h5>
                             <button
                                 onClick={() => setIsForgotModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 transition-colors p-1"
+                                className="text-[1.5rem] font-light text-black/50 hover:text-black leading-none"
+                                style={{ padding: '1rem', margin: '-1rem -1rem -1rem auto', background: 'none', border: 'none', cursor: 'pointer' }}
+                                aria-label="Close"
                             >
-                                <X className="w-5 h-5" />
+                                ×
                             </button>
                         </div>
-                        <div className="px-8 py-8 space-y-6">
-                            <p className="text-[15px] text-slate-500 leading-relaxed">
+
+                        {/* Modal Body — 1rem padding */}
+                        <div style={{ padding: '1rem' }}>
+                            <p className="text-[1rem] text-[#161c2d] mb-[1rem] leading-[1.5]">
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>
-                            <div className="relative">
-                                <input
-                                    type="email"
-                                    placeholder="Email"
-                                    value={resetEmail}
-                                    onChange={(e) => setResetEmail(e.target.value)}
-                                    className="auth-input"
-                                    required
-                                />
-                            </div>
-                            <div className="flex items-center justify-end gap-3 pt-2">
+
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                                className="w-full bg-white text-[1rem] text-[#495057] transition-colors placeholder:text-[#6c757d]"
+                                style={{
+                                    padding: '1.5rem 0.75rem',
+                                    border: '1px solid #ced4da',
+                                    borderRadius: '0.25rem',
+                                    outline: 'none',
+                                }}
+                                onFocus={(e) => { e.target.style.borderColor = '#80bdff'; e.target.style.boxShadow = '0 0 0 0.2rem rgba(0,123,255,.25)'; }}
+                                onBlur={(e) => { e.target.style.borderColor = '#ced4da'; e.target.style.boxShadow = 'none'; }}
+                                required
+                            />
+
+                            {/* Buttons — right-aligned, mt-4 mb-3 */}
+                            <div className="flex justify-end gap-2" style={{ marginTop: '1.5rem', marginBottom: '1rem' }}>
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
-                                    className="px-6 py-2.5 text-[15px] font-semibold text-slate-600 hover:bg-slate-50 rounded-[12px] transition-colors border border-[#dee2e6]"
+                                    className="text-[1rem] font-normal transition-colors hover:bg-[#f8f9fc]"
+                                    style={{
+                                        padding: '0.375rem 0.75rem',
+                                        borderRadius: '0.25rem',
+                                        border: '1px solid #dee2e6',
+                                        backgroundColor: 'transparent',
+                                        color: '#3c4858',
+                                        cursor: 'pointer',
+                                        lineHeight: '1.5',
+                                    }}
                                 >
                                     Cancel
                                 </button>
@@ -282,15 +314,22 @@ export default function LoginPage() {
                                         toast.success("Reset link sent!")
                                         setIsForgotModalOpen(false)
                                     }}
-                                    className="px-8 py-2.5 bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold rounded-[12px] text-[15px] transition-all"
-                                    style={{ boxShadow: '0 10px 15px -3px rgba(0, 107, 255, 0.3)' }}
+                                    className="text-[1rem] font-normal text-white transition-all hover:bg-[#0056cc]"
+                                    style={{
+                                        padding: '0.375rem 0.75rem',
+                                        borderRadius: '0.25rem',
+                                        backgroundColor: '#006bff',
+                                        border: '1px solid #006bff',
+                                        boxShadow: '0 3px 5px 0 rgba(0, 107, 255, 0.3)',
+                                        cursor: 'pointer',
+                                        lineHeight: '1.5',
+                                    }}
                                 >
                                     Submit
                                 </button>
                             </div>
                         </div>
                     </div>
-                    <div className="absolute inset-0 -z-10" onClick={() => setIsForgotModalOpen(false)} />
                 </div>
             )}
         </div>

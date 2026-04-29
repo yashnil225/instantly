@@ -125,7 +125,7 @@
 
   /* Social Button Polish */
   .social-btn {
-    @apply flex items-center justify-center gap-2 w-full py-[14px] px-[24px] rounded-[8px] border border-[#dee2e6] bg-white transition-all duration-150 ease-out hover:bg-[#f8f9fa] text-slate-700 shadow-sm;
+    @apply flex items-center justify-center gap-1.5 w-full py-[14px] px-[24px] rounded-[8px] border border-[#dee2e6] bg-white transition-all duration-150 ease-out hover:bg-[#f8f9fa] text-slate-700 shadow-sm;
     user-select: none;
   }
 

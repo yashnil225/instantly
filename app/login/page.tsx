@@ -101,7 +101,7 @@ export default function LoginPage() {
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="black"
-                        strokeWidth="2.5"
+                        strokeWidth="1.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                     >
@@ -130,7 +130,7 @@ export default function LoginPage() {
                         className="social-btn ripple-container"
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 3px 5px 0 rgb(222 222 222 / 30%)' }}
                     >
-                        <svg width="20" height="20" viewBox="0 0 24 24" className="mt-[-1px]">
+                        <svg width="16" height="16" viewBox="0 0 24 24" className="mt-[-1px]">
                             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -147,7 +147,7 @@ export default function LoginPage() {
                         onMouseDown={createRipple}
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 3px 5px 0 rgb(222 222 222 / 30%)' }}
                     >
-                        <svg viewBox="0 0 384 512" width="22" height="22" className="mt-[-4px] text-[rgb(60,72,88)]">
+                        <svg viewBox="0 0 384 512" width="18" height="18" className="mt-[-4px] text-[rgb(60,72,88)]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
                         </svg>
                         <span className="text-[16px] font-semibold text-slate-700 tracking-[0.5px]">Log In with Apple</span>
@@ -167,9 +167,9 @@ export default function LoginPage() {
                     <div style={{ height: '16px' }} />
 
                     {/* Email Input: 358px W × 54px H */}
-                    <div 
-                        className="relative transition-all duration-300" 
-                        style={{ width: '358px', marginTop: !emailValid ? '-20px' : '0px' }}
+                    <div
+                        className="relative transition-all duration-300"
+                        style={{ width: '358px', marginBottom: !emailValid ? '12px' : '0px' }}
                     >
                         <input
                             type="email"
@@ -181,7 +181,7 @@ export default function LoginPage() {
                             className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400' : ''}`}
                         />
                         {!emailValid && (
-                            <p className="text-red-500 text-[11px] font-semibold mt-1.5 ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                            <p className="absolute left-1 top-[58px] text-red-500 text-[11px] font-semibold animate-in fade-in slide-in-from-top-1 duration-200">
                                 Enter a valid email address
                             </p>
                         )}
@@ -216,8 +216,8 @@ export default function LoginPage() {
                         {loading ? "Logging in..." : "Log In"}
                     </button>
 
-                    {/* Login Button → Forgot Password: 22px */}
-                    <div style={{ height: '22px' }} />
+                    {/* Login Button → Forgot Password: 32px */}
+                    <div style={{ height: '25px' }} />
 
                     {/* Forgot Password */}
                     <button
@@ -227,11 +227,11 @@ export default function LoginPage() {
                         Forgot password?
                     </button>
 
-                    {/* Forgot Password → Footer: 27px */}
-                    <div style={{ height: '27px' }} />
+                    {/* Forgot Password → Footer: 16px */}
+                    <div style={{ height: '16px' }} />
 
                     {/* Footer */}
-                    <div className="text-center text-[15px] text-[rgb(83,94,108)]" style={{ marginTop: '28px' }}>
+                    <div className="text-center text-[15px] text-[rgb(83,94,108)]">
                         Don&apos;t have an account?{" "}
                         <Link href="/signup">
                             <span className="buttonText">Sign Up</span>
@@ -258,10 +258,10 @@ export default function LoginPage() {
                             className="flex items-start justify-between"
                             style={{ padding: '1rem', borderBottom: '1px solid #dee2e6' }}
                         >
-                            <h5 className="text-[1.25rem] font-medium text-[#212529] leading-[1.5] mb-0">Reset your password</h5>
+                            <h5 className="text-[1.25rem] font-semibold text-[#212529] leading-[1.5] mb-0">Reset your password</h5>
                             <button
                                 onClick={() => setIsForgotModalOpen(false)}
-                                className="text-[1.5rem] font-light text-black/50 hover:text-black leading-none"
+                                className="text-[1.5rem] font-semibold text-black opacity-50 hover:opacity-75 leading-[1]"
                                 style={{ padding: '1rem', margin: '-1rem -1rem -1rem auto', background: 'none', border: 'none', cursor: 'pointer' }}
                                 aria-label="Close"
                             >
@@ -271,7 +271,7 @@ export default function LoginPage() {
 
                         {/* Modal Body — 1rem padding */}
                         <div style={{ padding: '1rem' }}>
-                            <p className="text-[1rem] text-[#161c2d] mb-[1rem] leading-[1.5]">
+                            <p className="text-[15px] text-[#3c4858] font-normal mb-[1rem] leading-[1.6]">
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>
 
@@ -282,7 +282,7 @@ export default function LoginPage() {
                                 onChange={(e) => setResetEmail(e.target.value)}
                                 className="w-full bg-white text-[1rem] text-[#495057] transition-colors placeholder:text-[#6c757d]"
                                 style={{
-                                    padding: '1.5rem 0.75rem',
+                                    padding: '0.875rem 0.75rem',
                                     border: '1px solid #ced4da',
                                     borderRadius: '0.25rem',
                                     outline: 'none',
@@ -298,7 +298,8 @@ export default function LoginPage() {
                                     onClick={() => setIsForgotModalOpen(false)}
                                     className="text-[1rem] font-normal transition-colors hover:bg-[#f8f9fc]"
                                     style={{
-                                        padding: '0.375rem 0.75rem',
+                                        padding: '0.375rem 1rem',
+                                        minWidth: '90px',
                                         borderRadius: '0.25rem',
                                         border: '1px solid #dee2e6',
                                         backgroundColor: 'transparent',
@@ -316,7 +317,8 @@ export default function LoginPage() {
                                     }}
                                     className="text-[1rem] font-normal text-white transition-all hover:bg-[#0056cc]"
                                     style={{
-                                        padding: '0.375rem 0.75rem',
+                                        padding: '0.375rem 1rem',
+                                        minWidth: '90px',
                                         borderRadius: '0.25rem',
                                         backgroundColor: '#006bff',
                                         border: '1px solid #006bff',

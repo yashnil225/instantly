@@ -84,7 +84,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="auth-no-scroll relative flex items-start justify-center bg-white overflow-hidden h-screen" style={{ fontFamily: '"Averta", sans-serif', fontWeight: 600 }}>
+        <div className="auth-no-scroll relative flex items-start justify-center bg-white overflow-hidden h-screen">
             <Toaster position="bottom-center" />
 
             {/* Home Icon — 20px from top */}

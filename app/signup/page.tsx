@@ -79,7 +79,7 @@ function SignupForm() {
     }
 
     return (
-        <div className="auth-no-scroll flex bg-white h-screen overflow-hidden" style={{ fontFamily: '"Averta", sans-serif', fontWeight: 600 }}>
+        <div className="auth-no-scroll flex bg-white h-screen overflow-hidden">
             <Toaster position="bottom-center" />
 
             {/* Left Side: Form — form starts at 218px from left edge */}

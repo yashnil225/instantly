@@ -88,7 +88,7 @@ export default function LoginPage() {
             <Toaster position="bottom-center" />
 
             {/* Home Icon — 20px from top */}
-            <div className="absolute top-[20px] right-[20px] z-50">
+            <div className="absolute top-[20px] right-[22px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
                     className="flex items-center justify-center p-2 rounded-[8px]"
@@ -177,7 +177,7 @@ export default function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            style={{ width: '360px', height: '56px', borderRadius: '8px', padding: '27px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
+                            style={{ width: '360px', height: '56px', borderRadius: '4px', padding: '27px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
                             className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400' : ''}`}
                         />
                         {!emailValid && (
@@ -197,7 +197,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        style={{ width: '360px', height: '56px', borderRadius: '8px', padding: '27px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
+                        style={{ width: '360px', height: '56px', borderRadius: '4px', padding: '27px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
                         className="auth-input"
                     />
 
@@ -211,7 +211,7 @@ export default function LoginPage() {
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
                         style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
-                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[18px] transition-all disabled:opacity-50 ripple-container"
+                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[17px] transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log In"}
                     </button>
@@ -227,8 +227,8 @@ export default function LoginPage() {
                         Forgot password?
                     </button>
 
-                    {/* Forgot Password → Footer: 24px */}
-                    <div style={{ height: '24px' }} />
+                    {/* Forgot Password → Footer: 26px */}
+                    <div style={{ height: '26px' }} />
 
                     {/* Footer */}
                     <div className="text-center text-[16px] text-[rgb(83,94,108)]">
@@ -300,7 +300,7 @@ export default function LoginPage() {
                                     style={{
                                         padding: '0.5rem 1.2rem',
                                         minWidth: '100px',
-                                        borderRadius: '0.25rem',
+                                        borderRadius: '0.5rem',
                                         border: '1px solid #dee2e6',
                                         backgroundColor: 'transparent',
                                         color: '#3c4858',
@@ -319,7 +319,7 @@ export default function LoginPage() {
                                     style={{
                                         padding: '0.5rem 1.2rem',
                                         minWidth: '100px',
-                                        borderRadius: '0.25rem',
+                                        borderRadius: '0.5rem',
                                         backgroundColor: '#006bff',
                                         border: '1px solid #006bff',
                                         boxShadow: '0 3px 5px 0 rgba(0, 107, 255, 0.3)',

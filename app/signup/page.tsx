@@ -82,7 +82,7 @@ function SignupForm() {
             <Toaster position="bottom-center" />
 
             {/* Home Icon — 21px from right edge */}
-            <div className="absolute top-[20px] right-[21px] z-50">
+            <div className="absolute top-[20px] right-[19px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
                     className="flex items-center justify-center p-2 rounded-[8px]"
@@ -115,7 +115,7 @@ function SignupForm() {
                     <div style={{ height: showPassword ? '20px' : '62px', transition: 'height 0.4s ease-in-out' }} />
 
                     {/* Heading — centered over the 358px form width */}
-                    <h1 className="text-[32px] font-medium text-slate-900 tracking-tight text-center" style={{ width: '360px' }}>
+                    <h1 className="text-[32px] font-semibold text-slate-900 tracking-tight text-center" style={{ width: '360px' }}>
                         Create a new account
                     </h1>
 
@@ -135,7 +135,7 @@ function SignupForm() {
                             <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                         </svg>
-                        <span className="text-[16px] font-medium text-slate-700 tracking-wide">Sign Up with Google</span>
+                        <span className="text-[16px] font-semibold text-slate-700 tracking-wide">Sign Up with Google</span>
                     </button>
 
                     {/* Between Social Buttons: 12px */}
@@ -149,7 +149,7 @@ function SignupForm() {
                         <svg viewBox="0 0 384 512" width="24" height="24" className="mt-[-2px]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
                         </svg>
-                        <span className="text-[16px] font-medium text-slate-700 tracking-wide">Sign Up with Apple</span>
+                        <span className="text-[16px] font-semibold text-slate-700 tracking-wide">Sign Up with Apple</span>
                     </button>
 
                     {/* Social Buttons → OR Divider: Reduced significantly when expanded */}
@@ -174,7 +174,7 @@ function SignupForm() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                style={{ width: '360px', height: '58px', borderRadius: '8px', color: 'rgb(113,121,129)' }}
+                                style={{ width: '360px', height: '62px', borderRadius: '8px', color: 'rgb(113,121,129)', fontWeight: '400' }}
                                 className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400' : ''}`}
                             />
                             {!emailValid && (
@@ -202,7 +202,7 @@ function SignupForm() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
                                 minLength={6}
-                                style={{ width: '360px', height: '58px', borderRadius: '8px', color: 'rgb(113,121,129)' }}
+                                style={{ width: '360px', height: '62px', borderRadius: '8px', color: 'rgb(113,121,129)', fontWeight: '400' }}
                                 className="auth-input"
                             />
                         </div>
@@ -239,7 +239,7 @@ function SignupForm() {
                             disabled={loading}
                             onMouseDown={createRipple}
                             style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
-                            className="bg-[#006bff] hover:bg-[#0056d2] text-white font-medium text-[16px] transition-all disabled:opacity-50 ripple-container"
+                            className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] transition-all disabled:opacity-50 ripple-container"
                         >
                             {loading ? "Processing..." : "Join Now"}
                         </button>
@@ -264,10 +264,10 @@ function SignupForm() {
 
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
-                {/* Wavy Logo Background Overlay - Decreased size */}
-                <div className="absolute top-[-40px] bottom-0 right-0 w-[110%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
+                {/* Wavy Logo Background Overlay - Moved down significantly */}
+                <div className="absolute top-[160px] bottom-0 right-0 w-[110%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
 
-                <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-130px]">
+                <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[80px]">
                     {/* Illustration - Increased Size */}
                     <div className="w-[180px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
                         <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 200" className="w-full h-full">

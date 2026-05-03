@@ -139,7 +139,7 @@
     width: 18px;
     height: 18px;
     border-radius: 2px;
-    border: 2px solid black;
+    border: 2px solid rgb(102, 102, 102);
     flex-shrink: 0;
   }
 

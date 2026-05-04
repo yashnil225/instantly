@@ -231,7 +231,7 @@ function SignupForm() {
                             </div>
 
                             {/* Tick Area → Join Now Button: Reduced when expanded */}
-                            <div style={{ height: showPassword ? '30px' : '60px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '15px' : '40px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Primary Action Button: 360px W × 58px H | 12px radius */}
                             <button
@@ -265,7 +265,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Moved down significantly */}
-                <div className="absolute top-[-100px] bottom-[-1000px] right-0 w-[110%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: '115% 115%', backgroundPosition: 'left top' }} />
+                <div className="absolute top-[-100px] bottom-0 right-0 w-[110%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: '115% 115%', backgroundPosition: 'left top' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-20px]">
                     {/* Illustration - Increased Size */}

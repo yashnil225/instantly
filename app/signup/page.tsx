@@ -78,7 +78,7 @@ function SignupForm() {
     }
 
     return (
-        <div className="relative flex flex-col md:flex-row bg-white min-h-screen">
+        <div className="relative flex flex-col md:flex-row bg-white h-screen overflow-hidden">
             <Toaster position="bottom-center" />
 
             {/* Home Icon — 21px from right edge */}

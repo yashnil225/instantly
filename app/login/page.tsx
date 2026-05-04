@@ -201,8 +201,8 @@ export default function LoginPage() {
                         className="auth-input"
                     />
 
-                    {/* Password Field → Login Button: 32px */}
-                    <div style={{ height: '32px' }} />
+                    {/* Password Field → Login Button: 30px */}
+                    <div style={{ height: '30px' }} />
 
                     {/* Primary Action Button: 360px W × 58px H | 8px radius */}
                     <button

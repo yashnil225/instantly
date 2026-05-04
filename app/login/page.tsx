@@ -115,7 +115,7 @@ export default function LoginPage() {
             <div className="flex flex-col items-center w-full">
 
                 {/* Top of Screen → Logo: 25px (Shifted up by 14px) */}
-                <div style={{ marginTop: '60px' }}>
+                <div style={{ marginTop: '30px' }}>
                     {/* Logo: 24px × 24px (Reduced) */}
                     <Logo style={{ width: '32px', height: '32px' }} />
                 </div>

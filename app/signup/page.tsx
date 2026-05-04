@@ -255,8 +255,8 @@ function SignupForm() {
                                 </Link>
                             </div>
 
-                            {/* Footer → Bottom: Reduced when expanded (Halved per request) */}
-                            <div style={{ height: showPassword ? '5px' : '15px', transition: 'height 0.4s ease-in-out' }} />
+                            {/* Footer → Bottom: Reduced when expanded (5px revealed, 30px hidden) */}
+                            <div style={{ height: showPassword ? '5px' : '30px', transition: 'height 0.4s ease-in-out' }} />
                         </form>
                     </div>
                 </div>

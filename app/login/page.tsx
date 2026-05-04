@@ -115,19 +115,19 @@ export default function LoginPage() {
             <div className="flex flex-col items-center w-full">
 
                 {/* Top of Screen → Logo: 25px (Shifted up by 14px) */}
-                <div style={{ marginTop: '25px' }}>
+                <div style={{ marginTop: '60px' }}>
                     {/* Logo: 24px × 24px (Reduced) */}
                     <Logo style={{ width: '32px', height: '32px' }} />
                 </div>
 
                 {/* Logo → Social Buttons: 35px (Shifted up by 14px) */}
-                <div style={{ marginTop: '35px', width: '358px' }} className="flex flex-col items-center">
+                <div style={{ marginTop: '45px', width: '358px' }} className="flex flex-col items-center">
 
 
                     <button
                         onClick={handleGoogleSignIn}
                         onMouseDown={createRipple}
-                        className="social-btn ripple-container flex items-center justify-center gap-2"
+                        className="social-btn ripple-container flex items-center justify-center gap-1.5"
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 3px 5px 0 rgb(222 222 222 / 30%)' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24" className="mt-[-2px]">
@@ -143,7 +143,7 @@ export default function LoginPage() {
                     <div style={{ height: '12px' }} />
 
                     <button
-                        className="social-btn ripple-container flex items-center justify-center gap-2"
+                        className="social-btn ripple-container flex items-center justify-center gap-1.5"
                         onMouseDown={createRipple}
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 3px 5px 0 rgb(222 222 222 / 30%)' }}
                     >
@@ -217,7 +217,7 @@ export default function LoginPage() {
                     </button>
 
                     {/* Login Button → Forgot Password: 44px (Increased by 28px to keep Forgot Password in place) */}
-                    <div style={{ height: '16px' }} />
+                    <div style={{ height: '14px' }} />
 
                     {/* Forgot Password */}
                     <button

@@ -192,7 +192,7 @@ function SignupForm() {
                                     opacity: showPassword ? 1 : 0,
                                     width: '360px',
                                     transition: 'all 0.3s ease-in-out',
-                                    marginTop: showPassword ? '12px' : '0px'
+                                    marginTop: showPassword ? '8px' : '0px'
                                 }}
                             >
                                 <input
@@ -207,12 +207,12 @@ function SignupForm() {
                                 />
                             </div>
                             {/* Password Container → Terms: Reduced when expanded */}
-                            <div style={{ height: showPassword ? '24px' : '48px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '20px' : '40px', transition: 'height 0.4s ease-in-out' }} />
                             {/* Terms Checkbox — centered with lines */}
                             <div className="flex items-start gap-3">
                                 <div
                                     className="relative flex items-center justify-center rounded-full hover:bg-slate-50 transition-all cursor-pointer ripple-container"
-                                    style={{ padding: '7px', marginLeft: '-4px', marginTop: '24px' }}
+                                    style={{ padding: '7px', marginLeft: '-4px', marginTop: '20px' }}
                                     onMouseDown={createRipple}
                                 >
                                     <input
@@ -265,7 +265,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Moved down significantly */}
-                <div className="absolute top-[-40px] bottom-0 right-0 w-[110%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
+                <div className="absolute top-[-40px] bottom-0 right-0 w-[110%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: '125% 125%', backgroundPosition: 'left top' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-30px]">
                     {/* Illustration - Increased Size */}

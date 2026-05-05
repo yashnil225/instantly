@@ -206,8 +206,8 @@ function SignupForm() {
                                     className="auth-input"
                                 />
                             </div>
-                            {/* Password Container → Terms: Decreased to move tickbox up */}
-                            <div style={{ height: showPassword ? '16px' : '24px', transition: 'height 0.4s ease-in-out' }} />
+                            {/* Password Container → Terms: Lowered per request */}
+                            <div style={{ height: showPassword ? '28px' : '40px', transition: 'height 0.4s ease-in-out' }} />
                             {/* Terms Checkbox — centered with lines */}
                             <div className="flex items-start gap-3">
                                 <div
@@ -230,8 +230,8 @@ function SignupForm() {
                                 </label>
                             </div>
 
-                            {/* Tick Area → Join Now Button: Increased to lower the button */}
-                            <div style={{ height: showPassword ? '16px' : '32px', transition: 'height 0.4s ease-in-out' }} />
+                            {/* Tick Area → Join Now Button: Lowered further per request */}
+                            <div style={{ height: showPassword ? '24px' : '48px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Primary Action Button: 360px W × 58px H | 12px radius */}
                             <button
@@ -265,7 +265,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Lowered significantly to cover the white gap at the bottom */}
-                <div className="absolute top-[0px] bottom-[-40vh] right-[0px] w-full bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
+                <div className="absolute top-[0px] bottom-[-40vh] right-[0px] w-[150%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-30px]">
                     {/* Illustration - Increased Size */}

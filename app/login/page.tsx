@@ -234,7 +234,7 @@ export default function LoginPage() {
                     <div className="text-center text-[16px] text-[rgb(83,94,108)] font-normal">
                         Don&apos;t have an account?{" "}
                         <Link href="/signup">
-                            <span className="buttonText font-bold">Sign Up</span>
+                            <span className="buttonText" style={{ fontWeight: '700 !important' } as any}>Sign Up</span>
                         </Link>
                     </div>
 

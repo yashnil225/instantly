@@ -114,8 +114,8 @@ export default function LoginPage() {
             {/* Main content — centered horizontally, padded from top per spec */}
             <div className="flex flex-col items-center w-full">
 
-                {/* Top of Screen → Logo: 44px */}
-                <div style={{ marginTop: '44px' }}>
+                {/* Top of Screen → Logo: 45px (Lowered by 1px) */}
+                <div style={{ marginTop: '45px' }}>
                     {/* Logo: 24px × 24px (Reduced) */}
                     <Logo style={{ width: '32px', height: '32px' }} />
                 </div>
@@ -177,7 +177,7 @@ export default function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            style={{ width: '360px', height: '58px', borderRadius: '8px', padding: '27px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
+                            style={{ width: '360px', height: '56px', borderRadius: '8px', padding: '26px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
                             className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400' : ''}`}
                         />
                         {!emailValid && (
@@ -197,7 +197,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        style={{ width: '360px', height: '58px', borderRadius: '8px', padding: '27px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
+                        style={{ width: '360px', height: '56px', borderRadius: '8px', padding: '26px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
                         className="auth-input"
                     />
 
@@ -213,11 +213,11 @@ export default function LoginPage() {
                         style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
                         className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] transition-all disabled:opacity-50 ripple-container"
                     >
-                        {loading ? "Logging in..." : "Log\u00A0\u00A0In"}
+                        {loading ? "Logging in..." : "Log\u00A0In"}
                     </button>
 
-                    {/* Login Button → Forgot Password: 12px (Decreased from 16px) */}
-                    <div style={{ height: '12px' }} />
+                    {/* Login Button → Forgot Password: 16px (Lowered further) */}
+                    <div style={{ height: '16px' }} />
 
                     {/* Forgot Password */}
                     <button
@@ -238,8 +238,8 @@ export default function LoginPage() {
                         </Link>
                     </div>
 
-                    {/* Footer → Bottom of Screen: 53px (Moved up slightly) */}
-                    <div style={{ height: '53px' }} />
+                    {/* Footer → Bottom of Screen: 50px (Lowered closer to edge) */}
+                    <div style={{ height: '50px' }} />
                 </div>
             </div>
 

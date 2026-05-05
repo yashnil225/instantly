@@ -120,8 +120,8 @@ export default function LoginPage() {
                     <Logo style={{ width: '32px', height: '32px' }} />
                 </div>
 
-                {/* Logo → Social Buttons: 35px (Shifted up by 14px) */}
-                <div style={{ marginTop: '45px', width: '358px' }} className="flex flex-col items-center">
+                {/* Logo → Social Buttons: 47px (Lowered form content by 2px per request) */}
+                <div style={{ marginTop: '47px', width: '358px' }} className="flex flex-col items-center">
 
 
                     <button
@@ -210,7 +210,7 @@ export default function LoginPage() {
                         disabled={loading}
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                        style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
+                        style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)', letterSpacing: '0.4px' }}
                         className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log\u00A0In"}
@@ -227,11 +227,11 @@ export default function LoginPage() {
                         Forgot password?
                     </button>
 
-                    {/* Forgot Password → Footer: 32px (Lowered per request) */}
-                    <div style={{ height: '32px' }} />
+                    {/* Forgot Password → Footer: 30px (Decreased to keep footer static) */}
+                    <div style={{ height: '30px' }} />
 
                     {/* Footer */}
-                    <div className="text-center text-[16px] text-[rgb(83,94,108)]">
+                    <div className="text-center text-[16px] text-[rgb(83,94,108)] font-normal">
                         Don&apos;t have an account?{" "}
                         <Link href="/signup">
                             <span className="buttonText">Sign Up</span>

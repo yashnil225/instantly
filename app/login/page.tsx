@@ -153,8 +153,8 @@ export default function LoginPage() {
                         <span className="text-[16px] font-semibold text-slate-700 tracking-wide">Log In with Apple</span>
                     </button>
 
-                    {/* Social Buttons → OR Divider: 24px */}
-                    <div style={{ height: '16px' }} />
+                    {/* Social Buttons → OR Divider: 15px (Reduced by 1px) */}
+                    <div style={{ height: '15px' }} />
 
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
@@ -227,8 +227,8 @@ export default function LoginPage() {
                         Forgot password?
                     </button>
 
-                    {/* Forgot Password → Footer: 30px (Decreased to keep footer static) */}
-                    <div style={{ height: '30px' }} />
+                    {/* Forgot Password → Footer: 31px (Lowered by 1px per request) */}
+                    <div style={{ height: '31px' }} />
 
                     {/* Footer */}
                     <div className="text-center text-[16px] text-[rgb(83,94,108)] font-normal">
@@ -238,8 +238,8 @@ export default function LoginPage() {
                         </Link>
                     </div>
 
-                    {/* Footer → Bottom of Screen: 47px (Balanced with top reduction) */}
-                    <div style={{ height: '47px' }} />
+                    {/* Footer → Bottom of Screen: 46px (Balanced with footer lowering) */}
+                    <div style={{ height: '46px' }} />
                 </div>
             </div>
 

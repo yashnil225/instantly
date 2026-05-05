@@ -120,8 +120,8 @@ export default function LoginPage() {
                     <Logo style={{ width: '32px', height: '32px' }} />
                 </div>
 
-                {/* Logo → Social Buttons: 47px (Lowered form content by 2px per request) */}
-                <div style={{ marginTop: '47px', width: '358px' }} className="flex flex-col items-center">
+                {/* Logo → Social Buttons: 48px (Lowered form content by 1px per request) */}
+                <div style={{ marginTop: '48px', width: '358px' }} className="flex flex-col items-center">
 
 
                     <button
@@ -234,7 +234,7 @@ export default function LoginPage() {
                     <div className="text-center text-[16px] text-[rgb(83,94,108)] font-normal">
                         Don&apos;t have an account?{" "}
                         <Link href="/signup">
-                            <span className="buttonText">Sign Up</span>
+                            <span className="buttonText font-bold">Sign Up</span>
                         </Link>
                     </div>
 

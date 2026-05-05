@@ -114,8 +114,8 @@ export default function LoginPage() {
             {/* Main content — centered horizontally, padded from top per spec */}
             <div className="flex flex-col items-center w-full">
 
-                {/* Top of Screen → Logo: 48px */}
-                <div style={{ marginTop: '48px' }}>
+                {/* Top of Screen → Logo: 45px */}
+                <div style={{ marginTop: '45px' }}>
                     {/* Logo: 24px × 24px (Reduced) */}
                     <Logo style={{ width: '32px', height: '32px' }} />
                 </div>
@@ -216,8 +216,8 @@ export default function LoginPage() {
                         {loading ? "Logging in..." : "Log\u00A0In"}
                     </button>
 
-                    {/* Login Button → Forgot Password: 16px (Lowered further) */}
-                    <div style={{ height: '16px' }} />
+                    {/* Login Button → Forgot Password: 18px (Lowered per request) */}
+                    <div style={{ height: '18px' }} />
 
                     {/* Forgot Password */}
                     <button
@@ -227,8 +227,8 @@ export default function LoginPage() {
                         Forgot password?
                     </button>
 
-                    {/* Forgot Password → Footer: 30px (Decreased from 34px) */}
-                    <div style={{ height: '30px' }} />
+                    {/* Forgot Password → Footer: 32px (Lowered per request) */}
+                    <div style={{ height: '32px' }} />
 
                     {/* Footer */}
                     <div className="text-center text-[16px] text-[rgb(83,94,108)]">

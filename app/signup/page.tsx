@@ -206,8 +206,8 @@ function SignupForm() {
                                     className="auth-input"
                                 />
                             </div>
-                            {/* Password Container → Terms: Lowered per request */}
-                            <div style={{ height: showPassword ? '28px' : '40px', transition: 'height 0.4s ease-in-out' }} />
+                            {/* Password Container → Terms: Moved up per request */}
+                            <div style={{ height: showPassword ? '20px' : '32px', transition: 'height 0.4s ease-in-out' }} />
                             {/* Terms Checkbox — centered with lines */}
                             <div className="flex items-start gap-3">
                                 <div
@@ -230,8 +230,8 @@ function SignupForm() {
                                 </label>
                             </div>
 
-                            {/* Tick Area → Join Now Button: Lowered further per request */}
-                            <div style={{ height: showPassword ? '24px' : '48px', transition: 'height 0.4s ease-in-out' }} />
+                            {/* Tick Area → Join Now Button: Decreased gap per request */}
+                            <div style={{ height: showPassword ? '16px' : '36px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Primary Action Button: 360px W × 58px H | 12px radius */}
                             <button
@@ -265,11 +265,11 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Lowered significantly to cover the white gap at the bottom */}
-                <div className="absolute top-[0px] bottom-[-60vh] right-[0px] w-[115%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
+                <div className="absolute top-[0px] bottom-[-30vh] right-[5vw] w-[115%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-30px]">
-                    {/* Illustration - Increased Size */}
-                    <div className="w-[240px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
+                    {/* Illustration - Decreased Size */}
+                    <div className="w-[180px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
                         <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 200" className="w-full h-full">
                             <g clipPath="url(#a)"><path d="M98 4.1c-39.7 0-85.6 27-85.6 64.8 0 33.7 19.3 44.7 26.7 63.2 11.6 29 23.5 57.7 69.6 57.7 51 0 34.6-39.6 45.5-69.8 7.4-20.6 23.2-36.5 23.2-63.2C177.4 30.2 161.5 4 98 4Z" fill="#4580F7" /></g>
                             <g clipPath="url(#b)"><path d="M194 125.4h-51c-3.6 0-6.6-3-6.6-6.6v-95c0-3.6 3-6.6 6.6-6.6h51c3.6 0 6.5 3 6.5 6.6v95c0 3.6-3 6.6-6.5 6.6Z" fill="#14171F" /><path d="M194 125.7h-51c-3.8 0-6.9-3-6.9-6.9v-95c0-3.8 3-6.9 6.9-6.9h51c3.7 0 6.8 3 6.8 6.9v95c0 3.8-3 6.9-6.8 6.9ZM143 17.6a6.2 6.2 0 0 0-6.2 6.2v95c0 3.5 2.7 6.2 6.2 6.2h51c3.4 0 6.2-2.7 6.2-6.2v-95c0-3.5-2.8-6.2-6.2-6.2h-51Z" fill="#14171F" /><path d="M200.5 28.5h-64v-4.7c0-3.6 2.9-6.6 6.5-6.6h51c3.6 0 6.5 3 6.5 6.6v4.7Z" fill="#fff" /><path d="M200.5 28.5h-63V24c0-3.1 2.5-5.6 5.6-5.6H195c3 0 5.6 2.5 5.6 5.6v4.5Z" fill="#DBDFEA" /><path d="M200.5 28.9h-64a.3.3 0 0 1-.4-.4v-4.7c0-3.8 3-6.9 6.9-6.9h51c3.7 0 6.8 3 6.8 6.9v4.7a.3.3 0 0 1-.3.4Zm-63.7-.7h63.4v-4.4c0-3.5-2.8-6.2-6.2-6.2h-51a6.2 6.2 0 0 0-6.2 6.2v4.4Z" fill="#14171F" /><path d="M190 25.8a.3.3 0 0 1-.3-.2v-.2l.1-.1L195 20a.3.3 0 0 1 .4 0 .3.3 0 0 1 .2.1.3.3 0 0 1 0 .3l-.1.1-5.2 5.2-.1.1h-.2Z" fill="#14171F" /><path d="M195.3 25.8a.3.3 0 0 1-.3 0l-5.2-5.3a.3.3 0 1 1 .5-.5l5.2 5.3v.1a.3.3 0 0 1 0 .4h-.2Z" fill="#14171F" /></g>

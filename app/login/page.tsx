@@ -115,7 +115,7 @@ export default function LoginPage() {
             <div className="flex flex-col items-center w-full">
 
                 {/* Top of Screen → Logo: 25px (Shifted up by 14px) */}
-                <div style={{ marginTop: '40px' }}>
+                <div style={{ marginTop: '42px' }}>
                     {/* Logo: 24px × 24px (Reduced) */}
                     <Logo style={{ width: '32px', height: '32px' }} />
                 </div>
@@ -201,8 +201,8 @@ export default function LoginPage() {
                         className="auth-input"
                     />
 
-                    {/* Password Field → Login Button: 28px */}
-                    <div style={{ height: '28px' }} />
+                    {/* Password Field → Login Button: 26px (Decreased from 28px) */}
+                    <div style={{ height: '26px' }} />
 
                     {/* Primary Action Button: 360px W × 58px H | 8px radius */}
                     <button
@@ -216,8 +216,8 @@ export default function LoginPage() {
                         {loading ? "Logging in..." : "Log\u00A0\u00A0In"}
                     </button>
 
-                    {/* Login Button → Forgot Password: 44px (Increased by 28px to keep Forgot Password in place) */}
-                    <div style={{ height: '14px' }} />
+                    {/* Login Button → Forgot Password: 18px (Increased from 14px) */}
+                    <div style={{ height: '16px' }} />
 
                     {/* Forgot Password */}
                     <button

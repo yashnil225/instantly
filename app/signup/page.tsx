@@ -158,7 +158,7 @@ function SignupForm() {
                         {/* OR Divider */}
                         <div className="flex items-center gap-4" style={{ width: '358px' }}>
                             <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                            <span className="text-[11px] text-[rgb(153,165,181)] font-semibold tracking-widest uppercase">OR</span>
+                            <span className="text-[11px] text-[rgb(153,165,181)] tracking-widest uppercase" style={{ fontWeight: '400 !important' } as any}>OR</span>
                             <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                         </div>
 

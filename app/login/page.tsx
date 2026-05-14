@@ -136,7 +136,7 @@ export default function LoginPage() {
                             <path fill="rgb(88, 176, 75)" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
                             <path fill="rgb(25, 118, 210)" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
                         </svg>
-                        <span className="text-[16px] font-semibold text-slate-700 tracking-wider">Log In with Google</span>
+                        <span className="text-[14px] font-semibold text-slate-700 tracking-normal">Log In with Google</span>
                     </button>
 
                     {/* Between Social Buttons: 12px */}
@@ -150,7 +150,7 @@ export default function LoginPage() {
                         <svg viewBox="0 0 384 512" width="22" height="22" className="mt-[-4px]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
                         </svg>
-                        <span className="text-[16px] font-semibold text-slate-700 tracking-wider">Log In with Apple</span>
+                        <span className="text-[14px] font-semibold text-slate-700 tracking-normal">Log In with Apple</span>
                     </button>
 
                     {/* Social Buttons → OR Divider: 15px (Reduced by 1px) */}
@@ -159,7 +159,7 @@ export default function LoginPage() {
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                        <span className="text-[12px] text-[#8492a6] font-normal uppercase">OR</span>
+                        <span className="text-[12px] text-[#8492a6] uppercase" style={{ fontWeight: '400 !important' } as any}>OR</span>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                     </div>
 
@@ -177,7 +177,7 @@ export default function LoginPage() {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            style={{ width: '360px', height: '56px', borderRadius: '4px', padding: '26px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
+                            style={{ width: '360px', height: '56px', borderRadius: '8px', padding: '26px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
                             className={`auth-input ${!emailValid ? 'border-red-400 focus:border-red-400' : ''}`}
                         />
                         {!emailValid && (
@@ -197,7 +197,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        style={{ width: '360px', height: '56px', borderRadius: '4px', padding: '26px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
+                        style={{ width: '360px', height: '56px', borderRadius: '8px', padding: '26px 24px', color: 'rgb(194,198,201)', fontWeight: '400' }}
                         className="auth-input"
                     />
 
@@ -210,8 +210,8 @@ export default function LoginPage() {
                         disabled={loading}
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                        style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)', letterSpacing: '0.8px' }}
-                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] transition-all disabled:opacity-50 ripple-container"
+                        style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)', letterSpacing: '0.3px' }}
+                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[15px] transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log\u00A0In"}
                     </button>
@@ -222,7 +222,8 @@ export default function LoginPage() {
                     {/* Forgot Password */}
                     <button
                         onClick={() => setIsForgotModalOpen(true)}
-                        className="text-[14px] text-[rgb(153,165,181)] hover:text-[#006bff] transition-colors cursor-pointer font-normal"
+                        className="text-[14px] text-[rgb(153,165,181)] hover:text-[#006bff] transition-colors cursor-pointer"
+                        style={{ fontWeight: '400 !important' } as any}
                     >
                         Forgot password?
                     </button>

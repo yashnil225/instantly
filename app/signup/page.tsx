@@ -187,6 +187,7 @@ function SignupForm() {
                             {/* Expandable Password Container */}
                             <div
                                 className="flex flex-col justify-center overflow-hidden"
+                                style={{
                                     maxHeight: showPassword ? '100px' : '0',
                                     opacity: showPassword ? 1 : 0,
                                     width: '360px',

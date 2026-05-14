@@ -224,14 +224,14 @@ function SignupForm() {
                                         required
                                     />
                                 </div>
-                                <label htmlFor="terms" className="text-[16px] text-slate-500 leading-relaxed cursor-pointer" style={{ marginTop: '4px' }}>
+                                <label htmlFor="terms" className="text-[14px] text-[rgb(139,152,171)] leading-relaxed cursor-pointer" style={{ marginTop: '4px' }}>
                                     I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Terms of Use</a> and<br />
                                     <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Privacy policy</a>
                                 </label>
                             </div>
 
                             {/* Tick Area → Join Now Button: Decreased by 8px per request */}
-                            <div style={{ height: showPassword ? '8px' : '28px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '0px' : '20px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Primary Action Button: 360px W × 58px H | 12px radius */}
                             <button
@@ -245,7 +245,7 @@ function SignupForm() {
                             </button>
 
                             {/* Button → Footer: Reduced when expanded */}
-                            <div style={{ height: showPassword ? '12px' : '34px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '4px' : '26px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Footer */}
                             <div className="text-center text-[16px] text-[rgb(83,94,108)]" style={{ width: '358px' }}>
@@ -265,9 +265,9 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Moved up and left per request */}
-                <div className="absolute top-[-40px] bottom-[-50vh] right-[0vw] w-[120%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
+                <div className="absolute top-[-60px] bottom-[-50vh] right-[4vw] w-[120%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
 
-                <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-100px] ml-[-40px]">
+                <div className="relative z-10 max-w-md text-center flex flex-col items-center">
                     {/* Illustration - Slightly increased Size */}
                     <div className="w-[210px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
                         <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 200" className="w-full h-full">

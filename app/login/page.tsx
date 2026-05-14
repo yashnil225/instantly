@@ -127,7 +127,7 @@ export default function LoginPage() {
                     <button
                         onClick={handleGoogleSignIn}
                         onMouseDown={createRipple}
-                        className="social-btn ripple-container flex items-center justify-center gap-1"
+                        className="social-btn ripple-container flex items-center justify-center gap-2"
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 48 48">
@@ -143,7 +143,7 @@ export default function LoginPage() {
                     <div style={{ height: '12px' }} />
 
                     <button
-                        className="social-btn ripple-container flex items-center justify-center gap-1"
+                        className="social-btn ripple-container flex items-center justify-center gap-3"
                         onMouseDown={createRipple}
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
@@ -158,9 +158,9 @@ export default function LoginPage() {
 
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
-                        <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
+                        <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-2px]"></div>
                         <span className="text-[12px] text-[#8492a6] uppercase font-normal">OR</span>
-                        <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
+                        <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-2px]"></div>
                     </div>
 
                     {/* OR Divider → Email Field */}

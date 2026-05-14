@@ -158,12 +158,12 @@ function SignupForm() {
                         {/* OR Divider */}
                         <div className="flex items-center gap-4" style={{ width: '358px' }}>
                             <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                            <span className="text-[11px] text-[rgb(153,165,181)] tracking-widest uppercase" style={{ fontWeight: '700 !important' } as any}>OR</span>
+                            <span className="text-[11px] text-[rgb(153,165,181)] tracking-widest uppercase font-semibold" style={{ fontWeight: '600 !important' } as any}>OR</span>
                             <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                         </div>
 
                         {/* OR Divider → Email Field: Reduced significantly when expanded */}
-                        <div style={{ height: showPassword ? '4px' : '12px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '6px' : '16px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Email Input: 358px W × 54px H */}
                             <form onSubmit={handleSubmit} style={{ width: '358px' }}>
@@ -224,7 +224,7 @@ function SignupForm() {
                                         required
                                     />
                                 </div>
-                                <label htmlFor="terms" className="text-[15px] text-[rgb(139,152,171)] leading-relaxed cursor-pointer font-bold" style={{ marginTop: '4px' }}>
+                                <label htmlFor="terms" className="text-[16px] text-[rgb(139,152,171)] leading-relaxed cursor-pointer font-bold" style={{ marginTop: '4px' }}>
                                     I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Terms of Use</a> and<br />
                                     <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Privacy policy</a>
                                 </label>
@@ -239,13 +239,13 @@ function SignupForm() {
                                 disabled={loading}
                                 onMouseDown={createRipple}
                                 style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
-                                className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] transition-all disabled:opacity-50 ripple-container"
+                                className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] tracking-wide transition-all disabled:opacity-50 ripple-container"
                             >
                                 {loading ? "Processing..." : "Join Now"}
                             </button>
 
                             {/* Button → Footer: Reduced when expanded */}
-                            <div style={{ height: showPassword ? '8px' : '30px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '6px' : '22px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Footer */}
                             <div className="text-center text-[16px] text-[rgb(83,94,108)]" style={{ width: '358px' }}>
@@ -265,7 +265,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Moved up and left per request */}
-                <div className="absolute top-[-56px] bottom-[-50vh] right-[1vw] w-[120%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
+                <div className="absolute top-[-56px] bottom-[-50vh] right-[1vw] w-[115%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-50px]">
                     {/* Illustration - Slightly increased Size */}

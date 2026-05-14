@@ -127,7 +127,7 @@ export default function LoginPage() {
                     <button
                         onClick={handleGoogleSignIn}
                         onMouseDown={createRipple}
-                        className="social-btn ripple-container flex items-center justify-center gap-3"
+                        className="social-btn ripple-container flex items-center justify-center gap-2"
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 48 48">
@@ -143,7 +143,7 @@ export default function LoginPage() {
                     <div style={{ height: '12px' }} />
 
                     <button
-                        className="social-btn ripple-container flex items-center justify-center gap-3"
+                        className="social-btn ripple-container flex items-center justify-center gap-2"
                         onMouseDown={createRipple}
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
@@ -154,17 +154,17 @@ export default function LoginPage() {
                     </button>
 
                     {/* Social Buttons → OR Divider */}
-                    <div style={{ height: '21px' }} />
+                    <div style={{ height: '13px' }} />
 
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                        <span className="text-[12px] text-[#8492a6] uppercase font-bold" style={{ fontWeight: '700 !important' } as any}>OR</span>
+                        <span className="text-[12px] text-[#8492a6] uppercase font-normal">OR</span>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                     </div>
 
                     {/* OR Divider → Email Field */}
-                    <div style={{ height: '10px' }} />
+                    <div style={{ height: '14px' }} />
 
                     {/* Email Input: 358px W × 54px H */}
                     <div
@@ -210,8 +210,8 @@ export default function LoginPage() {
                         disabled={loading}
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
-                        style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)', letterSpacing: '0.3px' }}
-                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] transition-all disabled:opacity-50 ripple-container"
+                        style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
+                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] tracking-wide transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log\u00A0In"}
                     </button>

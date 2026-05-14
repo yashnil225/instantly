@@ -126,7 +126,7 @@ function SignupForm() {
                         <button
                             onClick={handleGoogleSignIn}
                             onMouseDown={createRipple}
-                            className="social-btn ripple-container flex items-center justify-center gap-1.5"
+                            className="social-btn ripple-container flex items-center justify-center gap-1"
                             style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                         >
                             <svg width="20" height="20" viewBox="0 0 48 48">
@@ -142,7 +142,7 @@ function SignupForm() {
                         <div style={{ height: '12px' }} />
 
                         <button
-                            className="social-btn ripple-container flex items-center justify-center gap-1.5"
+                            className="social-btn ripple-container flex items-center justify-center gap-1"
                             onMouseDown={createRipple}
                             style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                         >
@@ -158,7 +158,7 @@ function SignupForm() {
                         {/* OR Divider */}
                         <div className="flex items-center gap-4" style={{ width: '358px' }}>
                             <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                            <span className="text-[11px] text-[rgb(153,165,181)] tracking-widest uppercase font-semibold" style={{ fontWeight: '600 !important' } as any}>OR</span>
+                            <span className="text-[12px] text-[rgb(153,165,181)] tracking-widest uppercase font-medium" style={{ fontWeight: '500 !important' } as any}>OR</span>
                             <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                         </div>
 
@@ -207,7 +207,7 @@ function SignupForm() {
                                 />
                             </div>
                             {/* Password Container → Terms: Moved up per request */}
-                            <div style={{ height: showPassword ? '28px' : '40px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '24px' : '36px', transition: 'height 0.4s ease-in-out' }} />
                             {/* Terms Checkbox — centered with lines */}
                             <div className="flex items-start gap-3" style={{ width: '358px' }}>
                                 <div
@@ -224,9 +224,9 @@ function SignupForm() {
                                         required
                                     />
                                 </div>
-                                <label htmlFor="terms" className="text-[16px] text-[rgb(139,152,171)] leading-relaxed cursor-pointer font-bold" style={{ marginTop: '4px' }}>
-                                    I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Terms of Use</a> and<br />
-                                    <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Privacy policy</a>
+                                <label htmlFor="terms" className="text-[16px] text-[rgb(139,152,171)] leading-relaxed cursor-pointer font-medium" style={{ marginTop: '4px' }}>
+                                    I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-medium">Terms of Use</a> and<br />
+                                    <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-medium">Privacy policy</a>
                                 </label>
                             </div>
 
@@ -265,9 +265,9 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Moved up and left per request */}
-                <div className="absolute top-[-56px] bottom-[-50vh] right-[1vw] w-[115%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
+                <div className="absolute top-[-76px] bottom-[-50vh] right-[-2vw] w-[115%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
 
-                <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-50px]">
+                <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-60px]">
                     {/* Illustration - Slightly increased Size */}
                     <div className="w-[210px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
                         <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 200" className="w-full h-full">

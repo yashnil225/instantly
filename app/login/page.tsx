@@ -127,7 +127,7 @@ export default function LoginPage() {
                     <button
                         onClick={handleGoogleSignIn}
                         onMouseDown={createRipple}
-                        className="social-btn ripple-container flex items-center justify-center gap-2"
+                        className="social-btn ripple-container flex items-center justify-center gap-1"
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 48 48">
@@ -143,7 +143,7 @@ export default function LoginPage() {
                     <div style={{ height: '12px' }} />
 
                     <button
-                        className="social-btn ripple-container flex items-center justify-center gap-2"
+                        className="social-btn ripple-container flex items-center justify-center gap-1"
                         onMouseDown={createRipple}
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
@@ -154,7 +154,7 @@ export default function LoginPage() {
                     </button>
 
                     {/* Social Buttons → OR Divider */}
-                    <div style={{ height: '13px' }} />
+                    <div style={{ height: '16px' }} />
 
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>

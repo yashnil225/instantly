@@ -153,7 +153,7 @@ function SignupForm() {
                         </button>
 
                         {/* Social Buttons → OR Divider: Reduced significantly when expanded */}
-                        <div style={{ height: showPassword ? '2px' : '12px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '6px' : '16px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* OR Divider */}
                         <div className="flex items-center gap-4" style={{ width: '358px' }}>
@@ -163,7 +163,7 @@ function SignupForm() {
                         </div>
 
                         {/* OR Divider → Email Field: Reduced significantly when expanded */}
-                        <div style={{ height: showPassword ? '4px' : '16px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '8px' : '20px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Email Input: 358px W × 54px H */}
                             <form onSubmit={handleSubmit} style={{ width: '358px' }}>
@@ -207,7 +207,7 @@ function SignupForm() {
                                 />
                             </div>
                             {/* Password Container → Terms: Moved up per request */}
-                            <div style={{ height: showPassword ? '24px' : '36px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '28px' : '40px', transition: 'height 0.4s ease-in-out' }} />
                             {/* Terms Checkbox — centered with lines */}
                             <div className="flex items-start gap-3" style={{ width: '358px' }}>
                                 <div
@@ -224,7 +224,7 @@ function SignupForm() {
                                         required
                                     />
                                 </div>
-                                <label htmlFor="terms" className="text-[16px] text-[rgb(139,152,171)] leading-relaxed cursor-pointer font-bold" style={{ marginTop: '4px' }}>
+                                <label htmlFor="terms" className="text-[15px] text-[rgb(139,152,171)] leading-relaxed cursor-pointer font-bold" style={{ marginTop: '4px' }}>
                                     I agree to the Instantly <a href="https://instantly.ai/terms" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Terms of Use</a> and<br />
                                     <a href="https://instantly.ai/privacy" target="_blank" rel="noreferrer" className="text-[#006bff] terms-link transition-colors font-semibold">Privacy policy</a>
                                 </label>
@@ -265,9 +265,9 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Moved up and left per request */}
-                <div className="absolute top-[-56px] bottom-[-50vh] right-[0vw] w-[130%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
+                <div className="absolute top-[-56px] bottom-[-50vh] right-[1vw] w-[125%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
 
-                <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-30px]">
+                <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-50px]">
                     {/* Illustration - Slightly increased Size */}
                     <div className="w-[210px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
                         <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 200" className="w-full h-full">

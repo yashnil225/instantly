@@ -154,17 +154,17 @@ export default function LoginPage() {
                     </button>
 
                     {/* Social Buttons → OR Divider */}
-                    <div style={{ height: '17px' }} />
+                    <div style={{ height: '21px' }} />
 
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
-                        <span className="text-[12px] text-[#8492a6] uppercase" style={{ fontWeight: '400 !important' } as any}>OR</span>
+                        <span className="text-[12px] text-[#8492a6] uppercase font-bold" style={{ fontWeight: '700 !important' } as any}>OR</span>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)]"></div>
                     </div>
 
                     {/* OR Divider → Email Field */}
-                    <div style={{ height: '14px' }} />
+                    <div style={{ height: '18px' }} />
 
                     {/* Email Input: 358px W × 54px H */}
                     <div

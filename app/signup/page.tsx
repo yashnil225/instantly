@@ -163,7 +163,7 @@ function SignupForm() {
                         </div>
 
                         {/* OR Divider → Email Field: Reduced significantly when expanded */}
-                        <div style={{ height: showPassword ? '8px' : '20px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '4px' : '12px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Email Input: 358px W × 54px H */}
                             <form onSubmit={handleSubmit} style={{ width: '358px' }}>
@@ -212,7 +212,7 @@ function SignupForm() {
                             <div className="flex items-start gap-3" style={{ width: '358px' }}>
                                 <div
                                     className="relative flex items-center justify-center rounded-full hover:bg-slate-50 transition-all cursor-pointer ripple-container"
-                                    style={{ padding: '7px', marginLeft: '-4px', marginTop: '16px' }}
+                                    style={{ padding: '7px', marginLeft: '-4px', marginTop: '12px' }}
                                     onMouseDown={createRipple}
                                 >
                                     <input
@@ -265,7 +265,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Moved up and left per request */}
-                <div className="absolute top-[-56px] bottom-[-50vh] right-[1vw] w-[125%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
+                <div className="absolute top-[-56px] bottom-[-50vh] right-[1vw] w-[120%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-50px]">
                     {/* Illustration - Slightly increased Size */}

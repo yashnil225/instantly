@@ -296,7 +296,7 @@ export default function LoginPage() {
                             />
 
                             {/* Buttons — right-aligned, mt-4 mb-3 */}
-                            <div className="flex justify-end gap-2" style={{ marginTop: '1.5rem', marginBottom: '1.0rem' }}>
+                            <div className="flex justify-end gap-2" style={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
                                     onMouseDown={createRipple}

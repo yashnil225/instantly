@@ -271,7 +271,7 @@ export default function LoginPage() {
                         </div>
 
                         {/* Modal Body — 1rem padding */}
-                        <div style={{ padding: '1rem', paddingBottom: '0px' }}>
+                        <div style={{ padding: '1rem' }}>
                             <p className="text-[16px] font-normal mb-[1rem] leading-[1.6]" style={{ color: 'rgb(37, 42, 58)' }}>
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>

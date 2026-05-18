@@ -271,7 +271,7 @@ export default function LoginPage() {
                         </div>
 
                         {/* Modal Body — 1rem padding */}
-                        <div style={{ padding: '1rem', paddingBottom: '14px' }}>
+                        <div style={{ padding: '1rem', paddingBottom: '0px' }}>
                             <p className="text-[16px] font-normal mb-[1rem] leading-[1.6]" style={{ color: 'rgb(37, 42, 58)' }}>
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>
@@ -296,7 +296,7 @@ export default function LoginPage() {
                             />
 
                             {/* Buttons — right-aligned, mt-4 mb-3 */}
-                            <div className="flex justify-end gap-2" style={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>
+                            <div className="flex justify-end gap-2" style={{ marginTop: '1.5rem', marginBottom: '0px' }}>
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
                                     onMouseDown={createRipple}

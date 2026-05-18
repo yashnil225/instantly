@@ -136,7 +136,7 @@ export default function LoginPage() {
                             <path fill="rgb(88, 176, 75)" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
                             <path fill="rgb(25, 118, 210)" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
                         </svg>
-                        <span className="text-[17px] font-semibold text-slate-700 tracking-wide">Log In with Google</span>
+                        <span className="text-[16.25px] font-semibold text-slate-700 tracking-wide">Log In with Google</span>
                     </button>
 
                     {/* Between Social Buttons: 12px */}
@@ -150,11 +150,11 @@ export default function LoginPage() {
                         <svg viewBox="0 0 384 512" width="22" height="22" className="mt-[-4px]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
                         </svg>
-                        <span className="text-[17px] font-semibold text-slate-700 tracking-wide">Log In with Apple</span>
+                        <span className="text-[16.25px] font-semibold text-slate-700 tracking-wide">Log In with Apple</span>
                     </button>
 
                     {/* Social Buttons → OR Divider */}
-                    <div style={{ height: '16px' }} />
+                    <div style={{ height: '12px' }} />
 
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
@@ -164,7 +164,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* OR Divider → Email Field */}
-                    <div style={{ height: '16px' }} />
+                    <div style={{ height: '14px' }} />
 
                     {/* Email Input: 358px W × 54px H */}
                     <div
@@ -251,7 +251,7 @@ export default function LoginPage() {
                     <div className="absolute inset-0 bg-black/50" />
                     <div
                         className="relative w-full max-w-[500px] bg-white overflow-hidden mx-4"
-                        style={{ borderRadius: '0.3rem', border: '1px solid rgba(0,0,0,0.2)' }}
+                        style={{ borderRadius: '0.3rem', border: '1px solid rgb(102, 102, 102)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header — 1rem padding, border-bottom, flex-start alignment */}
@@ -304,7 +304,7 @@ export default function LoginPage() {
                                     style={{
                                         padding: '0.5rem 1.2rem',
                                         minWidth: '98px',
-                                        borderRadius: '0.5rem',
+                                        borderRadius: '0.375rem',
                                         border: '1px solid #dee2e6',
                                         backgroundColor: 'transparent',
                                         color: '#3c4858',
@@ -324,7 +324,7 @@ export default function LoginPage() {
                                     style={{
                                         padding: '0.5rem 1.2rem',
                                         minWidth: '98px',
-                                        borderRadius: '0.5rem',
+                                        borderRadius: '0.375rem',
                                         backgroundColor: '#006bff',
                                         border: '1px solid #006bff',
                                         boxShadow: '0 3px 5px 0 rgba(0, 107, 255, 0.3)',

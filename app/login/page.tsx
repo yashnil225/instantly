@@ -127,7 +127,7 @@ export default function LoginPage() {
                     <button
                         onClick={handleGoogleSignIn}
                         onMouseDown={createRipple}
-                        className="social-btn ripple-container flex items-center justify-center gap-1"
+                        className="social-btn ripple-container flex items-center justify-center gap-2"
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 48 48">
@@ -136,21 +136,21 @@ export default function LoginPage() {
                             <path fill="rgb(88, 176, 75)" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
                             <path fill="rgb(25, 118, 210)" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
                         </svg>
-                        <span className="text-[16px] font-semibold text-slate-700 tracking-wide">Log In with Google</span>
+                        <span className="text-[17px] font-semibold text-slate-700 tracking-wide">Log In with Google</span>
                     </button>
 
                     {/* Between Social Buttons: 12px */}
                     <div style={{ height: '12px' }} />
 
                     <button
-                        className="social-btn ripple-container flex items-center justify-center gap-1.5"
+                        className="social-btn ripple-container flex items-center justify-center gap-2.5"
                         onMouseDown={createRipple}
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
                         <svg viewBox="0 0 384 512" width="22" height="22" className="mt-[-4px]">
                             <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
                         </svg>
-                        <span className="text-[16px] font-semibold text-slate-700 tracking-wide">Log In with Apple</span>
+                        <span className="text-[17px] font-semibold text-slate-700 tracking-wide">Log In with Apple</span>
                     </button>
 
                     {/* Social Buttons → OR Divider */}
@@ -164,7 +164,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* OR Divider → Email Field */}
-                    <div style={{ height: '18px' }} />
+                    <div style={{ height: '16px' }} />
 
                     {/* Email Input: 358px W × 54px H */}
                     <div
@@ -250,7 +250,7 @@ export default function LoginPage() {
                     {/* Backdrop — 50% black, no blur, matching reference */}
                     <div className="absolute inset-0 bg-black/50" />
                     <div
-                        className="relative w-full max-w-[498px] bg-white overflow-hidden mx-4"
+                        className="relative w-full max-w-[500px] bg-white overflow-hidden mx-4"
                         style={{ borderRadius: '0.3rem', border: '1px solid rgba(0,0,0,0.2)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -271,7 +271,7 @@ export default function LoginPage() {
                         </div>
 
                         {/* Modal Body — 1rem padding */}
-                        <div style={{ padding: '1rem' }}>
+                        <div style={{ padding: '1rem', paddingBottom: '0.75rem' }}>
                             <p className="text-[16px] font-normal mb-[1.25rem] leading-[1.6]" style={{ color: 'rgb(37, 42, 58)' }}>
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>
@@ -281,12 +281,14 @@ export default function LoginPage() {
                                 placeholder="Email"
                                 value={resetEmail}
                                 onChange={(e) => setResetEmail(e.target.value)}
-                                className="w-full bg-white text-[1rem] text-[#495057] transition-colors placeholder:text-[#6c757d]"
+                                className="bg-white text-[1rem] text-[#495057] transition-colors placeholder:text-[#6c757d]"
                                 style={{
                                     padding: '0.7rem 0.75rem',
                                     border: '1px solid #ced4da',
                                     borderRadius: '0.25rem',
                                     outline: 'none',
+                                    width: 'calc(100% + 2px)',
+                                    marginLeft: '-1px'
                                 }}
                                 onFocus={(e) => { e.target.style.borderColor = '#80bdff'; e.target.style.boxShadow = '0 0 0 0.2rem rgba(0,123,255,.25)'; }}
                                 onBlur={(e) => { e.target.style.borderColor = '#ced4da'; e.target.style.boxShadow = 'none'; }}
@@ -297,11 +299,12 @@ export default function LoginPage() {
                             <div className="flex justify-end gap-2" style={{ marginTop: '1.5rem', marginBottom: '1rem' }}>
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
-                                    className="text-[1rem] font-normal transition-colors hover:bg-[#f8f9fc]"
+                                    onMouseDown={createRipple}
+                                    className="text-[1rem] font-normal transition-all hover:bg-[#f8f9fc] ripple-container"
                                     style={{
                                         padding: '0.5rem 1.2rem',
                                         minWidth: '98px',
-                                        borderRadius: '0.25rem',
+                                        borderRadius: '0.5rem',
                                         border: '1px solid #dee2e6',
                                         backgroundColor: 'transparent',
                                         color: '#3c4858',
@@ -316,11 +319,12 @@ export default function LoginPage() {
                                         toast.success("Reset link sent!")
                                         setIsForgotModalOpen(false)
                                     }}
-                                    className="text-[1rem] font-normal text-white transition-all hover:bg-[#0056cc]"
+                                    onMouseDown={createRipple}
+                                    className="text-[1rem] font-normal text-white transition-all hover:bg-[#0056d2] ripple-container"
                                     style={{
                                         padding: '0.5rem 1.2rem',
                                         minWidth: '98px',
-                                        borderRadius: '0.25rem',
+                                        borderRadius: '0.5rem',
                                         backgroundColor: '#006bff',
                                         border: '1px solid #006bff',
                                         boxShadow: '0 3px 5px 0 rgba(0, 107, 255, 0.3)',

@@ -222,6 +222,8 @@ export default function LoginPage() {
                     {/* Forgot Password */}
                     <button
                         onClick={() => setIsForgotModalOpen(true)}
+                        onMouseEnter={(e) => e.currentTarget.style.color = '#006bff'}
+                        onMouseLeave={(e) => e.currentTarget.style.color = 'rgb(140, 155, 172)'}
                         className="text-[14px] hover:text-[#006bff] transition-colors cursor-pointer"
                         style={{ fontWeight: '400 !important', color: 'rgb(140, 155, 172)' } as any}
                     >
@@ -300,13 +302,12 @@ export default function LoginPage() {
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
                                     onMouseDown={createRipple}
-                                    className="text-[1rem] font-normal transition-all hover:bg-[#f8f9fc] ripple-container"
+                                    className="text-[1rem] font-normal transition-all bg-transparent hover:bg-[#f8f9fc] ripple-container"
                                     style={{
                                         padding: '0.5rem 1.2rem',
                                         minWidth: '98px',
                                         borderRadius: '0.45rem',
                                         border: '1px solid #dee2e6',
-                                        backgroundColor: 'transparent',
                                         color: '#3c4858',
                                         cursor: 'pointer',
                                         lineHeight: '1.5',
@@ -320,12 +321,11 @@ export default function LoginPage() {
                                         setIsForgotModalOpen(false)
                                     }}
                                     onMouseDown={createRipple}
-                                    className="text-[1rem] font-normal text-white transition-all hover:bg-[#0056d2] ripple-container"
+                                    className="text-[1rem] font-normal text-white transition-all bg-[#006bff] hover:bg-[#0056d2] ripple-container"
                                     style={{
                                         padding: '0.5rem 1.2rem',
                                         minWidth: '98px',
                                         borderRadius: '0.45rem',
-                                        backgroundColor: '#006bff',
                                         border: '1px solid #006bff',
                                         boxShadow: '0 3px 5px 0 rgba(0, 107, 255, 0.3)',
                                         cursor: 'pointer',

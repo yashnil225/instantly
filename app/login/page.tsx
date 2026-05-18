@@ -223,7 +223,7 @@ export default function LoginPage() {
                     <button
                         onClick={() => setIsForgotModalOpen(true)}
                         className="text-[14px] hover:text-[#006bff] transition-colors cursor-pointer"
-                        style={{ fontWeight: '400 !important', color: 'rgb(132, 165, 203)' } as any}
+                        style={{ fontWeight: '400 !important', color: 'rgb(127, 117, 125)' } as any}
                     >
                         Forgot password?
                     </button>
@@ -271,7 +271,7 @@ export default function LoginPage() {
                         </div>
 
                         {/* Modal Body — 1rem padding */}
-                        <div style={{ padding: '1rem' }}>
+                        <div style={{ padding: '3rem' }}>
                             <p className="text-[16px] font-normal mb-[1rem] leading-[1.6]" style={{ color: 'rgb(37, 42, 58)' }}>
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>

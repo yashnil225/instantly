@@ -159,7 +159,7 @@ export default function LoginPage() {
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-2px]"></div>
-                        <span className="text-[12px] uppercase font-thin" style={{ color: 'rgb(132,165,203)' }}>OR</span>
+                        <span className="text-[10px] uppercase font-thin" style={{ color: 'rgb(168, 177, 186)' }}>OR</span>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-2px]"></div>
                     </div>
 
@@ -211,7 +211,7 @@ export default function LoginPage() {
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
                         style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
-                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] tracking-wider transition-all disabled:opacity-50 ripple-container"
+                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] tracking-wide transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log\u00A0In"}
                     </button>
@@ -223,7 +223,7 @@ export default function LoginPage() {
                     <button
                         onClick={() => setIsForgotModalOpen(true)}
                         className="text-[14px] hover:text-[#006bff] transition-colors cursor-pointer"
-                        style={{ fontWeight: '400 !important', color: 'rgb(127, 117, 125)' } as any}
+                        style={{ fontWeight: '400 !important', color: 'rgb(140, 155, 172)' } as any}
                     >
                         Forgot password?
                     </button>
@@ -271,7 +271,7 @@ export default function LoginPage() {
                         </div>
 
                         {/* Modal Body — 1rem padding */}
-                        <div style={{ padding: '1rem', paddingBottom: '2.5rem' }}>
+                        <div style={{ padding: '1rem', paddingBottom: '2rem' }}>
                             <p className="text-[16px] font-normal mb-[1rem] leading-[1.6]" style={{ color: 'rgb(37, 42, 58)' }}>
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>

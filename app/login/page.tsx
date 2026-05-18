@@ -130,7 +130,7 @@ export default function LoginPage() {
                         className="social-btn ripple-container flex items-center justify-center gap-1"
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
-                        <svg width="20" height="18.5" viewBox="0 0 48 48">
+                        <svg width="22" height="22" viewBox="0 0 48 48">
                             <path fill="rgb(255, 193, 7)" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
                             <path fill="rgb(255, 61, 0)" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
                             <path fill="rgb(88, 176, 75)" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
@@ -143,7 +143,7 @@ export default function LoginPage() {
                     <div style={{ height: '12px' }} />
 
                     <button
-                        className="social-btn ripple-container flex items-center justify-center gap-1.5"
+                        className="social-btn ripple-container flex items-center justify-center gap-1"
                         onMouseDown={createRipple}
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
@@ -159,7 +159,7 @@ export default function LoginPage() {
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-2px]"></div>
-                        <span className="text-[12px] text-[#8492a6] uppercase font-light">OR</span>
+                        <span className="text-[12px] uppercase font-light" style={{ color: '#9ca3af' }}>OR</span>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-2px]"></div>
                     </div>
 
@@ -211,7 +211,7 @@ export default function LoginPage() {
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
                         style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
-                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] tracking-wide transition-all disabled:opacity-50 ripple-container"
+                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] tracking-wider transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log\u00A0In"}
                     </button>
@@ -222,8 +222,8 @@ export default function LoginPage() {
                     {/* Forgot Password */}
                     <button
                         onClick={() => setIsForgotModalOpen(true)}
-                        className="text-[14px] text-[rgb(164,161,172)] hover:text-[#006bff] transition-colors cursor-pointer"
-                        style={{ fontWeight: '400 !important' } as any}
+                        className="text-[14px] hover:text-[#006bff] transition-colors cursor-pointer"
+                        style={{ fontWeight: '400 !important', color: 'rgb(132, 165, 203)' } as any}
                     >
                         Forgot password?
                     </button>
@@ -296,7 +296,7 @@ export default function LoginPage() {
                             />
 
                             {/* Buttons — right-aligned, mt-4 mb-3 */}
-                            <div className="flex justify-end gap-2" style={{ marginTop: '1.5rem', marginBottom: '2.0rem' }}>
+                            <div className="flex justify-end gap-2" style={{ marginTop: '1.5rem', marginBottom: '1.0rem' }}>
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
                                     onMouseDown={createRipple}

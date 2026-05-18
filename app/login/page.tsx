@@ -127,7 +127,7 @@ export default function LoginPage() {
                     <button
                         onClick={handleGoogleSignIn}
                         onMouseDown={createRipple}
-                        className="social-btn ripple-container flex items-center justify-center gap-2"
+                        className="social-btn ripple-container flex items-center justify-center gap-1"
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
                         <svg width="20" height="20" viewBox="0 0 48 48">
@@ -143,7 +143,7 @@ export default function LoginPage() {
                     <div style={{ height: '12px' }} />
 
                     <button
-                        className="social-btn ripple-container flex items-center justify-center gap-3"
+                        className="social-btn ripple-container flex items-center justify-center gap-1.5"
                         onMouseDown={createRipple}
                         style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
                     >
@@ -164,7 +164,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* OR Divider → Email Field */}
-                    <div style={{ height: '14px' }} />
+                    <div style={{ height: '18px' }} />
 
                     {/* Email Input: 358px W × 54px H */}
                     <div
@@ -250,7 +250,7 @@ export default function LoginPage() {
                     {/* Backdrop — 50% black, no blur, matching reference */}
                     <div className="absolute inset-0 bg-black/50" />
                     <div
-                        className="relative w-full max-w-[500px] bg-white overflow-hidden mx-4"
+                        className="relative w-full max-w-[498px] bg-white overflow-hidden mx-4"
                         style={{ borderRadius: '0.3rem', border: '1px solid rgba(0,0,0,0.2)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
@@ -272,7 +272,7 @@ export default function LoginPage() {
 
                         {/* Modal Body — 1rem padding */}
                         <div style={{ padding: '1rem' }}>
-                            <p className="text-[16px] text-black font-normal mb-[1rem] leading-[1.6]">
+                            <p className="text-[16px] font-normal mb-[1.25rem] leading-[1.6]" style={{ color: 'rgb(37, 42, 58)' }}>
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>
 

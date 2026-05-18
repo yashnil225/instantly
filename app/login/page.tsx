@@ -251,7 +251,7 @@ export default function LoginPage() {
                     <div className="absolute inset-0 bg-black/50" />
                     <div
                         className="relative w-full max-w-[500px] bg-white overflow-hidden mx-4"
-                        style={{ borderRadius: '0.3rem', border: '1px solid rgb(102, 102, 102)', minHeight: '320px' }}
+                        style={{ borderRadius: '0.3rem', border: '1px solid rgb(102, 102, 102)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header — 1rem padding, border-bottom, flex-start alignment */}

@@ -245,7 +245,7 @@ function SignupForm() {
                             </button>
 
                             {/* Button → Footer: Reduced when expanded */}
-                            <div style={{ height: showPassword ? '14px' : '32px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '10px' : '26px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Footer */}
                             <div className="text-center text-[16px] text-[rgb(83,94,108)]" style={{ width: '358px' }}>
@@ -265,7 +265,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Moved up and left per request */}
-                <div className="absolute top-[-60px] bottom-[-50vh] right-[-2vw] w-[125%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
+                <div className="absolute top-[-60px] bottom-[-50vh] right-[-2vw] w-[130%] bg-instantly-waves opacity-100 pointer-events-none -z-10" style={{ backgroundSize: 'cover', backgroundPosition: 'left bottom' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center mt-[-80px]">
                     {/* Illustration - Slightly increased Size */}

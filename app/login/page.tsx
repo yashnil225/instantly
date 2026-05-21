@@ -159,7 +159,7 @@ export default function LoginPage() {
                     {/* OR Divider */}
                     <div className="flex items-center gap-4" style={{ width: '358px' }}>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-2px]"></div>
-                        <span className="text-[12px] uppercase font-thin" style={{ color: 'rgb(168, 177, 186)' }}>OR</span>
+                        <span className="text-[12px] text-[rgb(135,149,168)] tracking-normal uppercase font-medium" style={{ fontWeight: '500 !important' } as any}>OR</span>
                         <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-2px]"></div>
                     </div>
 

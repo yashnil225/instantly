@@ -136,7 +136,7 @@ export default function LoginPage() {
                             <path fill="rgb(88, 176, 75)" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
                             <path fill="rgb(25, 118, 210)" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
                         </svg>
-                        <span className="text-[16.2px] font-semibold text-slate-700 tracking-wide relative left-[1px]">Log In with Google</span>
+                        <span className="text-[16.2px] font-semibold text-slate-700 tracking-wide">Log In with Google</span>
                     </button>
 
                     {/* Between Social Buttons: 12px */}
@@ -211,7 +211,7 @@ export default function LoginPage() {
                         onMouseDown={createRipple}
                         onClick={handleSubmit as unknown as React.MouseEventHandler<HTMLButtonElement>}
                         style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
-                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] tracking-wide transition-all disabled:opacity-50 ripple-container"
+                        className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] tracking-[0.04em] transition-all disabled:opacity-50 ripple-container"
                     >
                         {loading ? "Logging in..." : "Log\u00A0In"}
                     </button>

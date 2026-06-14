@@ -114,7 +114,7 @@ function SignupForm() {
                     <div className="flex flex-col items-start px-4 md:px-0">
 
                         {/* Top Spacer: Shrinks when expanded, but maintains a small gap at the top */}
-                        <div style={{ height: showPassword ? '78px' : '118px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '58px' : '118px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Heading — centered over the 358px form width */}
                         <h1 className="text-[32px] font-semibold text-slate-900 tracking-normal text-center" style={{ width: '360px' }}>

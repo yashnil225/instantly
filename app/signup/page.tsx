@@ -114,7 +114,7 @@ function SignupForm() {
                     <div className="flex flex-col items-start px-4 md:px-0">
 
                         {/* Top Spacer: Shrinks when expanded, but maintains a small gap at the top */}
-                        <div style={{ height: showPassword ? '68px' : '118px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '86px' : '118px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Heading — centered over the 358px form width */}
                         <h1 className="text-[32px] font-semibold text-slate-900 tracking-normal text-center" style={{ width: '360px' }}>
@@ -122,7 +122,7 @@ function SignupForm() {
                         </h1>
 
                         {/* Heading → Social Buttons: Reduced when expanded */}
-                        <div style={{ height: showPassword ? '4px' : '24px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '14px' : '24px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Social Buttons: 358px W × 52px H | Fully Rounded */}
                         <button
@@ -155,7 +155,7 @@ function SignupForm() {
                         </button>
 
                         {/* Social Buttons → OR Divider: Reduced significantly when expanded */}
-                        <div style={{ height: showPassword ? '6px' : '18px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '10px' : '18px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* OR Divider */}
                         <div className="flex items-center gap-4" style={{ width: '358px' }}>
@@ -165,7 +165,7 @@ function SignupForm() {
                         </div>
 
                         {/* OR Divider → Email Field: Reduced significantly when expanded */}
-                        <div style={{ height: showPassword ? '2px' : '10px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '6px' : '10px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Email Input: 358px W × 54px H */}
                         <form onSubmit={handleSubmit} style={{ width: '358px' }}>
@@ -209,7 +209,7 @@ function SignupForm() {
                                 />
                             </div>
                             {/* Password Container → Terms: Moved up per request */}
-                            <div style={{ height: showPassword ? '24px' : '36px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '28px' : '36px', transition: 'height 0.4s ease-in-out' }} />
                             {/* Terms Checkbox — centered with lines */}
                             <div className="flex items-start gap-3" style={{ width: '358px' }}>
                                 <div
@@ -233,7 +233,7 @@ function SignupForm() {
                             </div>
 
                             {/* Tick Area → Join Now Button: Decreased by 8px per request */}
-                            <div style={{ height: showPassword ? '4px' : '24px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '12px' : '24px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Primary Action Button: 360px W × 58px H | 12px radius */}
                             <button
@@ -247,7 +247,7 @@ function SignupForm() {
                             </button>
 
                             {/* Button → Footer: Reduced when expanded */}
-                            <div style={{ height: showPassword ? '10px' : '26px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '16px' : '26px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Footer */}
                             <div className="text-center text-[16px] relative top-[2px] left-[1px]" style={{ width: '358px', color: 'rgb(96, 106, 119)' }}>
@@ -257,8 +257,8 @@ function SignupForm() {
                                 </Link>
                             </div>
 
-                            {/* Footer → Bottom: Reduced when expanded (5px revealed, 30px hidden) */}
-                            <div style={{ height: showPassword ? '5px' : '30px', transition: 'height 0.4s ease-in-out' }} />
+                            {/* Footer → Bottom: Reduced when expanded (10px revealed, 30px hidden) */}
+                            <div style={{ height: showPassword ? '10px' : '30px', transition: 'height 0.4s ease-in-out' }} />
                         </form>
                     </div>
                 </div>

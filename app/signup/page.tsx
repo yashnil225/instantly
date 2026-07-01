@@ -114,7 +114,7 @@ function SignupForm() {
                     <div className="flex flex-col items-start px-4 md:px-0">
 
                         {/* Top Spacer: Shrinks when expanded, but maintains a small gap at the top */}
-                        <div style={{ height: showPassword ? '32px' : '118px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '38px' : '118px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Heading — centered over the 358px form width */}
                         <h1 className="text-[32px] font-semibold text-slate-900 tracking-normal text-center" style={{ width: '360px' }}>
@@ -122,7 +122,7 @@ function SignupForm() {
                         </h1>
 
                         {/* Heading → Social Buttons: Reduced when expanded */}
-                        <div style={{ height: showPassword ? '34px' : '24px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '28px' : '24px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Social Buttons: 358px W × 52px H | Fully Rounded */}
                         <button
@@ -180,7 +180,7 @@ function SignupForm() {
                                     className="auth-input"
                                 />
                                 {!emailValid && (
-                                    <p className="text-red-500 text-[11px] font-semibold mt-1.5 ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                                    <p className="text-[#e03131] text-[11.5px] font-medium mt-2 ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
                                         Enter a valid email address
                                     </p>
                                 )}
@@ -194,7 +194,7 @@ function SignupForm() {
                                     opacity: showPassword ? 1 : 0,
                                     width: '360px',
                                     transition: 'all 0.3s ease-in-out',
-                                    marginTop: showPassword ? '8px' : '0px'
+                                    marginTop: showPassword ? '12px' : '0px'
                                 }}
                             >
                                 <input
@@ -247,7 +247,7 @@ function SignupForm() {
                             </button>
 
                             {/* Button → Footer: Reduced when expanded */}
-                            <div style={{ height: showPassword ? '20px' : '26px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '26px' : '26px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Footer */}
                             <div className="text-center text-[16px] relative top-[2px] left-[1px]" style={{ width: '358px', color: 'rgb(96, 106, 119)' }}>
@@ -258,7 +258,7 @@ function SignupForm() {
                             </div>
 
                             {/* Footer → Bottom */}
-                            <div style={{ height: showPassword ? '10px' : '30px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '4px' : '30px', transition: 'height 0.4s ease-in-out' }} />
                         </form>
                     </div>
                 </div>
@@ -267,7 +267,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Dynamic width based on expansion */}
-                <div className={`absolute top-0 bottom-0 right-[-2px] transition-all duration-500 ease-in-out ${showPassword ? 'w-[125%]' : 'w-[121%]'} bg-instantly-waves opacity-100 pointer-events-none -z-10`} style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
+                <div className={`absolute top-[-10px] bottom-0 right-[-14px] transition-all duration-500 ease-in-out ${showPassword ? 'w-[125%]' : 'w-[121%]'} bg-instantly-waves opacity-100 pointer-events-none -z-10`} style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center left-[-4px] transition-all duration-500 ease-in-out" style={{ marginTop: showPassword ? '-140px' : '-80px' }}>
                     {/* Illustration */}

@@ -114,7 +114,7 @@ function SignupForm() {
                     <div className="flex flex-col items-start px-4 md:px-0">
 
                         {/* Top Spacer: Shrinks when expanded, but maintains a small gap at the top */}
-                        <div style={{ height: showPassword ? '38px' : '78px', transition: 'height 0.4s ease-in-out' }} />
+                        <div style={{ height: showPassword ? '38px' : '80px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Heading — centered over the 358px form width */}
                         <h1 className="text-[32px] font-semibold text-slate-900 tracking-normal text-center" style={{ width: '360px' }}>
@@ -267,7 +267,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Dynamic width based on expansion */}
-                <div className={`absolute top-[-4px] bottom-0 right-[-8px] transition-all duration-500 ease-in-out ${showPassword ? 'w-[125%]' : 'w-[121%]'} bg-instantly-waves opacity-100 pointer-events-none -z-10`} style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
+                <div className={`absolute top-[-4px] bottom-0 right-[-6px] transition-all duration-500 ease-in-out ${showPassword ? 'w-[125%]' : 'w-[121%]'} bg-instantly-waves opacity-100 pointer-events-none -z-10`} style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center left-[-4px] transition-all duration-500 ease-in-out" style={{ marginTop: showPassword ? '-140px' : '-80px' }}>
                     {/* Illustration */}

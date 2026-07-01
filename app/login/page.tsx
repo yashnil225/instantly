@@ -273,7 +273,7 @@ export default function LoginPage() {
                         </div>
 
                         {/* Modal Body — 1rem padding */}
-                        <div style={{ padding: '1rem', paddingBottom: '34px' }}>
+                        <div style={{ padding: '1rem', paddingBottom: '32px' }}>
                             <p className="text-[16px] font-normal mb-[1rem] leading-[1.6]" style={{ color: 'rgb(37, 42, 58)' }}>
                                 Hi there! Please submit your registered email address and we&apos;ll send you an email with your password reset link!
                             </p>
@@ -290,7 +290,8 @@ export default function LoginPage() {
                                     borderRadius: '0.25rem',
                                     outline: 'none',
                                     width: 'calc(100% + 2px)',
-                                    marginLeft: '-1px'
+                                    marginLeft: '-1px',
+                                    fontWeight: '400'
                                 }}
                                 onFocus={(e) => { e.target.style.borderColor = '#80bdff'; e.target.style.boxShadow = '0 0 0 0.2rem rgba(0,123,255,.25)'; }}
                                 onBlur={(e) => { e.target.style.borderColor = '#ced4da'; e.target.style.boxShadow = 'none'; }}
@@ -302,10 +303,10 @@ export default function LoginPage() {
                                 <button
                                     onClick={() => setIsForgotModalOpen(false)}
                                     onMouseDown={createRipple}
-                                    className="text-[18px] font-normal transition-all bg-transparent hover:bg-[#f8f9fc] ripple-container"
+                                    className="text-[16px] font-normal transition-all bg-transparent hover:bg-[#f8f9fc] ripple-container"
                                     style={{
-                                        padding: '0.5rem 1.2rem',
-                                        minWidth: '98px',
+                                        padding: '0.4rem 1rem',
+                                        minWidth: '80px',
                                         borderRadius: '0.45rem',
                                         border: '1px solid #dee2e6',
                                         color: '#3c4858',
@@ -321,10 +322,10 @@ export default function LoginPage() {
                                         setIsForgotModalOpen(false)
                                     }}
                                     onMouseDown={createRipple}
-                                    className="text-[18px] font-normal text-white transition-all bg-[#006bff] hover:bg-[#0056d2] ripple-container"
+                                    className="text-[16px] font-normal text-white transition-all bg-[#006bff] hover:bg-[#0056d2] ripple-container"
                                     style={{
-                                        padding: '0.5rem 1.2rem',
-                                        minWidth: '98px',
+                                        padding: '0.4rem 1rem',
+                                        minWidth: '80px',
                                         borderRadius: '0.45rem',
                                         border: '1px solid #006bff',
                                         boxShadow: '0 3px 5px 0 rgba(0, 107, 255, 0.3)',

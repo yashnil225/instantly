@@ -88,7 +88,7 @@ export default function LoginPage() {
             <Toaster position="bottom-center" />
 
             {/* Home Icon — 19px from right edge (Moved 2px further right) */}
-            <div className="absolute top-[22px] right-[19px] z-50">
+            <div className="absolute top-[21px] right-[19px] z-50">
                 <a
                     href="https://instantly-ai.vercel.app"
                     className="flex items-center justify-center p-2 rounded-[8px]"
@@ -115,7 +115,7 @@ export default function LoginPage() {
             <div className="flex flex-col items-center w-full">
 
                 {/* Top of Screen → Logo: 45px */}
-                <div style={{ marginTop: '60px' }}>
+                <div style={{ marginTop: '64px' }}>
                     {/* Logo: 24px × 24px (Reduced) */}
                     <Logo style={{ width: '32px', height: '32px' }} />
                 </div>

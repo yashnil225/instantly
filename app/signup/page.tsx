@@ -80,7 +80,7 @@ function SignupForm() {
     }
 
     return (
-        <div className="relative flex flex-col md:flex-row bg-white h-screen overflow-hidden">
+        <div className="relative flex flex-col md:flex-row bg-white dark:bg-[#191a1b] h-screen overflow-hidden">
             <Toaster position="bottom-center" />
 
             {/* Home Icon — 21px from right edge */}
@@ -96,7 +96,8 @@ function SignupForm() {
                         height="24"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="black"
+                        stroke="currentColor"
+                        className="text-black dark:text-white"
                         strokeWidth="2.0"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -108,7 +109,7 @@ function SignupForm() {
             </div>
 
             {/* Left Side: Form — form starts at 218px from left edge on desktop */}
-            <div className="flex-shrink-0 bg-white relative w-full md:w-[58vw] min-h-screen lg:h-screen" style={{}}>
+            <div className="flex-shrink-0 bg-white dark:bg-[#191a1b] relative w-full md:w-[58vw] min-h-screen lg:h-screen" style={{}}>
                 <div className="h-full flex flex-col items-center md:items-start md:pl-[218px] py-12 lg:py-0">
                     {/* Inner wrapper to prevent flex squishing without scrollbars */}
                     <div className="flex flex-col items-start px-4 md:px-0">
@@ -117,7 +118,7 @@ function SignupForm() {
                         <div style={{ height: showPassword ? '38px' : '80px', transition: 'height 0.4s ease-in-out' }} />
 
                         {/* Heading — centered over the 358px form width */}
-                        <h1 className="text-[32px] font-semibold text-slate-900 tracking-normal text-center" style={{ width: '360px' }}>
+                        <h1 className="text-[32px] font-semibold text-slate-900 dark:text-white tracking-normal text-center" style={{ width: '360px' }}>
                             Create a new account
                         </h1>
 
@@ -137,7 +138,7 @@ function SignupForm() {
                                 <path fill="rgb(88, 176, 75)" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
                                 <path fill="rgb(25, 118, 210)" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
                             </svg>
-                            <span className="text-[15.5px] font-semibold text-slate-700 tracking-[0.045em] relative top-[1px]">Sign Up with Google</span>
+                            <span className="text-[15.5px] font-semibold text-slate-700 dark:text-white tracking-[0.045em] relative top-[1px]">Sign Up with Google</span>
                         </button>
 
                         {/* Between Social Buttons: 12px */}
@@ -151,7 +152,7 @@ function SignupForm() {
                             <svg viewBox="0 0 384 512" width="22" height="22" className="mt-[-4px] relative left-[2px]">
                                 <path fill="currentColor" d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
                             </svg>
-                            <span className="text-[15.5px] font-semibold text-slate-700 tracking-[0.045em] relative top-[1px]">Sign Up with Apple</span>
+                            <span className="text-[15.5px] font-semibold text-slate-700 dark:text-white tracking-[0.045em] relative top-[1px]">Sign Up with Apple</span>
                         </button>
 
                         {/* Social Buttons → OR Divider: Reduced significantly when expanded */}
@@ -159,9 +160,9 @@ function SignupForm() {
 
                         {/* OR Divider */}
                         <div className="flex items-center gap-4" style={{ width: '358px' }}>
-                            <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-3px]"></div>
-                            <span className="text-[12.35px] text-[rgb(135,149,168)] tracking-normal uppercase font-medium" style={{ fontWeight: '500 !important' } as any}>OR</span>
-                            <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] mt-[-3px]"></div>
+                            <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] dark:bg-[rgba(255,255,255,0.1)] mt-[-3px]"></div>
+                            <span className="text-[12.35px] text-[rgb(135,149,168)] dark:text-gray-400 tracking-normal uppercase font-medium" style={{ fontWeight: '500 !important' } as any}>OR</span>
+                            <div className="flex-1 h-[1px] bg-[rgb(222,226,230)] dark:bg-[rgba(255,255,255,0.1)] mt-[-3px]"></div>
                         </div>
 
                         {/* OR Divider → Email Field: Reduced significantly when expanded */}
@@ -176,8 +177,8 @@ function SignupForm() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
-                                    style={{ width: '360px', height: '56px', borderRadius: '8px', color: 'rgb(113,121,129)', fontWeight: '400' }}
-                                    className="auth-input"
+                                    style={{ width: '360px', height: '56px', borderRadius: '8px', fontWeight: '400' }}
+                                    className="auth-input text-[rgb(113,121,129)] dark:text-white"
                                 />
                                 {!emailValid && (
                                     <p className="text-[#e03131] text-[11.5px] font-medium mt-2 ml-1 animate-in fade-in slide-in-from-top-1 duration-200">
@@ -204,12 +205,12 @@ function SignupForm() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     minLength={6}
-                                    style={{ width: '360px', height: '56px', borderRadius: '8px', color: 'rgb(113,121,129)', fontWeight: '400' }}
-                                    className="auth-input"
+                                    style={{ width: '360px', height: '56px', borderRadius: '8px', fontWeight: '400' }}
+                                    className="auth-input text-[rgb(113,121,129)] dark:text-white"
                                 />
                             </div>
                             {/* Password Container → Terms */}
-                            <div style={{ height: showPassword ? '38px' : '36px', transition: 'height 0.4s ease-in-out' }} />
+                            <div style={{ height: showPassword ? '28px' : '36px', transition: 'height 0.4s ease-in-out' }} />
                             {/* Terms Checkbox — centered with lines */}
                             <div className="flex items-start gap-3" style={{ width: '358px' }}>
                                 <div
@@ -250,7 +251,7 @@ function SignupForm() {
                             <div style={{ height: showPassword ? '26px' : '26px', transition: 'height 0.4s ease-in-out' }} />
 
                             {/* Footer */}
-                            <div className="text-center text-[16px] relative top-[2px] left-[1px]" style={{ width: '358px', color: 'rgb(96, 106, 119)' }}>
+                            <div className="text-center text-[16px] relative top-[2px] left-[1px] text-[rgb(96,106,119)] dark:text-gray-300" style={{ width: '358px' }}>
                                 Already have an account?{" "}
                                 <Link href="/login">
                                     <span className="buttonText" style={{ fontWeight: '700 !important' } as any}>Log In</span>
@@ -267,7 +268,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Dynamic width based on expansion */}
-                <div className={`absolute top-[-4px] bottom-0 right-[-6px] transition-all duration-500 ease-in-out ${showPassword ? 'w-[125%]' : 'w-[121%]'} bg-instantly-waves opacity-100 pointer-events-none -z-10`} style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
+                <div className={`absolute transition-all duration-500 ease-in-out ${showPassword ? 'w-[125%] top-[-12px] bottom-[0px] right-[-14px]' : 'w-[121%] top-[-8px] bottom-[-4px] right-[-10px]'} bg-instantly-waves opacity-100 pointer-events-none -z-10`} style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center left-[-4px] transition-all duration-500 ease-in-out" style={{ marginTop: showPassword ? '-140px' : '-80px' }}>
                     {/* Illustration */}
@@ -294,13 +295,13 @@ function SignupForm() {
                     </div>
 
                     {/* Marketing Text */}
-                    <h2 className="text-[23px] font-semibold text-black mb-1 leading-tight tracking-tight">
+                    <h2 className="text-[23px] font-semibold text-black dark:text-white mb-1 leading-tight tracking-tight">
                         45,000+ clients
                     </h2>
-                    <p className="text-black text-[23px] font-semibold mb-[26px]">
+                    <p className="text-black dark:text-white text-[23px] font-semibold mb-[26px]">
                         are getting more replies!
                     </p>
-                    <p className="text-[15.5px] leading-[2.0] max-w-sm font-medium px-2" style={{ color: 'rgb(118, 135, 165)' }}>
+                    <p className="text-[15.5px] leading-[2.0] max-w-sm font-medium px-2 text-[#7687a5] dark:text-gray-400">
                         Unlock the power of effective outreach with our cutting-edge platform, and experience a surge in responses and engagement rates like never before.
                     </p>
                 </div>

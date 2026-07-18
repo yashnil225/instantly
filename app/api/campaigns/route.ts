@@ -72,7 +72,7 @@ export async function GET(request: Request) {
         const eventCounts = await prisma.$queryRaw<{ campaignId: string, type: string, count: number | bigint }[]>`
             SELECT "campaignId", "type", COUNT(DISTINCT "leadId") as count
             FROM "SendingEvent"
-            WHERE "campaignId" IN (${Prisma.join(campaignIds)})
+            WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
             AND "type" IN ('sent', 'open', 'click', 'reply')
             GROUP BY "campaignId", "type"
         `
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
         const sentTodayCounts = await prisma.$queryRaw<{ campaignId: string, count: number | bigint }[]>`
             SELECT "campaignId", COUNT(id) as count
             FROM "SendingEvent"
-            WHERE "campaignId" IN (${Prisma.join(campaignIds)})
+            WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
             AND "type" = 'sent'
             AND "createdAt" >= ${todayUTC.toISOString()}
             GROUP BY "campaignId"
@@ -92,7 +92,7 @@ export async function GET(request: Request) {
         const oppCount = await prisma.$queryRaw<{ campaignId: string, count: number | bigint }[]>`
             SELECT "campaignId", COUNT(DISTINCT "leadId") as count
             FROM "Lead"
-            WHERE "campaignId" IN (${Prisma.join(campaignIds)})
+            WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
             AND "status" IN ('interested', 'won')
             GROUP BY "campaignId"
         `

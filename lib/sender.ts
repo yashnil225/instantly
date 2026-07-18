@@ -77,7 +77,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
     })
 
     // 0. Fetch Blocklist
-    const blockedEmails = (await prisma.blocklist.findMany({ select: { email: true } })).map(b => b.email.toLowerCase())
+    const blockedEmails = (await prisma.blocklist.findMany({ select: { email: true } })).map((b: any) => b.email.toLowerCase())
 
     let totalSent = 0
     let errors = 0
@@ -113,8 +113,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
         // --- 3. Account Availability Check with Warmup Mode & Provider Matching ---
         const availableAccounts = campaign.campaignAccounts
-            .map(ca => ca.emailAccount)
-            .filter(acc => {
+            .map((ca: any) => ca.emailAccount)
+            .filter((acc: any) => {
                 // Filter by Email Account ID if specified
                 if (filter?.emailAccountId && acc.id !== filter.emailAccountId) return false
 
@@ -205,7 +205,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
         // Sort by priority if needed
         if (settings.prioritizeNewLeads) {
-            candidateLeads.sort((a, b) => {
+            candidateLeads.sort((a: any, b: any) => {
                 const aIsNew = a.events.length === 0
                 const bIsNew = b.events.length === 0
                 if (aIsNew && !bIsNew) return -1
@@ -215,7 +215,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
         }
 
         // Filter out Blocklisted Emails
-        candidateLeads = candidateLeads.filter(l => !blockedEmails.includes(l.email.toLowerCase()))
+        candidateLeads = candidateLeads.filter((l: any) => !blockedEmails.includes(l.email.toLowerCase()))
 
         // Limit to small batch size to prevent timeouts and enforce hard limits!
         const dynamicLimit = Math.min(5, campaignRemainingToday)
@@ -342,7 +342,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 else if (leadDomain === 'outlook.com' || leadDomain === 'hotmail.com') requiredProvider = 'microsoft'
 
                 if (requiredProvider) {
-                    const matchedAccounts = availableAccounts.filter(a => a.provider === requiredProvider)
+                    const matchedAccounts = availableAccounts.filter((a: any) => a.provider === requiredProvider)
                     if (matchedAccounts.length > 0) {
                         accountsPool = matchedAccounts
                     }
@@ -351,7 +351,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
             // Sticky Sender Logic (Try to use same account for follow-ups)
             if (nextStepNumber > 1 && previousEvent && previousEvent.emailAccountId) {
-                const stickyAccount = accountsPool.find(a => a.id === previousEvent!.emailAccountId)
+                const stickyAccount = accountsPool.find((a: any) => a.id === previousEvent!.emailAccountId)
                 if (stickyAccount) {
                     account = stickyAccount
                 } else {
@@ -393,12 +393,12 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                                     include: { lead: true }
                                 })
 
-                                const totalSent = sendingEvents.filter(e => e.type === 'sent').length
+                                const totalSent = sendingEvents.filter((e: any) => e.type === 'sent').length
                                 if (totalSent < 5) return { variant: v, score: 0, sent: totalSent } // Needs minimum sample size
 
-                                let opens = sendingEvents.filter(e => e.type === 'open').length
-                                let clicks = sendingEvents.filter(e => e.type === 'click').length
-                                let replies = sendingEvents.filter(e => e.type === 'reply').length
+                                let opens = sendingEvents.filter((e: any) => e.type === 'open').length
+                                let clicks = sendingEvents.filter((e: any) => e.type === 'click').length
+                                let replies = sendingEvents.filter((e: any) => e.type === 'reply').length
 
                                 let score = 0
                                 if (settings.winningMetric === 'Open Rate' && totalSent > 0) score = opens / totalSent
@@ -464,11 +464,11 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
                 if (finalHtml) {
                     // Check if the body already contains block HTML tags (meaning it came from the Rich Text Editor)
-                    // Expanded to include `br` — if the body has line breaks, treat as rich HTML to avoid double-conversion.
-                    const isRichHtml = /<(p|div|br)\b/i.test(finalHtml)
+                    // If it only contains <br> or inline tags, we STILL want to convert raw \n newlines to <br> to fix line spacing.
+                    const isRichHtml = /<(p|div|table|ul|ol|h[1-6])\b/i.test(finalHtml)
 
                     if (!isRichHtml) {
-                        // It's plain text: Normalize newlines to <br /> to ensure they render in email clients
+                        // It's mostly plain text: Normalize newlines to <br /> to ensure they render perfectly in email clients
                         finalHtml = finalHtml.replace(/\n/g, '<br />')
                     }
 
@@ -623,7 +623,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         data: {
                             sentToday: Math.max(account.dailyLimit || 0, 999999) // Ensure no more sends today without triggering permanent error
                         }
-                    }).catch(e => console.error('Failed to update account limit status', e))
+                    }).catch((e: any) => console.error('Failed to update account limit status', e))
                 } else {
                     // Log error to the account to surface in UI
                     await prisma.emailAccount.update({
@@ -632,7 +632,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                             status: 'error',
                             errorDetail: `Sending failed: ${errorMessage}`
                         }
-                    }).catch(e => console.error('Failed to update account error status', e))
+                    }).catch((e: any) => console.error('Failed to update account error status', e))
                 }
             }
         }

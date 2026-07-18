@@ -72,17 +72,54 @@ function SignupForm() {
         }
 
         setLoading(true)
-        setTimeout(() => {
+        try {
+            const res = await fetch("/api/auth/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: email.split("@")[0],
+                    email,
+                    password
+                })
+            })
+
+            const data = await res.json()
+
+            if (res.ok) {
+                const { signIn } = await import("next-auth/react")
+                const signInRes = await signIn("credentials", {
+                    email,
+                    password,
+                    redirect: false
+                })
+                
+                if (signInRes?.ok) {
+                    router.push("/campaigns?welcome=true")
+                } else {
+                    toast.error("Account created, but failed to log in automatically.")
+                }
+            } else if (res.status === 409) {
+                setGoogleError(true)
+            } else {
+                toast.error(data.error || "Failed to create account")
+            }
+        } catch (err) {
+            toast.error("An unexpected error occurred.")
+        } finally {
             setLoading(false)
-            toast.success("Welcome! Please check your email.")
-        }, 1000)
+        }
     }
 
     const handleGoogleSignIn = async (e: MouseEvent<HTMLButtonElement>) => {
         createRipple(e)
         
+        if (!termsAccepted) {
+            toast.error("Please accept the Instantly terms of use and privacy policy.")
+            return
+        }
+        
         // Get the Google OAuth URL without redirecting the main page
-        const res = await signIn("google", { redirect: false, callbackUrl: "/campaigns?welcome=true" })
+        const res = await signIn("google", { redirect: false, callbackUrl: "/auth/close-popup" })
         
         if (res?.url) {
             // Open the Google login in a popup window
@@ -93,18 +130,36 @@ function SignupForm() {
             const popup = window.open(res.url, 'Google Login', `width=${width},height=${height},top=${top},left=${left}`)
             
             // Poll to check when the user finishes and closes the popup
-            const checkPopup = setInterval(() => {
+            const checkPopup = setInterval(async () => {
                 if (popup?.closed) {
                     clearInterval(checkPopup)
                     
-                    // User finished, show loading spinner to simulate checking account
                     setGoogleLoading(true)
                     setGoogleError(false)
                     
-                    setTimeout(() => {
+                    try {
+                        // Check if they successfully logged in
+                        const statusRes = await fetch('/api/auth/check-status').then(r => r.json())
+                        
+                        if (statusRes.loggedIn) {
+                            if (statusRes.isNew) {
+                                // Newly created account, proceed to app!
+                                router.push("/campaigns?welcome=true")
+                            } else {
+                                // Account ALREADY EXISTED! We must log them out and show error message.
+                                const { signOut } = await import("next-auth/react")
+                                await signOut({ redirect: false })
+                                
+                                setGoogleLoading(false)
+                                setGoogleError(true)
+                            }
+                        } else {
+                            // They closed the popup without finishing sign in
+                            setGoogleLoading(false)
+                        }
+                    } catch (err) {
                         setGoogleLoading(false)
-                        setGoogleError(true)
-                    }, 1500)
+                    }
                 }
             }, 500)
         }
@@ -194,6 +249,14 @@ function SignupForm() {
                         <div style={{ height: '12px' }} />
 
                         <button
+                            onClick={async (e) => {
+                                createRipple(e)
+                                if (!termsAccepted) {
+                                    toast.error("Please accept the Instantly terms of use and privacy policy.")
+                                    return
+                                }
+                                toast("Apple Sign In coming soon!", { icon: "🍎" })
+                            }}
                             className="social-btn ripple-container flex items-center justify-center gap-2"
                             onMouseDown={createRipple}
                             style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
@@ -288,10 +351,22 @@ function SignupForm() {
                             {/* Primary Action Button: 360px W × 58px H | 12px radius */}
                             <button
                                 type="submit"
-                                disabled={loading || !isSubmitActive}
-                                onMouseDown={isSubmitActive ? createRipple : undefined}
-                                style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: isSubmitActive ? '0 3px 6px 0 rgba(0, 107, 255, 0.3)' : 'none' }}
-                                className={`font-semibold text-[16px] tracking-wide transition-all ripple-container ${isSubmitActive ? 'bg-[#006bff] hover:bg-[#0056d2] text-white' : 'bg-[rgb(89,169,255)] text-[rgb(246,251,255)] disabled:cursor-not-allowed cursor-not-allowed'}`}
+                                disabled={loading}
+                                onClick={(e) => {
+                                    if (!isSubmitActive) {
+                                        e.preventDefault()
+                                        if (!termsAccepted) {
+                                            toast.error("Please accept the Instantly terms of use and privacy policy.")
+                                            return
+                                        }
+                                        if (email.length === 0 || !emailValid) {
+                                            setEmailValid(false) // Triggers the red text
+                                        }
+                                    }
+                                }}
+                                onMouseDown={createRipple}
+                                style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: isSubmitActive ? '0 3px 6px 0 rgba(16, 73, 134, 0.3)' : 'none' }}
+                                className={`font-semibold text-[16px] tracking-wide transition-all ripple-container ${isSubmitActive ? 'bg-[#104986] hover:bg-[#0e3a6a] text-[rgb(163,161,155)]' : 'bg-[#104986] opacity-60 text-[rgb(163,161,155)] cursor-pointer'}`}
                             >
                                 {loading ? "Processing..." : "Join Now"}
                             </button>
@@ -321,7 +396,7 @@ function SignupForm() {
                 {/* Wavy Logo Background Overlay - Dynamic width based on expansion */}
                 <div className={`absolute transition-all duration-500 ease-in-out ${showPassword ? 'w-[123%] top-[-14px] bottom-[4px] right-[-18px]' : 'w-[121%] top-[-8px] bottom-[-4px] right-[-10px]'} bg-instantly-waves opacity-100 pointer-events-none -z-10`} style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
 
-                <div className="relative z-10 max-w-md text-center flex flex-col items-center left-[-4px] transition-all duration-500 ease-in-out" style={{ marginTop: showPassword ? '-140px' : '-80px' }}>
+                <div className="relative z-10 max-w-md text-center flex flex-col items-center left-[-4px] transition-all duration-500 ease-in-out" style={{ marginTop: showPassword ? '-180px' : '-130px' }}>
                     {/* Illustration */}
                     <div className="w-[204px] h-auto mb-12 animate-in slide-in-from-bottom-4 duration-1000">
                         <svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 206 200" className="w-full h-full">

@@ -97,18 +97,20 @@ export async function POST(request: Request) {
             const dbAttachments = await prisma.attachment.findMany({
                 where: { id: { in: attachmentIds } }
             })
-            attachments = dbAttachments.map(a => ({
+            attachments = dbAttachments.map((a: any) => ({
                 filename: a.filename,
                 content: a.content,
                 contentType: a.mimeType
             }))
         }
 
-        await transporter.sendMail({
+        const formattedReplyBody = replyBody.replace(/\n/g, '<br />')
+
+        const info = await transporter.sendMail({
             from: `"${account.firstName || ''} ${account.lastName || ''}" <${account.email}>`,
             to: lead.email,
             subject: subject,
-            html: `<div style="white-space: pre-wrap;">${replyBody}</div>`,
+            html: `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 24px; font-size: 15px; color: #000;">${formattedReplyBody}</div>`,
             attachments,
             // Threading headers
             ...(lastSentEvent?.messageId && {
@@ -123,10 +125,13 @@ export async function POST(request: Request) {
                 type: 'sent', // It is a sent message
                 leadId: lead.id,
                 campaignId: campaignId,
+                emailAccountId: account.id,
+                messageId: info.messageId,
                 metadata: JSON.stringify({
                     accountId: account.id,
                     subject: subject,
                     isReply: true,
+                    messageId: info.messageId,
                     bodySnippet: replyBody.substring(0, 100)
                 }),
                 details: replyBody

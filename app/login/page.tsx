@@ -18,6 +18,9 @@ export default function LoginPage() {
     const [isForgotModalOpen, setIsForgotModalOpen] = useState(false)
     const [resetEmail, setResetEmail] = useState("")
 
+    const [googleLoading, setGoogleLoading] = useState(false)
+    const [googleError, setGoogleError] = useState(false)
+
     // Redirect if already logged in according to session
     useEffect(() => {
         if (status === "authenticated") {
@@ -78,9 +81,49 @@ export default function LoginPage() {
         }
     }
 
-    const handleGoogleSignIn = (e: MouseEvent<HTMLButtonElement>) => {
+    const handleGoogleSignIn = async (e: MouseEvent<HTMLButtonElement>) => {
         createRipple(e)
-        setTimeout(() => { signIn("google", { callbackUrl: "/campaigns?welcome=true" }) }, 300)
+        
+        const res = await signIn("google", { redirect: false, callbackUrl: "/auth/close-popup" })
+        
+        if (res?.url) {
+            const width = 500
+            const height = 600
+            const left = window.screen.width / 2 - width / 2
+            const top = window.screen.height / 2 - height / 2
+            const popup = window.open(res.url, 'Google Login', `width=${width},height=${height},top=${top},left=${left}`)
+            
+            const checkPopup = setInterval(async () => {
+                if (popup?.closed) {
+                    clearInterval(checkPopup)
+                    
+                    setGoogleLoading(true)
+                    setGoogleError(false)
+                    
+                    try {
+                        const statusRes = await fetch('/api/auth/check-status').then(r => r.json())
+                        
+                        if (statusRes.loggedIn) {
+                            if (statusRes.isNew) {
+                                // Account DID NOT exist (it was just created). Log out and error.
+                                const { signOut } = await import("next-auth/react")
+                                await signOut({ redirect: false })
+                                
+                                setGoogleLoading(false)
+                                setGoogleError(true)
+                            } else {
+                                // Account existed! Success!
+                                router.push("/campaigns?welcome=true")
+                            }
+                        } else {
+                            setGoogleLoading(false)
+                        }
+                    } catch (err) {
+                        setGoogleLoading(false)
+                    }
+                }
+            }, 500)
+        }
     }
 
     return (
@@ -125,20 +168,38 @@ export default function LoginPage() {
                 <div style={{ marginTop: '48px', width: '358px' }} className="flex flex-col items-center">
 
 
-                    <button
-                        onClick={handleGoogleSignIn}
-                        onMouseDown={createRipple}
-                        className="social-btn ripple-container flex items-center justify-center gap-[4px]"
-                        style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
-                    >
-                        <svg width="20" height="20" viewBox="0 0 48 48">
-                            <path fill="rgb(255, 193, 7)" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
-                            <path fill="rgb(255, 61, 0)" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
-                            <path fill="rgb(88, 176, 75)" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
-                            <path fill="rgb(25, 118, 210)" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
-                        </svg>
-                        <span className="text-[16.2px] font-semibold text-slate-700 dark:text-white tracking-wide relative left-[0.5px]">Log In with Google</span>
-                    </button>
+                    {googleError && (
+                        <div className="text-center mt-[-10px] mb-[18px]" style={{ width: '360px' }}>
+                            <span className="text-[#e03131] text-[15.5px] font-semibold tracking-wide">Account doesn't exist. </span>
+                            <Link href="/signup">
+                                <span className="buttonText text-[15.5px] font-semibold tracking-wide" style={{ fontWeight: '600 !important' } as any}>Sign Up</span>
+                            </Link>
+                        </div>
+                    )}
+
+                    {googleLoading ? (
+                        <div className="flex justify-center items-center w-full h-[54px]" style={{ width: '360px' }}>
+                            <svg className="animate-spin h-[34px] w-[34px] text-[#4580F7]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleGoogleSignIn}
+                            onMouseDown={createRipple}
+                            className="social-btn ripple-container flex items-center justify-center gap-[4px]"
+                            style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
+                        >
+                            <svg width="20" height="20" viewBox="0 0 48 48">
+                                <path fill="rgb(255, 193, 7)" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+                                <path fill="rgb(255, 61, 0)" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+                                <path fill="rgb(88, 176, 75)" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+                                <path fill="rgb(25, 118, 210)" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+                            </svg>
+                            <span className="text-[16.2px] font-semibold text-slate-700 dark:text-white tracking-wide relative left-[0.5px]">Log In with Google</span>
+                        </button>
+                    )}
 
                     {/* Between Social Buttons: 12px */}
                     <div style={{ height: '12px' }} />
@@ -303,8 +364,8 @@ export default function LoginPage() {
                                     onMouseDown={createRipple}
                                     className="text-[16px] font-normal transition-all bg-transparent hover:bg-[#f8f9fc] dark:hover:bg-[rgba(255,255,255,0.05)] border border-[#dee2e6] dark:border-[rgba(255,255,255,0.1)] text-[#3c4858] dark:text-white ripple-container"
                                     style={{
-                                        padding: '0.4rem 1rem',
-                                        minWidth: '100px',
+                                        padding: '0.4625rem 1rem',
+                                        minWidth: '98px',
                                         borderRadius: '0.45rem',
                                         cursor: 'pointer',
                                         lineHeight: '1.5',
@@ -320,8 +381,8 @@ export default function LoginPage() {
                                     onMouseDown={createRipple}
                                     className="text-[16px] font-normal text-white transition-all bg-[#006bff] hover:bg-[#0056d2] ripple-container"
                                     style={{
-                                        padding: '0.4rem 1rem',
-                                        minWidth: '100px',
+                                        padding: '0.4625rem 1rem',
+                                        minWidth: '98px',
                                         borderRadius: '0.45rem',
                                         border: '1px solid #006bff',
                                         boxShadow: '0 3px 5px 0 rgba(0, 107, 255, 0.3)',

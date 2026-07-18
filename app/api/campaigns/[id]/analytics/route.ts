@@ -44,11 +44,11 @@ export async function GET(
             where: { campaignId: campaignId }
         })
 
-        // Calculate real-time stats from events for accuracy (Unique Opens/Clicks)
-        const sentCount = allEvents.filter(e => e.type === 'sent').length
-        const openCount = new Set(allEvents.filter(e => e.type === 'open').map(e => e.leadId)).size
-        const clickCount = new Set(allEvents.filter(e => e.type === 'click').map(e => e.leadId)).size
-        const bounceCount = new Set(allEvents.filter(e => e.type === 'bounce').map(e => e.leadId)).size
+        // Calculate real-time stats from events for accuracy (Unique leads for all metrics)
+        const sentCount = new Set(allEvents.filter((e: any) => e.type === 'sent').map((e: any) => e.leadId)).size
+        const openCount = new Set(allEvents.filter((e: any) => e.type === 'open').map((e: any) => e.leadId)).size
+        const clickCount = new Set(allEvents.filter((e: any) => e.type === 'click').map((e: any) => e.leadId)).size
+        const bounceCount = new Set(allEvents.filter((e: any) => e.type === 'bounce').map((e: any) => e.leadId)).size
 
         // Fetch reply events with lead data for auto-reply filtering and classification
         const replyEvents = await prisma.sendingEvent.findMany({
@@ -62,13 +62,13 @@ export async function GET(
         // Filter replies based on includeAutoReplies setting
         let filteredReplyEvents = replyEvents
         if (!includeAutoReplies) {
-            filteredReplyEvents = replyEvents.filter(e => e.lead?.aiLabel !== 'out_of_office')
+            filteredReplyEvents = replyEvents.filter((e: any) => e.lead?.aiLabel !== 'out_of_office')
         }
         // Unique leads who replied
-        const replyCount = new Set(filteredReplyEvents.map(e => e.leadId)).size
+        const replyCount = new Set(filteredReplyEvents.map((e: any) => e.leadId)).size
 
         // Check for unclassified replies
-        const unclassifiedReplies = replyEvents.filter(e => !e.lead?.aiLabel)
+        const unclassifiedReplies = replyEvents.filter((e: any) => !e.lead?.aiLabel)
         const needsClassification = unclassifiedReplies.length > 0
 
         // Calculate rates based on tracking settings and sent count
@@ -103,9 +103,9 @@ export async function GET(
         // Calculate positive reply rate (if all replies are classified)
         let positiveReplyRate = '0%'
         if (!needsClassification && replyCount > 0) {
-            const positiveReplyCount = new Set(filteredReplyEvents.filter(e =>
+            const positiveReplyCount = new Set(filteredReplyEvents.filter((e: any) =>
                 e.lead?.aiLabel && ['interested', 'meeting_booked'].includes(e.lead.aiLabel)
-            ).map(e => e.leadId)).size
+            ).map((e: any) => e.leadId)).size
             positiveReplyRate = Math.round((positiveReplyCount / replyCount) * 100) + '%'
         } else if (needsClassification) {
             positiveReplyRate = 'calculating...'
@@ -117,7 +117,7 @@ export async function GET(
 
         // Generate accurate step analytics from events
         const stepAnalytics = campaign.sequences.map((seq: any) => {
-            const stepEvents = allEvents.filter(e => {
+            const stepEvents = allEvents.filter((e: any) => {
                 try {
                     const meta = JSON.parse(e.metadata || '{}')
                     return meta.step === seq.stepNumber
@@ -126,7 +126,7 @@ export async function GET(
 
             // Calculate variant stats
             const variantsStats = (seq.variants || []).map((v: any) => {
-                const variantEvents = stepEvents.filter(e => {
+                const variantEvents = stepEvents.filter((e: any) => {
                     try {
                         const meta = JSON.parse(e.metadata || '{}')
                         return meta.variantId === v.id
@@ -137,10 +137,10 @@ export async function GET(
                     label: v.label || 'A',
                     subject: v.subject,
                     enabled: v.enabled,
-                    sent: variantEvents.filter(e => e.type === 'sent').length,
-                    opened: variantEvents.filter(e => e.type === 'open').length,
-                    replied: variantEvents.filter(e => e.type === 'reply').length,
-                    clicked: variantEvents.filter(e => e.type === 'click').length,
+                    sent: variantEvents.filter((e: any) => e.type === 'sent').length,
+                    opened: variantEvents.filter((e: any) => e.type === 'open').length,
+                    replied: variantEvents.filter((e: any) => e.type === 'reply').length,
+                    clicked: variantEvents.filter((e: any) => e.type === 'click').length,
                 }
             })
 
@@ -148,12 +148,12 @@ export async function GET(
                 stepId: seq.id,
                 stepNumber: seq.stepNumber,
                 step: `Step ${seq.stepNumber}: ${seq.subject || 'Email'}`,
-                sent: stepEvents.filter(e => e.type === 'sent').length,
-                opened: stepEvents.filter(e => e.type === 'open').length,
-                replied: stepEvents.filter(e => e.type === 'reply').length,
-                clicked: stepEvents.filter(e => e.type === 'click').length,
-                opportunities: stepEvents.filter(e => {
-                    const lead = campaign.leads.find(l => l.id === e.leadId)
+                sent: stepEvents.filter((e: any) => e.type === 'sent').length,
+                opened: stepEvents.filter((e: any) => e.type === 'open').length,
+                replied: stepEvents.filter((e: any) => e.type === 'reply').length,
+                clicked: stepEvents.filter((e: any) => e.type === 'click').length,
+                opportunities: stepEvents.filter((e: any) => {
+                    const lead = campaign.leads.find((l: any) => l.id === e.leadId)
                     return lead && (['won', 'converted'].includes(lead.status || '') || ['interested', 'meeting_booked'].includes(lead.aiLabel || ''))
                 }).length,
                 variants: variantsStats
@@ -171,23 +171,23 @@ export async function GET(
         const heatmapData = []
         for (let day = 0; day < 7; day++) {
             for (let hour = 0; hour < 24; hour++) {
-                const hourEvents = allEvents.filter(e => {
+                const hourEvents = allEvents.filter((e: any) => {
                     const date = new Date(e.createdAt)
                     return date.getDay() === day && date.getHours() === hour
                 })
                 heatmapData.push({
                     day,
                     hour,
-                    value: hourEvents.filter(e => e.type === 'sent').length,
-                    opens: hourEvents.filter(e => e.type === 'open').length,
-                    clicks: hourEvents.filter(e => e.type === 'click').length,
-                    replies: hourEvents.filter(e => e.type === 'reply').length
+                    value: hourEvents.filter((e: any) => e.type === 'sent').length,
+                    opens: hourEvents.filter((e: any) => e.type === 'open').length,
+                    clicks: hourEvents.filter((e: any) => e.type === 'click').length,
+                    replies: hourEvents.filter((e: any) => e.type === 'reply').length
                 })
             }
         }
 
         // Calculate funnel data for this specific campaign with actual bounce count
-        const bounceEvents = allEvents.filter(e => e.type === 'bounce').length
+        const bounceEvents = allEvents.filter((e: any) => e.type === 'bounce').length
         const delivered = sentCount - bounceEvents - (campaign.bounceCount || 0)
         const deliveredPercentage = sentCount > 0 ? Math.round((delivered / sentCount) * 100) : 0
 

@@ -66,15 +66,11 @@ export async function GET(request: Request) {
             return NextResponse.json([])
         }
 
-        const campaignIds = campaigns.map(c => c.id)
+        const campaignIds = campaigns.map((c: any) => c.id)
 
-        // Fetch unique event counts
+        // Fetch unique event counts (all types use COUNT(DISTINCT leadId) for unique leads)
         const eventCounts = await prisma.$queryRaw<{ campaignId: string, type: string, count: number | bigint }[]>`
-            SELECT "campaignId", "type", 
-                   CASE 
-                     WHEN "type" = 'sent' THEN COUNT(id) 
-                     ELSE COUNT(DISTINCT "leadId") 
-                   END as count
+            SELECT "campaignId", "type", COUNT(DISTINCT "leadId") as count
             FROM "SendingEvent"
             WHERE "campaignId" IN (${Prisma.join(campaignIds)})
             AND "type" IN ('sent', 'open', 'click', 'reply')
@@ -102,20 +98,20 @@ export async function GET(request: Request) {
         `
 
         // Calculate rates and opportunities for each campaign
-        const campaignsWithAnalytics = campaigns.map(campaign => {
+        const campaignsWithAnalytics = campaigns.map((campaign: any) => {
             // Extract counts from query results safely handling BigInts
             const getUniqueCount = (type: string) => {
-                const match = eventCounts.find(e => e.campaignId === campaign.id && e.type === type)
+                const match = eventCounts.find((e: any) => e.campaignId === campaign.id && e.type === type)
                 return match ? Number(match.count) : 0
             }
 
             const getOppCount = (): number => {
-                const match = oppCount.find(e => e.campaignId === campaign.id)
+                const match = oppCount.find((e: any) => e.campaignId === campaign.id)
                 return match ? Number(match.count) : 0
             }
 
             const getSentTodayCount = () => {
-                const match = sentTodayCounts.find(e => e.campaignId === campaign.id)
+                const match = sentTodayCounts.find((e: any) => e.campaignId === campaign.id)
                 return match ? Number(match.count) : 0
             }
 

@@ -20,36 +20,47 @@ export async function GET(request: Request) {
 
         if (sentEvent && sentEvent.type === 'sent') {
             try {
-                await prisma.$transaction([
-                    prisma.sendingEvent.create({
-                        data: {
-                            type: 'click',
-                            campaignId: sentEvent.campaignId,
-                            leadId: sentEvent.leadId,
-                            metadata: JSON.stringify({ originalEventId: eventId, url: targetUrl })
-                        }
-                    }),
-                    prisma.campaign.update({
-                        where: { id: sentEvent.campaignId },
-                        data: { clickCount: { increment: 1 } }
-                    }),
-                    prisma.campaignStat.upsert({
-                        where: {
-                            campaignId_date: {
+                // Deduplicate: Only record ONE click per lead per campaign
+                const existingClick = await prisma.sendingEvent.findFirst({
+                    where: {
+                        campaignId: sentEvent.campaignId,
+                        leadId: sentEvent.leadId,
+                        type: 'click'
+                    }
+                })
+
+                if (!existingClick) {
+                    await prisma.$transaction([
+                        prisma.sendingEvent.create({
+                            data: {
+                                type: 'click',
                                 campaignId: sentEvent.campaignId,
-                                date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+                                leadId: sentEvent.leadId,
+                                metadata: JSON.stringify({ originalEventId: eventId, url: targetUrl })
                             }
-                        },
-                        create: {
-                            campaignId: sentEvent.campaignId,
-                            date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z'),
-                            clicked: 1
-                        },
-                        update: {
-                            clicked: { increment: 1 }
-                        }
-                    })
-                ])
+                        }),
+                        prisma.campaign.update({
+                            where: { id: sentEvent.campaignId },
+                            data: { clickCount: { increment: 1 } }
+                        }),
+                        prisma.campaignStat.upsert({
+                            where: {
+                                campaignId_date: {
+                                    campaignId: sentEvent.campaignId,
+                                    date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+                                }
+                            },
+                            create: {
+                                campaignId: sentEvent.campaignId,
+                                date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z'),
+                                clicked: 1
+                            },
+                            update: {
+                                clicked: { increment: 1 }
+                            }
+                        })
+                    ])
+                }
             } catch (e) {
                 console.error("Click tracking error", e)
             }

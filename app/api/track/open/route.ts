@@ -21,37 +21,51 @@ export async function GET(request: Request) {
 
         if (sentEvent && sentEvent.type === 'sent') {
             try {
-                // Record Open
-                await prisma.$transaction([
-                    prisma.sendingEvent.create({
-                        data: {
-                            type: 'open',
-                            campaignId: sentEvent.campaignId,
-                            leadId: sentEvent.leadId,
-                            metadata: JSON.stringify({ originalEventId: eventId })
-                        }
-                    }),
-                    prisma.campaign.update({
-                        where: { id: sentEvent.campaignId },
-                        data: { openCount: { increment: 1 } }
-                    }),
-                    prisma.campaignStat.upsert({
-                        where: {
-                            campaignId_date: {
+                // Deduplicate: Only record ONE open per lead per campaign
+                // Email clients, spam scanners, and security proxies often pre-fetch 
+                // tracking pixels multiple times, causing inflated open counts
+                const existingOpen = await prisma.sendingEvent.findFirst({
+                    where: {
+                        campaignId: sentEvent.campaignId,
+                        leadId: sentEvent.leadId,
+                        type: 'open'
+                    }
+                })
+
+                if (!existingOpen) {
+                    // First open for this lead+campaign — record it
+                    await prisma.$transaction([
+                        prisma.sendingEvent.create({
+                            data: {
+                                type: 'open',
                                 campaignId: sentEvent.campaignId,
-                                date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+                                leadId: sentEvent.leadId,
+                                metadata: JSON.stringify({ originalEventId: eventId })
                             }
-                        },
-                        create: {
-                            campaignId: sentEvent.campaignId,
-                            date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z'),
-                            opened: 1
-                        },
-                        update: {
-                            opened: { increment: 1 }
-                        }
-                    })
-                ])
+                        }),
+                        prisma.campaign.update({
+                            where: { id: sentEvent.campaignId },
+                            data: { openCount: { increment: 1 } }
+                        }),
+                        prisma.campaignStat.upsert({
+                            where: {
+                                campaignId_date: {
+                                    campaignId: sentEvent.campaignId,
+                                    date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+                                }
+                            },
+                            create: {
+                                campaignId: sentEvent.campaignId,
+                                date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z'),
+                                opened: 1
+                            },
+                            update: {
+                                opened: { increment: 1 }
+                            }
+                        })
+                    ])
+                }
+                // If already tracked, silently skip — still return the pixel
             } catch (e) {
                 console.error("Open tracking error", e)
             }

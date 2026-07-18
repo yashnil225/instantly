@@ -128,7 +128,15 @@ export default function LoginPage() {
 
     return (
         <div className="auth-no-scroll relative flex items-start justify-center bg-white dark:bg-[#191a1b] overflow-hidden h-screen">
-            <Toaster position="bottom-center" />
+            <Toaster 
+                position="bottom-center" 
+                toastOptions={{
+                    style: {
+                        background: '#191a1b',
+                        color: '#fff',
+                    }
+                }}
+            />
 
             {/* Home Icon — 19px from right edge (Moved 2px further right) */}
             <div className="absolute top-[21px] right-[19px] z-50">

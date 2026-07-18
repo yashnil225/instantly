@@ -667,7 +667,6 @@ function CampaignsPage() {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" className="h-10 border-border bg-card text-foreground hover:bg-secondary hover:text-foreground gap-2">
-                                        <Logo variant="icon" size="sm" />
                                         {statusFilter === "all" && "All statuses"}
                                         {statusFilter === "active" && "Active"}
                                         {statusFilter === "draft" && "Draft"}
@@ -690,7 +689,6 @@ function CampaignsPage() {
                                         onClick={() => setStatusFilter("all")}
                                         className={cn("cursor-pointer focus:bg-muted focus:text-foreground flex items-center gap-2", statusFilter === "all" && "bg-blue-500/20 text-blue-400")}
                                     >
-                                        <Logo variant="icon" size="sm" />
                                         All statuses
                                     </DropdownMenuItem>
                                     <DropdownMenuItem

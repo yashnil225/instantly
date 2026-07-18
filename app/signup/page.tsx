@@ -167,7 +167,15 @@ function SignupForm() {
 
     return (
         <div className="relative flex flex-col md:flex-row bg-white dark:bg-[#191a1b] h-screen overflow-hidden">
-            <Toaster position="bottom-center" />
+            <Toaster 
+                position="bottom-center" 
+                toastOptions={{
+                    style: {
+                        background: '#191a1b',
+                        color: '#fff',
+                    }
+                }}
+            />
 
             {/* Home Icon — 21px from right edge */}
             <div className="absolute top-[21px] right-[19px] z-50">

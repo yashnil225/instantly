@@ -81,7 +81,6 @@ export function WorkspaceDropdown({
                     className="border-border bg-card text-foreground hover:text-foreground hover:bg-secondary h-9 gap-2"
                     disabled={isLoading}
                 >
-                    <Logo variant="icon" size="sm" />
                     {selectedWorkspaceId
                         ? (selectedWorkspace?.name || 'Workspace')
                         : 'My Organization'}
@@ -111,7 +110,6 @@ export function WorkspaceDropdown({
                         selectedWorkspaceId === null && "bg-blue-500/20 text-blue-400"
                     )}
                 >
-                    <Logo variant="icon" size="sm" className="mr-2 text-blue-500" />
                     <span className="flex-1">My Organization</span>
                 </DropdownMenuItem>
 
@@ -130,7 +128,6 @@ export function WorkspaceDropdown({
                             >
                                 <div className="flex items-center justify-between w-full">
                                     <div className="flex items-center flex-1 min-w-0">
-                                        <Logo variant="icon" size="sm" className="mr-2 text-blue-500 flex-shrink-0" />
                                         <span className="truncate">{workspace.name}</span>
                                     </div>
                                     {showQuickActions && (

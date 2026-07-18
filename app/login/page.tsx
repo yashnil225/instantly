@@ -68,7 +68,7 @@ export default function LoginPage() {
                 toast.error("Invalid username or password")
             } else {
                 localStorage.setItem('instantly_auth', 'true')
-                toast.success("Logged in!")
+                toast.success("Welcome back!")
                 setTimeout(() => { router.push("/campaigns?welcome=true"); router.refresh() }, 800)
             }
         } catch {

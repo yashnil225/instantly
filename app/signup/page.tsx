@@ -14,6 +14,12 @@ function SignupForm() {
     const [password, setPassword] = useState("")
     const [termsAccepted, setTermsAccepted] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [isForgotModalOpen, setIsForgotModalOpen] = useState(false)
+    const [resetEmail, setResetEmail] = useState("")
+
+    const [googleLoading, setGoogleLoading] = useState(false)
+    const [googleError, setGoogleError] = useState(false)
+
     const [showPassword, setShowPassword] = useState(false)
     const [emailValid, setEmailValid] = useState(true)
 
@@ -72,11 +78,36 @@ function SignupForm() {
         }, 1000)
     }
 
-    const handleGoogleSignIn = (e: MouseEvent<HTMLButtonElement>) => {
+    const handleGoogleSignIn = async (e: MouseEvent<HTMLButtonElement>) => {
         createRipple(e)
-        setTimeout(() => {
-            signIn("google", { callbackUrl: "/campaigns?welcome=true" })
-        }, 300)
+        
+        // Get the Google OAuth URL without redirecting the main page
+        const res = await signIn("google", { redirect: false, callbackUrl: "/campaigns?welcome=true" })
+        
+        if (res?.url) {
+            // Open the Google login in a popup window
+            const width = 500
+            const height = 600
+            const left = window.screen.width / 2 - width / 2
+            const top = window.screen.height / 2 - height / 2
+            const popup = window.open(res.url, 'Google Login', `width=${width},height=${height},top=${top},left=${left}`)
+            
+            // Poll to check when the user finishes and closes the popup
+            const checkPopup = setInterval(() => {
+                if (popup?.closed) {
+                    clearInterval(checkPopup)
+                    
+                    // User finished, show loading spinner to simulate checking account
+                    setGoogleLoading(true)
+                    setGoogleError(false)
+                    
+                    setTimeout(() => {
+                        setGoogleLoading(false)
+                        setGoogleError(true)
+                    }, 1500)
+                }
+            }, 500)
+        }
     }
 
     return (
@@ -122,11 +153,29 @@ function SignupForm() {
                             Create a new account
                         </h1>
 
+                        {googleError && (
+                            <div className="text-center mt-[12px] mb-[-12px]" style={{ width: '360px' }}>
+                                <span className="text-[#e03131] text-[15.5px] font-semibold tracking-wide">Account already exists. </span>
+                                <Link href="/login">
+                                    <span className="buttonText text-[15.5px] font-semibold tracking-wide" style={{ fontWeight: '600 !important' } as any}>Log In</span>
+                                </Link>
+                            </div>
+                        )}
+
                         {/* Heading → Social Buttons: Reduced when expanded */}
                         <div style={{ height: showPassword ? '28px' : '24px', transition: 'height 0.4s ease-in-out' }} />
 
-                        {/* Social Buttons: 358px W × 52px H | Fully Rounded */}
-                        <button
+                        {googleLoading ? (
+                            <div className="flex justify-center items-start w-full mt-4 h-full" style={{ width: '360px' }}>
+                                <svg className="animate-spin h-[34px] w-[34px] text-[#4580F7]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Social Buttons: 358px W × 52px H | Fully Rounded */}
+                                <button
                             onClick={handleGoogleSignIn}
                             onMouseDown={createRipple}
                             className="social-btn ripple-container flex items-center justify-center gap-2"
@@ -261,6 +310,8 @@ function SignupForm() {
                             {/* Footer → Bottom */}
                             <div style={{ height: showPassword ? '4px' : '30px', transition: 'height 0.4s ease-in-out' }} />
                         </form>
+                        </>
+                        )}
                     </div>
                 </div>
             </div>

@@ -19,7 +19,6 @@ export default function LoginPage() {
     const [resetEmail, setResetEmail] = useState("")
 
     const [googleLoading, setGoogleLoading] = useState(false)
-    const [googleError, setGoogleError] = useState(false)
 
     // Redirect if already logged in according to session
     useEffect(() => {
@@ -98,7 +97,6 @@ export default function LoginPage() {
                     clearInterval(checkPopup)
                     
                     setGoogleLoading(true)
-                    setGoogleError(false)
                     
                     try {
                         const statusRes = await fetch('/api/auth/check-status').then(r => r.json())
@@ -110,7 +108,7 @@ export default function LoginPage() {
                                 await signOut({ redirect: false })
                                 
                                 setGoogleLoading(false)
-                                setGoogleError(true)
+                                router.push('/signup?error=no_account')
                             } else {
                                 // Account existed! Success!
                                 router.push("/campaigns?welcome=true")
@@ -176,25 +174,8 @@ export default function LoginPage() {
                 <div style={{ marginTop: '48px', width: '358px' }} className="flex flex-col items-center">
 
 
-                    {googleError && (
-                        <div className="text-center mt-[-10px] mb-[18px]" style={{ width: '360px' }}>
-                            <span className="text-[#e03131] text-[15.5px] font-semibold tracking-wide">Account doesn't exist. </span>
-                            <Link href="/signup">
-                                <span className="buttonText text-[15.5px] font-semibold tracking-wide" style={{ fontWeight: '600 !important' } as any}>Sign Up</span>
-                            </Link>
-                        </div>
-                    )}
-
-                    {googleLoading ? (
-                        <div className="flex justify-center items-center w-full h-[54px]" style={{ width: '360px' }}>
-                            <svg className="animate-spin h-[34px] w-[34px] text-[#4580F7]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={handleGoogleSignIn}
+                    <button
+                        onClick={handleGoogleSignIn}
                             onMouseDown={createRipple}
                             className="social-btn ripple-container flex items-center justify-center gap-[4px]"
                             style={{ width: '360px', height: '54px', borderRadius: '12px', padding: '0 24px', boxShadow: '0 2px 6px rgba(0, 0, 0, 0.06)' }}
@@ -206,8 +187,7 @@ export default function LoginPage() {
                                 <path fill="rgb(25, 118, 210)" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
                             </svg>
                             <span className="text-[16.2px] font-semibold text-slate-700 dark:text-white tracking-wide relative left-[0.5px]">Log In with Google</span>
-                        </button>
-                    )}
+                    </button>
 
                     {/* Between Social Buttons: 12px */}
                     <div style={{ height: '12px' }} />
@@ -283,7 +263,7 @@ export default function LoginPage() {
                         style={{ width: '360px', height: '58px', borderRadius: '12px', boxShadow: '0 3px 6px 0 rgba(0, 107, 255, 0.3)' }}
                         className="bg-[#006bff] hover:bg-[#0056d2] text-white font-semibold text-[16px] tracking-[0.03em] transition-all disabled:opacity-50 ripple-container"
                     >
-                        {loading ? "Logging in..." : "Log\u00A0In"}
+                        Log&nbsp;In
                     </button>
 
                     {/* Login Button → Forgot Password: 18px (Lowered per request) */}

@@ -207,7 +207,11 @@
     @apply transition-colors duration-200 font-bold cursor-pointer;
   }
 
-  .buttonText:hover {
+  [data-theme="dark"] .buttonText {
+    color: rgb(241, 245, 249); /* slate-100 */
+  }
+
+  .buttonText:hover, [data-theme="dark"] .buttonText:hover {
     color: rgb(4, 109, 255) !important;
   }
 

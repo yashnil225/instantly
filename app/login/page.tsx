@@ -84,7 +84,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="auth-no-scroll relative flex items-start justify-center bg-white dark:bg-[#15191C] overflow-hidden h-screen">
+        <div className="auth-no-scroll relative flex items-start justify-center bg-white dark:bg-[#191a1b] overflow-hidden h-screen">
             <Toaster position="bottom-center" />
 
             {/* Home Icon — 19px from right edge (Moved 2px further right) */}
@@ -253,8 +253,8 @@ export default function LoginPage() {
                     {/* Backdrop — 50% black, no blur, matching reference */}
                     <div className="absolute inset-0 bg-black/50" />
                     <div
-                        className="relative w-full max-w-[500px] bg-white dark:bg-[#15191C] overflow-hidden mx-4"
-                        style={{ borderRadius: '0.3rem', border: '1px solid rgb(102, 102, 102)' }}
+                        className="relative w-full max-w-[500px] bg-white dark:bg-[#191a1b] overflow-hidden mx-4 border border-[rgb(102,102,102)] dark:border-transparent"
+                        style={{ borderRadius: '0.3rem' }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Modal Header — 1rem padding, border-bottom, flex-start alignment */}
@@ -304,7 +304,7 @@ export default function LoginPage() {
                                     className="text-[16px] font-normal transition-all bg-transparent hover:bg-[#f8f9fc] dark:hover:bg-[rgba(255,255,255,0.05)] border border-[#dee2e6] dark:border-[rgba(255,255,255,0.1)] text-[#3c4858] dark:text-white ripple-container"
                                     style={{
                                         padding: '0.4rem 1rem',
-                                        minWidth: '120px',
+                                        minWidth: '100px',
                                         borderRadius: '0.45rem',
                                         cursor: 'pointer',
                                         lineHeight: '1.5',
@@ -321,7 +321,7 @@ export default function LoginPage() {
                                     className="text-[16px] font-normal text-white transition-all bg-[#006bff] hover:bg-[#0056d2] ripple-container"
                                     style={{
                                         padding: '0.4rem 1rem',
-                                        minWidth: '120px',
+                                        minWidth: '100px',
                                         borderRadius: '0.45rem',
                                         border: '1px solid #006bff',
                                         boxShadow: '0 3px 5px 0 rgba(0, 107, 255, 0.3)',

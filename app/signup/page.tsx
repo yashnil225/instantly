@@ -268,7 +268,7 @@ function SignupForm() {
             {/* Right Side: Marketing (42vw) - Background color removed so the wave forms the boundary (Preserved tablet flexibility) */}
             <div className="hidden md:flex w-[42vw] relative flex-col items-center justify-center p-12 h-full z-0">
                 {/* Wavy Logo Background Overlay - Dynamic width based on expansion */}
-                <div className={`absolute transition-all duration-500 ease-in-out ${showPassword ? 'w-[125%] top-[-12px] bottom-[0px] right-[-14px]' : 'w-[121%] top-[-8px] bottom-[-4px] right-[-10px]'} bg-instantly-waves opacity-100 pointer-events-none -z-10`} style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
+                <div className={`absolute transition-all duration-500 ease-in-out ${showPassword ? 'w-[123%] top-[-14px] bottom-[4px] right-[-18px]' : 'w-[121%] top-[-8px] bottom-[-4px] right-[-10px]'} bg-instantly-waves opacity-100 pointer-events-none -z-10`} style={{ backgroundSize: 'cover', backgroundPosition: 'left top' }} />
 
                 <div className="relative z-10 max-w-md text-center flex flex-col items-center left-[-4px] transition-all duration-500 ease-in-out" style={{ marginTop: showPassword ? '-140px' : '-80px' }}>
                     {/* Illustration */}

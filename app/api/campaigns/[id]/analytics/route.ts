@@ -44,8 +44,10 @@ export async function GET(
             where: { campaignId: campaignId }
         })
 
-        // Calculate real-time stats from events for accuracy (Unique leads for all metrics)
-        const sentCount = new Set(allEvents.filter((e: any) => e.type === 'sent').map((e: any) => e.leadId)).size
+        // Total Sent = every email dispatch counts (all steps)
+        const totalSent = allEvents.filter((e: any) => e.type === 'sent').length
+        // Sequences Started = unique leads contacted (only counts once per lead)
+        const sequencesStarted = new Set(allEvents.filter((e: any) => e.type === 'sent').map((e: any) => e.leadId)).size
         const openCount = new Set(allEvents.filter((e: any) => e.type === 'open').map((e: any) => e.leadId)).size
         const clickCount = new Set(allEvents.filter((e: any) => e.type === 'click').map((e: any) => e.leadId)).size
         const bounceCount = new Set(allEvents.filter((e: any) => e.type === 'bounce').map((e: any) => e.leadId)).size
@@ -74,16 +76,16 @@ export async function GET(
         // Calculate rates based on tracking settings and sent count
         let openRate = 'Disabled'
         if (campaign.trackOpens) {
-            openRate = sentCount > 0 ? Math.round((openCount / sentCount) * 100) + '%' : '0%'
+            openRate = sequencesStarted > 0 ? Math.round((openCount / sequencesStarted) * 100) + '%' : '0%'
         }
 
         let clickRate = 'Disabled'
         if (campaign.trackLinks) {
-            clickRate = sentCount > 0 ? Math.round((clickCount / sentCount) * 100) + '%' : '0%'
+            clickRate = sequencesStarted > 0 ? Math.round((clickCount / sequencesStarted) * 100) + '%' : '0%'
         }
 
-        const replyRate = sentCount > 0 ? Math.round((replyCount / sentCount) * 100) + '%' : '0%'
-        const bounceRate = sentCount > 0 ? Math.round((bounceCount / sentCount) * 100) + '%' : '0%'
+        const replyRate = sequencesStarted > 0 ? Math.round((replyCount / sequencesStarted) * 100) + '%' : '0%'
+        const bounceRate = sequencesStarted > 0 ? Math.round((bounceCount / sequencesStarted) * 100) + '%' : '0%'
 
         // Get workspace for opportunity value
         const campaignWithWorkspace = await prisma.campaignWorkspace.findFirst({
@@ -112,46 +114,94 @@ export async function GET(
         }
 
 
-        // Generate chart data using real stats form events
-        const chartData = generateChartData(range, allEvents)
+        // Pre-process events to attribute opens/clicks/replies to the correct step and variant
+        const enrichedEvents = allEvents.map((e: any) => {
+            let step = null;
+            let variantId = null;
+            let originalEventId = null;
 
-        // Generate accurate step analytics from events
+            try {
+                const meta = JSON.parse(e.metadata || '{}')
+                if (e.type === 'sent') {
+                    step = meta.step
+                    variantId = meta.variantId
+                } else {
+                    originalEventId = meta.originalEventId
+                }
+            } catch {}
+
+            if (e.type !== 'sent') {
+                let parentSent = null;
+                if (originalEventId) {
+                    parentSent = allEvents.find((se: any) => se.id === originalEventId)
+                } 
+                if (!parentSent) {
+                    // Fallback: most recent sent event for this lead before this open/click
+                    const previousSents = allEvents.filter((se: any) => 
+                        se.type === 'sent' && 
+                        se.leadId === e.leadId && 
+                        new Date(se.createdAt).getTime() <= new Date(e.createdAt).getTime()
+                    )
+                    if (previousSents.length > 0) {
+                        previousSents.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        parentSent = previousSents[0]
+                    }
+                }
+
+                if (parentSent) {
+                    try {
+                        const meta = JSON.parse(parentSent.metadata || '{}')
+                        step = meta.step
+                        variantId = meta.variantId
+                    } catch {}
+                }
+            }
+
+            return { ...e, enrichedStep: step, enrichedVariantId: variantId }
+        })
+
+        // Generate chart data using real stats form events
+        const chartData = generateChartData(range, enrichedEvents)
+
+        // Generate accurate step analytics from enriched events
         const stepAnalytics = campaign.sequences.map((seq: any) => {
-            const stepEvents = allEvents.filter((e: any) => {
-                try {
-                    const meta = JSON.parse(e.metadata || '{}')
-                    return meta.step === seq.stepNumber
-                } catch { return false }
-            })
+            const stepEvents = enrichedEvents.filter((e: any) => e.enrichedStep === seq.stepNumber)
 
             // Calculate variant stats
             const variantsStats = (seq.variants || []).map((v: any) => {
-                const variantEvents = stepEvents.filter((e: any) => {
-                    try {
-                        const meta = JSON.parse(e.metadata || '{}')
-                        return meta.variantId === v.id
-                    } catch { return false }
-                })
+                const variantEvents = stepEvents.filter((e: any) => e.enrichedVariantId === v.id)
+                
+                // Use Set to ensure we only count unique leads for opens/clicks/replies per variant
+                const sent = variantEvents.filter((e: any) => e.type === 'sent').length
+                const opened = new Set(variantEvents.filter((e: any) => e.type === 'open').map((e: any) => e.leadId)).size
+                const replied = new Set(variantEvents.filter((e: any) => e.type === 'reply').map((e: any) => e.leadId)).size
+                const clicked = new Set(variantEvents.filter((e: any) => e.type === 'click').map((e: any) => e.leadId)).size
+
                 return {
                     id: v.id,
                     label: v.label || 'A',
                     subject: v.subject,
                     enabled: v.enabled,
-                    sent: variantEvents.filter((e: any) => e.type === 'sent').length,
-                    opened: variantEvents.filter((e: any) => e.type === 'open').length,
-                    replied: variantEvents.filter((e: any) => e.type === 'reply').length,
-                    clicked: variantEvents.filter((e: any) => e.type === 'click').length,
+                    sent,
+                    opened,
+                    replied,
+                    clicked,
                 }
             })
+
+            const sent = stepEvents.filter((e: any) => e.type === 'sent').length
+            const opened = new Set(stepEvents.filter((e: any) => e.type === 'open').map((e: any) => e.leadId)).size
+            const replied = new Set(stepEvents.filter((e: any) => e.type === 'reply').map((e: any) => e.leadId)).size
+            const clicked = new Set(stepEvents.filter((e: any) => e.type === 'click').map((e: any) => e.leadId)).size
 
             return {
                 stepId: seq.id,
                 stepNumber: seq.stepNumber,
                 step: `Step ${seq.stepNumber}: ${seq.subject || 'Email'}`,
-                sent: stepEvents.filter((e: any) => e.type === 'sent').length,
-                opened: stepEvents.filter((e: any) => e.type === 'open').length,
-                replied: stepEvents.filter((e: any) => e.type === 'reply').length,
-                clicked: stepEvents.filter((e: any) => e.type === 'click').length,
+                sent,
+                opened,
+                replied,
+                clicked,
                 opportunities: stepEvents.filter((e: any) => {
                     const lead = campaign.leads.find((l: any) => l.id === e.leadId)
                     return lead && (['won', 'converted'].includes(lead.status || '') || ['interested', 'meeting_booked'].includes(lead.aiLabel || ''))
@@ -160,11 +210,12 @@ export async function GET(
             }
         })
 
-        // Calculate completion
+        // Calculate completion — only counts leads who completed ALL sequence steps
+        const completedLeads = campaign.leads.filter((l: any) => l.status === 'sequence_complete').length
         const completion = campaign.status === 'completed'
             ? 100
-            : totalLeads > 0 && sentCount > 0
-                ? Math.min(100, Math.round((sentCount / (totalLeads * campaign.sequences.length)) * 100))
+            : totalLeads > 0
+                ? Math.min(100, Math.round((completedLeads / totalLeads) * 100))
                 : 0
 
         // Calculate heatmap data for this specific campaign
@@ -188,16 +239,16 @@ export async function GET(
 
         // Calculate funnel data for this specific campaign with actual bounce count
         const bounceEvents = allEvents.filter((e: any) => e.type === 'bounce').length
-        const delivered = sentCount - bounceEvents - (campaign.bounceCount || 0)
-        const deliveredPercentage = sentCount > 0 ? Math.round((delivered / sentCount) * 100) : 0
+        const delivered = totalSent - bounceEvents - (campaign.bounceCount || 0)
+        const deliveredPercentage = totalSent > 0 ? Math.round((delivered / totalSent) * 100) : 0
 
         const funnelData = [
-            { stage: "Sent", value: sentCount, percentage: 100 },
+            { stage: "Sent", value: totalSent, percentage: 100 },
             { stage: "Delivered", value: Math.max(0, delivered), percentage: Math.max(0, deliveredPercentage) },
-            { stage: "Opened", value: openCount, percentage: sentCount > 0 ? Math.min(Math.round((openCount / sentCount) * 100), 100) : 0 },
-            { stage: "Clicked", value: clickCount, percentage: sentCount > 0 ? Math.min(Math.round((clickCount / sentCount) * 100), 100) : 0 },
-            { stage: "Replied", value: replyCount, percentage: sentCount > 0 ? Math.min(Math.round((replyCount / sentCount) * 100), 100) : 0 },
-            { stage: "Converted", value: conversions.length, percentage: sentCount > 0 ? Math.min(Math.round((conversions.length / sentCount) * 100), 100) : 0 }
+            { stage: "Opened", value: openCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((openCount / sequencesStarted) * 100), 100) : 0 },
+            { stage: "Clicked", value: clickCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((clickCount / sequencesStarted) * 100), 100) : 0 },
+            { stage: "Replied", value: replyCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((replyCount / sequencesStarted) * 100), 100) : 0 },
+            { stage: "Converted", value: conversions.length, percentage: sequencesStarted > 0 ? Math.min(Math.round((conversions.length / sequencesStarted) * 100), 100) : 0 }
         ]
 
         const analyticsData = {
@@ -205,7 +256,8 @@ export async function GET(
             status: campaign.status,
             createdAt: campaign.createdAt,
             completion,
-            sequenceStarted: sentCount,
+            totalSent,
+            sequenceStarted: sequencesStarted,
             openRate,
             clickRate,
             replyRate,

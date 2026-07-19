@@ -678,20 +678,29 @@ ${selectedEmail.body || selectedEmail.preview}
                 const data = await res.json()
 
                 // Build the full thread from all sent + reply events (already ordered asc from API)
-                const messages = (data.events || [])
+                const messages: any[] = []
+                const seenSteps = new Set()
+
+                ;(data.events || [])
                     .filter((e: any) => e.type === 'sent' || e.type === 'reply')
-                    .map((e: any) => {
+                    .forEach((e: any) => {
                         // Extract body: prefer details, then metadata bodyText/snippet
                         let body = e.details || ''
-                        if (!body) {
-                            try {
-                                const meta = JSON.parse(e.metadata || '{}')
-                                body = meta.bodyText || meta.snippet || ''
-                            } catch { /* ignore */ }
+                        let step = null
+                        try {
+                            const meta = JSON.parse(e.metadata || '{}')
+                            if (!body) body = meta.bodyText || meta.snippet || ''
+                            if (e.type === 'sent') step = meta.step
+                        } catch { /* ignore */ }
+
+                        // Deduplicate sent events by step
+                        if (e.type === 'sent' && step) {
+                            if (seenSteps.has(step)) return // Skip duplicate sent event for the same step
+                            seenSteps.add(step)
                         }
 
                         const isMe = e.type === 'sent'
-                        return {
+                        messages.push({
                             id: e.id,
                             isMe,
                             type: e.type,
@@ -703,7 +712,7 @@ ${selectedEmail.body || selectedEmail.preview}
                                 : (e.emailAccount?.email || email.sentFrom || 'Me'),
                             body,
                             timestamp: e.createdAt
-                        }
+                        })
                     })
 
                 // For the single-message fallback body, use the latest reply's body

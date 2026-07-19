@@ -68,8 +68,19 @@ export async function GET(request: Request) {
 
         const campaignIds = campaigns.map((c: any) => c.id)
 
-        // Fetch unique event counts (all types use COUNT(DISTINCT leadId) for unique leads)
-        const eventCounts = await prisma.$queryRaw<{ campaignId: string, type: string, count: number | bigint }[]>`
+        // Fetch TOTAL event counts (every email dispatch counts)
+        // Used for "Total Sent" — if a lead goes through 4 steps, that's 4 sent
+        const totalEventCounts = await prisma.$queryRaw<{ campaignId: string, type: string, count: number | bigint }[]>`
+            SELECT "campaignId", "type", COUNT(id) as count
+            FROM "SendingEvent"
+            WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
+            AND "type" IN ('sent', 'open', 'click', 'reply')
+            GROUP BY "campaignId", "type"
+        `
+
+        // Fetch UNIQUE lead counts (sequences started / contacted)
+        // Used for rates — unique leads who opened/clicked/replied
+        const uniqueEventCounts = await prisma.$queryRaw<{ campaignId: string, type: string, count: number | bigint }[]>`
             SELECT "campaignId", "type", COUNT(DISTINCT "leadId") as count
             FROM "SendingEvent"
             WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
@@ -97,11 +108,26 @@ export async function GET(request: Request) {
             GROUP BY "campaignId"
         `
 
+        // Fetch completed lead counts (leads who finished ALL sequence steps)
+        const completedLeadCounts = await prisma.$queryRaw<{ campaignId: string, count: number | bigint }[]>`
+            SELECT "campaignId", COUNT(id) as count
+            FROM "Lead"
+            WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
+            AND "status" = 'sequence_complete'
+            GROUP BY "campaignId"
+        `
+
         // Calculate rates and opportunities for each campaign
         const campaignsWithAnalytics = campaigns.map((campaign: any) => {
-            // Extract counts from query results safely handling BigInts
+            // Total sent = every email dispatch (all steps count)
+            const getTotalCount = (type: string) => {
+                const match = totalEventCounts.find((e: any) => e.campaignId === campaign.id && e.type === type)
+                return match ? Number(match.count) : 0
+            }
+
+            // Unique leads = sequences started / contacted
             const getUniqueCount = (type: string) => {
-                const match = eventCounts.find((e: any) => e.campaignId === campaign.id && e.type === type)
+                const match = uniqueEventCounts.find((e: any) => e.campaignId === campaign.id && e.type === type)
                 return match ? Number(match.count) : 0
             }
 
@@ -115,21 +141,31 @@ export async function GET(request: Request) {
                 return match ? Number(match.count) : 0
             }
 
-            const sentCount = getUniqueCount('sent')
-            const uniqueOpenCount = getUniqueCount('open')
-            const uniqueClickCount = getUniqueCount('click')
-            const uniqueReplyCount = getUniqueCount('reply')
+            const getCompletedLeadCount = () => {
+                const match = completedLeadCounts.find((e: any) => e.campaignId === campaign.id)
+                return match ? Number(match.count) : 0
+            }
+
+            const totalSent = getTotalCount('sent')                  // Total emails dispatched (all steps)
+            const sequencesStarted = getUniqueCount('sent')          // Unique leads contacted (Step 1+)
+            const uniqueOpenCount = getUniqueCount('open')           // Unique leads who opened
+            const uniqueClickCount = getUniqueCount('click')         // Unique leads who clicked
+            const uniqueReplyCount = getUniqueCount('reply')         // Unique leads who replied
             const campaignOppCount = getOppCount()
             const sentToday = getSentTodayCount()
+            const completedLeads = getCompletedLeadCount()
 
+            // Rates are calculated against sequencesStarted (unique leads), not totalSent
             return {
                 ...campaign,
-                sentCount, // Override static sentCount with source-of-truth from SendingEvent
+                sentCount: totalSent,                                // "Sent" column = total emails dispatched
+                sequencesStarted,                                    // Unique leads contacted
+                completedLeads,                                      // Leads who finished all steps
                 sentToday,
-                openRate: !campaign.trackOpens ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueOpenCount / sentCount) * 100), 100) : 0}%`,
-                clickRate: !campaign.trackLinks ? 'Disabled' : `${sentCount > 0 ? Math.min(Math.round((uniqueClickCount / sentCount) * 100), 100) : 0}%`,
-                replyRate: `${sentCount > 0 ? Math.min(Math.round((uniqueReplyCount / sentCount) * 100), 100) : 0}%`,
-                opportunities: campaignOppCount // Opportunities = Interested/Won
+                openRate: !campaign.trackOpens ? 'Disabled' : `${sequencesStarted > 0 ? Math.min(Math.round((uniqueOpenCount / sequencesStarted) * 100), 100) : 0}%`,
+                clickRate: !campaign.trackLinks ? 'Disabled' : `${sequencesStarted > 0 ? Math.min(Math.round((uniqueClickCount / sequencesStarted) * 100), 100) : 0}%`,
+                replyRate: `${sequencesStarted > 0 ? Math.min(Math.round((uniqueReplyCount / sequencesStarted) * 100), 100) : 0}%`,
+                opportunities: campaignOppCount
             }
         })
 

@@ -923,10 +923,10 @@ function CampaignsPage() {
                                     <div>
                                         {(() => {
                                             const leadsCount = campaign._count?.leads || 0
-                                            const stepsCount = campaign._count?.sequences || 0
-                                            const totalExpected = leadsCount * stepsCount
-                                            let progress = totalExpected > 0
-                                                ? Math.min(100, Math.round(((campaign.sentCount || 0) / totalExpected) * 100))
+                                            const completedLeads = campaign.completedLeads || 0
+                                            // Progress = leads who completed ALL steps / total leads
+                                            let progress = leadsCount > 0
+                                                ? Math.min(100, Math.round((completedLeads / leadsCount) * 100))
                                                 : 0
 
                                             if (campaign.status === 'completed') progress = 100

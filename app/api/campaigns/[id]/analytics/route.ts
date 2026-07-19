@@ -40,8 +40,25 @@ export async function GET(
         const totalLeads = campaign.leads.length
 
         // Fetch all events for this campaign to calculate accurate step analytics
-        const allEvents = await prisma.sendingEvent.findMany({
-            where: { campaignId: campaignId }
+        let allEvents = await prisma.sendingEvent.findMany({
+            where: { campaignId: campaignId },
+            orderBy: { createdAt: 'asc' }
+        })
+
+        // Dynamically deduplicate SENT events to hide historical duplicates caused by previous race condition
+        const seenSent = new Set()
+        allEvents = allEvents.filter((e: any) => {
+            if (e.type === 'sent') {
+                let step = '1'
+                try {
+                    const meta = JSON.parse(e.metadata || '{}')
+                    step = String(meta.step || '1')
+                } catch {}
+                const key = `${e.leadId}_step${step}`
+                if (seenSent.has(key)) return false
+                seenSent.add(key)
+            }
+            return true
         })
 
         // Total Sent = every email dispatch counts (all steps)

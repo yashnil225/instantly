@@ -16,12 +16,18 @@ export async function DELETE(
     }
 
     try {
-        await prisma.sendingEvent.delete({
-            where: { id: emailId }
+        // Unibox passes the Lead ID (as 'emailId') because it groups emails by lead.
+        // We delete all events associated with this lead to clear the conversation thread.
+        await prisma.sendingEvent.deleteMany({
+            where: { leadId: emailId }
         })
 
         return NextResponse.json({ success: true })
-    } catch (error) {
+    } catch (error: any) {
+        // Handle race condition where records were already deleted
+        if (error.code === 'P2025') {
+            return NextResponse.json({ success: true, message: 'Already deleted' })
+        }
         console.error('Failed to delete email:', error)
         return NextResponse.json({ error: 'Failed to delete email' }, { status: 500 })
     }

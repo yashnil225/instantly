@@ -74,10 +74,29 @@ export async function GET(request: Request) {
             SELECT "campaignId", "type", COUNT(id) as count
             FROM "SendingEvent"
             WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
-            AND "type" IN ('sent', 'open', 'click', 'reply')
+            AND "type" IN ('open', 'click', 'reply')
             GROUP BY "campaignId", "type"
         `
 
+        // Deduplicate SENT events in JS to bypass historical duplicate records
+        const allSentEvents = await prisma.sendingEvent.findMany({
+            where: { campaignId: { in: campaignIds }, type: 'sent' },
+            select: { campaignId: true, leadId: true, metadata: true }
+        })
+        const deduplicatedSentCount = new Map<string, number>()
+        const seenSent = new Set<string>()
+        for (const event of allSentEvents) {
+            let step = '1'
+            try {
+                const meta = JSON.parse(event.metadata || '{}')
+                step = String(meta.step || '1')
+            } catch {}
+            const key = `${event.campaignId}_${event.leadId}_step${step}`
+            if (!seenSent.has(key)) {
+                seenSent.add(key)
+                deduplicatedSentCount.set(event.campaignId, (deduplicatedSentCount.get(event.campaignId) || 0) + 1)
+            }
+        }
         // Fetch UNIQUE lead counts (sequences started / contacted)
         // Used for rates — unique leads who opened/clicked/replied
         const uniqueEventCounts = await prisma.$queryRaw<{ campaignId: string, type: string, count: number | bigint }[]>`
@@ -146,7 +165,7 @@ export async function GET(request: Request) {
                 return match ? Number(match.count) : 0
             }
 
-            const totalSent = getTotalCount('sent')                  // Total emails dispatched (all steps)
+            const totalSent = deduplicatedSentCount.get(campaign.id) || 0            // Total emails dispatched (all steps)
             const sequencesStarted = getUniqueCount('sent')          // Unique leads contacted (Step 1+)
             const uniqueOpenCount = getUniqueCount('open')           // Unique leads who opened
             const uniqueClickCount = getUniqueCount('click')         // Unique leads who clicked

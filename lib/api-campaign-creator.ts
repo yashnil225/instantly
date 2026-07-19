@@ -9,7 +9,11 @@ export async function internalCreateCampaigns(params: {
     socialProof: string,
     offers?: string[]
 }) {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const apiKey = process.env.GEMINI_API_KEY || "";
+    if (apiKey.length < 30) {
+        throw new Error("GEMINI_API_KEY is not defined or is invalid");
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const prompt = `

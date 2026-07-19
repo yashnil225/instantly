@@ -2,8 +2,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 
 function getGenAI() {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-        throw new Error("GEMINI_API_KEY is not defined in environment variables");
+    // A real Gemini API key is typically 39 characters long (e.g. AIzaSy...).
+    // If it's shorter than 30 characters, it's definitely a placeholder/invalid.
+    if (!apiKey || apiKey.length < 30) {
+        throw new Error("GEMINI_API_KEY is not defined or is invalid");
     }
     return new GoogleGenerativeAI(apiKey);
 }
@@ -42,8 +44,11 @@ export async function classifyEmailStatus(subject: string, body: string): Promis
             return text
         }
         return 'not_interested' // Safer default
-    } catch (error) {
-        console.error("Gemini classification failed:", error)
+    } catch (error: any) {
+        // Only log if it's not a generic API key error so we don't spam the console for users without AI keys
+        if (!error.message?.includes('API key not valid')) {
+            console.error("Gemini classification failed:", error)
+        }
         return fallbackClassify(subject, body)
     }
 }

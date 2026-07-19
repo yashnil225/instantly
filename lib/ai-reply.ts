@@ -8,7 +8,11 @@ export async function generateReply(params: {
     senderCompany: string,
     eaccountFirstName: string
 }) {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const apiKey = process.env.GEMINI_API_KEY || "";
+    if (apiKey.length < 30) {
+        return ""; // Fallback gracefully without an AI key
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     // Step 1: Generate Prompt

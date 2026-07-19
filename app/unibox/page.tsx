@@ -837,6 +837,9 @@ ${selectedEmail.body || selectedEmail.preview}
                 setForwardSubject("")
                 setAttachments([])
                 setUploadedAttachmentIds([])
+                if (selectedEmail) {
+                    loadEmailBody(selectedEmail)
+                }
             } else {
                 toast({ title: "Error", description: "Failed to send email. Please try again.", variant: "destructive" })
             }

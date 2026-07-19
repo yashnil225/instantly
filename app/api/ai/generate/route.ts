@@ -4,7 +4,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 // Initialize Gemini
 // In a real app, strict env checks
 const apiKey = process.env.GEMINI_API_KEY
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
+const genAI = apiKey && apiKey.length >= 30 ? new GoogleGenerativeAI(apiKey) : null
 
 export async function POST(req: Request) {
     if (!genAI) {

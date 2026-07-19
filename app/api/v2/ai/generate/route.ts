@@ -3,7 +3,7 @@ import { validateApiKey } from "@/lib/api-auth"
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const apiKey = process.env.GEMINI_API_KEY
-const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null
+const genAI = apiKey && apiKey.length >= 30 ? new GoogleGenerativeAI(apiKey) : null
 
 export async function POST(req: NextRequest) {
     const auth = await validateApiKey()

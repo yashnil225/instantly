@@ -310,12 +310,12 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
             const step = campaign.sequences[nextStepNumber - 1]
 
-            // Check Step Gap
+            // Check Step Gap (convert dayGap to milliseconds for strict comparison)
             if (nextStepNumber > 1 && lastEventDate) {
                 const now = new Date()
                 const diffTime = Math.abs(now.getTime() - lastEventDate.getTime())
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                if (diffDays < step.dayGap) continue
+                const requiredGapMs = step.dayGap * 24 * 60 * 60 * 1000
+                if (diffTime < requiredGapMs) continue
             }
 
             // Duplicate Prevention

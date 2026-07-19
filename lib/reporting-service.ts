@@ -2,7 +2,11 @@ import { prisma } from './prisma';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function generateAIPerformanceReport(userId: string) {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const apiKey = process.env.GEMINI_API_KEY || "";
+    if (apiKey.length < 30) {
+        return "AI reporting is not available because the Gemini API key is missing or invalid. Please configure it in your environment variables.";
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const campaigns = await prisma.campaign.findMany({

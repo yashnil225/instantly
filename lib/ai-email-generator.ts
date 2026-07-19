@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 function getGenAI() {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY is not defined');
+    const apiKey = process.env.GEMINI_API_KEY || "";
+    if (apiKey.length < 30) throw new Error('GEMINI_API_KEY is not defined or is invalid');
     return new GoogleGenerativeAI(apiKey);
 }
 

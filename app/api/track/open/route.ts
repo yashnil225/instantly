@@ -109,22 +109,6 @@ export async function GET(request: Request) {
                         prisma.campaign.update({
                             where: { id: sentEvent.campaignId },
                             data: { openCount: { increment: 1 } }
-                        }),
-                        prisma.campaignStat.upsert({
-                            where: {
-                                campaignId_date: {
-                                    campaignId: sentEvent.campaignId,
-                                    date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
-                                }
-                            },
-                            create: {
-                                campaignId: sentEvent.campaignId,
-                                date: new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z'),
-                                opened: 1
-                            },
-                            update: {
-                                opened: { increment: 1 }
-                            }
                         })
                     ])
                 }

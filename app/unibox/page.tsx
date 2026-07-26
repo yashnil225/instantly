@@ -680,10 +680,15 @@ ${selectedEmail.body || selectedEmail.preview}
                 // Build the full thread from all sent + reply events (already ordered asc from API)
                 const messages: any[] = []
                 const seenSteps = new Set()
+                const seenBodies = new Set()
+                const seenIds = new Set()
 
                 ;(data.events || [])
                     .filter((e: any) => e.type === 'sent' || e.type === 'reply')
                     .forEach((e: any) => {
+                        if (seenIds.has(e.id)) return
+                        seenIds.add(e.id)
+
                         // Extract body: prefer details, then metadata bodyText/snippet
                         let body = e.details || ''
                         let step = null
@@ -692,6 +697,16 @@ ${selectedEmail.body || selectedEmail.preview}
                             if (!body) body = meta.bodyText || meta.snippet || ''
                             if (e.type === 'sent') step = meta.step
                         } catch { /* ignore */ }
+
+                        // Aggressive deduplication by body content to fix UI duplicates
+                        const bodyContent = body.trim()
+                        if (bodyContent) {
+                            // Strip HTML tags for comparison to avoid whitespace/formatting differences
+                            const strippedBody = bodyContent.replace(/<[^>]*>/g, '').trim()
+                            const dedupeKey = `${e.type}_${strippedBody}`
+                            if (seenBodies.has(dedupeKey)) return
+                            seenBodies.add(dedupeKey)
+                        }
 
                         // Deduplicate sent events by step
                         if (e.type === 'sent' && step) {

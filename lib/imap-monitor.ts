@@ -6,7 +6,7 @@ import type { EmailAccount } from '@prisma/client'
 const RETRY_ATTEMPTS = 3
 const RETRY_DELAYS = [2000, 4000, 8000] // More conservative backoff: 2s, 4s, 8s
 
-const TRANSIENT_ERRORS = ['ECONNRESET', 'ETIMEDOUT', 'ENETUNREACH', 'ECONNREFUSED', 'EAI_AGAIN', 'socket hang up', 'read ECONNRESET']
+const TRANSIENT_ERRORS = ['ECONNRESET', 'ETIMEDOUT', 'ENETUNREACH', 'ECONNREFUSED', 'EAI_AGAIN', 'socket hang up', 'read ECONNRESET', 'timed out']
 const PERMANENT_ERRORS = ['EAUTH', 'ENOTFOUND', 'Authentication', 'invalid credentials', 'Invalid credentials', 'BadCredentials', 'Username and Password not accepted']
 
 function isTransientError(error: any): boolean {
@@ -119,8 +119,8 @@ export async function syncAccountInbox(
                     rejectUnauthorized: false,
                     minVersion: 'TLSv1.2'
                 },
-                connTimeout: 10000, // Reduced to 10s
-                authTimeout: 10000, // Reduced to 10s
+                connTimeout: 20000, // Increased for serverless cold-starts
+                authTimeout: 20000,
                 keepalive: false
             })
 

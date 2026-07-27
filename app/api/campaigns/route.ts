@@ -120,10 +120,10 @@ export async function GET(request: Request) {
 
         // Fetch opportunity counts (interested + won)
         const oppCount = await prisma.$queryRaw<{ campaignId: string, count: number | bigint }[]>`
-            SELECT "campaignId", COUNT(DISTINCT "leadId") as count
+            SELECT "campaignId", COUNT(DISTINCT "id") as count
             FROM "Lead"
             WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
-            AND "status" IN ('interested', 'won')
+            AND "aiLabel" IN ('interested', 'meeting_booked')
             GROUP BY "campaignId"
         `
 

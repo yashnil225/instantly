@@ -92,7 +92,7 @@ export async function GET(request: Request) {
                                 type: 'open',
                                 campaignId: sentEvent.campaignId,
                                 leadId: sentEvent.leadId,
-                                metadata: JSON.stringify({ 
+                                metadata: JSON.stringify({
                                     originalEventId: eventId,
                                     userAgent: userAgent.substring(0, 200), // Store for debugging
                                     delaySeconds: Math.round(secondsSinceSend)

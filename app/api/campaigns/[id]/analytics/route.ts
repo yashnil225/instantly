@@ -113,16 +113,15 @@ export async function GET(
 
         // Opportunities = interested, meeting_booked, or won
         const opportunityLeads = campaign.leads.filter((l: any) =>
-            ['won', 'converted'].includes(l.status || '') || ['interested', 'meeting_booked'].includes(l.aiLabel || '')
+            ['interested', 'meeting_booked'].includes(l.aiLabel || '')
         )
         const opportunitiesCount = opportunityLeads.length
-        const conversions = campaign.leads.filter((l: any) => l.status === 'converted' || l.status === 'won')
-        const conversionValue = conversions.length * opportunityValue
 
-        // Calculate positive reply rate (if all replies are classified)
+        // Calculate positive reply rate
         let positiveReplyRate = '0%'
+        let positiveReplyCount = 0
         if (!needsClassification && replyCount > 0) {
-            const positiveReplyCount = new Set(filteredReplyEvents.filter((e: any) =>
+            positiveReplyCount = new Set(filteredReplyEvents.filter((e: any) =>
                 e.lead?.aiLabel && ['interested', 'meeting_booked'].includes(e.lead.aiLabel)
             ).map((e: any) => e.leadId)).size
             positiveReplyRate = Math.round((positiveReplyCount / replyCount) * 100) + '%'
@@ -264,8 +263,7 @@ export async function GET(
             { stage: "Delivered", value: Math.max(0, delivered), percentage: Math.max(0, deliveredPercentage) },
             { stage: "Opened", value: openCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((openCount / sequencesStarted) * 100), 100) : 0 },
             { stage: "Clicked", value: clickCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((clickCount / sequencesStarted) * 100), 100) : 0 },
-            { stage: "Replied", value: replyCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((replyCount / sequencesStarted) * 100), 100) : 0 },
-            { stage: "Converted", value: conversions.length, percentage: sequencesStarted > 0 ? Math.min(Math.round((conversions.length / sequencesStarted) * 100), 100) : 0 }
+            { stage: "Replied", value: replyCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((replyCount / sequencesStarted) * 100), 100) : 0 }
         ]
 
         const analyticsData = {
@@ -284,10 +282,10 @@ export async function GET(
                 count: opportunitiesCount,
                 value: opportunitiesCount * opportunityValue
             },
-            conversions: {
-                count: conversions.length,
-                value: conversionValue
-            },
+            openCount,
+            clickCount,
+            replyCount,
+            positiveReplyCount,
             chartData,
             stepAnalytics,
             heatmapData,
@@ -300,7 +298,8 @@ export async function GET(
             trackOpens: campaign.trackOpens,
             trackLinks: campaign.trackLinks,
             stopOnReply: campaign.stopOnReply,
-            sendAsTextOnly: campaign.settings ? (() => { try { return JSON.parse(campaign.settings).sendAsTextOnly } catch { return false } })() : false
+            sendAsTextOnly: campaign.settings ? (() => { try { return JSON.parse(campaign.settings).sendAsTextOnly } catch { return false } })() : false,
+            settings: campaign.settings
         }
 
         return NextResponse.json(analyticsData)

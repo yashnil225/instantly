@@ -57,11 +57,12 @@ interface CampaignAnalytics {
     clickRate: string
     replyRate?: string
     positiveReplyRate?: string
+    settings?: string
+    openCount: number
+    clickCount: number
+    replyCount: number
+    positiveReplyCount: number
     opportunities: {
-        count: number
-        value: number
-    }
-    conversions: {
         count: number
         value: number
     }
@@ -125,6 +126,7 @@ export default function CampaignAnalyticsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [isClassifying, setIsClassifying] = useState(false)
     const [classifyingProgress, setClassifyingProgress] = useState(0)
+    const [filtersLoaded, setFiltersLoaded] = useState(false)
 
     const [filters, setFilters] = useState({
         includeAutoReplies: false,
@@ -134,7 +136,6 @@ export default function CampaignAnalyticsPage() {
         showReplyRate: false,
         showPositiveReplyRate: false,
         showOpportunities: true,
-        showConversions: false,
     })
 
     const dateRangeOptions = [
@@ -158,6 +159,21 @@ export default function CampaignAnalyticsPage() {
             if (res.ok) {
                 const analyticsData = await res.json()
                 setData(analyticsData)
+
+                // Initialize filters from saved settings once
+                if (!filtersLoaded) {
+                    setFiltersLoaded(true)
+                    if (analyticsData.settings) {
+                        try {
+                            const parsedSettings = JSON.parse(analyticsData.settings)
+                            if (parsedSettings.filters) {
+                                setFilters(prev => ({ ...prev, ...parsedSettings.filters }))
+                            }
+                        } catch (e) {
+                            console.error("Failed to parse campaign settings", e)
+                        }
+                    }
+                }
 
                 // Trigger background classification if needed
                 if (analyticsData._needsClassification && !isClassifying) {
@@ -221,10 +237,32 @@ export default function CampaignAnalyticsPage() {
 
     // Re-fetch when includeAutoReplies changes
     useEffect(() => {
-        fetchCampaignAnalytics()
-    }, [filters.includeAutoReplies])
+        if (filtersLoaded) {
+            fetchCampaignAnalytics()
+        }
+    }, [filters.includeAutoReplies, filtersLoaded])
 
-
+    const updateFilters = async (newFilters: any) => {
+        setFilters(newFilters)
+        
+        try {
+            const currentSettings = data?.settings ? JSON.parse(data.settings) : {}
+            const newSettings = { ...currentSettings, filters: newFilters }
+            
+            await fetch(`/api/campaigns/${campaignId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings: JSON.stringify(newSettings) })
+            })
+            
+            // Update local data settings to prevent overwriting with stale data
+            if (data) {
+                setData({ ...data, settings: JSON.stringify(newSettings) })
+            }
+        } catch (e) {
+            console.error("Failed to save campaign settings", e)
+        }
+    }
 
     const handleDateRangeChange = (value: string) => {
         if (value === "custom") {
@@ -329,28 +367,28 @@ export default function CampaignAnalyticsPage() {
         },
         {
             title: "Open rate",
-            value: data?.openRate || "0%",
+            value: data?.openRate === "Disabled" ? "Disabled" : `${data?.openRate || "0%"} | ${(data?.openCount || 0).toLocaleString()}`,
             tooltip: "Percentage of emails opened",
             show: filters.showOpenRate,
             isCalculating: false,
         },
         {
             title: "Click rate",
-            value: data?.clickRate || "0%",
+            value: data?.clickRate === "Disabled" ? "Disabled" : `${data?.clickRate || "0%"} | ${(data?.clickCount || 0).toLocaleString()}`,
             tooltip: "Percentage of emails clicked",
             show: filters.showClickRate,
             isCalculating: false,
         },
         {
             title: "Reply rate",
-            value: data?.replyRate || "0%",
+            value: `${data?.replyRate || "0%"} | ${(data?.replyCount || 0).toLocaleString()}`,
             tooltip: "Percentage of emails replied to",
             show: filters.showReplyRate,
             isCalculating: false,
         },
         {
             title: "Positive Reply Rate",
-            value: data?.positiveReplyRate || "0%",
+            value: data?.positiveReplyRate === "calculating..." ? "calculating..." : `${data?.positiveReplyRate || "0%"} | ${(data?.positiveReplyCount || 0).toLocaleString()}`,
             tooltip: "Percentage of positive replies (interested or meeting booked)",
             show: filters.showPositiveReplyRate,
             isCalculating: data?.positiveReplyRate === 'calculating...',
@@ -361,14 +399,7 @@ export default function CampaignAnalyticsPage() {
             tooltip: "Number and value of opportunities",
             show: filters.showOpportunities,
             isCalculating: false,
-        },
-        {
-            title: "Conversions",
-            value: `${data?.conversions?.count || 0} | $${(data?.conversions?.value || 0).toLocaleString()}`,
-            tooltip: "Number and value of conversions",
-            show: filters.showConversions,
-            isCalculating: false,
-        },
+        }
     ].filter(card => card.show)
 
     return (
@@ -783,7 +814,7 @@ export default function CampaignAnalyticsPage() {
                                             id="showOpenRate"
                                             checked={filters.showOpenRate}
                                             onCheckedChange={(checked) =>
-                                                setFilters({ ...filters, showOpenRate: checked as boolean })
+                                                updateFilters({ ...filters, showOpenRate: checked as boolean })
                                             }
                                             className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-sm w-4 h-4"
                                         />
@@ -794,7 +825,7 @@ export default function CampaignAnalyticsPage() {
                                             id="showClickRate"
                                             checked={filters.showClickRate}
                                             onCheckedChange={(checked) =>
-                                                setFilters({ ...filters, showClickRate: checked as boolean })
+                                                updateFilters({ ...filters, showClickRate: checked as boolean })
                                             }
                                             className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-sm w-4 h-4"
                                         />
@@ -805,7 +836,7 @@ export default function CampaignAnalyticsPage() {
                                             id="showReplyRate"
                                             checked={filters.showReplyRate}
                                             onCheckedChange={(checked) =>
-                                                setFilters({ ...filters, showReplyRate: checked as boolean })
+                                                updateFilters({ ...filters, showReplyRate: checked as boolean })
                                             }
                                             className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-sm w-4 h-4"
                                         />
@@ -816,7 +847,7 @@ export default function CampaignAnalyticsPage() {
                                             id="showPositiveReplyRate"
                                             checked={filters.showPositiveReplyRate}
                                             onCheckedChange={(checked) =>
-                                                setFilters({ ...filters, showPositiveReplyRate: checked as boolean })
+                                                updateFilters({ ...filters, showPositiveReplyRate: checked as boolean })
                                             }
                                             className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-sm w-4 h-4"
                                         />
@@ -827,22 +858,11 @@ export default function CampaignAnalyticsPage() {
                                             id="showOpportunities"
                                             checked={filters.showOpportunities}
                                             onCheckedChange={(checked) =>
-                                                setFilters({ ...filters, showOpportunities: checked as boolean })
+                                                updateFilters({ ...filters, showOpportunities: checked as boolean })
                                             }
                                             className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=changed]:border-blue-600 rounded-sm w-4 h-4"
                                         />
                                         <label htmlFor="showOpportunities" className="text-sm text-gray-300 cursor-pointer select-none hover:text-white">Opportunities</label>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <Checkbox
-                                            id="showConversions"
-                                            checked={filters.showConversions}
-                                            onCheckedChange={(checked) =>
-                                                setFilters({ ...filters, showConversions: checked as boolean })
-                                            }
-                                            className="border-gray-600 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-sm w-4 h-4"
-                                        />
-                                        <label htmlFor="showConversions" className="text-sm text-gray-300 cursor-pointer select-none hover:text-white">Conversions</label>
                                     </div>
                                 </div>
                             </div>

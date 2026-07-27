@@ -11,13 +11,6 @@ const PIXEL = Buffer.from(
 // Known bot/proxy User-Agent patterns that trigger false opens
 // These are email provider image proxies and security scanners
 const BOT_PATTERNS = [
-    /GoogleImageProxy/i,
-    /Mozilla\/5\.0.*Google.*Image.*Proxy/i,
-    /via ggpht\.com/i,         // Gmail image proxy
-    /outlook\.com/i,            // Outlook image proxy  
-    /Microsoft Office/i,        // Outlook desktop
-    /Outlook-iOS/i,
-    /Outlook-Android/i,
     /Windows-RSS-Platform/i,
     /Barracuda/i,               // Email security scanner
     /ZmEu/i,                    // Scanner
@@ -34,8 +27,8 @@ const BOT_PATTERNS = [
 ]
 
 // Minimum seconds after sending before an open can be counted as real
-// Opens within this window are almost always automated pre-fetches
-const MIN_OPEN_DELAY_SECONDS = 30
+// Reduced from 30s to 5s so legitimate quick opens (especially during testing) aren't discarded
+const MIN_OPEN_DELAY_SECONDS = 5
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)

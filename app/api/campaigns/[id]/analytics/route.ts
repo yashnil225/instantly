@@ -219,10 +219,10 @@ export async function GET(
                 opened,
                 replied,
                 clicked,
-                opportunities: stepEvents.filter((e: any) => {
+                opportunities: new Set(stepEvents.filter((e: any) => {
                     const lead = campaign.leads.find((l: any) => l.id === e.leadId)
                     return lead && (['won', 'converted'].includes(lead.status || '') || ['interested', 'meeting_booked'].includes(lead.aiLabel || ''))
-                }).length,
+                }).map((e: any) => e.leadId)).size,
                 variants: variantsStats
             }
         })

@@ -193,11 +193,28 @@ export async function GET(request: Request) {
                 warmupEnabled: true,
                 sendingEvents: {
                     where: { createdAt: { gte: startDate } },
-                    select: { type: true }
+                    select: { type: true, leadId: true, metadata: true }
                 }
             }
         }).then((accounts: any[]) => accounts.map((acc: any) => {
-            const accEvents = acc.sendingEvents
+            let accEvents = acc.sendingEvents
+            
+            // Dynamically deduplicate SENT events to match global analytics
+            const seenSent = new Set()
+            accEvents = accEvents.filter((e: any) => {
+                if (e.type === 'sent') {
+                    let step = '1'
+                    try {
+                        const meta = JSON.parse(e.metadata || '{}')
+                        step = String(meta.step || '1')
+                    } catch {}
+                    const key = `${e.leadId}_step${step}`
+                    if (seenSent.has(key)) return false
+                    seenSent.add(key)
+                }
+                return true
+            })
+
             const sent = accEvents.filter((e: any) => e.type === 'sent').length
             const opened = accEvents.filter((e: any) => e.type === 'open').length
             const replied = accEvents.filter((e: any) => e.type === 'reply').length

@@ -445,8 +445,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 if (!subject && !body) continue
 
                 // Replace Variables
-                subject = replaceVariables(subject, lead)
-                body = replaceVariables(body, lead)
+                subject = replaceVariables(subject, lead, account)
+                body = replaceVariables(body, lead, account)
 
                 // Create Sending Event
                 const sentEvent = await prisma.sendingEvent.create({

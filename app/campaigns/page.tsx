@@ -650,17 +650,19 @@ function CampaignsPage() {
                     </div>
                 </div>
 
-                {/* Filter and Action Toolbar - Sticky */}
-                <div className="sticky top-0 z-20 bg-background/95 backdrop-blur shadow-sm px-8 py-4 border-b border-border flex flex-col xl:flex-row items-center justify-between gap-4">
-                    <FilterBar
-                        onSearchChange={setSearchQuery}
-                        onTagsChange={setSelectedTags}
-                        selectedTags={selectedTags}
-                        className="mb-0 w-full xl:w-auto"
-                        placeholder="Search campaigns..."
-                    />
+                {/* Filter Toolbar */}
+                <FilterBar
+                    onSearchChange={setSearchQuery}
+                    onTagsChange={setSelectedTags}
+                    selectedTags={selectedTags}
+                    className="px-8 pb-4 w-full"
+                    placeholder="Search campaigns..."
+                />
 
-                    <div className="flex w-full xl:w-auto items-center justify-end gap-3 flex-wrap">
+                {/* Toolbar */}
+                <div className="px-8 pb-6 space-y-4">
+                    <div className="flex w-full items-center justify-end gap-4 p-4">
+                        <div className="flex items-center gap-3">
                             {/* Status Filter Dropdown */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -808,11 +810,11 @@ function CampaignsPage() {
                                 <Plus className="h-4 w-4" />
                                 Add New
                             </Button>
+                        </div>
                     </div>
-                </div>
 
-                {/* Campaigns Table Area */}
-                <div className="px-8 pt-6 pb-12 space-y-4">
+                    {/* Campaigns Table */}
+                    <div className="space-y-4">
                         {/* Header Row */}
                         <div className="grid grid-cols-[50px_3fr_1.5fr_1fr_1fr_1fr_1fr_1fr_1fr_80px] gap-4 px-6 py-2 text-[11px] font-bold text-[#666666] uppercase tracking-wider">
                             <div className="flex items-center">
@@ -1051,6 +1053,8 @@ function CampaignsPage() {
                         )}
                     </div>
                 </div>
+            </div>
+
             {/* Create Campaign Modal - Premium Aesthetic */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen} >
                 <DialogContent className="bg-[#0c0c10] border-white/10 sm:max-w-[600px] p-0 overflow-hidden rounded-[32px] shadow-2xl backdrop-blur-xl">

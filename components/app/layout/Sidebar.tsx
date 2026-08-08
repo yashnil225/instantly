@@ -242,9 +242,9 @@ const NAV_ITEMS = [
     { name: "Supersearch", href: "/lead-finder", icon: LeadFinderIcon },
     { name: "Email Accounts", href: "/accounts", icon: AccountsIcon },
     { name: "Campaigns", href: "/campaigns", icon: CampaignsIcon },
-    { name: "Unibox", href: "/unibox", icon: UniboxIcon, badge: 1 },
+    { name: "Unibox", href: "/unibox", icon: UniboxIcon },
     { name: "Analytics", href: "/analytics", icon: AnalyticsIcon },
-    { name: "CRM", href: "/crm", icon: CRMIcon, badge: 120 },
+    { name: "CRM", href: "/crm", icon: CRMIcon },
     { name: "Website Visitors", href: "/visitors", icon: WebsiteVisitorsIcon },
     { name: "Inbox Placement", href: "/inbox-placement", icon: InboxPlacementIcon },
     { name: "Automations", href: "/automation", icon: AutomationIcon },
@@ -298,8 +298,6 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname.startsWith(item.href)
                         const iconColor = getIconColor(isActive)
-                        const hasBadge = item.badge !== undefined && item.badge > 0;
-                        const badgeText = hasBadge ? (item.badge! > 99 ? '99+' : item.badge!.toString()) : '';
 
                         return (
                             <Tooltip key={item.name}>
@@ -307,7 +305,7 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                     <Link
                                         href={item.href}
                                         className={cn(
-                                            "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] aspect-square flex-shrink-0 rounded-[10px] transition-all duration-200 group relative overflow-visible",
+                                            "flex items-center justify-center w-[32px] h-[32px] min-w-[32px] aspect-square flex-shrink-0 rounded-[10px] transition-all duration-200 group relative overflow-hidden",
                                             isActive ? "bg-[#1f2937]/5 dark:bg-white/5 text-[#3289ff]" : "hover:bg-[#1f2937]/5 dark:hover:bg-white/5 text-inherit"
                                         )}
                                         style={{ marginBottom: '4px' }}
@@ -320,16 +318,10 @@ export function Sidebar({ width = 90, onResize }: SidebarProps) {
                                             <item.icon />
                                         </div>
 
-                                        {hasBadge ? (
-                                            <span className="absolute -top-[5px] -right-[6px] flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-red-500 px-[4px] text-[9px] font-bold text-white shadow-sm ring-2 ring-background">
-                                                {badgeText}
-                                            </span>
-                                        ) : (
-                                            <span className="absolute top-0 right-0 flex h-2 w-2">
-                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-0 group-hover:opacity-0"></span>
-                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500 opacity-0 group-hover:opacity-0"></span>
-                                            </span>
-                                        )}
+                                        <span className="absolute top-0 right-0 flex h-2 w-2">
+                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-0 group-hover:opacity-0"></span>
+                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500 opacity-0 group-hover:opacity-0"></span>
+                                        </span>
                                     </Link>
                                 </TooltipTrigger>
                                 <TooltipContent

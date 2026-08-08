@@ -387,6 +387,31 @@ export default function SequencesPage() {
         toast({ title: "Template Applied" })
     }
 
+    const handleSaveTemplate = async () => {
+        if (!activeVariant.subject && !activeVariant.body) return
+        
+        try {
+            const res = await fetch('/api/templates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: `Custom Template - ${new Date().toLocaleDateString()}`,
+                    subject: activeVariant.subject || '',
+                    body: activeVariant.body || '',
+                    category: 'custom'
+                })
+            })
+            
+            if (res.ok) {
+                toast({ title: "Template Saved", description: "Current sequence saved to your Custom Templates." })
+            } else {
+                toast({ title: "Error", description: "Failed to save template.", variant: "destructive" })
+            }
+        } catch (error) {
+            toast({ title: "Error", description: "Failed to save template.", variant: "destructive" })
+        }
+    }
+
     const handleSave = async () => {
         setSaving(true)
         try {
@@ -659,12 +684,7 @@ export default function SequencesPage() {
                                                     <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white" align="end">
                                                         <DropdownMenuItem
                                                             className="hover:bg-[#333] cursor-pointer gap-2"
-                                                            onClick={() => {
-                                                                setTemplatesOpen(true);
-                                                                // In a real app this might open a 'Save as Template' modal instead of the manager
-                                                                // For now we open templates modal as a placeholder or simulation
-                                                                toast({ title: "Template Saved", description: "Current sequence saved as a new template." });
-                                                            }}
+                                                            onClick={handleSaveTemplate}
                                                         >
                                                             <LayoutTemplate className="h-4 w-4" />
                                                             <span>Save as a template</span>
@@ -834,87 +854,7 @@ export default function SequencesPage() {
                 }
             </div>
 
-            <div className="hidden">
-                <div className="flex items-center gap-3">
-                    {/* Save Split Button */}
-                    <div className="flex items-center rounded-md bg-blue-600 hover:bg-blue-700 transition-colors">
-                        <button
-                            className="px-4 py-2 text-sm font-medium text-white border-r border-blue-700"
-                            onClick={handleSave}
-                        >
-                            {saving ? "Saving..." : "Save"}
-                        </button>
-                        <div className="px-1.5 cursor-pointer hover:bg-blue-800 rounded-r-md h-full flex items-center">
-                            <ChevronDown className="h-4 w-4 text-white" />
-                        </div>
-                    </div>
 
-                    {/* Tools Group */}
-                    <div className="h-6 w-[1px] bg-[#333] mx-2" /> {/* Divider */}
-
-                    {/* AI Tools Dropdown */}
-                    <DropdownMenu open={aiMenuOpen} onOpenChange={setAiMenuOpen}>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white gap-2 data-[state=open]:bg-[#2a2a2a] data-[state=open]:text-white">
-                                <Sparkles className="h-4 w-4" /> AI Tools
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white w-56" align="start">
-                            <DropdownMenuItem className="hover:bg-[#333] cursor-pointer gap-2" onClick={() => toast({ title: "Thinking...", description: "AI is generating sequence ideas." })}>
-                                <Sparkles className="h-4 w-4 text-purple-400" /> <span>AI Sequence Writer</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="hover:bg-[#333] cursor-pointer gap-2" onClick={() => toast({ title: "Processing...", description: "AI Spintax generation started." })}>
-                                <RefreshCw className="h-4 w-4 text-blue-400" /> <span>AI Spintax Writer</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="hover:bg-[#333] cursor-pointer gap-2 justify-between" onClick={() => toast({ title: "Checking...", description: "Scanning for spam words." })}>
-                                <div className="flex items-center gap-2">
-                                    <ShieldAlert className="h-4 w-4 text-orange-400" /> <span>AI Spam Words Checker</span>
-                                </div>
-                                <span className="text-[10px] bg-green-900/50 text-green-400 px-1.5 rounded border border-green-800">Beta</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-gray-400 hover:text-white gap-2"
-                        onClick={() => setTemplatesOpen(true)}
-                    >
-                        <LayoutTemplate className="h-4 w-4" /> Templates
-                    </Button>
-
-                    <DropdownMenu open={variableMenuOpen} onOpenChange={setVariableMenuOpen}>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white gap-2">
-                                <Zap className="h-4 w-4" /> Variables
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-[#1a1a1a] border-[#333] text-white">
-                            {availableVariables.map((v: { label: string; value: string }) => (
-                                <DropdownMenuItem key={v.value} onClick={() => insertVariable(v.value)} className="hover:bg-[#333] cursor-pointer">
-                                    {v.label} <span className="ml-2 text-gray-500 text-xs">{v.value}</span>
-                                </DropdownMenuItem>
-                            ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white w-8" onClick={() => toast({ title: "AI Assistant", description: "How can I help you write this email?" })}>
-                        <span className="font-serif italic font-bold text-lg">Ai</span>
-                    </Button>
-                </div>
-
-                <div className="flex items-center gap-1 text-gray-400">
-                    <Button variant="ghost" size="icon" className="hover:text-white hover:bg-[#222] w-8 h-8" onClick={() => updateStep(activeStepIndex, 'variant', '', activeStep.activeVariant, 'body')} title="Clear Body">
-                        <Eraser className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="hover:text-white hover:bg-[#222] w-8 h-8" onClick={() => insertVariable('[Link Text](url)')} title="Insert Link">
-                        <LinkIcon className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="hover:text-white hover:bg-[#222] w-8 h-8" onClick={() => insertVariable('<b>Bold Text</b>')} title="Insert HTML">
-                        <Code className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
 
             <EmailPreviewModal
                 open={previewOpen}

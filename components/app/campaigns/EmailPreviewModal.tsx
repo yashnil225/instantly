@@ -124,10 +124,26 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, sampleLea
             customFields: {}
         }
 
-        processed = processed.replace(/{{firstName}}/gi, (data.firstName || "").replace(/<[^>]*>/g, '').trim())
-        processed = processed.replace(/{{lastName}}/gi, (data.lastName || "").replace(/<[^>]*>/g, '').trim())
-        processed = processed.replace(/{{email}}/gi, (data.email || "").replace(/<[^>]*>/g, '').trim())
-        processed = processed.replace(/{{company}}/gi, (data.company || "").replace(/<[^>]*>/g, '').trim())
+        processed = processed.replace(/{{\s*firstName\s*}}/gi, (data.firstName || "").replace(/<[^>]*>/g, '').trim())
+        processed = processed.replace(/{{\s*lastName\s*}}/gi, (data.lastName || "").replace(/<[^>]*>/g, '').trim())
+        processed = processed.replace(/{{\s*email\s*}}/gi, (data.email || "").replace(/<[^>]*>/g, '').trim())
+        processed = processed.replace(/{{\s*company\s*}}/gi, (data.company || "").replace(/<[^>]*>/g, '').trim())
+
+        // Sending Account Variables
+        if (selectedAccount) {
+            processed = processed.replace(/{{\s*sendingAccountFirstName\s*}}/gi, (selectedAccount.firstName || "").replace(/<[^>]*>/g, '').trim())
+            processed = processed.replace(/{{\s*senderFirstName\s*}}/gi, (selectedAccount.firstName || "").replace(/<[^>]*>/g, '').trim())
+            
+            processed = processed.replace(/{{\s*sendingAccountLastName\s*}}/gi, (selectedAccount.lastName || "").replace(/<[^>]*>/g, '').trim())
+            processed = processed.replace(/{{\s*senderLastName\s*}}/gi, (selectedAccount.lastName || "").replace(/<[^>]*>/g, '').trim())
+            
+            const senderName = `${selectedAccount.firstName || ''} ${selectedAccount.lastName || ''}`.trim()
+            processed = processed.replace(/{{\s*sendingAccountName\s*}}/gi, senderName.replace(/<[^>]*>/g, '').trim())
+            processed = processed.replace(/{{\s*senderName\s*}}/gi, senderName.replace(/<[^>]*>/g, '').trim())
+            
+            // Signature (allow HTML)
+            processed = processed.replace(/{{\s*signature\s*}}/gi, selectedAccount.signature || "")
+        }
 
         // Handle custom fields
         if (data.customFields) {
@@ -136,7 +152,7 @@ export function EmailPreviewModal({ open, onOpenChange, subject, body, sampleLea
                 : data.customFields
 
             Object.entries(customFields).forEach(([key, value]) => {
-                const regex = new RegExp(`{{${key}}}`, 'gi')
+                const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'gi')
                 const cleanValue = String(value).replace(/<[^>]*>/g, '').trim()
                 processed = processed.replace(regex, cleanValue)
             })

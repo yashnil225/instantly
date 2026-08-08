@@ -136,6 +136,7 @@ export default function CampaignOptionsPage() {
             })
             if (res.ok) {
                 toast({ title: "Saved successfully" })
+                router.refresh()
                 return true
             } else {
                 toast({ title: "Error", description: "Failed to save options", variant: "destructive" })

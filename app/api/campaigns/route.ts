@@ -3,6 +3,8 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request) {
     const session = await auth()
     if (!session?.user?.id) {
@@ -114,7 +116,7 @@ export async function GET(request: Request) {
             FROM "SendingEvent"
             WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
             AND "type" = 'sent'
-            AND "createdAt" >= ${todayUTC.toISOString()}
+            AND "createdAt" >= ${todayUTC}
             GROUP BY "campaignId"
         `
 

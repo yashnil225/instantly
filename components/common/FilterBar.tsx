@@ -58,13 +58,13 @@ export function FilterBar({ onSearchChange, onTagsChange, selectedTags, placehol
                             setSearch(e.target.value)
                             onSearchChange(e.target.value)
                         }}
-                        className="h-9"
+                        className="h-8 text-sm"
                     />
                 </div>
 
                 <Popover>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="h-9 border-dashed text-muted-foreground hover:text-foreground">
+                        <Button variant="outline" size="sm" className="h-8 border-dashed text-muted-foreground hover:text-foreground">
                             <Filter className="w-4 h-4 mr-2" />
                             Tags
                             {selectedTags.length > 0 && (

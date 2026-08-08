@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
-
+import { Prisma } from '@prisma/client'
 
 export async function GET(
     request: Request,
@@ -17,14 +17,16 @@ export async function GET(
     const startDateStr = searchParams.get('startDate')
     const endDateStr = searchParams.get('endDate')
 
-    let dateFilter = {}
+    let dateWhereClause: any = (Prisma as any).empty
+    let sentDateFilter: any = { campaignId: id, type: 'sent' }
+    
     if (startDateStr && endDateStr) {
-        dateFilter = {
-            date: {
-                gte: new Date(startDateStr),
-                lte: new Date(endDateStr)
-            }
-        }
+        const start = new Date(startDateStr)
+        const end = new Date(endDateStr)
+        end.setHours(23, 59, 59, 999)
+        
+        dateWhereClause = (Prisma as any).sql`AND "createdAt" >= ${start} AND "createdAt" <= ${end}`
+        sentDateFilter.createdAt = { gte: start, lte: end }
     }
 
     const campaign = await prisma.campaign.findUnique({
@@ -33,9 +35,6 @@ export async function GET(
             userId: session.user.id
         },
         include: {
-            stats: {
-                where: dateFilter
-            },
             campaignWorkspaces: {
                 include: { workspace: true }
             },
@@ -49,13 +48,47 @@ export async function GET(
         return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
-    // Pass dynamic stats
-    const aggregatedStats = {
-        sent: campaign.stats.reduce((acc, curr) => acc + curr.sent, 0),
-        opened: campaign.stats.reduce((acc, curr) => acc + curr.opened, 0),
-        clicked: campaign.stats.reduce((acc, curr) => acc + curr.clicked, 0),
-        replied: campaign.stats.reduce((acc, curr) => acc + curr.replied, 0),
+    // Deduplicate SENT events in JS to bypass historical duplicate records
+    const allSentEvents = await prisma.sendingEvent.findMany({
+        where: sentDateFilter,
+        select: { leadId: true, metadata: true }
+    })
+    let sent = 0
+    const seenSent = new Set<string>()
+    for (const event of allSentEvents) {
+        let step = '1'
+        try {
+            const meta = JSON.parse(event.metadata || '{}')
+            step = String(meta.step || '1')
+        } catch {}
+        const key = `${event.leadId}_step${step}`
+        if (!seenSent.has(key)) {
+            seenSent.add(key)
+            sent++
+        }
     }
+
+    // Fetch UNIQUE lead counts for rates (opened, clicked, replied)
+    const uniqueEventCounts = await prisma.$queryRaw<{ type: string, count: number | bigint }[]>`
+        SELECT "type", COUNT(DISTINCT "leadId") as count
+        FROM "SendingEvent"
+        WHERE "campaignId" = ${id}
+        AND "type" IN ('open', 'click', 'reply')
+        ${dateWhereClause}
+        GROUP BY "type"
+    `
+
+    let opened = 0
+    let clicked = 0
+    let replied = 0
+
+    for (const row of uniqueEventCounts) {
+        if (row.type === 'open') opened = Number(row.count)
+        if (row.type === 'click') clicked = Number(row.count)
+        if (row.type === 'reply') replied = Number(row.count)
+    }
+
+    const aggregatedStats = { sent, opened, clicked, replied }
 
     return NextResponse.json({ ...campaign, ...aggregatedStats })
 }

@@ -28,11 +28,11 @@ async function runReplyCheck() {
     console.log('[check-replies] Starting background IMAP sync...')
 
     try {
-        // Reduced to 2 accounts per run for Hobby plan
+        // Sync 1 account per run for fast execution within Vercel timeout budget
         const accounts = await prisma.emailAccount.findMany({
             where: { status: 'active' },
             orderBy: { lastSyncedAt: 'asc' },
-            take: 2
+            take: 1
         })
 
         if (accounts.length === 0) {

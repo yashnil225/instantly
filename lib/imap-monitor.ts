@@ -128,9 +128,15 @@ export async function syncAccountInbox(
             let bouncesFound = 0
             let isResolved = false
 
+            const hardTimeout = setTimeout(() => {
+                console.warn(`[INBOX] Hard timeout (12s) reached for ${account.email}, forcing safe resolve`)
+                safeResolve()
+            }, 12000)
+
             const safeReject = async (err: any) => {
                 if (isResolved) return
                 isResolved = true
+                clearTimeout(hardTimeout)
                 await endImap(imap)
                 reject(err)
             }
@@ -138,6 +144,7 @@ export async function syncAccountInbox(
             const safeResolve = async () => {
                 if (isResolved) return
                 isResolved = true
+                clearTimeout(hardTimeout)
                 await endImap(imap)
                 resolve({ replies: repliesFound, bounces: bouncesFound })
             }
@@ -366,7 +373,9 @@ export async function syncAccountInbox(
 
                         fetch.once('error', (err) => safeReject(err))
                         fetch.once('end', () => {
-                            if (results.length === 0) safeResolve()
+                            setTimeout(() => {
+                                safeResolve()
+                            }, 1500)
                         })
                     })
                 })
@@ -430,9 +439,15 @@ async function syncSentFolder(account: EmailAccount, guard?: { isTimedOut: () =>
             let sentSynced = 0
             let isResolved = false
 
+            const hardTimeout = setTimeout(() => {
+                console.warn(`[SENT] Hard timeout (10s) reached for ${account.email}, forcing safe end`)
+                safeEnd()
+            }, 10000)
+
             const safeEnd = async (err?: Error) => {
                 if (isResolved) return
                 isResolved = true
+                clearTimeout(hardTimeout)
                 await endImap(imap)
                 if (err) reject(err)
                 else resolve(sentSynced)
@@ -528,7 +543,9 @@ async function syncSentFolder(account: EmailAccount, guard?: { isTimedOut: () =>
 
                             fetch.once('error', (err) => safeEnd(err))
                             fetch.once('end', () => {
-                                if (results.length === 0) safeEnd()
+                                setTimeout(() => {
+                                    safeEnd()
+                                }, 1000)
                             })
                         })
                     })

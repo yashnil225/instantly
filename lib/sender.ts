@@ -460,38 +460,76 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 if (variants && variants.length > 0) {
                     let chosenVariant = variants[Math.floor(Math.random() * variants.length)]
 
-                    // Auto-Optimize A/B Testing Logic
-                    if (settings.autoOptimizeAZ && settings.winningMetric && sentForThisCampaign > 10) {
+                    // Instantly.ai Style Auto-Optimize A/Z Testing Logic
+                    if (settings.autoOptimizeAZ && settings.winningMetric && variants.length > 1) {
                         try {
+                            const minSamplePerVariant = 10 // Minimum sends before auto-optimizing
+
                             const variantStats = await Promise.all(variants.map(async (v: any) => {
-                                const sendingEvents = await prisma.sendingEvent.findMany({
+                                const sentEventsForVariant = await prisma.sendingEvent.findMany({
                                     where: {
                                         campaignId: campaign.id,
+                                        type: 'sent',
                                         metadata: { contains: `"variantId":"${v.id}"` }
                                     },
-                                    include: { lead: true }
+                                    select: { leadId: true }
                                 })
 
-                                const totalSent = sendingEvents.filter((e: any) => e.type === 'sent').length
-                                if (totalSent < 5) return { variant: v, score: 0, sent: totalSent }
+                                const totalSent = sentEventsForVariant.length
+                                if (totalSent < minSamplePerVariant) {
+                                    return { variant: v, score: 0, sent: totalSent, rate: 0 }
+                                }
 
-                                let opens = sendingEvents.filter((e: any) => e.type === 'open').length
-                                let clicks = sendingEvents.filter((e: any) => e.type === 'click').length
-                                let replies = sendingEvents.filter((e: any) => e.type === 'reply').length
+                                const leadIds = sentEventsForVariant.map((e: any) => e.leadId)
+                                const metric = (settings.winningMetric || '').toLowerCase()
 
-                                let score = 0
-                                if (settings.winningMetric === 'Open Rate' && totalSent > 0) score = opens / totalSent
-                                else if (settings.winningMetric === 'Click Rate' && totalSent > 0) score = clicks / totalSent
-                                else if (settings.winningMetric === 'Reply Rate' && totalSent > 0) score = replies / totalSent
+                                let positiveEvents = 0
+                                if (metric === 'reply rate' || metric === 'replies') {
+                                    positiveEvents = await prisma.lead.count({
+                                        where: {
+                                            id: { in: leadIds },
+                                            status: 'replied'
+                                        }
+                                    })
+                                } else if (metric === 'open rate' || metric === 'opens') {
+                                    positiveEvents = await prisma.sendingEvent.count({
+                                        where: {
+                                            campaignId: campaign.id,
+                                            type: 'open',
+                                            leadId: { in: leadIds }
+                                        }
+                                    })
+                                } else if (metric === 'click rate' || metric === 'clicks') {
+                                    positiveEvents = await prisma.sendingEvent.count({
+                                        where: {
+                                            campaignId: campaign.id,
+                                            type: 'click',
+                                            leadId: { in: leadIds }
+                                        }
+                                    })
+                                }
 
-                                return { variant: v, score, sent: totalSent }
+                                const rate = totalSent > 0 ? positiveEvents / totalSent : 0
+                                return { variant: v, score: rate, sent: totalSent, rate }
                             }))
 
-                            const maxScoreStat = variantStats.reduce((max, current) => current.score > max.score ? current : max, variantStats[0])
+                            // Check if all variants have met minimum sample size to start exploitation
+                            const readyVariants = variantStats.filter((s: any) => s.sent >= minSamplePerVariant)
 
-                            if (maxScoreStat && maxScoreStat.score > 0 && maxScoreStat.sent >= 5) {
-                                if (Math.random() < 0.8) {
-                                    chosenVariant = maxScoreStat.variant
+                            if (readyVariants.length > 0) {
+                                const maxScoreStat = readyVariants.reduce((max: any, current: any) => current.score > max.score ? current : max, readyVariants[0])
+
+                                if (maxScoreStat && maxScoreStat.score > 0) {
+                                    // 80% Exploitation of current winner, 20% Continuous Exploration of other variants
+                                    if (Math.random() < 0.8) {
+                                        chosenVariant = maxScoreStat.variant
+                                    } else {
+                                        // Pick from remaining variants so lagging variants still receive traffic and can overtake
+                                        const otherVariants = variants.filter((v: any) => v.id !== maxScoreStat.variant.id)
+                                        if (otherVariants.length > 0) {
+                                            chosenVariant = otherVariants[Math.floor(Math.random() * otherVariants.length)]
+                                        }
+                                    }
                                 }
                             }
                         } catch (e) {

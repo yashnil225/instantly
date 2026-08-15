@@ -572,16 +572,6 @@ export default function LeadsPage() {
                         })
                     )}
                 </div>
-
-                {/* Footer */}
-                {filteredLeads.length > 0 && (
-                    <div className="border-t border-[#222] px-4 py-3 flex items-center justify-center gap-4 text-sm text-gray-500">
-                        <span>Searching</span>
-                        <Button variant="link" className="text-blue-400 hover:text-blue-300 p-0 h-auto">
-                            Load more
-                        </Button>
-                    </div>
-                )}
             </div>
 
             <ImportLeadsModal

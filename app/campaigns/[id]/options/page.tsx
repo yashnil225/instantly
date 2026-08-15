@@ -105,9 +105,27 @@ export default function CampaignOptionsPage() {
                     if (data.overrideDeliverability !== undefined) setOverrideDeliverability(data.overrideDeliverability)
 
                     // Calculate schedule window in minutes
-                    if (data.startTime && data.endTime) {
-                        const [sH, sM] = data.startTime.split(':').map(Number)
-                        const [eH, eM] = data.endTime.split(':').map(Number)
+                    let start = data.startTime
+                    let end = data.endTime
+
+                    if (data.schedules) {
+                        try {
+                            const parsedSchedules = typeof data.schedules === 'string' ? JSON.parse(data.schedules) : data.schedules
+                            if (Array.isArray(parsedSchedules)) {
+                                const activeSched = parsedSchedules.find((s: any) => s.isActive) || parsedSchedules[0]
+                                if (activeSched && activeSched.startTime && activeSched.endTime) {
+                                    start = activeSched.startTime
+                                    end = activeSched.endTime
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Failed to parse schedules JSON in options", e)
+                        }
+                    }
+
+                    if (start && end) {
+                        const [sH, sM] = start.split(':').map(Number)
+                        const [eH, eM] = end.split(':').map(Number)
                         const diff = (eH * 60 + (eM || 0)) - (sH * 60 + (sM || 0))
                         if (diff > 0) setScheduleWindowMins(diff)
                     }

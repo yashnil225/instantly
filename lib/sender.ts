@@ -50,7 +50,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
     // Base URL for tracking (use NEXT_PUBLIC_APP_URL or VERCEL_URL first for cloud deployments)
     const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
     // 1. Fetch Active Campaigns with FILTERS
-    const campaignWhere: any = { status: 'active' }
+    const campaignWhere: any = { status: { in: ['active', 'Active'] } }
 
     if (filter?.campaignId) {
         campaignWhere.id = filter.campaignId
@@ -101,15 +101,47 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
         }
 
         // --- 2. Schedule Check ---
+        let scheduleStart = campaign.startTime
+        let scheduleEnd = campaign.endTime
+        let scheduleTimezone = campaign.timezone
+        let scheduleDays = campaign.days
+
+        if (campaign.schedules) {
+            try {
+                const parsedSchedules = typeof campaign.schedules === 'string' ? JSON.parse(campaign.schedules) : campaign.schedules
+                if (Array.isArray(parsedSchedules)) {
+                    const activeSched = parsedSchedules.find((s: any) => s.isActive) || parsedSchedules[0]
+                    if (activeSched) {
+                        if (activeSched.startTime) scheduleStart = activeSched.startTime
+                        if (activeSched.endTime) scheduleEnd = activeSched.endTime
+                        if (activeSched.timezone) scheduleTimezone = activeSched.timezone
+                        if (activeSched.days) scheduleDays = Array.isArray(activeSched.days) ? activeSched.days.join(',') : activeSched.days
+                    }
+                }
+            } catch (e) {
+                console.error(`Failed to parse schedules for campaign ${campaign.id}`, e)
+            }
+        }
+
         const isScheduled = isCampaignScheduled({
-            startTime: campaign.startTime,
-            endTime: campaign.endTime,
-            timezone: campaign.timezone,
-            days: campaign.days
+            startTime: scheduleStart,
+            endTime: scheduleEnd,
+            timezone: scheduleTimezone,
+            days: scheduleDays
         })
 
-        if (!isScheduled) continue
-        if (campaign.sequences.length === 0) continue
+        if (!isScheduled) {
+            console.log(`[Sender] Campaign "${campaign.name || campaign.id}" outside scheduled window/days (allowed: ${scheduleDays || 'all'}, hours: ${scheduleStart}-${scheduleEnd}). Skipping.`)
+            continue
+        }
+        if (campaign.sequences.length === 0) {
+            console.log(`[Sender] Campaign "${campaign.name || campaign.id}" has no sequence steps. Skipping.`)
+            continue
+        }
+        if (!campaign.campaignAccounts || campaign.campaignAccounts.length === 0) {
+            console.log(`[Sender] Campaign "${campaign.name || campaign.id}" has no email accounts assigned. Skipping.`)
+            continue
+        }
 
         // --- 3. Account Availability Check with Warmup Mode & Provider Matching ---
         // --- 3. Account Availability Check with Warmup Mode & Time Gap Pacing ---
@@ -219,9 +251,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
             ]
         }
 
-        if (settings.stopOnAutoReply) {
-            leadWhere.aiLabel = { notIn: ['auto_reply', 'out_of_office'] }
-        }
+        // Note: auto_reply / out_of_office filtering is safely handled in the loop below
+        // to avoid SQL NULL comparison issues on nullable aiLabel field
 
         // Apply Lead Status Filter
         if (filter?.leadStatus) {

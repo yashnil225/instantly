@@ -112,41 +112,64 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
         if (campaign.sequences.length === 0) continue
 
         // --- 3. Account Availability Check with Warmup Mode & Provider Matching ---
-        const availableAccounts = campaign.campaignAccounts
-            .map((ca: any) => ca.emailAccount)
-            .filter((acc: any) => {
-                // Filter by Email Account ID if specified
-                if (filter?.emailAccountId && acc.id !== filter.emailAccountId) return false
+        // --- 3. Account Availability Check with Warmup Mode & Time Gap Pacing ---
+        const minGapMins = Math.max(1, parseInt(settings.minTimeGap) || 9)
+        const randomGapMins = Math.max(0, parseInt(settings.randomTimeGap) || 5)
+        const baseGapMs = minGapMins * 60 * 1000
 
-                if (acc.status !== 'active') return false
+        const eligibleAccounts = []
+        for (const ca of campaign.campaignAccounts) {
+            const acc = ca.emailAccount
+            if (filter?.emailAccountId && acc.id !== filter.emailAccountId) continue
+            if (acc.status !== 'active') continue
 
-                // Skip accounts with no resolvable SMTP host — they'll always fail
-                const resolvedHost = acc.smtpHost || getSmtpDefaults(acc.provider)?.host
-                if (!resolvedHost) {
-                    console.warn(`[Sender] Skipping ${acc.email} — no SMTP host configured`)
-                    return false
-                }
+            const resolvedHost = acc.smtpHost || getSmtpDefaults(acc.provider)?.host
+            if (!resolvedHost) {
+                console.warn(`[Sender] Skipping ${acc.email} — no SMTP host configured`)
+                continue
+            }
 
-                // Check warmup mode
-                if (acc.warmupEnabled) {
-                    // Use centralized logic to ensure consistency (e.g. starting at 1 email)
-                    const warmupLimit = calculateWarmupLimit(acc)
-                    return acc.sentToday < warmupLimit
-                }
-
-                // Check Campaign Slow Ramp
+            // Check warmup mode
+            if (acc.warmupEnabled) {
+                const warmupLimit = calculateWarmupLimit(acc)
+                if (acc.sentToday >= warmupLimit) continue
+            } else {
+                // Check Campaign Slow Ramp / Daily Limit
                 let currentLimit = acc.dailyLimit
                 if (acc.slowRamp) {
                     const daysSinceCreated = Math.floor((Date.now() - new Date(acc.createdAt).getTime()) / (1000 * 60 * 60 * 24))
-                    // Start at 20, increase by 20 each day
                     const rampedLimit = 20 + (daysSinceCreated * 20)
                     currentLimit = Math.min(rampedLimit, acc.dailyLimit)
                 }
+                if (acc.sentToday >= currentLimit) continue
+            }
 
-                return acc.sentToday < currentLimit
+            // Check Account Pacing (Has this account rested enough since last send?)
+            const lastSentEvent = await prisma.sendingEvent.findFirst({
+                where: { emailAccountId: acc.id, type: 'sent' },
+                orderBy: { createdAt: 'desc' },
+                select: { createdAt: true }
             })
 
-        if (availableAccounts.length === 0) continue
+            if (lastSentEvent) {
+                const elapsedMs = Date.now() - new Date(lastSentEvent.createdAt).getTime()
+                const jitterMs = Math.floor(Math.random() * (randomGapMins * 60 * 1000))
+                const requiredGapMs = baseGapMs + jitterMs
+                if (elapsedMs < requiredGapMs) {
+                    const remainingMins = Math.ceil((requiredGapMs - elapsedMs) / 60000)
+                    console.log(`[Sender] Inbox ${acc.email} cooling down (${remainingMins}m remaining of ${minGapMins}+${randomGapMins}m gap)`)
+                    continue
+                }
+            }
+
+            eligibleAccounts.push(acc)
+        }
+
+        const availableAccounts = eligibleAccounts
+        if (availableAccounts.length === 0) {
+            console.log(`[Sender] All assigned inboxes for campaign ${campaign.id} are in cooldown. Skipping this cycle.`)
+            continue
+        }
 
         let campaignRemainingToday = Infinity
         if (campaign.dailyLimit) {
@@ -164,6 +187,21 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
             else campaignRemainingToday = campaign.dailyLimit
         }
 
+        // --- 4. Max New Leads Enforcement ---
+        let maxNewLeadsLimit = settings.maxNewLeads ? parseInt(settings.maxNewLeads) : null
+        let newLeadsSentToday = 0
+        if (maxNewLeadsLimit) {
+            const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+            newLeadsSentToday = await prisma.sendingEvent.count({
+                where: {
+                    campaignId: campaign.id,
+                    type: 'sent',
+                    createdAt: { gte: todayUTC },
+                    metadata: { contains: '"step":1' }
+                }
+            })
+        }
+
         // --- 5. Find Due Leads with FILTERS ---
         const excludedStatuses = ['unsubscribed', 'bounced', 'sequence_complete']
         if (campaign.stopOnReply) {
@@ -179,6 +217,10 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 { nextSendAt: null }, // Never sent before
                 { nextSendAt: { lte: now } } // Time to send next email
             ]
+        }
+
+        if (settings.stopOnAutoReply) {
+            leadWhere.aiLabel = { notIn: ['auto_reply', 'out_of_office'] }
         }
 
         // Apply Lead Status Filter
@@ -200,7 +242,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     take: 1
                 }
             },
-            take: 10 // Let's fetch 10 max, dynamically slice them down later
+            take: 10
         })
 
         // Sort by priority if needed
@@ -246,8 +288,6 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 if (actualSentToday >= campaign.dailyLimit) {
                     console.warn(`[Sender] Campaign ${campaign.id} reached daily limit (${campaign.dailyLimit}) mid-batch. Automatically pausing.`)
                     
-                    // Auto-pause campaign to prevent further sends today
-                    // Calculate tomorrow midnight UTC
                     const tomorrow = new Date()
                     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
                     tomorrow.setUTCHours(0, 0, 0, 0)
@@ -264,7 +304,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         }
                     })
                     
-                    break // Stop processing this campaign immediately to prevent limit breach
+                    break
                 }
             }
 
@@ -275,6 +315,31 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     where: { id: lead.id },
                     data: { status: 'bounced' }
                 })
+                continue
+            }
+
+            // --- Stop on Company Reply Check ---
+            if (settings.stopOnCompanyReply) {
+                const leadDomain = lead.email.split('@')[1]?.toLowerCase()
+                const commonFreeDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com', 'aol.com', 'mail.com']
+                if (leadDomain && !commonFreeDomains.includes(leadDomain)) {
+                    const companyRepliedLead = await prisma.lead.findFirst({
+                        where: {
+                            campaignId: campaign.id,
+                            status: 'replied',
+                            email: { endsWith: `@${leadDomain}` }
+                        }
+                    })
+                    if (companyRepliedLead) {
+                        console.log(`[Sender] Skipping ${lead.email} - colleague ${companyRepliedLead.email} already replied from @${leadDomain}`)
+                        continue
+                    }
+                }
+            }
+
+            // --- Stop on Auto Reply Check ---
+            if (settings.stopOnAutoReply && (lead.aiLabel === 'auto_reply' || lead.aiLabel === 'out_of_office')) {
+                console.log(`[Sender] Skipping ${lead.email} due to auto_reply / out_of_office label`)
                 continue
             }
 
@@ -296,6 +361,12 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     lastEventDate = sentEvents[0].createdAt
                     previousEvent = sentEvents[0]
                 }
+            }
+
+            // Max New Leads per Day Check
+            if (nextStepNumber === 1 && maxNewLeadsLimit && newLeadsSentToday >= maxNewLeadsLimit) {
+                console.log(`[Sender] Reached max new leads limit (${maxNewLeadsLimit}) today for campaign ${campaign.id}. Skipping new lead ${lead.email}`)
+                continue
             }
 
             if (nextStepNumber > campaign.sequences.length) {
@@ -355,22 +426,30 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 if (stickyAccount) {
                     account = stickyAccount
                 } else {
-                    // Fallback to round-robin within pool
                     const accountIndex = campaign.lastAccountIndex || 0
                     account = accountsPool[accountIndex % accountsPool.length]
                 }
             } else {
-                // Round-robin
                 const accountIndex = campaign.lastAccountIndex || 0
                 account = accountsPool[accountIndex % accountsPool.length]
 
                 await prisma.campaign.update({
                     where: { id: campaign.id },
-                    data: { lastAccountIndex: (accountIndex + 1) % availableAccounts.length } // Update global index based on full list to keep rotation moving
+                    data: { lastAccountIndex: (accountIndex + 1) % availableAccounts.length }
                 })
             }
 
             try {
+                // Ensure Unsubscribe Token exists on Lead
+                if (!lead.unsubscribeToken) {
+                    const token = `${lead.id}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`
+                    await prisma.lead.update({
+                        where: { id: lead.id },
+                        data: { unsubscribeToken: token }
+                    })
+                    lead.unsubscribeToken = token
+                }
+
                 // Select Variant
                 let subject = ""
                 let body = ""
@@ -394,7 +473,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                                 })
 
                                 const totalSent = sendingEvents.filter((e: any) => e.type === 'sent').length
-                                if (totalSent < 5) return { variant: v, score: 0, sent: totalSent } // Needs minimum sample size
+                                if (totalSent < 5) return { variant: v, score: 0, sent: totalSent }
 
                                 let opens = sendingEvents.filter((e: any) => e.type === 'open').length
                                 let clicks = sendingEvents.filter((e: any) => e.type === 'click').length
@@ -408,17 +487,13 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                                 return { variant: v, score, sent: totalSent }
                             }))
 
-                            // Find variant with highest score, fallback to random if all scores are 0 or tied
                             const maxScoreStat = variantStats.reduce((max, current) => current.score > max.score ? current : max, variantStats[0])
 
-                            // Only use the optimized winner if the score is actually higher than 0 and there's enough data
                             if (maxScoreStat && maxScoreStat.score > 0 && maxScoreStat.sent >= 5) {
-                                // 80/20 exploitation/exploration: 80% chance to pick best, 20% to pick random
                                 if (Math.random() < 0.8) {
                                     chosenVariant = maxScoreStat.variant
                                 }
                             }
-
                         } catch (e) {
                             console.error(`[Sender] Failed to auto-optimize variant for step ${step.id}`, e)
                         }
@@ -463,22 +538,14 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 let finalHtml: string | undefined = `${body}`
 
                 if (finalHtml) {
-                    // Check if the body already contains block HTML tags (meaning it came from the Rich Text Editor)
-                    // If it only contains <br> or inline tags, we STILL want to convert raw \n newlines to <br> to fix line spacing.
                     const isRichHtml = /<(p|div|table|ul|ol|h[1-6])\b/i.test(finalHtml)
 
                     if (!isRichHtml) {
-                        // It's mostly plain text: Normalize newlines to <br /> to ensure they render perfectly in email clients
                         finalHtml = finalHtml.replace(/\n/g, '<br />')
                     }
 
-                    // Outlook-safe paragraph styling:
-                    // - Outlook desktop (Word engine) IGNORES CSS margin on <p> tags, causing cramped text.
-                    // - Use padding-bottom + explicit pixel line-height + mso-margin-bottom-alt for best compatibility.
                     finalHtml = finalHtml.replace(/<p\b[^>]*>/gi, '<p style="margin: 0; padding: 0; padding-bottom: 12px; line-height: 24px; mso-line-height-rule: exactly; mso-margin-bottom-alt: 12px;">')
                     finalHtml = finalHtml.replace(/<div\b[^>]*>/gi, '<div style="line-height: 24px; mso-line-height-rule: exactly;">')
-
-                    // Wrap in email-safe container with matching font and line spacing
                     finalHtml = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 24px; mso-line-height-rule: exactly; color: #000000; font-size: 15px;">${finalHtml}</div>`
                 }
 
@@ -488,7 +555,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 const isTextOnly = settings.sendAsTextOnly || (settings.sendFirstAsText && nextStepNumber === 1)
 
                 if (isTextOnly) {
-                    finalText = body.replace(/<[^>]*>/g, '') // Strip HTML tags for text-only mode
+                    finalText = body.replace(/<[^>]*>/g, '')
                     
                     if (campaign.trackLinks) {
                         const urlRegex = /(https?:\/\/[^\s"'<]+)/g
@@ -498,17 +565,13 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         })
                     }
 
-                    finalHtml = undefined // No HTML
+                    finalHtml = undefined
                 } else {
-
-                    // Inject Tracking if HTML
                     if (campaign.trackOpens || campaign.trackLinks) {
                         finalHtml = injectTracking(finalHtml!, sentEvent.id, BASE_URL, campaign.trackLinks, campaign.trackOpens)
                     }
                 }
 
-                // Always use SMTP with app password (OAuth2 removed for stability)
-                // Use provider defaults as fallback if host/port are missing in DB
                 const smtpDefaults = getSmtpDefaults(account.provider)
                 const smtpHost = account.smtpHost || smtpDefaults?.host
                 const smtpPort = account.smtpPort || smtpDefaults?.port || 587
@@ -524,8 +587,9 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     auth: { user: account.smtpUser || account.email, pass: account.smtpPass! }
                 })
 
+                const senderName = `${account.firstName || ''} ${account.lastName || ''}`.trim() || account.email
                 const mailOptions: any = {
-                    from: `"${account.firstName} ${account.lastName}" <${account.email}>`,
+                    from: `"${senderName}" <${account.email}>`,
                     to: lead.email,
                     subject: subject,
                     html: finalHtml,
@@ -535,12 +599,23 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     bcc: settings.bccRecipients
                 }
 
+                const headers: Record<string, string> = {}
+
                 // Threading
                 if (nextStepNumber > 1 && previousEvent && previousEvent.messageId) {
-                    mailOptions.headers = {
-                        'In-Reply-To': previousEvent.messageId,
-                        'References': previousEvent.messageId
-                    }
+                    headers['In-Reply-To'] = previousEvent.messageId
+                    headers['References'] = previousEvent.messageId
+                }
+
+                // RFC One-Click Unsubscribe Header (Gmail & Yahoo 2024 compliance)
+                if (settings.insertUnsubscribeHeader && lead.unsubscribeToken) {
+                    const unsubUrl = `${BASE_URL}/api/unsubscribe?token=${lead.unsubscribeToken}`
+                    headers['List-Unsubscribe'] = `<${unsubUrl}>`
+                    headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click'
+                }
+
+                if (Object.keys(headers).length > 0) {
+                    mailOptions.headers = headers
                 }
 
                 const info = await transporter.sendMail(mailOptions)
@@ -581,7 +656,6 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         data: { nextSendAt: nextSendDate }
                     })
                 } else {
-                    // No more steps after this one
                     await prisma.lead.update({
                         where: { id: lead.id },
                         data: { status: 'sequence_complete', nextSendAt: null }
@@ -590,23 +664,11 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
                 totalSent++
                 sentForThisCampaign++
+                if (nextStepNumber === 1) newLeadsSentToday++
                 console.log(`Sent Step ${nextStepNumber} to ${lead.email} via ${account.email}`)
 
-                // Throttling with Custom Time Gap
-                const minGap = (settings.minTimeGap || 20) * 1000
-                let baseDelayMs = 2000 // default 2s for Hobby plan serverless compatibility
-                if (settings.minTimeGap) {
-                    baseDelayMs = Math.min(parseInt(settings.minTimeGap) * 1000, 3000) // Cap at 3s to prevent timeout
-                }
-
-                let randomDelayMs = 1000 // default additional 1s
-                if (settings.randomTimeGap) {
-                    randomDelayMs = Math.min(parseInt(settings.randomTimeGap) * 1000, 2000) // Cap at 2s to prevent timeout
-                }
-
-                const delay = baseDelayMs + Math.floor(Math.random() * randomDelayMs)
-                console.log(`Waiting ${delay / 1000}s before next email...`)
-                await new Promise(resolve => setTimeout(resolve, delay))
+                // Small 500ms safety yield between sequential sends in the same batch
+                await new Promise(resolve => setTimeout(resolve, 500))
 
             } catch (error: any) {
                 console.error(`Failed to send to ${lead.email}`, error)

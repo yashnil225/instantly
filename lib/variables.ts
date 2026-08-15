@@ -54,8 +54,13 @@ export function replaceVariables(text: string, lead: any, account?: any): string
         }
     }
 
-    // Fallback: Custom fields might be direct properties on the lead object in some contexts
-    // (though usually they are in customFields JSON)
+    // Unsubscribe Link Fields
+    if (lead) {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+        const token = lead.unsubscribeToken || lead.id || 'default'
+        const unsubscribeUrl = `${baseUrl}/unsubscribe?token=${token}`
+        result = result.replace(/{{\s*(unsubscribe|unsubscribe_link|unsub)\s*}}/gi, unsubscribeUrl)
+    }
 
     // Cleanup: Remove any remaining unmatched variables {{...}}
     result = result.replace(/{{\s*[^}]+\s*}}/g, '')

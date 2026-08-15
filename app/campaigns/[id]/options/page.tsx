@@ -67,6 +67,8 @@ export default function CampaignOptionsPage() {
     const [overrideDeliverability, setOverrideDeliverability] = useState(false)
 
     // Load campaign data and available accounts
+    const [scheduleWindowMins, setScheduleWindowMins] = useState(480)
+
     useEffect(() => {
         const loadData = async () => {
             try {
@@ -85,7 +87,30 @@ export default function CampaignOptionsPage() {
                     if (data.sendAsTextOnly !== undefined) setSendAsTextOnly(data.sendAsTextOnly)
                     if (data.sendFirstAsText !== undefined) setSendFirstAsText(data.sendFirstAsText)
                     if (data.autoOptimizeAZ !== undefined) setAutoOptimizeAZ(data.autoOptimizeAZ)
+                    if (data.winningMetric) setWinningMetric(data.winningMetric)
                     if (data.prioritizeNewLeads !== undefined) setPrioritizeNewLeads(data.prioritizeNewLeads)
+                    if (data.minTimeGap !== undefined && data.minTimeGap !== null) setMinTimeGap(data.minTimeGap.toString())
+                    if (data.randomTimeGap !== undefined && data.randomTimeGap !== null) setRandomTimeGap(data.randomTimeGap.toString())
+                    if (data.maxNewLeads !== undefined && data.maxNewLeads !== null) setMaxNewLeads(data.maxNewLeads.toString())
+                    if (data.owner) setOwner(data.owner)
+                    if (data.tags) {
+                        setTags(Array.isArray(data.tags) ? data.tags : (typeof data.tags === 'string' ? data.tags.split(',').map((t: string) => t.trim()) : []))
+                    }
+                    if (data.providerMatching !== undefined) setProviderMatching(data.providerMatching)
+                    if (data.stopOnCompanyReply !== undefined) setStopOnCompanyReply(data.stopOnCompanyReply)
+                    if (data.stopOnAutoReply !== undefined) setStopOnAutoReply(data.stopOnAutoReply)
+                    if (data.insertUnsubscribeHeader !== undefined) setInsertUnsubscribeHeader(data.insertUnsubscribeHeader)
+                    if (data.enableRiskyEmails !== undefined) setEnableRiskyEmails(data.enableRiskyEmails)
+                    if (data.disableBounceProtect !== undefined) setDisableBounceProtect(data.disableBounceProtect)
+                    if (data.overrideDeliverability !== undefined) setOverrideDeliverability(data.overrideDeliverability)
+
+                    // Calculate schedule window in minutes
+                    if (data.startTime && data.endTime) {
+                        const [sH, sM] = data.startTime.split(':').map(Number)
+                        const [eH, eM] = data.endTime.split(':').map(Number)
+                        const diff = (eH * 60 + (eM || 0)) - (sH * 60 + (sM || 0))
+                        if (diff > 0) setScheduleWindowMins(diff)
+                    }
                 }
 
                 // Load available email accounts
@@ -103,6 +128,22 @@ export default function CampaignOptionsPage() {
         loadData()
     }, [campaignId])
 
+    // Dynamic smart gap recommendations based on accounts, daily limit, and schedule window
+    const numAccounts = Math.max(1, selectedAccounts.length)
+    const currentLimit = Math.max(1, parseInt(dailyLimit) || 60)
+    const rawGapMins = (scheduleWindowMins * numAccounts) / currentLimit
+    const recommendedMinGap = Math.max(1, Math.round(rawGapMins * 0.8))
+    const recommendedRandomGap = Math.max(1, Math.round(rawGapMins * 0.2))
+
+    const handleApplyRecommendedGaps = () => {
+        setMinTimeGap(recommendedMinGap.toString())
+        setRandomTimeGap(recommendedRandomGap.toString())
+        toast({
+            title: "Recommended Gaps Applied",
+            description: `Set minimum gap to ${recommendedMinGap}m and random gap to ${recommendedRandomGap}m.`
+        })
+    }
+
     const handleSave = async () => {
         setSaving(true)
         try {
@@ -119,8 +160,8 @@ export default function CampaignOptionsPage() {
                     dailyLimit: parseInt(dailyLimit) || null,
                     owner,
                     tags,
-                    minTimeGap: parseInt(minTimeGap),
-                    randomTimeGap: parseInt(randomTimeGap),
+                    minTimeGap: parseInt(minTimeGap) || recommendedMinGap,
+                    randomTimeGap: parseInt(randomTimeGap) || recommendedRandomGap,
                     maxNewLeads: maxNewLeads ? parseInt(maxNewLeads) : null,
                     prioritizeNewLeads,
                     autoOptimizeAZ,
@@ -192,11 +233,9 @@ export default function CampaignOptionsPage() {
     const handleAutoFixLimits = async () => {
         setSaving(true)
         try {
-            // Calculate new limits (50% of current, minimum 10)
-            const currentLimit = parseInt(dailyLimit) || 60
-            const newCampaignLimit = Math.max(10, Math.floor(currentLimit * 0.5))
+            const currentLimitNum = parseInt(dailyLimit) || 60
+            const newCampaignLimit = Math.max(10, Math.floor(currentLimitNum * 0.5))
 
-            // Update campaign options
             await fetch(`/api/campaigns/${campaignId}/options`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -206,12 +245,11 @@ export default function CampaignOptionsPage() {
                     trackLinks: linkTracking,
                     trackOpens: openTracking,
                     dailyLimit: newCampaignLimit,
-                    minTimeGap: parseInt(minTimeGap),
-                    randomTimeGap: parseInt(randomTimeGap),
+                    minTimeGap: parseInt(minTimeGap) || recommendedMinGap,
+                    randomTimeGap: parseInt(randomTimeGap) || recommendedRandomGap,
                 }),
             })
 
-            // Update each associated account's daily limit
             for (const accId of selectedAccounts) {
                 const accData = accounts.find(a => a.id === accId)
                 if (accData) {
@@ -221,10 +259,10 @@ export default function CampaignOptionsPage() {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            status: "active", // Reactivate if in error
+                            status: "active",
                             dailyLimit: newAccLimit,
                             slowRamp: true,
-                            errorDetail: null // Clear error
+                            errorDetail: null
                         })
                     })
                 }
@@ -244,8 +282,6 @@ export default function CampaignOptionsPage() {
 
     return (
         <div className="min-h-screen bg-[#0a0a0a] text-white pb-24">
-
-
             <div className="max-w-4xl mx-auto py-10 space-y-8">
                 {/* Accounts Selection */}
                 <div className="flex items-start justify-between border-b border-[#1a1a1a] pb-8">
@@ -295,7 +331,7 @@ export default function CampaignOptionsPage() {
                 <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-8">
                     <div className="w-1/3">
                         <Label className="text-white font-bold text-sm block mb-1">Stop sending emails on reply</Label>
-                        <p className="text-gray-500 text-xs">Stop email sequence if a lead has been replied</p>
+                        <p className="text-gray-500 text-xs">Stop email sequence if a lead has replied</p>
                     </div>
                     <div className="w-2/3 flex justify-end">
                         <div className="bg-[#111] p-1 rounded-lg border border-[#2a2a2a] flex">
@@ -324,8 +360,8 @@ export default function CampaignOptionsPage() {
                 {/* Open Tracking */}
                 <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-8">
                     <div className="w-1/3">
-                        <Label className="text-white font-bold text-sm block mb-1">Open Tracking</Label>
-                        <p className="text-gray-500 text-xs">Track email opens</p>
+                        <Label className="text-white font-bold text-sm block mb-1">Open & Link Tracking</Label>
+                        <p className="text-gray-500 text-xs">Track email opens and link clicks</p>
                     </div>
                     <div className="w-2/3 flex items-center justify-end gap-6">
                         <div className="flex items-center gap-2">
@@ -365,21 +401,21 @@ export default function CampaignOptionsPage() {
                     <div className="w-1/3">
                         <div className="flex items-center gap-2 mb-1">
                             <Label className="text-white font-bold text-sm">Delivery Optimization</Label>
-                            <span className="text-[10px] bg-green-900/40 text-green-400 border border-green-900/50 px-1.5 py-0.5 rounded">Recon</span>
+                            <span className="text-[10px] bg-green-900/40 text-green-400 border border-green-900/50 px-1.5 py-0.5 rounded">High Deliverability</span>
                         </div>
                         <p className="text-gray-500 text-xs">A/B Testing & text-only configuration</p>
                     </div>
                     <div className="w-2/3 flex flex-col items-end gap-3">
-                        <div className="w-[300px] flex items-center justify-between bg-[#111] p-2 rounded-lg border border-[#2a2a2a]">
+                        <div className="w-[340px] flex items-center justify-between bg-[#111] p-2.5 rounded-lg border border-[#2a2a2a]">
                             <label className="text-sm text-gray-300 font-medium ml-2">Auto optimize A/B testing</label>
                             <Switch checked={autoOptimizeAZ} onCheckedChange={setAutoOptimizeAZ} />
                         </div>
 
                         {autoOptimizeAZ && (
-                            <div className="w-[300px] flex items-center justify-between">
+                            <div className="w-[340px] flex items-center justify-between">
                                 <label className="text-sm text-gray-300 font-medium">Winning Metric</label>
                                 <Select value={winningMetric} onValueChange={setWinningMetric}>
-                                    <SelectTrigger className="w-[150px] bg-[#0a0a0a] border-[#2a2a2a] h-8 text-xs">
+                                    <SelectTrigger className="w-[160px] bg-[#0a0a0a] border-[#2a2a2a] h-8 text-xs">
                                         <SelectValue placeholder="Select metric" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-[#1a1a1a] border-[#2a2a2a]">
@@ -479,34 +515,73 @@ export default function CampaignOptionsPage() {
                         {/* Custom Tags */}
                         <div className="space-y-6">
                             <h3 className="text-lg font-bold text-[#A1A1AA]">Custom Tags</h3>
-                            <p className="text-gray-500 text-xs -mt-5 mb-4">Tags are used to group your campaigns</p>
-                            <div className="bg-[#111] border border-[#222] rounded-xl p-6">
+                            <p className="text-gray-500 text-xs -mt-5 mb-4">Tags are used to group your campaigns (comma-separated)</p>
+                            <div className="bg-[#111] border border-[#222] rounded-xl p-6 space-y-3">
                                 <Input
-                                    placeholder="Tags"
+                                    placeholder="e.g. tech, outbound, tier1"
                                     className="bg-[#0a0a0a] border-[#2a2a2a] h-10"
+                                    value={Array.isArray(tags) ? tags.join(', ') : tags}
+                                    onChange={e => setTags(e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
                                 />
+                                {tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 pt-1">
+                                        {tags.map((t, idx) => (
+                                            <Badge key={idx} variant="secondary" className="bg-[#1e1e1e] text-blue-300 border border-[#333]">
+                                                {t}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
                         {/* Sending Pattern */}
                         <div className="space-y-6">
-                            <h3 className="text-lg font-bold text-[#A1A1AA]">Sending Pattern</h3>
-                            <p className="text-gray-500 text-xs -mt-5 mb-4">Specify how you want your emails to go</p>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-bold text-[#A1A1AA]">Sending Pattern</h3>
+                                    <p className="text-gray-500 text-xs mt-0.5">Specify how you want your emails to go</p>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleApplyRecommendedGaps}
+                                    className="border-blue-600/40 text-blue-400 bg-blue-950/20 hover:bg-blue-900/40 text-xs h-8"
+                                >
+                                    Apply Smart Gap ({recommendedMinGap}m + {recommendedRandomGap}m)
+                                </Button>
+                            </div>
+
                             <div className="bg-[#111] border border-[#222] rounded-xl p-8 space-y-8">
                                 <div className="flex items-center justify-between">
-                                    <Label className="text-white font-bold text-sm text-blue-400">Time gap between emails</Label>
+                                    <div>
+                                        <Label className="text-white font-bold text-sm text-blue-400">Time gap between emails</Label>
+                                        <p className="text-gray-500 text-[11px] mt-1">
+                                            Calculated for {selectedAccounts.length} inboxes & {dailyLimit} limit across {Math.round(scheduleWindowMins / 60)}h window
+                                        </p>
+                                    </div>
                                     <div className="flex gap-8">
                                         <div className="flex flex-col gap-2">
                                             <label className="text-[10px] font-bold text-gray-500 uppercase">Minimum time</label>
                                             <div className="flex items-center gap-2">
-                                                <Input className="w-16 bg-[#0a0a0a] border-[#2a2a2a] h-9" value={minTimeGap} onChange={e => setMinTimeGap(e.target.value)} />
+                                                <Input
+                                                    className="w-20 bg-[#0a0a0a] border-[#2a2a2a] h-9 text-center"
+                                                    placeholder={recommendedMinGap.toString()}
+                                                    value={minTimeGap}
+                                                    onChange={e => setMinTimeGap(e.target.value)}
+                                                />
                                                 <span className="text-gray-500 text-xs">minutes</span>
                                             </div>
                                         </div>
                                         <div className="flex flex-col gap-2">
                                             <label className="text-[10px] font-bold text-gray-500 uppercase">Random additional time</label>
                                             <div className="flex items-center gap-2">
-                                                <Input className="w-16 bg-[#0a0a0a] border-[#2a2a2a] h-9" value={randomTimeGap} onChange={e => setRandomTimeGap(e.target.value)} />
+                                                <Input
+                                                    className="w-20 bg-[#0a0a0a] border-[#2a2a2a] h-9 text-center"
+                                                    placeholder={recommendedRandomGap.toString()}
+                                                    value={randomTimeGap}
+                                                    onChange={e => setRandomTimeGap(e.target.value)}
+                                                />
                                                 <span className="text-gray-500 text-xs">minutes</span>
                                             </div>
                                         </div>
@@ -516,7 +591,10 @@ export default function CampaignOptionsPage() {
                                 <div className="h-[1px] bg-[#222] w-full" />
 
                                 <div className="flex items-center justify-between">
-                                    <Label className="text-white font-bold text-sm">Max new leads</Label>
+                                    <div>
+                                        <Label className="text-white font-bold text-sm">Max new leads</Label>
+                                        <p className="text-gray-500 text-xs mt-0.5">Limit daily volume of Step 1 first-touch emails</p>
+                                    </div>
                                     <div className="flex items-center gap-3">
                                         <Input
                                             className="w-24 bg-[#0a0a0a] border-[#2a2a2a] h-9 text-center placeholder:text-gray-600"
@@ -539,6 +617,63 @@ export default function CampaignOptionsPage() {
                                         checked={prioritizeNewLeads}
                                         onCheckedChange={(c) => setPrioritizeNewLeads(c as boolean)}
                                         className="border-[#444] bg-[#222] data-[state=checked]:bg-blue-600"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Deliverability & Compliance */}
+                        <div className="space-y-6">
+                            <h3 className="text-lg font-bold text-[#A1A1AA]">Deliverability & Compliance</h3>
+                            <p className="text-gray-500 text-xs -mt-5 mb-4">Google 2024+ sender compliance & reply safeguards</p>
+                            <div className="bg-[#111] border border-[#222] rounded-xl p-8 space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <Label className="text-white font-bold text-sm mb-1">Insert Unsubscribe Header (RFC 8058)</Label>
+                                        <p className="text-gray-500 text-xs">Include One-Click Unsubscribe header in email headers for Gmail/Yahoo compliance</p>
+                                    </div>
+                                    <Switch
+                                        checked={insertUnsubscribeHeader}
+                                        onCheckedChange={setInsertUnsubscribeHeader}
+                                    />
+                                </div>
+
+                                <div className="h-[1px] bg-[#222] w-full" />
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <Label className="text-white font-bold text-sm mb-1">Provider Matching</Label>
+                                        <p className="text-gray-500 text-xs">Match Gmail leads to Google inboxes and Outlook leads to Microsoft inboxes</p>
+                                    </div>
+                                    <Switch
+                                        checked={providerMatching}
+                                        onCheckedChange={setProviderMatching}
+                                    />
+                                </div>
+
+                                <div className="h-[1px] bg-[#222] w-full" />
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <Label className="text-white font-bold text-sm mb-1">Stop on Company Reply</Label>
+                                        <p className="text-gray-500 text-xs">Halt sequences for all contacts if someone with the same domain replies</p>
+                                    </div>
+                                    <Switch
+                                        checked={stopOnCompanyReply}
+                                        onCheckedChange={setStopOnCompanyReply}
+                                    />
+                                </div>
+
+                                <div className="h-[1px] bg-[#222] w-full" />
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <Label className="text-white font-bold text-sm mb-1">Stop on Auto-Reply / Out of Office</Label>
+                                        <p className="text-gray-500 text-xs">Pause sequence if lead returns an auto-responder or OOO notification</p>
+                                    </div>
+                                    <Switch
+                                        checked={stopOnAutoReply}
+                                        onCheckedChange={setStopOnAutoReply}
                                     />
                                 </div>
                             </div>

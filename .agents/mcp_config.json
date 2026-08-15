@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "instantly": {
+      "command": "node",
+      "args": [
+        "c:/Users/yashn/Desktop/Workspace/instantly/mcp-server/dist/index.js"
+      ],
+      "env": {
+        "DATABASE_URL": "file:c:/Users/yashn/Desktop/Workspace/instantly/prisma/dev.db"
+      }
+    }
+  }
+}

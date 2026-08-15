@@ -40,10 +40,11 @@ export async function GET(
         }
 
         // Calculate warmup stats from logs
+        const warmupLogs = account.warmupLogs as any[]
         const warmupStats = {
-            received: account.warmupLogs.filter(l => l.action === "receive" || l.action === "pool_receive").length,
-            sent: account.warmupLogs.filter(l => l.action === "send" || l.action === "pool_send").length,
-            savedFromSpam: account.warmupLogs.filter(l => l.action === "spam_rescue").length
+            received: warmupLogs.filter((l: any) => l.action === "receive" || l.action === "pool_receive").length,
+            sent: warmupLogs.filter((l: any) => l.action === "send" || l.action === "pool_send").length,
+            savedFromSpam: warmupLogs.filter((l: any) => l.action === "spam_rescue").length
         }
 
         // Get daily warmup data for chart
@@ -56,7 +57,7 @@ export async function GET(
             dailyData[days[date.getDay()]] = 0
         }
 
-        account.warmupLogs.forEach(log => {
+        warmupLogs.forEach((log: any) => {
             if (log.action === "send" || log.action === "pool_send") {
                 const dayName = days[log.createdAt.getDay()]
                 if (dailyData[dayName] !== undefined) {
@@ -73,7 +74,7 @@ export async function GET(
             : account.createdAt
 
         // Extract campaigns from the join table
-        const campaigns = account.campaignAccounts.map(ca => ca.campaign)
+        const campaigns = (account.campaignAccounts as any[])?.map((ca: any) => ca.campaign) || []
 
         return NextResponse.json({
             ...account,
@@ -230,7 +231,7 @@ export async function DELETE(
             return NextResponse.json({ success: true })
         }
 
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
             // Delete related warmup logs (use deleteMany - won't throw if none exist)
             await tx.warmupLog.deleteMany({ where: { accountId: id } })
 

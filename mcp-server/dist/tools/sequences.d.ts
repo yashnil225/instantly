@@ -46,22 +46,22 @@ export declare function handleCreateSequenceStep(args: {
             id: string;
             createdAt: Date;
             updatedAt: Date;
-            subject: string | null;
             body: string;
             sequenceId: string;
-            label: string | null;
-            weight: number;
+            subject: string | null;
             enabled: boolean;
+            weight: number;
+            label: string | null;
         }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
         campaignId: string;
-        stepNumber: number;
-        subject: string | null;
         body: string | null;
+        subject: string | null;
         dayGap: number;
+        stepNumber: number;
     };
 }>;
 export declare const updateSequenceVariantSchema: {
@@ -86,12 +86,12 @@ export declare function handleUpdateSequenceVariant(args: {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        subject: string | null;
         body: string;
         sequenceId: string;
-        label: string | null;
-        weight: number;
+        subject: string | null;
         enabled: boolean;
+        weight: number;
+        label: string | null;
     };
 }>;
 export declare const deleteSequenceStepSchema: {

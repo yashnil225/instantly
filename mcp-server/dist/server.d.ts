@@ -5,86 +5,14 @@ export declare const tools: ({
     inputSchema: {
         type: string;
         properties: {
-            status: {
-                type: string;
-                enum: string[];
-                description: string;
-            };
-            search: {
-                type: string;
-                description: string;
-            };
-            limit: {
-                type: string;
-                description: string;
-            };
-            offset: {
-                type: string;
-                description: string;
-            };
-            campaignId?: undefined;
             name?: undefined;
-            dailyLimit?: undefined;
-            stopOnReply?: undefined;
-            trackOpens?: undefined;
-            trackLinks?: undefined;
-            startTime?: undefined;
-            endTime?: undefined;
-            timezone?: undefined;
-            days?: undefined;
-            emailAccountIds?: undefined;
-            dayGap?: undefined;
-            subject?: undefined;
-            body?: undefined;
-            variantLabel?: undefined;
-            variantId?: undefined;
-            weight?: undefined;
-            enabled?: undefined;
-            label?: undefined;
-            sequenceId?: undefined;
-            aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
-            email?: undefined;
-            firstName?: undefined;
-            lastName?: undefined;
-            company?: undefined;
-            website?: undefined;
-            phone?: undefined;
-            customFields?: undefined;
-            leads?: undefined;
-            leadId?: undefined;
-            score?: undefined;
-            isRead?: undefined;
-            warmupEnabled?: undefined;
-            accountId?: undefined;
-            dailyIncrease?: undefined;
-            replyRate?: undefined;
-            poolOptIn?: undefined;
-            action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
-            category?: undefined;
-            isPublic?: undefined;
-            templateId?: undefined;
-        };
-        required?: undefined;
-    };
-} | {
-    name: string;
-    description: string;
-    inputSchema: {
-        type: string;
-        properties: {
-            campaignId: {
-                type: string;
-                description: string;
-            };
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
-            name?: undefined;
+            campaignId?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -93,7 +21,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -101,11 +28,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -116,20 +40,35 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
-        required: string[];
+        required?: undefined;
     };
 } | {
     name: string;
@@ -141,50 +80,24 @@ export declare const tools: ({
                 type: string;
                 description: string;
             };
-            dailyLimit: {
+            opportunityValue: {
                 type: string;
                 description: string;
             };
-            stopOnReply: {
-                type: string;
-                description: string;
-            };
-            trackOpens: {
-                type: string;
-                description: string;
-            };
-            trackLinks: {
-                type: string;
-                description: string;
-            };
-            startTime: {
-                type: string;
-                description: string;
-            };
-            endTime: {
-                type: string;
-                description: string;
-            };
-            timezone: {
-                type: string;
-                description: string;
-            };
-            days: {
-                type: string;
-                description: string;
-            };
-            emailAccountIds: {
-                type: string;
-                items: {
-                    type: string;
-                };
-                description: string;
-            };
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -192,11 +105,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -207,18 +117,33 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -228,315 +153,177 @@ export declare const tools: ({
     inputSchema: {
         type: string;
         properties: {
-            campaignId: {
+            workspaceId: {
+                type: string;
+                description: string;
+            };
+            name: {
+                type: string;
+                description: string;
+            };
+            opportunityValue?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            campaignId?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            workspaceId: {
+                type: string;
+                description: string;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            campaignId?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            workspaceId: {
                 type: string;
                 description: string;
             };
             status: {
                 type: string;
                 enum: string[];
-                description: string;
-            };
-            search?: undefined;
-            limit?: undefined;
-            offset?: undefined;
-            name?: undefined;
-            dailyLimit?: undefined;
-            stopOnReply?: undefined;
-            trackOpens?: undefined;
-            trackLinks?: undefined;
-            startTime?: undefined;
-            endTime?: undefined;
-            timezone?: undefined;
-            days?: undefined;
-            emailAccountIds?: undefined;
-            dayGap?: undefined;
-            subject?: undefined;
-            body?: undefined;
-            variantLabel?: undefined;
-            variantId?: undefined;
-            weight?: undefined;
-            enabled?: undefined;
-            label?: undefined;
-            sequenceId?: undefined;
-            aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
-            email?: undefined;
-            firstName?: undefined;
-            lastName?: undefined;
-            company?: undefined;
-            website?: undefined;
-            phone?: undefined;
-            customFields?: undefined;
-            leads?: undefined;
-            leadId?: undefined;
-            score?: undefined;
-            isRead?: undefined;
-            warmupEnabled?: undefined;
-            accountId?: undefined;
-            dailyIncrease?: undefined;
-            replyRate?: undefined;
-            poolOptIn?: undefined;
-            action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
-            category?: undefined;
-            isPublic?: undefined;
-            templateId?: undefined;
-        };
-        required: string[];
-    };
-} | {
-    name: string;
-    description: string;
-    inputSchema: {
-        type: string;
-        properties: {
-            campaignId: {
-                type: string;
-                description: string;
-            };
-            dayGap: {
-                type: string;
-                description: string;
-            };
-            subject: {
-                type: string;
-                description: string;
-            };
-            body: {
-                type: string;
-                description: string;
-            };
-            variantLabel: {
-                type: string;
-                description: string;
-            };
-            status?: undefined;
-            search?: undefined;
-            limit?: undefined;
-            offset?: undefined;
-            name?: undefined;
-            dailyLimit?: undefined;
-            stopOnReply?: undefined;
-            trackOpens?: undefined;
-            trackLinks?: undefined;
-            startTime?: undefined;
-            endTime?: undefined;
-            timezone?: undefined;
-            days?: undefined;
-            emailAccountIds?: undefined;
-            variantId?: undefined;
-            weight?: undefined;
-            enabled?: undefined;
-            label?: undefined;
-            sequenceId?: undefined;
-            aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
-            email?: undefined;
-            firstName?: undefined;
-            lastName?: undefined;
-            company?: undefined;
-            website?: undefined;
-            phone?: undefined;
-            customFields?: undefined;
-            leads?: undefined;
-            leadId?: undefined;
-            score?: undefined;
-            isRead?: undefined;
-            warmupEnabled?: undefined;
-            accountId?: undefined;
-            dailyIncrease?: undefined;
-            replyRate?: undefined;
-            poolOptIn?: undefined;
-            action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
-            category?: undefined;
-            isPublic?: undefined;
-            templateId?: undefined;
-        };
-        required: string[];
-    };
-} | {
-    name: string;
-    description: string;
-    inputSchema: {
-        type: string;
-        properties: {
-            variantId: {
-                type: string;
-                description: string;
-            };
-            subject: {
-                type: string;
-                description: string;
-            };
-            body: {
-                type: string;
-                description: string;
-            };
-            weight: {
-                type: string;
-                description: string;
-            };
-            enabled: {
-                type: string;
-                description: string;
-            };
-            label: {
-                type: string;
-                description: string;
-            };
-            status?: undefined;
-            search?: undefined;
-            limit?: undefined;
-            offset?: undefined;
-            campaignId?: undefined;
-            name?: undefined;
-            dailyLimit?: undefined;
-            stopOnReply?: undefined;
-            trackOpens?: undefined;
-            trackLinks?: undefined;
-            startTime?: undefined;
-            endTime?: undefined;
-            timezone?: undefined;
-            days?: undefined;
-            emailAccountIds?: undefined;
-            dayGap?: undefined;
-            variantLabel?: undefined;
-            sequenceId?: undefined;
-            aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
-            email?: undefined;
-            firstName?: undefined;
-            lastName?: undefined;
-            company?: undefined;
-            website?: undefined;
-            phone?: undefined;
-            customFields?: undefined;
-            leads?: undefined;
-            leadId?: undefined;
-            score?: undefined;
-            isRead?: undefined;
-            warmupEnabled?: undefined;
-            accountId?: undefined;
-            dailyIncrease?: undefined;
-            replyRate?: undefined;
-            poolOptIn?: undefined;
-            action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
-            category?: undefined;
-            isPublic?: undefined;
-            templateId?: undefined;
-        };
-        required: string[];
-    };
-} | {
-    name: string;
-    description: string;
-    inputSchema: {
-        type: string;
-        properties: {
-            sequenceId: {
-                type: string;
-                description: string;
-            };
-            status?: undefined;
-            search?: undefined;
-            limit?: undefined;
-            offset?: undefined;
-            campaignId?: undefined;
-            name?: undefined;
-            dailyLimit?: undefined;
-            stopOnReply?: undefined;
-            trackOpens?: undefined;
-            trackLinks?: undefined;
-            startTime?: undefined;
-            endTime?: undefined;
-            timezone?: undefined;
-            days?: undefined;
-            emailAccountIds?: undefined;
-            dayGap?: undefined;
-            subject?: undefined;
-            body?: undefined;
-            variantLabel?: undefined;
-            variantId?: undefined;
-            weight?: undefined;
-            enabled?: undefined;
-            label?: undefined;
-            aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
-            email?: undefined;
-            firstName?: undefined;
-            lastName?: undefined;
-            company?: undefined;
-            website?: undefined;
-            phone?: undefined;
-            customFields?: undefined;
-            leads?: undefined;
-            leadId?: undefined;
-            score?: undefined;
-            isRead?: undefined;
-            warmupEnabled?: undefined;
-            accountId?: undefined;
-            dailyIncrease?: undefined;
-            replyRate?: undefined;
-            poolOptIn?: undefined;
-            action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
-            category?: undefined;
-            isPublic?: undefined;
-            templateId?: undefined;
-        };
-        required: string[];
-    };
-} | {
-    name: string;
-    description: string;
-    inputSchema: {
-        type: string;
-        properties: {
-            campaignId: {
-                type: string;
-                description: string;
-            };
-            status: {
-                type: string;
-                enum: string[];
-                description?: undefined;
             };
             search: {
                 type: string;
-                description: string;
-            };
-            aiLabel: {
-                type: string;
-                description: string;
-            };
-            isStarred: {
-                type: string;
-                description: string;
-            };
-            isArchived: {
-                type: string;
-                description: string;
             };
             limit: {
                 type: string;
-                description: string;
             };
             offset: {
                 type: string;
-                description: string;
             };
             name?: undefined;
+            opportunityValue?: undefined;
+            campaignId?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -545,7 +332,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -553,8 +339,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
+            aiLabel?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -565,18 +351,33 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required?: undefined;
     };
@@ -588,41 +389,14 @@ export declare const tools: ({
         properties: {
             campaignId: {
                 type: string;
-                description: string;
             };
-            email: {
-                type: string;
-                description: string;
-            };
-            firstName: {
-                type: string;
-                description: string;
-            };
-            lastName: {
-                type: string;
-                description: string;
-            };
-            company: {
-                type: string;
-                description: string;
-            };
-            website: {
-                type: string;
-                description: string;
-            };
-            phone: {
-                type: string;
-                description: string;
-            };
-            customFields: {
-                type: string;
-                description: string;
-            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -631,7 +405,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -639,26 +412,138 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            name: {
+                type: string;
+                description?: undefined;
+            };
+            workspaceId: {
+                type: string;
+                description?: undefined;
+            };
+            dailyLimit: {
+                type: string;
+            };
+            stopOnReply: {
+                type: string;
+            };
+            trackOpens: {
+                type: string;
+            };
+            trackLinks: {
+                type: string;
+            };
+            startTime: {
+                type: string;
+            };
+            endTime: {
+                type: string;
+            };
+            timezone: {
+                type: string;
+            };
+            days: {
+                type: string;
+            };
+            opportunityValue?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            campaignId?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -670,7 +555,640 @@ export declare const tools: ({
         properties: {
             campaignId: {
                 type: string;
-                description: string;
+            };
+            name: {
+                type: string;
+                description?: undefined;
+            };
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            campaignId: {
+                type: string;
+            };
+            workspaceId: {
+                type: string;
+                description?: undefined;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            campaignId: {
+                type: string;
+            };
+            status: {
+                type: string;
+                enum: string[];
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            campaignId: {
+                type: string;
+            };
+            dayGap: {
+                type: string;
+            };
+            subject: {
+                type: string;
+            };
+            body: {
+                type: string;
+            };
+            variantLabel: {
+                type: string;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            variantId: {
+                type: string;
+            };
+            subject: {
+                type: string;
+            };
+            body: {
+                type: string;
+            };
+            weight: {
+                type: string;
+            };
+            enabled: {
+                type: string;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            campaignId?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            variantLabel?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            sequenceId: {
+                type: string;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            campaignId?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            campaignId: {
+                type: string;
+            };
+            status: {
+                type: string;
+                enum: string[];
+            };
+            search: {
+                type: string;
+            };
+            aiLabel: {
+                type: string;
+            };
+            limit: {
+                type: string;
+            };
+            offset: {
+                type: string;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required?: undefined;
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            campaignId: {
+                type: string;
+            };
+            email: {
+                type: string;
+            };
+            firstName: {
+                type: string;
+            };
+            lastName: {
+                type: string;
+            };
+            company: {
+                type: string;
+            };
+            website: {
+                type: string;
+            };
+            phone: {
+                type: string;
+            };
+            customFields: {
+                type: string;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            campaignId: {
+                type: string;
             };
             leads: {
                 type: string;
@@ -689,24 +1207,17 @@ export declare const tools: ({
                         company: {
                             type: string;
                         };
-                        website: {
-                            type: string;
-                        };
-                        phone: {
-                            type: string;
-                        };
-                        customFields: {
-                            type: string;
-                        };
                     };
                     required: string[];
                 };
             };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -715,7 +1226,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -723,11 +1233,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -737,18 +1244,33 @@ export declare const tools: ({
             customFields?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -760,38 +1282,45 @@ export declare const tools: ({
         properties: {
             leadId: {
                 type: string;
-                description: string;
+            };
+            firstName: {
+                type: string;
+            };
+            lastName: {
+                type: string;
+            };
+            company: {
+                type: string;
+            };
+            website: {
+                type: string;
+            };
+            phone: {
+                type: string;
             };
             status: {
                 type: string;
                 enum: string[];
-                description?: undefined;
             };
             score: {
                 type: string;
-                description: string;
             };
             aiLabel: {
                 type: string;
-                description: string;
             };
             isStarred: {
                 type: string;
-                description: string;
             };
             isArchived: {
                 type: string;
-                description: string;
             };
-            isRead: {
-                type: string;
-                description: string;
-            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -800,7 +1329,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -808,27 +1336,35 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             email?: undefined;
-            firstName?: undefined;
-            lastName?: undefined;
-            company?: undefined;
-            website?: undefined;
-            phone?: undefined;
             customFields?: undefined;
             leads?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -840,14 +1376,15 @@ export declare const tools: ({
         properties: {
             leadId: {
                 type: string;
-                description: string;
             };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -856,7 +1393,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -864,11 +1400,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -878,18 +1411,33 @@ export declare const tools: ({
             customFields?: undefined;
             leads?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -902,20 +1450,17 @@ export declare const tools: ({
             status: {
                 type: string;
                 enum: string[];
-                description?: undefined;
             };
             warmupEnabled: {
                 type: string;
-                description: string;
             };
-            limit: {
-                type: string;
-                description: string;
-            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             search?: undefined;
+            limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -924,7 +1469,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -932,11 +1476,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -947,17 +1488,32 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required?: undefined;
     };
@@ -967,17 +1523,53 @@ export declare const tools: ({
     inputSchema: {
         type: string;
         properties: {
-            accountId: {
+            email: {
                 type: string;
-                description: string;
             };
+            firstName: {
+                type: string;
+            };
+            lastName: {
+                type: string;
+            };
+            provider: {
+                type: string;
+            };
+            dailyLimit: {
+                type: string;
+            };
+            smtpHost: {
+                type: string;
+            };
+            smtpPort: {
+                type: string;
+            };
+            smtpUser: {
+                type: string;
+            };
+            smtpPass: {
+                type: string;
+            };
+            imapHost: {
+                type: string;
+            };
+            imapPort: {
+                type: string;
+            };
+            imapUser: {
+                type: string;
+            };
+            imapPass: {
+                type: string;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
-            name?: undefined;
-            dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
             trackLinks?: undefined;
@@ -985,7 +1577,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -993,14 +1584,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
-            email?: undefined;
-            firstName?: undefined;
-            lastName?: undefined;
             company?: undefined;
             website?: undefined;
             phone?: undefined;
@@ -1008,17 +1593,24 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -1030,34 +1622,16 @@ export declare const tools: ({
         properties: {
             accountId: {
                 type: string;
-                description: string;
             };
-            enabled: {
-                type: string;
-                description: string;
-            };
-            dailyLimit: {
-                type: string;
-                description: string;
-            };
-            dailyIncrease: {
-                type: string;
-                description: string;
-            };
-            replyRate: {
-                type: string;
-                description: string;
-            };
-            poolOptIn: {
-                type: string;
-                description: string;
-            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
-            name?: undefined;
+            dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
             trackLinks?: undefined;
@@ -1065,18 +1639,15 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
             variantLabel?: undefined;
             variantId?: undefined;
             weight?: undefined;
-            label?: undefined;
+            enabled?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -1087,14 +1658,115 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            accountId: {
+                type: string;
+            };
+            enabled: {
+                type: string;
+            };
+            dailyLimit: {
+                type: string;
+            };
+            dailyIncrease: {
+                type: string;
+            };
+            replyRate: {
+                type: string;
+            };
+            poolOptIn: {
+                type: string;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            campaignId?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -1106,22 +1778,21 @@ export declare const tools: ({
         properties: {
             campaignId: {
                 type: string;
-                description: string;
             };
             accountId: {
                 type: string;
-                description: string;
             };
             action: {
                 type: string;
                 enum: string[];
-                description: string;
             };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -1130,7 +1801,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -1138,11 +1808,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -1153,16 +1820,31 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -1175,29 +1857,21 @@ export declare const tools: ({
             status: {
                 type: string;
                 enum: string[];
-                description?: undefined;
             };
             campaignId: {
                 type: string;
-                description: string;
             };
             aiLabel: {
                 type: string;
-                description: string;
-            };
-            search: {
-                type: string;
-                description: string;
             };
             limit: {
                 type: string;
-                description: string;
-            };
-            offset: {
-                type: string;
-                description: string;
             };
             name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            search?: undefined;
+            offset?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -1206,7 +1880,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -1214,10 +1887,7 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -1228,18 +1898,33 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required?: undefined;
     };
@@ -1251,30 +1936,21 @@ export declare const tools: ({
         properties: {
             leadId: {
                 type: string;
-                description: string;
             };
-            isRead: {
+            messageBody: {
                 type: string;
-                description?: undefined;
             };
-            isStarred: {
+            senderAccountId: {
                 type: string;
-                description?: undefined;
             };
-            isArchived: {
-                type: string;
-                description?: undefined;
-            };
-            aiLabel: {
-                type: string;
-                description?: undefined;
-            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -1283,7 +1959,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -1291,7 +1966,89 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
+        };
+        required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            leadId: {
+                type: string;
+            };
+            isRead: {
+                type: string;
+            };
+            isStarred: {
+                type: string;
+            };
+            isArchived: {
+                type: string;
+            };
+            aiLabel: {
+                type: string;
+            };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            campaignId?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
             sequenceId?: undefined;
             email?: undefined;
             firstName?: undefined;
@@ -1303,16 +2060,29 @@ export declare const tools: ({
             leads?: undefined;
             score?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -1322,20 +2092,17 @@ export declare const tools: ({
     inputSchema: {
         type: string;
         properties: {
-            startDate: {
+            workspaceId: {
                 type: string;
-                description: string;
+                description?: undefined;
             };
-            endDate: {
-                type: string;
-                description: string;
-            };
+            name?: undefined;
+            opportunityValue?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -1344,7 +2111,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -1352,11 +2118,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -1367,16 +2130,33 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required?: undefined;
     };
@@ -1388,17 +2168,17 @@ export declare const tools: ({
         properties: {
             category: {
                 type: string;
-                description: string;
             };
             search: {
                 type: string;
-                description: string;
             };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -1407,7 +2187,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -1415,11 +2194,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -1430,17 +2206,32 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             isPublic?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required?: undefined;
     };
@@ -1452,24 +2243,22 @@ export declare const tools: ({
         properties: {
             name: {
                 type: string;
-                description: string;
+                description?: undefined;
             };
             subject: {
                 type: string;
-                description: string;
             };
             body: {
                 type: string;
-                description: string;
             };
             category: {
                 type: string;
-                description: string;
             };
             isPublic: {
                 type: string;
-                description: string;
             };
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
@@ -1483,17 +2272,13 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             variantLabel?: undefined;
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -1504,16 +2289,31 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             templateId?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
     };
@@ -1525,14 +2325,15 @@ export declare const tools: ({
         properties: {
             templateId: {
                 type: string;
-                description: string;
             };
+            name?: undefined;
+            opportunityValue?: undefined;
+            workspaceId?: undefined;
             status?: undefined;
             search?: undefined;
             limit?: undefined;
             offset?: undefined;
             campaignId?: undefined;
-            name?: undefined;
             dailyLimit?: undefined;
             stopOnReply?: undefined;
             trackOpens?: undefined;
@@ -1541,7 +2342,6 @@ export declare const tools: ({
             endTime?: undefined;
             timezone?: undefined;
             days?: undefined;
-            emailAccountIds?: undefined;
             dayGap?: undefined;
             subject?: undefined;
             body?: undefined;
@@ -1549,11 +2349,8 @@ export declare const tools: ({
             variantId?: undefined;
             weight?: undefined;
             enabled?: undefined;
-            label?: undefined;
             sequenceId?: undefined;
             aiLabel?: undefined;
-            isStarred?: undefined;
-            isArchived?: undefined;
             email?: undefined;
             firstName?: undefined;
             lastName?: undefined;
@@ -1564,19 +2361,116 @@ export declare const tools: ({
             leads?: undefined;
             leadId?: undefined;
             score?: undefined;
-            isRead?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
             warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
             accountId?: undefined;
             dailyIncrease?: undefined;
             replyRate?: undefined;
             poolOptIn?: undefined;
             action?: undefined;
-            startDate?: undefined;
-            endDate?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
             category?: undefined;
             isPublic?: undefined;
+            autoTagReplies?: undefined;
+            aiInboxManager?: undefined;
+            autoSuggestReplies?: undefined;
+            autoPauseBounce?: undefined;
         };
         required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            opportunityValue: {
+                type: string;
+                description?: undefined;
+            };
+            autoTagReplies: {
+                type: string;
+            };
+            aiInboxManager: {
+                type: string;
+            };
+            autoSuggestReplies: {
+                type: string;
+            };
+            autoPauseBounce: {
+                type: string;
+            };
+            name?: undefined;
+            workspaceId?: undefined;
+            status?: undefined;
+            search?: undefined;
+            limit?: undefined;
+            offset?: undefined;
+            campaignId?: undefined;
+            dailyLimit?: undefined;
+            stopOnReply?: undefined;
+            trackOpens?: undefined;
+            trackLinks?: undefined;
+            startTime?: undefined;
+            endTime?: undefined;
+            timezone?: undefined;
+            days?: undefined;
+            dayGap?: undefined;
+            subject?: undefined;
+            body?: undefined;
+            variantLabel?: undefined;
+            variantId?: undefined;
+            weight?: undefined;
+            enabled?: undefined;
+            sequenceId?: undefined;
+            aiLabel?: undefined;
+            email?: undefined;
+            firstName?: undefined;
+            lastName?: undefined;
+            company?: undefined;
+            website?: undefined;
+            phone?: undefined;
+            customFields?: undefined;
+            leads?: undefined;
+            leadId?: undefined;
+            score?: undefined;
+            isStarred?: undefined;
+            isArchived?: undefined;
+            warmupEnabled?: undefined;
+            provider?: undefined;
+            smtpHost?: undefined;
+            smtpPort?: undefined;
+            smtpUser?: undefined;
+            smtpPass?: undefined;
+            imapHost?: undefined;
+            imapPort?: undefined;
+            imapUser?: undefined;
+            imapPass?: undefined;
+            accountId?: undefined;
+            dailyIncrease?: undefined;
+            replyRate?: undefined;
+            poolOptIn?: undefined;
+            action?: undefined;
+            messageBody?: undefined;
+            senderAccountId?: undefined;
+            isRead?: undefined;
+            category?: undefined;
+            isPublic?: undefined;
+            templateId?: undefined;
+        };
+        required?: undefined;
     };
 })[];
 export declare function createMcpServer(): Server<{

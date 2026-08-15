@@ -1,21 +1,114 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/auth"
 
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-// 25 MCP Tool Definitions
+// Resolve user from API key, header, or session
+async function resolveUser(req: NextRequest) {
+  const url = new URL(req.url)
+  const queryKey = url.searchParams.get("apiKey") || url.searchParams.get("key")
+  const authHeader = req.headers.get("authorization")
+  const bearerKey = authHeader?.startsWith("Bearer ") ? authHeader.substring(7).trim() : null
+  const customHeaderKey = req.headers.get("x-api-key")
+  const apiKeyToLookup = queryKey || bearerKey || customHeaderKey
+
+  if (apiKeyToLookup) {
+    const keyRecord = await prisma.apiKey.findUnique({
+      where: { key: apiKeyToLookup },
+      include: { user: true },
+    })
+
+    if (keyRecord?.user) {
+      prisma.apiKey
+        .update({
+          where: { id: keyRecord.id },
+          data: { lastUsedAt: new Date() },
+        })
+        .catch(() => {})
+      return keyRecord.user
+    }
+  }
+
+  try {
+    const session = await auth()
+    if (session?.user?.id) {
+      const sessionUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+      })
+      if (sessionUser) return sessionUser
+    }
+  } catch {}
+
+  try {
+    const totalUsers = await prisma.user.count()
+    if (totalUsers === 1) {
+      return await prisma.user.findFirst()
+    }
+  } catch {}
+
+  return null
+}
+
+// Complete tool catalog
 const tools = [
-  // Campaign Tools
+  // --- Workspace Tools ---
   {
-    name: "instantly_list_campaigns",
-    description: "List outreach campaigns with status, sending stats, tags, and progress",
+    name: "instantly_list_workspaces",
+    description: "List all workspaces you own or belong to with member & campaign counts",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "instantly_create_workspace",
+    description: "Create a new workspace organization",
     inputSchema: {
       type: "object",
       properties: {
+        name: { type: "string", description: "Workspace name" },
+        opportunityValue: { type: "number", description: "Default lead opportunity value in USD (default 1000)" },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "instantly_rename_workspace",
+    description: "Rename an existing workspace",
+    inputSchema: {
+      type: "object",
+      properties: {
+        workspaceId: { type: "string", description: "Workspace ID" },
+        name: { type: "string", description: "New workspace name" },
+      },
+      required: ["workspaceId", "name"],
+    },
+  },
+  {
+    name: "instantly_delete_workspace",
+    description: "Delete a workspace you own",
+    inputSchema: {
+      type: "object",
+      properties: {
+        workspaceId: { type: "string", description: "Workspace ID to delete" },
+      },
+      required: ["workspaceId"],
+    },
+  },
+
+  // --- Campaign Tools ---
+  {
+    name: "instantly_list_campaigns",
+    description: "List outreach campaigns with status, sending stats, tags, and progress in your workspace",
+    inputSchema: {
+      type: "object",
+      properties: {
+        workspaceId: { type: "string", description: "Filter by specific workspace ID" },
         status: { type: "string", enum: ["draft", "active", "paused", "completed", "all"], description: "Filter by status" },
         search: { type: "string", description: "Search by campaign name" },
-        limit: { type: "number", description: "Limit results (default 20)" },
+        limit: { type: "number", description: "Limit results" },
         offset: { type: "number", description: "Pagination offset" },
       },
     },
@@ -26,7 +119,7 @@ const tools = [
     inputSchema: {
       type: "object",
       properties: {
-        campaignId: { type: "string", description: "The campaign ID" },
+        campaignId: { type: "string", description: "Campaign ID" },
       },
       required: ["campaignId"],
     },
@@ -38,6 +131,7 @@ const tools = [
       type: "object",
       properties: {
         name: { type: "string", description: "Campaign name" },
+        workspaceId: { type: "string", description: "Optional workspace ID to assign this campaign to" },
         dailyLimit: { type: "number", description: "Max emails to send per day" },
         stopOnReply: { type: "boolean", description: "Stop sequences when a lead replies" },
         trackOpens: { type: "boolean", description: "Enable open tracking" },
@@ -48,6 +142,53 @@ const tools = [
         days: { type: "string", description: "Sending days (e.g. 'Mon,Tue,Wed,Thu,Fri')" },
       },
       required: ["name"],
+    },
+  },
+  {
+    name: "instantly_rename_campaign",
+    description: "Rename a campaign",
+    inputSchema: {
+      type: "object",
+      properties: {
+        campaignId: { type: "string", description: "Campaign ID" },
+        name: { type: "string", description: "New campaign name" },
+      },
+      required: ["campaignId", "name"],
+    },
+  },
+  {
+    name: "instantly_duplicate_campaign",
+    description: "Duplicate a campaign with all its email sequences, variants, schedule, and account settings",
+    inputSchema: {
+      type: "object",
+      properties: {
+        campaignId: { type: "string", description: "Campaign ID to clone" },
+        name: { type: "string", description: "Name for the duplicated campaign" },
+      },
+      required: ["campaignId", "name"],
+    },
+  },
+  {
+    name: "instantly_share_campaign_workspace",
+    description: "Share or link a campaign to a workspace",
+    inputSchema: {
+      type: "object",
+      properties: {
+        campaignId: { type: "string", description: "Campaign ID" },
+        workspaceId: { type: "string", description: "Workspace ID to share with" },
+      },
+      required: ["campaignId", "workspaceId"],
+    },
+  },
+  {
+    name: "instantly_export_campaign_data",
+    description: "Export all campaign leads, statuses, and performance statistics as structured JSON/CSV data",
+    inputSchema: {
+      type: "object",
+      properties: {
+        campaignId: { type: "string", description: "Campaign ID" },
+      },
+      required: ["campaignId"],
     },
   },
   {
@@ -74,7 +215,7 @@ const tools = [
     },
   },
 
-  // Sequence Tools
+  // --- Sequences & Copy ---
   {
     name: "instantly_get_sequences",
     description: "Get sequence steps and A/B variants for a campaign",
@@ -128,10 +269,10 @@ const tools = [
     },
   },
 
-  // Lead Tools
+  // --- CRM & Leads ---
   {
     name: "instantly_list_leads",
-    description: "List and search leads with status and AI sentiment filtering",
+    description: "List and search leads in your CRM with status and AI sentiment filtering",
     inputSchema: {
       type: "object",
       properties: {
@@ -146,7 +287,7 @@ const tools = [
   },
   {
     name: "instantly_add_lead",
-    description: "Add an individual lead into a campaign with custom variables",
+    description: "Add an individual lead into a campaign with custom CRM variables",
     inputSchema: {
       type: "object",
       properties: {
@@ -178,6 +319,8 @@ const tools = [
               firstName: { type: "string" },
               lastName: { type: "string" },
               company: { type: "string" },
+              website: { type: "string" },
+              phone: { type: "string" },
             },
             required: ["email"],
           },
@@ -188,14 +331,19 @@ const tools = [
   },
   {
     name: "instantly_update_lead",
-    description: "Update lead status, score, or Unibox metadata",
+    description: "Edit CRM lead details (company, website, phone, status, score, notes, tags, unibox status)",
     inputSchema: {
       type: "object",
       properties: {
         leadId: { type: "string", description: "Lead ID" },
-        status: { type: "string", enum: ["new", "contacted", "replied", "bounced", "unsubscribed", "sequence_complete", "lead"] },
-        score: { type: "number", description: "Score (0-100)" },
-        aiLabel: { type: "string", description: "AI classification label" },
+        firstName: { type: "string" },
+        lastName: { type: "string" },
+        company: { type: "string" },
+        website: { type: "string" },
+        phone: { type: "string" },
+        status: { type: "string", enum: ["new", "contacted", "replied", "bounced", "unsubscribed", "sequence_complete", "lead"], description: "Lead status" },
+        score: { type: "number", description: "Engagement score (0-100)" },
+        aiLabel: { type: "string", description: "AI label (e.g. 'interested', 'out_of_office', 'wrong_person')" },
         isStarred: { type: "boolean" },
         isArchived: { type: "boolean" },
       },
@@ -204,7 +352,7 @@ const tools = [
   },
   {
     name: "instantly_delete_lead",
-    description: "Remove a lead from a campaign",
+    description: "Remove a lead from your CRM/campaign",
     inputSchema: {
       type: "object",
       properties: {
@@ -214,10 +362,10 @@ const tools = [
     },
   },
 
-  // Account & Warmup Tools
+  // --- Email Accounts & Deliverability ---
   {
     name: "instantly_list_accounts",
-    description: "List sender inboxes with warmup status, scores, and daily dispatch counts",
+    description: "List sender email inboxes with stats, sent counts today, warmup health scores, and bounce counts",
     inputSchema: {
       type: "object",
       properties: {
@@ -227,8 +375,42 @@ const tools = [
     },
   },
   {
+    name: "instantly_add_email_account",
+    description: "Connect a new sender email account (Google, Outlook, or Custom SMTP/IMAP)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        email: { type: "string", description: "Sender email address" },
+        firstName: { type: "string", description: "Sender first name" },
+        lastName: { type: "string", description: "Sender last name" },
+        provider: { type: "string", enum: ["google", "outlook", "custom"], default: "custom" },
+        dailyLimit: { type: "number", default: 50 },
+        smtpHost: { type: "string" },
+        smtpPort: { type: "number" },
+        smtpUser: { type: "string" },
+        smtpPass: { type: "string" },
+        imapHost: { type: "string" },
+        imapPort: { type: "number" },
+        imapUser: { type: "string" },
+        imapPass: { type: "string" },
+      },
+      required: ["email"],
+    },
+  },
+  {
+    name: "instantly_remove_email_account",
+    description: "Remove / disconnect an email sender account",
+    inputSchema: {
+      type: "object",
+      properties: {
+        accountId: { type: "string", description: "Account ID to remove" },
+      },
+      required: ["accountId"],
+    },
+  },
+  {
     name: "instantly_get_account",
-    description: "Get detailed account settings, warmup history, and attached campaigns",
+    description: "Get detailed account settings, warmup history logs, and attached campaigns",
     inputSchema: {
       type: "object",
       properties: {
@@ -239,7 +421,7 @@ const tools = [
   },
   {
     name: "instantly_update_warmup",
-    description: "Configure email inbox warmup parameters and toggle warmup",
+    description: "Configure email inbox warmup parameters and toggle warmup mode",
     inputSchema: {
       type: "object",
       properties: {
@@ -255,7 +437,7 @@ const tools = [
   },
   {
     name: "instantly_link_account_to_campaign",
-    description: "Link or unlink an email sender account to/from a campaign",
+    description: "Attach or detach an email sender account to/from a campaign",
     inputSchema: {
       type: "object",
       properties: {
@@ -267,10 +449,10 @@ const tools = [
     },
   },
 
-  // Unibox Tools
+  // --- Unibox & Replies ---
   {
     name: "instantly_get_unibox_threads",
-    description: "Fetch incoming replies and interactions across all sender inboxes",
+    description: "Fetch incoming email replies, conversations, and interaction history across all inboxes",
     inputSchema: {
       type: "object",
       properties: {
@@ -279,6 +461,19 @@ const tools = [
         aiLabel: { type: "string" },
         limit: { type: "number" },
       },
+    },
+  },
+  {
+    name: "instantly_send_reply",
+    description: "Send or record an email reply to a lead in Unibox",
+    inputSchema: {
+      type: "object",
+      properties: {
+        leadId: { type: "string", description: "Lead ID / Thread ID" },
+        messageBody: { type: "string", description: "Email reply message text" },
+        senderAccountId: { type: "string", description: "Optional specific sender account ID" },
+      },
+      required: ["leadId", "messageBody"],
     },
   },
   {
@@ -297,13 +492,15 @@ const tools = [
     },
   },
 
-  // Analytics Tools
+  // --- Analytics & Stats ---
   {
     name: "instantly_get_analytics_overview",
-    description: "Get workspace-wide metrics (total sent, opens, replies, CTR, bounces, and top campaigns)",
+    description: "Get workspace-wide email outreach statistics (total sent, opens, replies, CTR, bounces, revenue opportunity value)",
     inputSchema: {
       type: "object",
-      properties: {},
+      properties: {
+        workspaceId: { type: "string", description: "Optional workspace filter" },
+      },
     },
   },
   {
@@ -318,10 +515,10 @@ const tools = [
     },
   },
 
-  // Template Tools
+  // --- Templates ---
   {
     name: "instantly_list_templates",
-    description: "List reusable cold email templates",
+    description: "List reusable cold email templates and snippets",
     inputSchema: {
       type: "object",
       properties: {
@@ -332,7 +529,7 @@ const tools = [
   },
   {
     name: "instantly_create_template",
-    description: "Create a new email template with subject and body variables",
+    description: "Create a new reusable email template",
     inputSchema: {
       type: "object",
       properties: {
@@ -356,13 +553,106 @@ const tools = [
       required: ["templateId"],
     },
   },
+
+  // --- Settings ---
+  {
+    name: "instantly_get_user_settings",
+    description: "Read your user preferences, AI inbox manager settings, and outreach rules",
+    inputSchema: {
+      type: "object",
+      properties: {},
+    },
+  },
+  {
+    name: "instantly_update_user_settings",
+    description: "Update user preferences (e.g. autoTagReplies, aiInboxManager, autoPauseBounce, opportunityValue)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        opportunityValue: { type: "number" },
+        autoTagReplies: { type: "boolean" },
+        aiInboxManager: { type: "boolean" },
+        autoSuggestReplies: { type: "boolean" },
+        autoPauseBounce: { type: "boolean" },
+        language: { type: "string" },
+      },
+    },
+  },
 ]
 
-// Tool execution logic
-async function executeTool(name: string, args: any = {}) {
+// Scoped tool execution logic
+async function executeTool(name: string, args: any = {}, user: any) {
+  if (!user) {
+    throw new Error(
+      "Authentication required. Please include your Instantly API key in the connection URL (e.g. https://instantly-ai.vercel.app/api/mcp?apiKey=YOUR_KEY). You can find or generate your key at https://instantly-ai.vercel.app/settings/integrations#mcp"
+    )
+  }
+
+  const userId = user.id
+
   switch (name) {
+    // --- Workspace Tools ---
+    case "instantly_list_workspaces": {
+      const workspaces = await prisma.workspace.findMany({
+        where: {
+          OR: [
+            { userId },
+            { members: { some: { userId } } },
+          ],
+        },
+        include: {
+          members: { include: { user: { select: { id: true, name: true, email: true } } } },
+          _count: { select: { campaignWorkspaces: true, members: true } },
+        },
+        orderBy: [{ isDefault: "desc" }, { createdAt: "desc" }],
+      })
+      return { total: workspaces.length, workspaces }
+    }
+
+    case "instantly_create_workspace": {
+      const workspace = await prisma.workspace.create({
+        data: {
+          name: args.name,
+          opportunityValue: args.opportunityValue ? Number(args.opportunityValue) : 1000,
+          userId,
+          isDefault: false,
+          members: {
+            create: { userId, role: "owner" },
+          },
+        },
+      })
+      return { success: true, workspaceId: workspace.id, workspace }
+    }
+
+    case "instantly_rename_workspace": {
+      const workspace = await prisma.workspace.findFirst({
+        where: { id: args.workspaceId, OR: [{ userId }, { members: { some: { userId, role: "owner" } } }] },
+      })
+      if (!workspace) throw new Error(`Workspace ${args.workspaceId} not found or you lack permission`)
+
+      const updated = await prisma.workspace.update({
+        where: { id: args.workspaceId },
+        data: { name: args.name },
+      })
+      return { success: true, workspaceId: updated.id, name: updated.name }
+    }
+
+    case "instantly_delete_workspace": {
+      const workspace = await prisma.workspace.findFirst({
+        where: { id: args.workspaceId, userId },
+      })
+      if (!workspace) throw new Error(`Workspace ${args.workspaceId} not found or you are not the owner`)
+
+      await prisma.workspace.delete({ where: { id: args.workspaceId } })
+      return { success: true, message: `Workspace ${args.workspaceId} deleted` }
+    }
+
+    // --- Campaign Tools ---
     case "instantly_list_campaigns": {
-      const where: any = {}
+      const where: any = { userId }
+      if (args.workspaceId) {
+        where.campaignWorkspaces = { some: { workspaceId: args.workspaceId } }
+      }
       if (args.status && args.status !== "all") where.status = args.status
       if (args.search) where.name = { contains: args.search }
       const campaigns = await prisma.campaign.findMany({
@@ -373,6 +663,7 @@ async function executeTool(name: string, args: any = {}) {
         include: {
           _count: { select: { leads: true, sequences: true, campaignAccounts: true } },
           tags: { include: { tag: true } },
+          campaignWorkspaces: { include: { workspace: true } },
         },
       })
       return {
@@ -381,6 +672,7 @@ async function executeTool(name: string, args: any = {}) {
           id: c.id,
           name: c.name,
           status: c.status,
+          workspaces: c.campaignWorkspaces.map((cw: any) => cw.workspace?.name),
           stats: {
             sent: c.sentCount,
             opens: c.openCount,
@@ -398,26 +690,26 @@ async function executeTool(name: string, args: any = {}) {
     }
 
     case "instantly_get_campaign": {
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: args.campaignId },
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: args.campaignId, userId },
         include: {
           campaignAccounts: { include: { emailAccount: true } },
           sequences: { orderBy: { stepNumber: "asc" }, include: { variants: true } },
           tags: { include: { tag: true } },
+          campaignWorkspaces: { include: { workspace: true } },
           _count: { select: { leads: true } },
         },
       })
-      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found`)
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
       return { campaign }
     }
 
     case "instantly_create_campaign": {
-      const user = await prisma.user.findFirst()
       const campaign = await prisma.campaign.create({
         data: {
           name: args.name,
           status: "draft",
-          userId: user?.id,
+          userId,
           dailyLimit: args.dailyLimit,
           stopOnReply: args.stopOnReply ?? true,
           trackOpens: args.trackOpens ?? true,
@@ -426,25 +718,143 @@ async function executeTool(name: string, args: any = {}) {
           endTime: args.endTime || "17:00",
           timezone: args.timezone || "UTC",
           days: args.days || "Mon,Tue,Wed,Thu,Fri",
+          ...(args.workspaceId
+            ? {
+                campaignWorkspaces: {
+                  create: [{ workspaceId: args.workspaceId }],
+                },
+              }
+            : {}),
         },
       })
       return { success: true, campaignId: campaign.id, campaign }
     }
 
+    case "instantly_rename_campaign": {
+      const campaign = await prisma.campaign.findFirst({ where: { id: args.campaignId, userId } })
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
+
+      const updated = await prisma.campaign.update({
+        where: { id: args.campaignId },
+        data: { name: args.name },
+      })
+      return { success: true, campaignId: updated.id, name: updated.name }
+    }
+
+    case "instantly_duplicate_campaign": {
+      const original = await prisma.campaign.findFirst({
+        where: { id: args.campaignId, userId },
+        include: {
+          sequences: { include: { variants: true } },
+          campaignAccounts: true,
+          campaignWorkspaces: true,
+        },
+      })
+      if (!original) throw new Error(`Source campaign ${args.campaignId} not found`)
+
+      const newSequences = original.sequences.map((seq) => ({
+        stepNumber: seq.stepNumber,
+        dayGap: seq.dayGap,
+        subject: seq.subject || "",
+        body: seq.body || "",
+        variants: {
+          create: (seq.variants || []).map((v) => ({
+            subject: v.subject || "",
+            body: v.body || "",
+            weight: v.weight ?? 50,
+          })),
+        },
+      }))
+
+      const cloned = await prisma.campaign.create({
+        data: {
+          name: args.name,
+          userId,
+          status: "draft",
+          scheduleName: original.scheduleName,
+          startTime: original.startTime,
+          endTime: original.endTime,
+          timezone: original.timezone,
+          days: original.days,
+          startDate: original.startDate,
+          endDate: original.endDate,
+          dailyLimit: original.dailyLimit,
+          stopOnReply: original.stopOnReply,
+          trackLinks: original.trackLinks,
+          trackOpens: original.trackOpens,
+          settings: original.settings as any,
+          sequences: { create: newSequences },
+          campaignWorkspaces: {
+            create: original.campaignWorkspaces.map((cw) => ({ workspaceId: cw.workspaceId })),
+          },
+          campaignAccounts: {
+            create: original.campaignAccounts.map((ca) => ({ emailAccountId: ca.emailAccountId })),
+          },
+        },
+      })
+
+      return { success: true, clonedCampaignId: cloned.id, campaign: cloned }
+    }
+
+    case "instantly_share_campaign_workspace": {
+      const campaign = await prisma.campaign.findFirst({ where: { id: args.campaignId, userId } })
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
+
+      await prisma.campaignWorkspace.upsert({
+        where: {
+          campaignId_workspaceId: { campaignId: args.campaignId, workspaceId: args.workspaceId },
+        },
+        create: { campaignId: args.campaignId, workspaceId: args.workspaceId },
+        update: {},
+      })
+      return { success: true, message: `Campaign shared with workspace ${args.workspaceId}` }
+    }
+
+    case "instantly_export_campaign_data": {
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: args.campaignId, userId },
+        include: {
+          leads: {
+            select: { id: true, email: true, firstName: true, lastName: true, company: true, phone: true, status: true, score: true, aiLabel: true },
+          },
+          stats: { orderBy: { date: "asc" } },
+        },
+      })
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
+
+      return {
+        campaignName: campaign.name,
+        status: campaign.status,
+        totalLeads: campaign.leads.length,
+        leads: campaign.leads,
+        dailyPerformance: campaign.stats,
+      }
+    }
+
     case "instantly_update_campaign_status": {
-      const campaign = await prisma.campaign.update({
+      const campaign = await prisma.campaign.findFirst({ where: { id: args.campaignId, userId } })
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
+
+      const updated = await prisma.campaign.update({
         where: { id: args.campaignId },
         data: { status: args.status },
       })
-      return { success: true, campaignId: campaign.id, status: campaign.status }
+      return { success: true, campaignId: updated.id, status: updated.status }
     }
 
     case "instantly_delete_campaign": {
+      const campaign = await prisma.campaign.findFirst({ where: { id: args.campaignId, userId } })
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
+
       await prisma.campaign.delete({ where: { id: args.campaignId } })
       return { success: true, message: `Campaign ${args.campaignId} deleted` }
     }
 
+    // --- Sequence Tools ---
     case "instantly_get_sequences": {
+      const campaign = await prisma.campaign.findFirst({ where: { id: args.campaignId, userId } })
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
+
       const sequences = await prisma.sequence.findMany({
         where: { campaignId: args.campaignId },
         orderBy: { stepNumber: "asc" },
@@ -454,6 +864,9 @@ async function executeTool(name: string, args: any = {}) {
     }
 
     case "instantly_create_sequence_step": {
+      const campaign = await prisma.campaign.findFirst({ where: { id: args.campaignId, userId } })
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
+
       const count = await prisma.sequence.count({ where: { campaignId: args.campaignId } })
       const sequence = await prisma.sequence.create({
         data: {
@@ -478,21 +891,38 @@ async function executeTool(name: string, args: any = {}) {
     }
 
     case "instantly_update_sequence_variant": {
+      const variant = await prisma.sequenceVariant.findUnique({
+        where: { id: args.variantId },
+        include: { sequence: { include: { campaign: true } } },
+      })
+      if (!variant || variant.sequence.campaign.userId !== userId) {
+        throw new Error(`Variant ${args.variantId} not found in your account`)
+      }
+
       const { variantId, ...data } = args
-      const variant = await prisma.sequenceVariant.update({
+      const updated = await prisma.sequenceVariant.update({
         where: { id: variantId },
         data,
       })
-      return { success: true, variant }
+      return { success: true, variant: updated }
     }
 
     case "instantly_delete_sequence_step": {
+      const sequence = await prisma.sequence.findUnique({
+        where: { id: args.sequenceId },
+        include: { campaign: true },
+      })
+      if (!sequence || sequence.campaign.userId !== userId) {
+        throw new Error(`Sequence step ${args.sequenceId} not found in your account`)
+      }
+
       await prisma.sequence.delete({ where: { id: args.sequenceId } })
       return { success: true, message: `Sequence step ${args.sequenceId} deleted` }
     }
 
+    // --- CRM & Leads ---
     case "instantly_list_leads": {
-      const where: any = {}
+      const where: any = { campaign: { userId } }
       if (args.campaignId) where.campaignId = args.campaignId
       if (args.status && args.status !== "all") where.status = args.status
       if (args.aiLabel) where.aiLabel = args.aiLabel
@@ -500,6 +930,7 @@ async function executeTool(name: string, args: any = {}) {
         where.OR = [
           { email: { contains: args.search } },
           { firstName: { contains: args.search } },
+          { lastName: { contains: args.search } },
           { company: { contains: args.search } },
         ]
       }
@@ -508,11 +939,15 @@ async function executeTool(name: string, args: any = {}) {
         take: args.limit || 50,
         skip: args.offset || 0,
         orderBy: { createdAt: "desc" },
+        include: { campaign: { select: { id: true, name: true } } },
       })
       return { total: leads.length, leads }
     }
 
     case "instantly_add_lead": {
+      const campaign = await prisma.campaign.findFirst({ where: { id: args.campaignId, userId } })
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
+
       const lead = await prisma.lead.create({
         data: {
           campaignId: args.campaignId,
@@ -530,11 +965,22 @@ async function executeTool(name: string, args: any = {}) {
     }
 
     case "instantly_bulk_add_leads": {
+      const campaign = await prisma.campaign.findFirst({ where: { id: args.campaignId, userId } })
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
+
       let added = 0
       for (const item of args.leads) {
         await prisma.lead.upsert({
           where: { email_campaignId: { email: item.email.toLowerCase().trim(), campaignId: args.campaignId } },
-          create: { campaignId: args.campaignId, email: item.email.toLowerCase().trim(), firstName: item.firstName, lastName: item.lastName, company: item.company },
+          create: {
+            campaignId: args.campaignId,
+            email: item.email.toLowerCase().trim(),
+            firstName: item.firstName,
+            lastName: item.lastName,
+            company: item.company,
+            website: item.website,
+            phone: item.phone,
+          },
           update: { firstName: item.firstName, lastName: item.lastName, company: item.company },
         })
         added++
@@ -543,34 +989,89 @@ async function executeTool(name: string, args: any = {}) {
     }
 
     case "instantly_update_lead": {
+      const lead = await prisma.lead.findUnique({
+        where: { id: args.leadId },
+        include: { campaign: true },
+      })
+      if (!lead || lead.campaign.userId !== userId) {
+        throw new Error(`Lead ${args.leadId} not found in your account`)
+      }
+
       const { leadId, ...data } = args
-      const lead = await prisma.lead.update({ where: { id: leadId }, data })
-      return { success: true, lead }
+      const updated = await prisma.lead.update({ where: { id: leadId }, data })
+      return { success: true, lead: updated }
     }
 
     case "instantly_delete_lead": {
+      const lead = await prisma.lead.findUnique({
+        where: { id: args.leadId },
+        include: { campaign: true },
+      })
+      if (!lead || lead.campaign.userId !== userId) {
+        throw new Error(`Lead ${args.leadId} not found in your account`)
+      }
+
       await prisma.lead.delete({ where: { id: args.leadId } })
       return { success: true, message: `Lead ${args.leadId} deleted` }
     }
 
+    // --- Accounts & Warmup ---
     case "instantly_list_accounts": {
-      const where: any = {}
+      const where: any = { userId }
       if (args.status && args.status !== "all") where.status = args.status
       if (args.warmupEnabled !== undefined) where.warmupEnabled = args.warmupEnabled
-      const accounts = await prisma.emailAccount.findMany({ where, orderBy: { createdAt: "desc" } })
+      const accounts = await prisma.emailAccount.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: { _count: { select: { campaignAccounts: true, warmupLogs: true } } },
+      })
       return { total: accounts.length, accounts }
     }
 
-    case "instantly_get_account": {
-      const account = await prisma.emailAccount.findUnique({
-        where: { id: args.accountId },
-        include: { warmupLogs: { take: 10, orderBy: { createdAt: "desc" } } },
+    case "instantly_add_email_account": {
+      const account = await prisma.emailAccount.create({
+        data: {
+          email: args.email.toLowerCase().trim(),
+          firstName: args.firstName,
+          lastName: args.lastName,
+          provider: args.provider || "custom",
+          dailyLimit: args.dailyLimit || 50,
+          smtpHost: args.smtpHost,
+          smtpPort: args.smtpPort,
+          smtpUser: args.smtpUser,
+          smtpPass: args.smtpPass,
+          imapHost: args.imapHost,
+          imapPort: args.imapPort,
+          imapUser: args.imapUser,
+          imapPass: args.imapPass,
+          userId,
+          status: "active",
+        },
       })
-      if (!account) throw new Error(`Account ${args.accountId} not found`)
+      return { success: true, accountId: account.id, account }
+    }
+
+    case "instantly_remove_email_account": {
+      const account = await prisma.emailAccount.findFirst({ where: { id: args.accountId, userId } })
+      if (!account) throw new Error(`Account ${args.accountId} not found in your account`)
+
+      await prisma.emailAccount.delete({ where: { id: args.accountId } })
+      return { success: true, message: `Account ${args.accountId} removed` }
+    }
+
+    case "instantly_get_account": {
+      const account = await prisma.emailAccount.findFirst({
+        where: { id: args.accountId, userId },
+        include: { warmupLogs: { take: 10, orderBy: { createdAt: "desc" } }, campaignAccounts: { include: { campaign: true } } },
+      })
+      if (!account) throw new Error(`Account ${args.accountId} not found in your account`)
       return { account }
     }
 
     case "instantly_update_warmup": {
+      const account = await prisma.emailAccount.findFirst({ where: { id: args.accountId, userId } })
+      if (!account) throw new Error(`Account ${args.accountId} not found in your account`)
+
       const { accountId, ...data } = args
       const updateData: any = {}
       if (data.enabled !== undefined) updateData.warmupEnabled = data.enabled
@@ -578,11 +1079,19 @@ async function executeTool(name: string, args: any = {}) {
       if (data.dailyIncrease !== undefined) updateData.warmupDailyIncrease = data.dailyIncrease
       if (data.replyRate !== undefined) updateData.warmupReplyRate = data.replyRate
       if (data.poolOptIn !== undefined) updateData.warmupPoolOptIn = data.poolOptIn
-      const account = await prisma.emailAccount.update({ where: { id: accountId }, data: updateData })
-      return { success: true, account }
+      const updated = await prisma.emailAccount.update({ where: { id: accountId }, data: updateData })
+      return { success: true, account: updated }
     }
 
     case "instantly_link_account_to_campaign": {
+      const [campaign, account] = await Promise.all([
+        prisma.campaign.findFirst({ where: { id: args.campaignId, userId } }),
+        prisma.emailAccount.findFirst({ where: { id: args.accountId, userId } }),
+      ])
+      if (!campaign || !account) {
+        throw new Error("Campaign or Email Account not found in your account")
+      }
+
       if (args.action === "link") {
         await prisma.campaignEmailAccount.upsert({
           where: { campaignId_emailAccountId: { campaignId: args.campaignId, emailAccountId: args.accountId } },
@@ -597,8 +1106,10 @@ async function executeTool(name: string, args: any = {}) {
       return { success: true, action: args.action }
     }
 
+    // --- Unibox & Replies ---
     case "instantly_get_unibox_threads": {
       const leads = await prisma.lead.findMany({
+        where: { campaign: { userId } },
         take: args.limit || 30,
         orderBy: { updatedAt: "desc" },
         include: { campaign: true, events: { take: 5, orderBy: { createdAt: "desc" } } },
@@ -606,21 +1117,71 @@ async function executeTool(name: string, args: any = {}) {
       return { threads: leads }
     }
 
-    case "instantly_update_thread": {
-      const { leadId, ...data } = args
-      const lead = await prisma.lead.update({ where: { id: leadId }, data })
-      return { success: true, lead }
+    case "instantly_send_reply": {
+      const lead = await prisma.lead.findUnique({
+        where: { id: args.leadId },
+        include: { campaign: true },
+      })
+      if (!lead || lead.campaign.userId !== userId) {
+        throw new Error(`Lead ${args.leadId} not found in your account`)
+      }
+
+      const event = await prisma.sendingEvent.create({
+        data: {
+          type: "reply",
+          leadId: lead.id,
+          campaignId: lead.campaignId,
+          emailAccountId: args.senderAccountId,
+          details: args.messageBody,
+        },
+      })
+
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { status: "replied", isRead: true },
+      })
+
+      return { success: true, message: `Reply recorded for ${lead.email}`, eventId: event.id }
     }
 
+    case "instantly_update_thread": {
+      const lead = await prisma.lead.findUnique({
+        where: { id: args.leadId },
+        include: { campaign: true },
+      })
+      if (!lead || lead.campaign.userId !== userId) {
+        throw new Error(`Thread/lead ${args.leadId} not found in your account`)
+      }
+
+      const { leadId, ...data } = args
+      const updated = await prisma.lead.update({ where: { id: leadId }, data })
+      return { success: true, lead: updated }
+    }
+
+    // --- Analytics & Stats ---
     case "instantly_get_analytics_overview": {
-      const [campaigns, accountsCount, leadsCount] = await Promise.all([
-        prisma.campaign.findMany({ select: { sentCount: true, openCount: true, replyCount: true, bounceCount: true } }),
-        prisma.emailAccount.count(),
-        prisma.lead.count(),
+      const whereCampaign: any = { userId }
+      if (args.workspaceId) {
+        whereCampaign.campaignWorkspaces = { some: { workspaceId: args.workspaceId } }
+      }
+
+      const [campaigns, accountsCount, leadsCount, userPref] = await Promise.all([
+        prisma.campaign.findMany({
+          where: whereCampaign,
+          select: { sentCount: true, openCount: true, replyCount: true, bounceCount: true },
+        }),
+        prisma.emailAccount.count({ where: { userId } }),
+        prisma.lead.count({ where: { campaign: whereCampaign } }),
+        prisma.userPreference.findUnique({ where: { userId } }),
       ])
+
       const totalSent = campaigns.reduce((a: number, c: any) => a + c.sentCount, 0)
       const totalOpens = campaigns.reduce((a: number, c: any) => a + c.openCount, 0)
       const totalReplies = campaigns.reduce((a: number, c: any) => a + c.replyCount, 0)
+      const totalBounces = campaigns.reduce((a: number, c: any) => a + c.bounceCount, 0)
+      const oppValue = userPref?.opportunityValue || 1000
+      const pipelineValue = totalReplies * oppValue
+
       return {
         summary: {
           totalCampaigns: campaigns.length,
@@ -629,28 +1190,34 @@ async function executeTool(name: string, args: any = {}) {
           totalSent,
           totalOpens,
           totalReplies,
+          totalBounces,
+          pipelineOpportunityValue: `$${pipelineValue.toLocaleString()}`,
           openRate: totalSent > 0 ? `${((totalOpens / totalSent) * 100).toFixed(1)}%` : "0%",
           replyRate: totalSent > 0 ? `${((totalReplies / totalSent) * 100).toFixed(1)}%` : "0%",
+          bounceRate: totalSent > 0 ? `${((totalBounces / totalSent) * 100).toFixed(1)}%` : "0%",
         },
       }
     }
 
     case "instantly_get_campaign_analytics": {
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: args.campaignId },
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: args.campaignId, userId },
         include: { stats: { orderBy: { date: "asc" } } },
       })
-      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found`)
+      if (!campaign) throw new Error(`Campaign ${args.campaignId} not found in your account`)
       return { campaign }
     }
 
+    // --- Templates ---
     case "instantly_list_templates": {
-      const templates = await prisma.template.findMany({ orderBy: { updatedAt: "desc" } })
+      const templates = await prisma.template.findMany({
+        where: { OR: [{ userId }, { isPublic: true }] },
+        orderBy: { updatedAt: "desc" },
+      })
       return { total: templates.length, templates }
     }
 
     case "instantly_create_template": {
-      const user = await prisma.user.findFirst()
       const template = await prisma.template.create({
         data: {
           name: args.name,
@@ -658,15 +1225,35 @@ async function executeTool(name: string, args: any = {}) {
           body: args.body,
           category: args.category || "General",
           isPublic: args.isPublic ?? false,
-          userId: user?.id,
+          userId,
         },
       })
       return { success: true, template }
     }
 
     case "instantly_delete_template": {
+      const template = await prisma.template.findFirst({ where: { id: args.templateId, userId } })
+      if (!template) throw new Error(`Template ${args.templateId} not found in your account`)
+
       await prisma.template.delete({ where: { id: args.templateId } })
       return { success: true, message: `Template ${args.templateId} deleted` }
+    }
+
+    // --- Settings Tools ---
+    case "instantly_get_user_settings": {
+      const prefs = await prisma.userPreference.findUnique({
+        where: { userId },
+      })
+      return { settings: prefs || {} }
+    }
+
+    case "instantly_update_user_settings": {
+      const updated = await prisma.userPreference.upsert({
+        where: { userId },
+        create: { userId, ...args },
+        update: args,
+      })
+      return { success: true, settings: updated }
     }
 
     default:
@@ -679,7 +1266,7 @@ function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, x-session-id, Accept",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, x-api-key, x-session-id, Accept",
   }
 }
 
@@ -689,8 +1276,8 @@ export async function OPTIONS() {
 
 export async function GET(req: NextRequest) {
   const acceptHeader = req.headers.get("accept") || ""
-  
-  // If client requests SSE stream
+  const user = await resolveUser(req)
+
   if (acceptHeader.includes("text/event-stream")) {
     const encoder = new TextEncoder()
     const customReadable = new ReadableStream({
@@ -709,13 +1296,14 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // Health and metadata discovery response
   return NextResponse.json(
     {
       status: "healthy",
       name: "instantly-mcp-server",
       version: "1.0.0",
       protocol: "mcp",
+      authenticated: !!user,
+      user: user ? { id: user.id, email: user.email, name: user.name } : null,
       toolsCount: tools.length,
       endpoints: {
         sse: "/api/mcp",
@@ -729,10 +1317,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await resolveUser(req)
     const body = await req.json()
     const { jsonrpc, id, method, params = {} } = body
 
-    // 1. Initialize
     if (method === "initialize") {
       return NextResponse.json(
         {
@@ -741,19 +1329,21 @@ export async function POST(req: NextRequest) {
           result: {
             protocolVersion: "2024-11-05",
             capabilities: { tools: {}, resources: {}, prompts: {} },
-            serverInfo: { name: "instantly-mcp-server", version: "1.0.0" },
+            serverInfo: {
+              name: "instantly-mcp-server",
+              version: "1.0.0",
+              authenticated: !!user,
+            },
           },
         },
         { headers: corsHeaders() }
       )
     }
 
-    // 2. Ping
     if (method === "ping") {
       return NextResponse.json({ jsonrpc: "2.0", id, result: {} }, { headers: corsHeaders() })
     }
 
-    // 3. Tools List
     if (method === "tools/list") {
       return NextResponse.json(
         {
@@ -765,11 +1355,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 4. Tools Call
     if (method === "tools/call") {
       const { name, arguments: args } = params
       try {
-        const result = await executeTool(name, args)
+        const result = await executeTool(name, args, user)
         return NextResponse.json(
           {
             jsonrpc: "2.0",
@@ -800,7 +1389,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Resources List
     if (method === "resources/list") {
       return NextResponse.json(
         {
@@ -817,7 +1405,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 6. Prompts List
     if (method === "prompts/list") {
       return NextResponse.json(
         {
@@ -834,15 +1421,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Fallback for notifications / unhandled methods
-    return NextResponse.json(
-      {
-        jsonrpc: "2.0",
-        id,
-        result: {},
-      },
-      { headers: corsHeaders() }
-    )
+    return NextResponse.json({ jsonrpc: "2.0", id, result: {} }, { headers: corsHeaders() })
   } catch (error: any) {
     return NextResponse.json(
       {

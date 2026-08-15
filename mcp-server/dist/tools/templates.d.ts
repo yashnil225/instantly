@@ -42,8 +42,8 @@ export declare function handleCreateTemplate(args: {
         userId: string | null;
         createdAt: Date;
         updatedAt: Date;
-        subject: string;
         body: string;
+        subject: string;
         category: string | null;
         isPublic: boolean;
     };

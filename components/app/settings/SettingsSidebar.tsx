@@ -13,7 +13,8 @@ import {
     Shield,
     ScrollText,
     CreditCard,
-    Key
+    Key,
+    Sparkles
 } from "lucide-react"
 
 const sidebarItems = [
@@ -50,6 +51,7 @@ const settingsNavItems = [
     { title: "Workspace Group", href: "/settings#groups", icon: Building2 }, // Enabled
     { title: "Lead Labels", href: "/settings#labels", icon: Tag }, // Enabled
     { title: "Custom Tags", href: "/settings#tags", icon: Tag }, // Enabled
+    { title: "Gemini Spark (MCP)", href: "/settings/integrations#mcp", icon: Sparkles }, // Enabled
     { title: "Developer API", href: "/settings/integrations#keys", icon: Key }, // Enabled
     { title: "Website Visitors", href: "/settings#visitors", icon: Globe, disabled: true },
     { title: "Agency", href: "/settings#agency", icon: Shield }, // Enabled
@@ -57,7 +59,8 @@ const settingsNavItems = [
 ]
 
 const integrationsNavItems: { title: string; href: string; icon: any; disabled?: boolean }[] = [
-    { title: "Integrations", href: "/settings/integrations#integrations", icon: Globe },
+    { title: "Gemini Spark (MCP)", href: "/settings/integrations#mcp", icon: Sparkles },
+    { title: "Native Integrations", href: "/settings/integrations#integrations", icon: Globe },
     { title: "Webhooks", href: "/settings/integrations#webhooks", icon: ScrollText },
     { title: "API Keys", href: "/settings/integrations#keys", icon: Key },
 ]

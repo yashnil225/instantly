@@ -68,9 +68,9 @@ export declare function handleGetAccount(args: {
             lastActive: Date | null;
         };
         campaigns: {
-            status: string;
             id: string;
             name: string;
+            status: string;
         }[];
         recentWarmupLogs: {
             id: string;

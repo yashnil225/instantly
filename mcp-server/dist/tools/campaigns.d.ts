@@ -79,8 +79,8 @@ export declare function handleGetCampaign(args: {
         leadsCount: number;
         tags: string[];
         connectedAccounts: {
-            status: string;
             id: string;
+            status: string;
             dailyLimit: number;
             email: string;
             provider: string;
@@ -131,9 +131,9 @@ export declare function handleCreateCampaign(args: {
     message: string;
     campaignId: string;
     campaign: {
-        status: string;
         id: string;
         name: string;
+        status: string;
         userId: string | null;
         sentCount: number;
         openCount: number;

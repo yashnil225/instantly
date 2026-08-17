@@ -178,25 +178,31 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 }
             })
 
-            // Check warmup mode
-            if (acc.warmupEnabled) {
-                const warmupLimit = calculateWarmupLimit(acc)
-                if (actualSentToday >= warmupLimit) {
-                    console.log(`[Sender] ❌ ${acc.email} — warmup daily limit reached (${actualSentToday}/${warmupLimit})`)
+            // Check if provider quota was hit earlier today
+            if (acc.errorDetail && acc.errorDetail.includes('Daily provider quota reached')) {
+                if (new Date(acc.updatedAt) >= todayUTCStart) {
+                    console.log(`[Sender] ❌ ${acc.email} — provider daily quota reached today (${actualSentToday} emails sent before quota was hit). Paused until tomorrow.`)
                     continue
+                } else {
+                    // New day started, auto-clear stale quota error
+                    await prisma.emailAccount.update({
+                        where: { id: acc.id },
+                        data: { errorDetail: null }
+                    }).catch(() => {})
                 }
-            } else {
-                // Check Campaign Slow Ramp / Daily Limit
-                let currentLimit = acc.dailyLimit
-                if (acc.slowRamp) {
-                    const daysSinceCreated = Math.floor((Date.now() - new Date(acc.createdAt).getTime()) / (1000 * 60 * 60 * 24))
-                    const rampedLimit = 20 + (daysSinceCreated * 20)
-                    currentLimit = Math.min(rampedLimit, acc.dailyLimit)
-                }
-                if (actualSentToday >= currentLimit) {
-                    console.log(`[Sender] ❌ ${acc.email} — daily limit reached (actualSentToday=${actualSentToday}, limit=${currentLimit}, slowRamp=${acc.slowRamp})`)
-                    continue
-                }
+            }
+
+            // Check Campaign Daily Limit / Slow Ramp
+            let currentLimit = acc.dailyLimit || 50
+            if (acc.slowRamp) {
+                const daysSinceCreated = Math.floor((Date.now() - new Date(acc.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+                const rampedLimit = 20 + (daysSinceCreated * 20)
+                currentLimit = Math.min(rampedLimit, acc.dailyLimit || 50)
+            }
+
+            if (actualSentToday >= currentLimit) {
+                console.log(`[Sender] ❌ ${acc.email} — daily limit reached (${actualSentToday}/${currentLimit}, slowRamp=${acc.slowRamp})`)
+                continue
             }
 
             // Check Account Pacing (Has this account rested enough since its last campaign send?)
@@ -779,11 +785,23 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 const isDailyLimitError = errorMessage.includes('550 5.4.5') || errorMessage.includes('Daily user sending quota exceeded') || errorMessage.includes('Daily user sending limit exceeded')
 
                 if (isDailyLimitError) {
-                    console.warn(`[Sender] Account ${account.email} hit provider daily limit. Maxing out sentToday to pause until tomorrow.`)
+                    const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+                    const countBeforeQuota = await prisma.sendingEvent.count({
+                        where: {
+                            emailAccountId: account.id,
+                            type: 'sent',
+                            createdAt: { gte: todayUTC },
+                            metadata: { contains: '"step":' }
+                        }
+                    })
+
+                    console.warn(`[Sender] ⚠️ Account ${account.email} hit provider daily limit. Quota reached after ${countBeforeQuota} email(s) sent today. Pausing account until tomorrow.`)
+                    
                     await prisma.emailAccount.update({
                         where: { id: account.id },
                         data: {
-                            sentToday: Math.max(account.dailyLimit || 0, 999999) // Ensure no more sends today without triggering permanent error
+                            sentToday: countBeforeQuota,
+                            errorDetail: `Daily provider quota reached after ${countBeforeQuota} email(s) sent today. Auto-resumes tomorrow.`
                         }
                     }).catch((e: any) => console.error('Failed to update account limit status', e))
                 } else {

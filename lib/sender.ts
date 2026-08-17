@@ -143,28 +143,48 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
             continue
         }
 
-        // --- 3. Account Availability Check with Warmup Mode & Provider Matching ---
         // --- 3. Account Availability Check with Warmup Mode & Time Gap Pacing ---
         const minGapMins = Math.max(1, parseInt(settings.minTimeGap) || 9)
         const randomGapMins = Math.max(0, parseInt(settings.randomTimeGap) || 5)
         const baseGapMs = minGapMins * 60 * 1000
 
+
+        console.log(`[Sender] Campaign ${campaign.id}: minTimeGap=${minGapMins}m, randomTimeGap=${randomGapMins}m, ${campaign.campaignAccounts.length} account(s) assigned`)
+
+        const todayUTCStart = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+
         const eligibleAccounts = []
         for (const ca of campaign.campaignAccounts) {
             const acc = ca.emailAccount
             if (filter?.emailAccountId && acc.id !== filter.emailAccountId) continue
-            if (acc.status !== 'active') continue
+            if (acc.status !== 'active') {
+                console.log(`[Sender] ❌ ${acc.email} — status is "${acc.status}", not active`)
+                continue
+            }
 
             const resolvedHost = acc.smtpHost || getSmtpDefaults(acc.provider)?.host
             if (!resolvedHost) {
-                console.warn(`[Sender] Skipping ${acc.email} — no SMTP host configured`)
+                console.warn(`[Sender] ❌ ${acc.email} — no SMTP host configured (provider: ${acc.provider})`)
                 continue
             }
+
+            // Count actual sends today from events (not stale sentToday DB field)
+            const actualSentToday = await prisma.sendingEvent.count({
+                where: {
+                    emailAccountId: acc.id,
+                    type: 'sent',
+                    createdAt: { gte: todayUTCStart },
+                    metadata: { contains: '"step":' }
+                }
+            })
 
             // Check warmup mode
             if (acc.warmupEnabled) {
                 const warmupLimit = calculateWarmupLimit(acc)
-                if (acc.sentToday >= warmupLimit) continue
+                if (actualSentToday >= warmupLimit) {
+                    console.log(`[Sender] ❌ ${acc.email} — warmup daily limit reached (${actualSentToday}/${warmupLimit})`)
+                    continue
+                }
             } else {
                 // Check Campaign Slow Ramp / Daily Limit
                 let currentLimit = acc.dailyLimit
@@ -173,7 +193,10 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     const rampedLimit = 20 + (daysSinceCreated * 20)
                     currentLimit = Math.min(rampedLimit, acc.dailyLimit)
                 }
-                if (acc.sentToday >= currentLimit) continue
+                if (actualSentToday >= currentLimit) {
+                    console.log(`[Sender] ❌ ${acc.email} — daily limit reached (actualSentToday=${actualSentToday}, limit=${currentLimit}, slowRamp=${acc.slowRamp})`)
+                    continue
+                }
             }
 
             // Check Account Pacing (Has this account rested enough since its last campaign send?)
@@ -193,9 +216,12 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 const requiredGapMs = minGapMins * 60 * 1000
                 if (elapsedMs < requiredGapMs) {
                     const remainingMins = Math.ceil((requiredGapMs - elapsedMs) / 60000)
-                    console.log(`[Sender] Inbox ${acc.email} cooling down (${remainingMins}m remaining of ${minGapMins}m gap)`)
+                    console.log(`[Sender] ❌ ${acc.email} — cooling down (${remainingMins}m remaining of ${minGapMins}m gap, last sent ${Math.round(elapsedMs / 60000)}m ago)`)
                     continue
                 }
+                console.log(`[Sender] ✅ ${acc.email} — cooldown passed (last sent ${Math.round(elapsedMs / 60000)}m ago, gap=${minGapMins}m)`)
+            } else {
+                console.log(`[Sender] ✅ ${acc.email} — no previous campaign sends found, ready to go`)
             }
 
             eligibleAccounts.push(acc)
@@ -205,6 +231,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
         if (availableAccounts.length === 0) {
             console.log(`[Sender] All assigned inboxes for campaign ${campaign.id} are in cooldown. Skipping this cycle.`)
             continue
+
         }
 
         let campaignRemainingToday = Infinity

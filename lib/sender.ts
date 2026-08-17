@@ -176,20 +176,24 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 if (acc.sentToday >= currentLimit) continue
             }
 
-            // Check Account Pacing (Has this account rested enough since last send?)
+            // Check Account Pacing (Has this account rested enough since its last campaign send?)
             const lastSentEvent = await prisma.sendingEvent.findFirst({
-                where: { emailAccountId: acc.id, type: 'sent' },
+                where: { 
+                    emailAccountId: acc.id, 
+                    type: 'sent',
+                    campaignId: campaign.id,
+                    metadata: { contains: '"step":' }
+                },
                 orderBy: { createdAt: 'desc' },
                 select: { createdAt: true }
             })
 
             if (lastSentEvent) {
                 const elapsedMs = Date.now() - new Date(lastSentEvent.createdAt).getTime()
-                const jitterMs = Math.floor(Math.random() * (randomGapMins * 60 * 1000))
-                const requiredGapMs = baseGapMs + jitterMs
+                const requiredGapMs = minGapMins * 60 * 1000
                 if (elapsedMs < requiredGapMs) {
                     const remainingMins = Math.ceil((requiredGapMs - elapsedMs) / 60000)
-                    console.log(`[Sender] Inbox ${acc.email} cooling down (${remainingMins}m remaining of ${minGapMins}+${randomGapMins}m gap)`)
+                    console.log(`[Sender] Inbox ${acc.email} cooling down (${remainingMins}m remaining of ${minGapMins}m gap)`)
                     continue
                 }
             }

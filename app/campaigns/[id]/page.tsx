@@ -98,6 +98,7 @@ interface CampaignAnalytics {
     leads?: { id: string; status: string; aiLabel?: string | null }[]
     sequences?: unknown[]
     heatmapData?: unknown[]
+    timezone?: string
     funnelData?: unknown[]
     dailyLimit?: number | null
     trackOpens?: boolean
@@ -127,6 +128,7 @@ export default function CampaignAnalyticsPage() {
     const [isClassifying, setIsClassifying] = useState(false)
     const [classifyingProgress, setClassifyingProgress] = useState(0)
     const [filtersLoaded, setFiltersLoaded] = useState(false)
+    const [activeSubTab, setActiveSubTab] = useState<'steps' | 'activity'>('steps')
 
     const [filters, setFilters] = useState({
         includeAutoReplies: false,
@@ -679,104 +681,168 @@ export default function CampaignAnalyticsPage() {
                                     {/* Advanced Analytics Charts */}
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                         <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
-                                            <SendTimeHeatmap data={data?.heatmapData as any} />
+                                            <SendTimeHeatmap data={data?.heatmapData as any} timezone={data?.timezone} />
                                         </div>
                                         <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
                                             <ConversionFunnel data={data?.funnelData as any} />
                                         </div>
                                     </div>
 
-                                    {/* Step Analytics Table */}
+                                    {/* Step Analytics & Activity Table */}
                                     <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
                                         <div className="flex items-center gap-8 border-b border-[#2a2a2a] mb-6">
-                                            <button className="pb-3 text-sm font-medium text-blue-500 relative transition-colors">
+                                            <button 
+                                                onClick={() => setActiveSubTab('steps')}
+                                                className={cn(
+                                                    "pb-3 text-sm font-medium relative transition-colors",
+                                                    activeSubTab === 'steps' ? "text-blue-500" : "text-gray-400 hover:text-white"
+                                                )}
+                                            >
                                                 Step Analytics
-                                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                                                {activeSubTab === 'steps' && (
+                                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                                                )}
                                             </button>
-                                            <button className="pb-3 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                                            <button 
+                                                onClick={() => setActiveSubTab('activity')}
+                                                className={cn(
+                                                    "pb-3 text-sm font-medium relative transition-colors",
+                                                    activeSubTab === 'activity' ? "text-blue-500" : "text-gray-400 hover:text-white"
+                                                )}
+                                            >
                                                 Activity
+                                                {activeSubTab === 'activity' && (
+                                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                                                )}
                                             </button>
                                         </div>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full">
-                                                <thead>
-                                                    <tr className="text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-[#2a2a2a]">
-                                                        <th className="text-left pb-4 pl-4">Step</th>
-                                                        <th className="text-left pb-4">Sent</th>
-                                                        <th className="text-left pb-4">Opened</th>
-                                                        <th className="text-left pb-4">Replied</th>
-                                                        <th className="text-left pb-4">Clicked</th>
-                                                        <th className="text-left pb-4 pr-4">Opportunities</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {data?.stepAnalytics && data.stepAnalytics.length > 0 ? (
-                                                        data.stepAnalytics.map((step, index) => (
-                                                            <React.Fragment key={index}>
-                                                                <tr className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]/50 transition-colors last:border-0">
-                                                                    <td className="py-4 pl-4 text-sm font-medium text-white flex items-center gap-2">
-                                                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                                                        {step.step}
-                                                                    </td>
-                                                                    <td className="py-4 text-sm text-gray-300">{step.sent}</td>
-                                                                    <td className="py-4 text-sm text-gray-300">{step.opened}</td>
-                                                                    <td className="py-4 text-sm text-gray-300">{step.replied}</td>
-                                                                    <td className="py-4 text-sm text-gray-300">{step.clicked}</td>
-                                                                    <td className="py-4 pr-4 text-sm text-gray-300">
-                                                                        <div className="flex items-center justify-between">
-                                                                            {step.opportunities}
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                                {step.variants && step.variants.length > 0 && step.variants.map((variant, vIndex) => (
-                                                                    <tr key={`${index}-${vIndex}`} className="border-b border-[#1a1a1a]/30 bg-[#0c0c0c] hover:bg-[#151515] transition-colors last:border-0">
-                                                                        <td className="py-3 pl-10 text-xs text-gray-400">
-                                                                            <div className="flex items-center gap-3">
-                                                                                <div className="w-5 h-5 rounded border border-[#333] flex items-center justify-center text-[10px] font-bold text-gray-500 bg-[#111]">
-                                                                                    {variant.label}
-                                                                                </div>
-                                                                                <div className="flex flex-col">
-                                                                                    <span className="font-medium text-gray-300">Variant {variant.label}</span>
-                                                                                    {variant.subject && <span className="text-[10px] text-gray-500 truncate max-w-[200px]">{variant.subject}</span>}
-                                                                                </div>
-                                                                            </div>
+
+                                        {activeSubTab === 'steps' ? (
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full">
+                                                    <thead>
+                                                        <tr className="text-[11px] font-bold text-gray-500 uppercase tracking-wider border-b border-[#2a2a2a]">
+                                                            <th className="text-left pb-4 pl-4">Step</th>
+                                                            <th className="text-left pb-4">Sent</th>
+                                                            <th className="text-left pb-4">Opened</th>
+                                                            <th className="text-left pb-4">Replied</th>
+                                                            <th className="text-left pb-4">Clicked</th>
+                                                            <th className="text-left pb-4 pr-4">Opportunities</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {data?.stepAnalytics && data.stepAnalytics.length > 0 ? (
+                                                            data.stepAnalytics.map((step, index) => (
+                                                                <React.Fragment key={index}>
+                                                                    <tr className="border-b border-[#1a1a1a] hover:bg-[#1a1a1a]/50 transition-colors last:border-0">
+                                                                        <td className="py-4 pl-4 text-sm font-medium text-white flex items-center gap-2">
+                                                                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                                                            {step.step}
                                                                         </td>
-                                                                        <td className="py-3 text-xs text-gray-500">{variant.sent}</td>
-                                                                        <td className="py-3 text-xs text-gray-500">{variant.opened}</td>
-                                                                        <td className="py-3 text-xs text-gray-500">{variant.replied}</td>
-                                                                        <td className="py-3 text-xs text-gray-500">{variant.clicked}</td>
-                                                                        <td className="py-3 pr-4 text-xs text-gray-500">
-                                                                            <div className="flex items-center justify-end">
-                                                                                <button
-                                                                                    onClick={() => toggleVariant(variant.id, variant.enabled)}
-                                                                                    className={cn(
-                                                                                        "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none",
-                                                                                        variant.enabled ? "bg-blue-600" : "bg-[#2a2a2a]"
-                                                                                    )}
-                                                                                >
-                                                                                    <span
-                                                                                        className={cn(
-                                                                                            "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
-                                                                                            variant.enabled ? "translate-x-5" : "translate-x-1"
-                                                                                        )}
-                                                                                    />
-                                                                                </button>
+                                                                        <td className="py-4 text-sm text-gray-300">{step.sent}</td>
+                                                                        <td className="py-4 text-sm text-gray-300">{step.opened}</td>
+                                                                        <td className="py-4 text-sm text-gray-300">{step.replied}</td>
+                                                                        <td className="py-4 text-sm text-gray-300">{step.clicked}</td>
+                                                                        <td className="py-4 pr-4 text-sm text-gray-300">
+                                                                            <div className="flex items-center justify-between">
+                                                                                {step.opportunities}
                                                                             </div>
                                                                         </td>
                                                                     </tr>
-                                                                ))}
-                                                            </React.Fragment>
-                                                        ))
-                                                    ) : (
-                                                        <tr>
-                                                            <td colSpan={6} className="py-12 text-center text-gray-500">
-                                                                No step analytics data available
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                                    {step.variants && step.variants.length > 0 && step.variants.map((variant, vIndex) => (
+                                                                        <tr key={`${index}-${vIndex}`} className="border-b border-[#1a1a1a]/30 bg-[#0c0c0c] hover:bg-[#151515] transition-colors last:border-0">
+                                                                            <td className="py-3 pl-10 text-xs text-gray-400">
+                                                                                <div className="flex items-center gap-3">
+                                                                                    <div className="w-5 h-5 rounded border border-[#333] flex items-center justify-center text-[10px] font-bold text-gray-500 bg-[#111]">
+                                                                                        {variant.label}
+                                                                                    </div>
+                                                                                    <div className="flex flex-col">
+                                                                                        <span className="font-medium text-gray-300">Variant {variant.label}</span>
+                                                                                        {variant.subject && <span className="text-[10px] text-gray-500 truncate max-w-[200px]">{variant.subject}</span>}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="py-3 text-xs text-gray-500">{variant.sent}</td>
+                                                                            <td className="py-3 text-xs text-gray-500">{variant.opened}</td>
+                                                                            <td className="py-3 text-xs text-gray-500">{variant.replied}</td>
+                                                                            <td className="py-3 text-xs text-gray-500">{variant.clicked}</td>
+                                                                            <td className="py-3 pr-4 text-xs text-gray-500">
+                                                                                <div className="flex items-center justify-end">
+                                                                                    <button
+                                                                                        onClick={() => toggleVariant(variant.id, variant.enabled)}
+                                                                                        className={cn(
+                                                                                            "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none",
+                                                                                            variant.enabled ? "bg-blue-600" : "bg-[#2a2a2a]"
+                                                                                        )}
+                                                                                    >
+                                                                                        <span
+                                                                                            className={cn(
+                                                                                                "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                                                                                                variant.enabled ? "translate-x-5" : "translate-x-1"
+                                                                                            )}
+                                                                                        />
+                                                                                    </button>
+                                                                                </div>
+                                                                            </td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </React.Fragment>
+                                                            ))
+                                                        ) : (
+                                                            <tr>
+                                                                <td colSpan={6} className="py-12 text-center text-gray-500">
+                                                                    No step analytics data available
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {(data as any)?.recentActivity && (data as any).recentActivity.length > 0 ? (
+                                                    (data as any).recentActivity.map((act: any) => {
+                                                        const typeColors: Record<string, { bg: string; text: string; label: string }> = {
+                                                            sent: { bg: "bg-blue-500/10", text: "text-blue-400", label: "Sent" },
+                                                            open: { bg: "bg-green-500/10", text: "text-green-400", label: "Opened" },
+                                                            click: { bg: "bg-amber-500/10", text: "text-amber-400", label: "Clicked" },
+                                                            reply: { bg: "bg-purple-500/10", text: "text-purple-400", label: "Replied" },
+                                                            bounce: { bg: "bg-red-500/10", text: "text-red-400", label: "Bounced" }
+                                                        }
+                                                        const badge = typeColors[act.type] || { bg: "bg-gray-500/10", text: "text-gray-400", label: act.type }
+                                                        const timeFormatted = new Date(act.createdAt).toLocaleString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })
+
+                                                        return (
+                                                            <div key={act.id} className="flex items-center justify-between p-3.5 rounded-lg bg-[#161616] border border-[#222] hover:border-[#333] transition-colors">
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className={cn("px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wider", badge.bg, badge.text)}>
+                                                                        {badge.label}
+                                                                    </span>
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-sm font-medium text-white">{act.leadEmail}</span>
+                                                                        {act.leadName && act.leadName !== act.leadEmail && (
+                                                                            <span className="text-xs text-gray-500">{act.leadName}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-xs text-gray-500">
+                                                                    {timeFormatted}
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <div className="py-12 text-center text-gray-500">
+                                                        No recent activity recorded for this campaign
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             )}

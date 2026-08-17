@@ -42,9 +42,10 @@ function generateEmptyData(): HeatmapData[] {
 interface SendTimeHeatmapProps {
     data?: HeatmapData[]
     metric?: "sends" | "opens" | "clicks" | "replies"
+    timezone?: string
 }
 
-export function SendTimeHeatmap({ data, metric = "sends" }: SendTimeHeatmapProps) {
+export function SendTimeHeatmap({ data, metric = "sends", timezone }: SendTimeHeatmapProps) {
     // Use provided data, or fall back to empty zero-data (NO MOCKS)
     const displayData = (data && data.length > 0) ? data : generateEmptyData()
     const [hoveredCell, setHoveredCell] = useState<{ day: number; hour: number } | null>(null)
@@ -76,7 +77,14 @@ export function SendTimeHeatmap({ data, metric = "sends" }: SendTimeHeatmapProps
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Best Times to Send</h3>
+                <div className="flex items-center gap-2.5">
+                    <h3 className="text-lg font-semibold">Best Times to Send</h3>
+                    {timezone && (
+                        <span className="text-[11px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-mono font-medium border border-blue-500/20">
+                            {timezone}
+                        </span>
+                    )}
+                </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>Low</span>
                     <div className="flex gap-0.5">

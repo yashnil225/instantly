@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import moment from 'moment-timezone'
 
 export async function GET(
     request: Request,
@@ -234,13 +235,29 @@ export async function GET(
                 ? Math.min(100, Math.round((completedLeads / totalLeads) * 100))
                 : 0
 
-        // Calculate heatmap data for this specific campaign
+        // Determine target timezone from campaign schedule settings
+        let targetTimezone = campaign.timezone || 'UTC'
+        if (campaign.schedules) {
+            try {
+                const parsed = JSON.parse(campaign.schedules)
+                if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].timezone) {
+                    targetTimezone = parsed[0].timezone
+                }
+            } catch {}
+        }
+        // Allow client to request a specific timezone via query params if desired
+        const requestedTimezone = searchParams.get('timezone')
+        if (requestedTimezone && moment.tz.zone(requestedTimezone)) {
+            targetTimezone = requestedTimezone
+        }
+
+        // Calculate heatmap data for this specific campaign in its schedule timezone
         const heatmapData = []
         for (let day = 0; day < 7; day++) {
             for (let hour = 0; hour < 24; hour++) {
                 const hourEvents = allEvents.filter((e: any) => {
-                    const date = new Date(e.createdAt)
-                    return date.getDay() === day && date.getHours() === hour
+                    const m = moment(e.createdAt).tz(targetTimezone)
+                    return m.day() === day && m.hour() === hour
                 })
                 heatmapData.push({
                     day,
@@ -255,16 +272,27 @@ export async function GET(
 
         // Calculate funnel data for this specific campaign with actual bounce count
         const bounceEvents = allEvents.filter((e: any) => e.type === 'bounce').length
-        const delivered = totalSent - bounceEvents - (campaign.bounceCount || 0)
+        const totalBounces = Math.max(bounceEvents, campaign.bounceCount || 0)
+        const delivered = Math.max(0, totalSent - totalBounces)
         const deliveredPercentage = totalSent > 0 ? Math.round((delivered / totalSent) * 100) : 0
 
         const funnelData = [
             { stage: "Sent", value: totalSent, percentage: 100 },
-            { stage: "Delivered", value: Math.max(0, delivered), percentage: Math.max(0, deliveredPercentage) },
-            { stage: "Opened", value: openCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((openCount / sequencesStarted) * 100), 100) : 0 },
-            { stage: "Clicked", value: clickCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((clickCount / sequencesStarted) * 100), 100) : 0 },
-            { stage: "Replied", value: replyCount, percentage: sequencesStarted > 0 ? Math.min(Math.round((replyCount / sequencesStarted) * 100), 100) : 0 }
+            { stage: "Delivered", value: delivered, percentage: deliveredPercentage },
+            { stage: "Opened", value: openCount, percentage: totalSent > 0 ? Math.min(Math.round((openCount / totalSent) * 100), 100) : 0 },
+            { stage: "Clicked", value: clickCount, percentage: totalSent > 0 ? Math.min(Math.round((clickCount / totalSent) * 100), 100) : 0 },
+            { stage: "Replied", value: replyCount, percentage: totalSent > 0 ? Math.min(Math.round((replyCount / totalSent) * 100), 100) : 0 }
         ]
+
+        // Recent campaign activity
+        const recentActivity = allEvents.slice(0, 50).map((e: any) => ({
+            id: e.id,
+            type: e.type,
+            createdAt: e.createdAt,
+            leadEmail: e.lead?.email || 'Lead',
+            leadName: `${e.lead?.firstName || ''} ${e.lead?.lastName || ''}`.trim() || e.lead?.email,
+            metadata: e.metadata
+        }))
 
         const analyticsData = {
             name: campaign.name,
@@ -289,7 +317,9 @@ export async function GET(
             chartData,
             stepAnalytics,
             heatmapData,
+            timezone: targetTimezone,
             funnelData,
+            recentActivity,
             leads: campaign.leads,
             sequences: campaign.sequences,
             _needsClassification: needsClassification,

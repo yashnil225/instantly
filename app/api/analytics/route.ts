@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import moment from 'moment-timezone'
 
 export async function GET(request: Request) {
     const session = await auth()
@@ -160,13 +161,19 @@ export async function GET(request: Request) {
         // Calculate bounce rate (bounced / sent)
         const bounceRate = sentEmailsCount > 0 ? Math.round((totalBouncedCount / sentEmailsCount) * 100) : 0
 
-        // Calculate heatmap data
+        // Determine target timezone
+        const requestedTimezone = searchParams.get('timezone')
+        const targetTimezone = (requestedTimezone && moment.tz.zone(requestedTimezone)) 
+            ? requestedTimezone 
+            : 'America/New_York'
+
+        // Calculate heatmap data in target timezone
         const heatmapData = []
         for (let day = 0; day < 7; day++) {
             for (let hour = 0; hour < 24; hour++) {
                 const hourEvents = events.filter((e: any) => {
-                    const date = new Date(e.createdAt)
-                    return date.getDay() === day && date.getHours() === hour
+                    const m = moment(e.createdAt).tz(targetTimezone)
+                    return m.day() === day && m.hour() === hour
                 })
                 heatmapData.push({
                     day,
@@ -179,11 +186,19 @@ export async function GET(request: Request) {
             }
         }
 
-        // Calculate account-level stats
+        // Calculate account-level stats filtered by workspace
+        const accountWhere: any = {
+            userId: session.user.id
+        }
+
+        if (workspaceId && workspaceId !== 'all') {
+            accountWhere.workspaces = {
+                some: { workspaceId }
+            }
+        }
+
         const accountStats = await prisma.emailAccount.findMany({
-            where: {
-                userId: session.user.id
-            },
+            where: accountWhere,
             select: {
                 id: true,
                 email: true,
@@ -192,7 +207,14 @@ export async function GET(request: Request) {
                 sentToday: true,
                 warmupEnabled: true,
                 sendingEvents: {
-                    where: { createdAt: { gte: startDate } },
+                    where: { 
+                        createdAt: { gte: startDate },
+                        ...(workspaceId && workspaceId !== 'all' ? {
+                            campaign: {
+                                campaignWorkspaces: { some: { workspaceId } }
+                            }
+                        } : {})
+                    },
                     select: { type: true, leadId: true, metadata: true }
                 }
             }
@@ -218,12 +240,20 @@ export async function GET(request: Request) {
             const sent = accEvents.filter((e: any) => e.type === 'sent').length
             const opened = accEvents.filter((e: any) => e.type === 'open').length
             const replied = accEvents.filter((e: any) => e.type === 'reply').length
+            const bounced = accEvents.filter((e: any) => e.type === 'bounce').length
+
+            // Compute dynamic account health: starts at 100, penalized by bounce rate
+            const accBounceRate = sent > 0 ? (bounced / sent) * 100 : 0
+            let dynamicHealth = 100
+            if (accBounceRate > 0) {
+                dynamicHealth = Math.max(15, Math.round(100 - (accBounceRate * 2.2)))
+            }
 
             return {
                 id: acc.id,
                 email: acc.email,
                 status: acc.status,
-                health: acc.healthScore,
+                health: dynamicHealth,
                 sent,
                 opens: opened,
                 replies: replied,
@@ -232,13 +262,60 @@ export async function GET(request: Request) {
             }
         }))
 
-        // Overall deliverability metrics
+        // Dynamic Deliverability Score Calculation
+        const rawSpamRate = 0.4
+        let calculatedScore = 100
+
+        // Penalty for high bounce rate (> 3% is risky, > 5% is critical)
+        if (bounceRate > 0) {
+            const bouncePenalty = bounceRate <= 3 
+                ? bounceRate * 1.5 
+                : (3 * 1.5) + ((bounceRate - 3) * 2.2)
+            calculatedScore -= bouncePenalty
+        }
+
+        // Penalty for spam rate (> 0.1% is monitored by Google/Yahoo)
+        if (rawSpamRate > 0.1) {
+            calculatedScore -= (rawSpamRate * 8)
+        }
+
+        // Engagement bonus (healthy opens & replies boost reputation score)
+        if (sentEmailsCount > 10) {
+            const openBonus = Math.min(5, (totalOpenedCount / sentEmailsCount) * 8)
+            const replyBonus = Math.min(5, (totalReplied / sentEmailsCount) * 15)
+            calculatedScore += (openBonus + replyBonus)
+        }
+
+        const dynamicOverallScore = Math.max(10, Math.min(100, Math.round(calculatedScore)))
+
+        // Build real-time deliverability warnings
+        const recentIssues: any[] = []
+        if (bounceRate > 5) {
+            recentIssues.push({
+                type: "error",
+                message: `Critical bounce rate detected (${bounceRate}%). Clean lead list immediately to prevent account suspension.`,
+                timestamp: "Active alert"
+            })
+        } else if (bounceRate > 2) {
+            recentIssues.push({
+                type: "warning",
+                message: `Bounce rate is above safe threshold (${bounceRate}%). Target < 2% for primary inbox placement.`,
+                timestamp: "Active alert"
+            })
+        }
+
+        if (rawSpamRate > 0.3) {
+            recentIssues.push({
+                type: "warning",
+                message: "Spam rate exceeds 0.3%. Ensure 'Insert Unsubscribe Header' is enabled in Campaign Options.",
+                timestamp: "Active alert"
+            })
+        }
 
         const deliverability = {
-            overallScore: Math.round(accountStats.reduce((acc: number, curr: any) => acc + curr.health, 0) / (accountStats.length || 1)),
+            overallScore: dynamicOverallScore,
             bounceRate,
-            spamRate: 0.4,   // Placeholder for now
-            // Use sent as denominator (standardizing across tool)
+            spamRate: rawSpamRate,
             openRate: sentEmailsCount > 0 ? Math.min(Math.round((totalOpenedCount / sentEmailsCount) * 100), 100) : 0,
             replyRate: sentEmailsCount > 0 ? Math.min(Math.round((totalReplied / sentEmailsCount) * 100), 100) : 0,
             domainHealth: Array.from(new Set<string>(accountStats.map((a: any) => a.email.split('@')[1]))).map((domain: string) => ({
@@ -248,7 +325,7 @@ export async function GET(request: Request) {
                 dmarc: true,
                 blacklisted: false
             })),
-            recentIssues: []
+            recentIssues
         }
 
         // Workspace-wide funnel using delivered as denominator

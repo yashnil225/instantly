@@ -291,7 +291,13 @@ export default function EmailVerifierPage() {
 
     // --- Download Filtered CSV ---
     const handleDownload = (jobId: string, type: 'all' | 'valid' | 'risky' | 'invalid') => {
-        window.open(`/api/verify/job/${jobId}?action=download&type=${type}`, '_blank')
+        const url = `/api/verify/job/${jobId}?action=download&type=${type}`
+        const link = document.createElement('a')
+        link.href = url
+        link.setAttribute('download', `${type}-verified-leads.csv`)
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
     }
 
     return (

@@ -761,3 +761,42 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+model VerificationJob {
+  id              String   @id @default(cuid())
+  fileName        String
+  total           Int      @default(0)
+  processed       Int      @default(0)
+  validCount      Int      @default(0)
+  riskyCount      Int      @default(0)
+  invalidCount    Int      @default(0)
+  disposableCount Int      @default(0)
+  progress        Int      @default(0)
+  status          String   @default("processing") // processing, completed, canceled, error
+  currentLog      String?
+  headers         String   // JSON string of CSV header array
+  
+  results         VerificationResultItem[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  completedAt     DateTime?
+
+  @@index([createdAt])
+}
+
+model VerificationResultItem {
+  id            String          @id @default(cuid())
+  jobId         String
+  job           VerificationJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  email         String
+  status        String          // valid, risky, invalid, disposable
+  reason        String?
+  score         Int             @default(0)
+  rowData       String          // Original CSV row stored as JSON
+  createdAt     DateTime        @default(now())
+
+  @@index([jobId])
+  @@index([status])
+}
+

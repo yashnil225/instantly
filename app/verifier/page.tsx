@@ -82,6 +82,7 @@ export default function EmailVerifierPage() {
     // History (Loaded from Database)
     const [history, setHistory] = useState<StoredJob[]>([])
     const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+    const [downloadingKey, setDownloadingKey] = useState<string | null>(null)
 
     // Load history from Database on mount and tab switch
     const fetchHistoryFromDb = async () => {
@@ -289,15 +290,47 @@ export default function EmailVerifierPage() {
         }
     }
 
-    // --- Download Filtered CSV ---
-    const handleDownload = (jobId: string, type: 'all' | 'valid' | 'risky' | 'invalid') => {
-        const url = `/api/verify/job/${jobId}?action=download&type=${type}`
-        const link = document.createElement('a')
-        link.href = url
-        link.setAttribute('download', `${type}-verified-leads.csv`)
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+    // --- Download Filtered CSV (Direct in-page background download, no new tabs) ---
+    const handleDownload = async (jobId: string, type: 'all' | 'valid' | 'risky' | 'invalid') => {
+        const key = `${jobId}-${type}`
+        setDownloadingKey(key)
+        try {
+            const res = await fetch(`/api/verify/job/${jobId}?action=download&type=${type}`)
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}))
+                throw new Error(errData.error || "Failed to download CSV")
+            }
+
+            const blob = await res.blob()
+            let fileName = `${type}-verified-leads.csv`
+            const contentDisposition = res.headers.get("content-disposition")
+            if (contentDisposition) {
+                const match = contentDisposition.match(/filename="?([^"]+)"?/)
+                if (match && match[1]) fileName = match[1]
+            }
+
+            const blobUrl = window.URL.createObjectURL(blob)
+            const a = document.createElement("a")
+            a.style.display = "none"
+            a.href = blobUrl
+            a.download = fileName
+            document.body.appendChild(a)
+            a.click()
+            setTimeout(() => {
+                window.URL.revokeObjectURL(blobUrl)
+                document.body.removeChild(a)
+            }, 300)
+
+            toast({ title: "Download Started", description: `Saved ${fileName}` })
+        } catch (e: any) {
+            toast({
+                title: "Download Error",
+                description: e.message || "Could not download CSV",
+                variant: "destructive"
+            })
+        } finally {
+            setDownloadingKey(null)
+        }
     }
 
     return (
@@ -494,37 +527,57 @@ export default function EmailVerifierPage() {
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <Button
                                                         size="sm"
+                                                        disabled={downloadingKey === `${job.id}-valid`}
                                                         onClick={() => handleDownload(job.id, 'valid')}
                                                         className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 text-xs shadow-sm"
                                                     >
-                                                        <Download className="h-3.5 w-3.5" />
+                                                        {downloadingKey === `${job.id}-valid` ? (
+                                                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Download className="h-3.5 w-3.5" />
+                                                        )}
                                                         Download Valid Only ({job.validCount})
                                                     </Button>
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
+                                                        disabled={downloadingKey === `${job.id}-all`}
                                                         onClick={() => handleDownload(job.id, 'all')}
                                                         className="gap-1.5 text-xs border-border/60"
                                                     >
-                                                        <Download className="h-3.5 w-3.5" />
+                                                        {downloadingKey === `${job.id}-all` ? (
+                                                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Download className="h-3.5 w-3.5" />
+                                                        )}
                                                         Download All Leads
                                                     </Button>
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
+                                                        disabled={downloadingKey === `${job.id}-risky`}
                                                         onClick={() => handleDownload(job.id, 'risky')}
                                                         className="gap-1.5 text-xs text-amber-500 border-amber-500/30 hover:bg-amber-500/10"
                                                     >
-                                                        <Download className="h-3.5 w-3.5" />
+                                                        {downloadingKey === `${job.id}-risky` ? (
+                                                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Download className="h-3.5 w-3.5" />
+                                                        )}
                                                         Risky Only ({job.riskyCount})
                                                     </Button>
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
+                                                        disabled={downloadingKey === `${job.id}-invalid`}
                                                         onClick={() => handleDownload(job.id, 'invalid')}
                                                         className="gap-1.5 text-xs text-rose-500 border-rose-500/30 hover:bg-rose-500/10"
                                                     >
-                                                        <Download className="h-3.5 w-3.5" />
+                                                        {downloadingKey === `${job.id}-invalid` ? (
+                                                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Download className="h-3.5 w-3.5" />
+                                                        )}
                                                         Invalid Only ({job.invalidCount})
                                                     </Button>
                                                 </div>
@@ -729,19 +782,29 @@ export default function EmailVerifierPage() {
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
+                                                        disabled={downloadingKey === `${item.id}-valid`}
                                                         onClick={() => handleDownload(item.id, 'valid')}
                                                         className="h-8 text-xs gap-1 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10"
                                                     >
-                                                        <Download className="h-3 w-3" />
+                                                        {downloadingKey === `${item.id}-valid` ? (
+                                                            <RefreshCw className="h-3 w-3 animate-spin" />
+                                                        ) : (
+                                                            <Download className="h-3 w-3" />
+                                                        )}
                                                         Valid CSV
                                                     </Button>
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
+                                                        disabled={downloadingKey === `${item.id}-all`}
                                                         onClick={() => handleDownload(item.id, 'all')}
                                                         className="h-8 text-xs gap-1"
                                                     >
-                                                        <Download className="h-3 w-3" />
+                                                        {downloadingKey === `${item.id}-all` ? (
+                                                            <RefreshCw className="h-3 w-3 animate-spin" />
+                                                        ) : (
+                                                            <Download className="h-3 w-3" />
+                                                        )}
                                                         All CSV
                                                     </Button>
                                                     <Button

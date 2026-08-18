@@ -1,46 +1,74 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyEmail } from '@/lib/email-verifier'
+import Papa from 'papaparse'
 
 export const dynamic = 'force-dynamic'
 
-function parseCsv(content: string): { headers: string[]; rows: Array<Record<string, string>> } {
-    const lines = content.split(/\r?\n/).filter(line => line.trim().length > 0)
-    if (lines.length === 0) return { headers: [], rows: [] }
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-    const parseLine = (line: string): string[] => {
-        const result: string[] = []
-        let current = ''
-        let inQuotes = false
+function parseSmartCsv(content: string): { headers: string[]; rows: Array<Record<string, string>>; emailField: string } {
+    const parsed = Papa.parse<Record<string, string>>(content, {
+        header: true,
+        skipEmptyLines: 'greedy',
+        transformHeader: (h) => (h || '').trim()
+    })
 
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i]
-            if (char === '"' || char === "'") {
-                inQuotes = !inQuotes
-            } else if (char === ',' && !inQuotes) {
-                result.push(current.trim().replace(/^["']|["']$/g, ''))
-                current = ''
-            } else {
-                current += char
+    const rawHeaders = (parsed.meta.fields || []).filter(Boolean)
+    const rawRows = parsed.data || []
+
+    if (rawHeaders.length === 0 || rawRows.length === 0) {
+        return { headers: [], rows: [], emailField: '' }
+    }
+
+    // Smart Email Column Detection: score each column based on how many valid @ emails it contains
+    let bestEmailField = ''
+    let bestEmailScore = -1
+
+    for (const header of rawHeaders) {
+        const hLower = header.toLowerCase()
+        let score = 0
+
+        // Bonus for standard naming
+        if (/^(email|e-mail|email_address|email address|work email|contact email|mail)$/i.test(hLower)) {
+            score += 100
+        } else if (hLower.includes('email') || hLower.includes('mail')) {
+            score += 50
+        }
+
+        // Count actual valid emails in the first 50 rows
+        const sample = rawRows.slice(0, 50)
+        let validCountInSample = 0
+        for (const row of sample) {
+            const val = (row[header] || '').trim()
+            if (EMAIL_REGEX.test(val)) {
+                validCountInSample++
             }
         }
-        result.push(current.trim().replace(/^["']|["']$/g, ''))
-        return result
+
+        score += (validCountInSample * 10)
+
+        if (score > bestEmailScore && validCountInSample > 0) {
+            bestEmailScore = score
+            bestEmailField = header
+        }
     }
 
-    const headers = parseLine(lines[0])
-    const rows: Array<Record<string, string>> = []
-
-    for (let i = 1; i < lines.length; i++) {
-        const values = parseLine(lines[i])
-        const row: Record<string, string> = {}
-        headers.forEach((h, idx) => {
-            row[h] = values[idx] || ''
-        })
-        rows.push(row)
+    // Fallback if no obvious header
+    if (!bestEmailField) {
+        bestEmailField = rawHeaders[0]
     }
 
-    return { headers, rows }
+    // Filter out rows where the email field is empty or is an accidental duplicate header row
+    const validRows = rawRows.filter(row => {
+        const val = (row[bestEmailField] || '').trim()
+        if (!val) return false
+        // Exclude accidental duplicate header rows inside the CSV
+        if (val.toLowerCase() === bestEmailField.toLowerCase() || val.toLowerCase() === 'email') return false
+        return true
+    })
+
+    return { headers: rawHeaders, rows: validRows, emailField: bestEmailField }
 }
 
 export async function POST(request: Request) {
@@ -53,30 +81,13 @@ export async function POST(request: Request) {
         }
 
         const text = await file.text()
-        const { headers, rows } = parseCsv(text)
+        const { headers, rows, emailField } = parseSmartCsv(text)
 
         if (rows.length === 0) {
-            return NextResponse.json({ error: 'CSV file is empty or has no data rows' }, { status: 400 })
+            return NextResponse.json({ error: 'CSV file contains no valid email leads' }, { status: 400 })
         }
 
-        // Identify email column
-        let emailField = headers.find(h => /^(email|e-mail|email_address|email address|mail)$/i.test(h.trim()))
-        if (!emailField) {
-            emailField = headers.find(h => /email/i.test(h))
-        }
-        if (!emailField) {
-            for (const h of headers) {
-                if (rows.slice(0, 5).some(r => (r[h] || '').includes('@'))) {
-                    emailField = h
-                    break
-                }
-            }
-        }
-        if (!emailField) {
-            emailField = headers[0]
-        }
-
-        // --- 1. Enforce 30-Job Capacity Limit (FIFO: 31st job deletes the oldest) ---
+        // --- 1. Enforce 30-Job Capacity Limit (FIFO) ---
         const totalExistingJobs = await prisma.verificationJob.count()
         if (totalExistingJobs >= 30) {
             const jobsToDelete = await prisma.verificationJob.findMany({
@@ -103,12 +114,12 @@ export async function POST(request: Request) {
                 disposableCount: 0,
                 progress: 0,
                 status: 'processing',
-                currentLog: 'Starting email verification in database...',
+                currentLog: `Identified ${rows.length} leads in column "${emailField}". Starting verification...`,
                 headers: JSON.stringify(headers)
             }
         })
 
-        // --- 3. Run Async Processing in Background ---
+        // --- 3. Run Async Processing with High Concurrency & Zero-Stall Guarantees ---
         runDatabaseVerification(newJob.id, rows, emailField)
 
         return NextResponse.json({
@@ -124,7 +135,7 @@ export async function POST(request: Request) {
 }
 
 async function runDatabaseVerification(jobId: string, rows: Array<Record<string, string>>, emailField: string) {
-    const CONCURRENCY = 4
+    const CONCURRENCY = 10
     let currentIndex = 0
     let processed = 0
     let validCount = 0
@@ -156,17 +167,19 @@ async function runDatabaseVerification(jobId: string, rows: Array<Record<string,
 
     async function processNext(): Promise<void> {
         while (currentIndex < rows.length) {
-            // Check if job was deleted or canceled by user
-            const jobCheck = await prisma.verificationJob.findUnique({
-                where: { id: jobId },
-                select: { status: true }
-            })
-            if (!jobCheck || jobCheck.status === 'canceled') {
-                return
-            }
-
             const idx = currentIndex++
             if (idx >= rows.length) break
+
+            // Check if job was deleted or canceled by user
+            if (idx % 25 === 0) {
+                const jobCheck = await prisma.verificationJob.findUnique({
+                    where: { id: jobId },
+                    select: { status: true }
+                })
+                if (!jobCheck || jobCheck.status === 'canceled') {
+                    return
+                }
+            }
 
             const row = rows[idx]
             const rawEmail = (row[emailField] || '').trim()
@@ -187,7 +200,7 @@ async function runDatabaseVerification(jobId: string, rows: Array<Record<string,
                 }
             } else {
                 try {
-                    result = await verifyEmail(rawEmail, { timeoutMs: 3500 })
+                    result = await verifyEmail(rawEmail, { timeoutMs: 2000 })
                 } catch {
                     result = {
                         email: rawEmail,
@@ -219,12 +232,12 @@ async function runDatabaseVerification(jobId: string, rows: Array<Record<string,
                 rowData: JSON.stringify(row)
             })
 
-            // Save to DB in batches of 10 or when finished
-            if (itemsToInsert.length >= 10 || processed >= rows.length) {
+            // Save to DB in batches of 20 or when finished
+            if (itemsToInsert.length >= 20 || processed >= rows.length) {
                 await flushItems()
-                const progress = Math.round((processed / rows.length) * 100)
+                const progress = Math.min(100, Math.round((processed / rows.length) * 100))
                 const icon = result.status === 'valid' ? '✅' : result.status === 'risky' ? '🟡' : '❌'
-                const currentLog = `${icon} ${rawEmail || '(empty)'} → ${result.status.toUpperCase()} (${result.reason})`
+                const currentLog = `${icon} [${processed}/${rows.length}] ${rawEmail} → ${result.status.toUpperCase()} (${result.reason})`
 
                 await prisma.verificationJob.update({
                     where: { id: jobId },
@@ -240,8 +253,8 @@ async function runDatabaseVerification(jobId: string, rows: Array<Record<string,
                 }).catch(() => {})
             }
 
-            // Small 40ms pacing
-            await new Promise(r => setTimeout(r, 40))
+            // Minimal 10ms yield
+            await new Promise(r => setTimeout(r, 10))
         }
     }
 

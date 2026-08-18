@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import Papa from 'papaparse'
 
-// Email verifier job route handler
 export const dynamic = 'force-dynamic'
 
 export async function GET(
@@ -62,7 +62,7 @@ export async function POST(
         return NextResponse.json({ success: true, message: 'Job canceled' })
     }
 
-    // Generate Filtered CSV from Database
+    // Filter results from Database
     const whereClause: any = { jobId }
     if (filterType === 'valid') {
         whereClause.status = 'valid'
@@ -84,11 +84,10 @@ export async function POST(
         originalHeaders = ['email']
     }
 
-    const exportHeaders = [...originalHeaders, 'verification_status', 'verification_reason', 'verification_score']
-    const uniqueHeaders = Array.from(new Set(exportHeaders))
+    const fullExportHeaders = [...originalHeaders, 'verification_status', 'verification_reason', 'verification_score']
+    const uniqueHeaders = Array.from(new Set(fullExportHeaders))
 
-    const csvLines: string[] = []
-    csvLines.push(uniqueHeaders.map(h => `"${h.replace(/"/g, '""')}"`).join(','))
+    const exportRows: Array<Record<string, any>> = []
 
     for (const item of items) {
         let rowObj: Record<string, any> = {}
@@ -98,18 +97,25 @@ export async function POST(
             rowObj = { email: item.email }
         }
 
+        // Attach verification fields
         rowObj.verification_status = item.status
         rowObj.verification_reason = item.reason || ''
         rowObj.verification_score = item.score
 
-        const line = uniqueHeaders.map(h => {
-            const val = rowObj[h] !== undefined && rowObj[h] !== null ? String(rowObj[h]) : ''
-            return `"${val.replace(/"/g, '""')}"`
-        }).join(',')
-        csvLines.push(line)
+        // Ensure all header fields exist
+        const formattedRow: Record<string, any> = {}
+        for (const h of uniqueHeaders) {
+            formattedRow[h] = rowObj[h] !== undefined && rowObj[h] !== null ? rowObj[h] : ''
+        }
+        exportRows.push(formattedRow)
     }
 
-    const csvData = csvLines.join('\r\n')
+    // Use Papa.unparse for 100% standard CSV output with all original lead columns intact
+    const csvData = Papa.unparse({
+        fields: uniqueHeaders,
+        data: exportRows
+    })
+
     const fileName = `${filterType}-verified-${job.fileName.replace(/\.[^/.]+$/, '')}.csv`
 
     return new Response(csvData, {

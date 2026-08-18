@@ -1,5 +1,6 @@
 import dns from 'dns'
 import net from 'net'
+import axios from 'axios'
 
 export interface VerificationResult {
     email: string
@@ -20,10 +21,6 @@ export interface VerificationResult {
 // In-memory DNS MX cache for batch speed & zero latency
 const mxCache = new Map<string, { mxRecords: dns.MxRecord[]; timestamp: number }>()
 const MX_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
-
-// Port 25 reachability cache (detects if host network/ISP blocks port 25)
-let port25Status: { isBlocked: boolean; lastChecked: number } | null = null
-const PORT25_CACHE_TTL = 10 * 60 * 1000
 
 // 1. Common Typo Map
 const TYPO_MAP: Record<string, string> = {
@@ -96,7 +93,6 @@ async function getDomainMx(domain: string): Promise<dns.MxRecord[]> {
         mxCache.set(domain, { mxRecords: records, timestamp: Date.now() })
         return records
     } catch {
-        // Fallback: check A record
         try {
             const resolveAPromise = dns.promises.resolve4(domain)
             const aTimeout = new Promise<string[]>((_, reject) =>
@@ -108,63 +104,73 @@ async function getDomainMx(domain: string): Promise<dns.MxRecord[]> {
                 mxCache.set(domain, { mxRecords: fallbackMx, timestamp: Date.now() })
                 return fallbackMx
             }
-        } catch {
-            // DNS failed
-        }
+        } catch {}
         return []
     }
 }
 
 /**
- * Checks if outbound port 25 is open or blocked on this network
+ * Direct HTTPS mailbox existence probe for Microsoft 365 / Office 365 / Outlook (Port 443)
  */
-async function isPort25Blocked(): Promise<boolean> {
-    if (port25Status && (Date.now() - port25Status.lastChecked < PORT25_CACHE_TTL)) {
-        return port25Status.isBlocked
-    }
+async function probeMicrosoftMailbox(email: string): Promise<{ checked: boolean; exists?: boolean; reason?: string }> {
+    try {
+        const res = await axios.post(
+            'https://login.microsoftonline.com/common/GetCredentialType',
+            { username: email, isSignup: false },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                },
+                timeout: 1800
+            }
+        )
 
-    return new Promise((resolve) => {
-        const s = new net.Socket()
-        let resolved = false
-
-        const finish = (blocked: boolean) => {
-            if (resolved) return
-            resolved = true
-            try {
-                if (!s.destroyed) {
-                    s.end()
-                    s.destroy()
-                }
-            } catch {}
-            port25Status = { isBlocked: blocked, lastChecked: Date.now() }
-            resolve(blocked)
+        const ifExistsResult = res.data?.IfExistsResult
+        // 0 = User exists
+        // 1 = User does not exist
+        // 5 = Federation / Custom SSO
+        // 6 = Domain not found in tenant
+        if (ifExistsResult === 0) {
+            return { checked: true, exists: true, reason: 'Active mailbox confirmed on Microsoft 365' }
+        } else if (ifExistsResult === 1) {
+            return { checked: true, exists: false, reason: 'Mailbox does not exist on Microsoft 365 (User Not Found)' }
         }
-
-        const timer = setTimeout(() => finish(true), 1200)
-
-        s.on('error', () => {
-            clearTimeout(timer)
-            finish(true)
-        })
-
-        try {
-            // Test connection to Google's primary MX on port 25
-            s.connect(25, 'gmail-smtp-in.l.google.com', () => {
-                clearTimeout(timer)
-                finish(false)
-            })
-        } catch {
-            clearTimeout(timer)
-            finish(true)
-        }
-    })
+    } catch {}
+    return { checked: false }
 }
 
 /**
- * Multi-layer email verification engine with adaptive probe & zero-stalls
+ * Direct HTTPS probe for Google Workspace / Gmail (Port 443)
  */
-export async function verifyEmail(emailInput: string, options: { deepSmtpProbe?: boolean } = {}): Promise<VerificationResult> {
-    const { deepSmtpProbe = true } = options
+async function probeGoogleMailbox(email: string): Promise<{ checked: boolean; exists?: boolean; reason?: string }> {
+    try {
+        const res = await axios.get(
+            `https://mail.google.com/mail/gxlu?email=${encodeURIComponent(email)}`,
+            {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                timeout: 1800,
+                maxRedirects: 0,
+                validateStatus: () => true
+            }
+        )
+
+        // If Google returns Set-Cookie with COMPASS token, account is registered
+        const cookies = res.headers['set-cookie'] || []
+        const hasCompass = cookies.some(c => c.includes('COMPASS='))
+        if (hasCompass) {
+            return { checked: true, exists: true, reason: 'Active account confirmed on Google Workspace' }
+        }
+    } catch {}
+    return { checked: false }
+}
+
+/**
+ * Multi-layer email verification engine with direct HTTPS Provider Probes
+ */
+export async function verifyEmail(emailInput: string): Promise<VerificationResult> {
     const email = (emailInput || '').trim()
     const now = new Date().toISOString()
 
@@ -231,170 +237,81 @@ export async function verifyEmail(emailInput: string, options: { deepSmtpProbe?:
         }
     }
 
-    const primaryMx = mxRecords[0].exchange
+    const primaryMx = mxRecords[0].exchange.toLowerCase()
 
-    // If deep probe is disabled or port 25 is firewalled by ISP/Cloud
-    const portBlocked = await isPort25Blocked()
-
-    if (!deepSmtpProbe || portBlocked) {
-        return {
-            email,
-            status: isRoleBased ? 'risky' : 'valid',
-            reason: isRoleBased ? 'Role-based address with verified active MX' : 'Valid syntax & active mail servers verified',
-            score: isRoleBased ? 75 : 95,
-            isSyntaxValid: true,
-            isDisposable: false,
-            isRoleBased,
-            isFreeProvider,
-            hasMx: true,
-            mxHost: primaryMx,
-            suggestedFix,
-            checkedAt: now
+    // --- Step 4: Direct HTTPS Provider Mailbox Probing (Zero Blocked Ports) ---
+    // A. Microsoft 365 / Outlook Probe
+    if (primaryMx.includes('outlook.com') || primaryMx.includes('protection.outlook.com') || domain === 'hotmail.com' || domain === 'outlook.com') {
+        const msProbe = await probeMicrosoftMailbox(email)
+        if (msProbe.checked) {
+            if (msProbe.exists === true) {
+                return {
+                    email,
+                    status: isRoleBased ? 'risky' : 'valid',
+                    reason: isRoleBased ? 'Role-based email on Microsoft 365' : 'Mailbox active & verified on Microsoft 365',
+                    score: isRoleBased ? 80 : 99,
+                    isSyntaxValid: true,
+                    isDisposable: false,
+                    isRoleBased,
+                    isFreeProvider,
+                    hasMx: true,
+                    mxHost: primaryMx,
+                    suggestedFix,
+                    checkedAt: now
+                }
+            } else if (msProbe.exists === false) {
+                return {
+                    email,
+                    status: 'invalid',
+                    reason: 'Mailbox does not exist on Microsoft 365 (User Not Found)',
+                    score: 0,
+                    isSyntaxValid: true,
+                    isDisposable: false,
+                    isRoleBased,
+                    isFreeProvider,
+                    hasMx: true,
+                    mxHost: primaryMx,
+                    suggestedFix,
+                    checkedAt: now
+                }
+            }
         }
     }
 
-    // --- Step 4: Direct SMTP Handshake Probe (When port 25 is open) ---
-    const probe = await probeSmtpMailbox(primaryMx, domain, email, 1500)
-
-    let score = 100
-    let status: 'valid' | 'risky' | 'invalid' | 'disposable' = 'valid'
-    let reason = 'Mailbox verified & deliverable'
-
-    if (probe.code === 250) {
-        if (probe.isCatchAll) {
-            status = 'risky'
-            reason = 'Domain accepts all emails (Catch-All server)'
-            score = 70
-        } else if (isRoleBased) {
-            status = 'risky'
-            reason = 'Role-based email address (e.g. info@, support@)'
-            score = 80
-        } else {
-            status = 'valid'
-            reason = 'Mailbox active & verified'
-            score = 98
+    // B. Google Workspace / Gmail Probe
+    if (primaryMx.includes('google.com') || primaryMx.includes('googlemail.com') || domain === 'gmail.com') {
+        const gProbe = await probeGoogleMailbox(email)
+        if (gProbe.checked && gProbe.exists === true) {
+            return {
+                email,
+                status: isRoleBased ? 'risky' : 'valid',
+                reason: isRoleBased ? 'Role-based email on Google Workspace' : 'Mailbox active & verified on Google Workspace',
+                score: isRoleBased ? 80 : 99,
+                isSyntaxValid: true,
+                isDisposable: false,
+                isRoleBased,
+                isFreeProvider,
+                hasMx: true,
+                mxHost: primaryMx,
+                suggestedFix,
+                checkedAt: now
+            }
         }
-    } else if (probe.code === 550 || probe.code === 551 || probe.code === 553 || probe.code === 554) {
-        status = 'invalid'
-        reason = `Mailbox does not exist on server (SMTP ${probe.code})`
-        score = 0
-    } else if (probe.code === 421 || probe.code === 450 || probe.code === 451 || probe.code === 452) {
-        status = 'risky'
-        reason = `Server temporarily greylisting (SMTP ${probe.code})`
-        score = 65
-    } else {
-        status = isRoleBased ? 'risky' : 'valid'
-        reason = 'Active MX server verified'
-        score = isRoleBased ? 75 : 92
     }
 
+    // --- Step 5: General MX Deliverability ---
     return {
         email,
-        status,
-        reason,
-        score,
+        status: isRoleBased ? 'risky' : 'valid',
+        reason: isRoleBased ? 'Role-based email address (e.g. info@, sales@)' : 'Valid syntax & active mail exchange servers verified',
+        score: isRoleBased ? 75 : 92,
         isSyntaxValid: true,
         isDisposable: false,
         isRoleBased,
         isFreeProvider,
         hasMx: true,
         mxHost: primaryMx,
-        isCatchAll: probe.isCatchAll,
         suggestedFix,
         checkedAt: now
     }
-}
-
-interface SmtpProbeResult {
-    code: number | null
-    isCatchAll?: boolean
-    timedOut?: boolean
-    error?: string
-}
-
-/**
- * Socket-level SMTP handshake on Port 25
- */
-async function probeSmtpMailbox(mxHost: string, domain: string, targetEmail: string, timeoutMs = 1500): Promise<SmtpProbeResult> {
-    return new Promise((resolve) => {
-        const socket = new net.Socket()
-        let step = 0
-        let hasResolved = false
-        let isCatchAll = false
-        let targetCode: number | null = null
-
-        const cleanupAndResolve = (result: SmtpProbeResult) => {
-            if (hasResolved) return
-            hasResolved = true
-            try {
-                clearTimeout(hardTimer)
-                if (!socket.destroyed) {
-                    socket.write('QUIT\r\n')
-                    socket.end()
-                    socket.destroy()
-                }
-            } catch {}
-            resolve(result)
-        }
-
-        const hardTimer = setTimeout(() => {
-            cleanupAndResolve({ code: null, timedOut: true, error: 'Timeout' })
-        }, timeoutMs)
-
-        socket.setTimeout(timeoutMs)
-        socket.on('timeout', () => cleanupAndResolve({ code: null, timedOut: true }))
-        socket.on('error', (err) => cleanupAndResolve({ code: null, error: err.message }))
-
-        try {
-            socket.connect(25, mxHost, () => {})
-        } catch (e: any) {
-            cleanupAndResolve({ code: null, error: e.message })
-            return
-        }
-
-        let buffer = ''
-        socket.on('data', (data) => {
-            buffer += data.toString()
-            const lines = buffer.split('\r\n')
-            
-            if (!buffer.endsWith('\r\n')) return
-            buffer = ''
-
-            const lastLine = lines.filter(Boolean).pop() || ''
-            const code = parseInt(lastLine.substring(0, 3), 10)
-
-            if (isNaN(code)) return
-
-            if (step === 0) {
-                if (code === 220) {
-                    step = 1
-                    socket.write(`HELO check.mailverify.internal\r\n`)
-                } else {
-                    cleanupAndResolve({ code, error: `Greeting rejected (${code})` })
-                }
-            } else if (step === 1) {
-                if (code === 250) {
-                    step = 2
-                    socket.write(`MAIL FROM:<verify@check.mailverify.internal>\r\n`)
-                } else {
-                    cleanupAndResolve({ code, error: `HELO rejected (${code})` })
-                }
-            } else if (step === 2) {
-                if (code === 250) {
-                    step = 3
-                    const dummyRandom = `verify_rnd_${Math.random().toString(36).substring(2, 8)}@${domain}`
-                    socket.write(`RCPT TO:<${dummyRandom}>\r\n`)
-                } else {
-                    cleanupAndResolve({ code, error: `MAIL FROM rejected (${code})` })
-                }
-            } else if (step === 3) {
-                if (code === 250) isCatchAll = true
-                step = 4
-                socket.write(`RCPT TO:<${targetEmail}>\r\n`)
-            } else if (step === 4) {
-                targetCode = code
-                cleanupAndResolve({ code: targetCode, isCatchAll })
-            }
-        })
-    })
 }

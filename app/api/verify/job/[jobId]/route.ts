@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Email verifier job route handler
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: Request, { params }: { params: { jobId: string } }) {
-    const { jobId } = params
+export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ jobId: string }> }
+) {
+    const { jobId } = await params
 
     const job = await prisma.verificationJob.findUnique({
         where: { id: jobId }
@@ -17,8 +21,11 @@ export async function GET(request: Request, { params }: { params: { jobId: strin
     return NextResponse.json(job)
 }
 
-export async function DELETE(request: Request, { params }: { params: { jobId: string } }) {
-    const { jobId } = params
+export async function DELETE(
+    request: Request,
+    { params }: { params: Promise<{ jobId: string }> }
+) {
+    const { jobId } = await params
 
     try {
         await prisma.verificationJob.delete({
@@ -30,8 +37,11 @@ export async function DELETE(request: Request, { params }: { params: { jobId: st
     }
 }
 
-export async function POST(request: Request, { params }: { params: { jobId: string } }) {
-    const { jobId } = params
+export async function POST(
+    request: Request,
+    { params }: { params: Promise<{ jobId: string }> }
+) {
+    const { jobId } = await params
     const url = new URL(request.url)
     const action = url.searchParams.get('action') || 'download'
     const filterType = url.searchParams.get('type') || 'all' // all, valid, risky, invalid

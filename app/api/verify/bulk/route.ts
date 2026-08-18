@@ -115,12 +115,10 @@ export async function POST(request: Request) {
                 progress: 0,
                 status: 'processing',
                 currentLog: `Identified ${rows.length} leads in column "${emailField}". Starting verification...`,
-                headers: JSON.stringify(headers)
+                headers: JSON.stringify(headers),
+                rawRowsJson: JSON.stringify(rows)
             }
         })
-
-        // --- 3. Run Async Processing with High Concurrency & Zero-Stall Guarantees ---
-        runDatabaseVerification(newJob.id, rows, emailField)
 
         return NextResponse.json({
             jobId: newJob.id,
@@ -200,7 +198,7 @@ async function runDatabaseVerification(jobId: string, rows: Array<Record<string,
                 }
             } else {
                 try {
-                    result = await verifyEmail(rawEmail, { timeoutMs: 2000 })
+                    result = await verifyEmail(rawEmail)
                 } catch {
                     result = {
                         email: rawEmail,

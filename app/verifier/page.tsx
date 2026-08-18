@@ -111,27 +111,50 @@ export default function EmailVerifierPage() {
         fetchHistoryFromDb()
     }, [])
 
-    // Polling active jobs
+    // Active job chunk driver
+    const drivingJobsRef = useRef<Set<string>>(new Set())
+
+    const driveJobVerification = async (jobId: string) => {
+        if (drivingJobsRef.current.has(jobId)) return
+        drivingJobsRef.current.add(jobId)
+
+        try {
+            while (true) {
+                const res = await fetch("/api/verify/process-chunk", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ jobId, batchSize: 35 })
+                })
+
+                if (!res.ok) {
+                    break
+                }
+
+                const data = await res.json()
+
+                setActiveJobs(prev => prev.map(j => (j.id === jobId ? { ...j, ...data } : j)))
+                setHistory(prev => prev.map(j => (j.id === jobId ? { ...j, ...data } : j)))
+
+                if (data.completed || data.status === 'completed' || data.status === 'canceled') {
+                    break
+                }
+
+                // Small 40ms yield
+                await new Promise(r => setTimeout(r, 40))
+            }
+        } catch (e) {
+            console.error("Chunk processing error", e)
+        } finally {
+            drivingJobsRef.current.delete(jobId)
+        }
+    }
+
+    // Automatically drive any active/processing jobs
     useEffect(() => {
         const activeIds = activeJobs.filter(j => j.status === 'processing').map(j => j.id)
-        if (activeIds.length === 0) return
-
-        const interval = setInterval(async () => {
-            for (const jobId of activeIds) {
-                try {
-                    const res = await fetch(`/api/verify/job/${jobId}`)
-                    if (res.ok) {
-                        const updated: StoredJob = await res.json()
-                        setActiveJobs(prev => prev.map(j => (j.id === jobId ? updated : j)))
-                        setHistory(prev => prev.map(j => (j.id === jobId ? updated : j)))
-                    }
-                } catch (err) {
-                    console.error("Failed to poll job:", jobId, err)
-                }
-            }
-        }, 1200)
-
-        return () => clearInterval(interval)
+        for (const id of activeIds) {
+            driveJobVerification(id)
+        }
     }, [activeJobs])
 
     // --- Single Email Verification ---
@@ -205,6 +228,8 @@ export default function EmailVerifierPage() {
 
             setActiveJobs(prev => [newJob, ...prev])
             setHistory(prev => [newJob, ...prev.filter(j => j.id !== newJob.id)])
+
+            driveJobVerification(data.jobId)
 
             toast({
                 title: "Verification Started",

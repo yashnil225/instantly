@@ -775,6 +775,7 @@ model VerificationJob {
   status          String   @default("processing") // processing, completed, canceled, error
   currentLog      String?
   headers         String   // JSON string of CSV header array
+  rawRowsJson     String?  // Temporary JSON of input rows for chunk processing
   
   results         VerificationResultItem[]
   

@@ -151,7 +151,7 @@ export async function POST(
 }
 
 export async function DELETE(
-    request: Request,
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params
@@ -161,48 +161,77 @@ export async function DELETE(
     }
 
     try {
-        const { searchParams } = new URL(request.url)
-        const memberId = searchParams.get("memberId")
-        const invitationId = searchParams.get("invitationId")
+        let memberId = request.nextUrl.searchParams.get("memberId")
+        let invitationId = request.nextUrl.searchParams.get("invitationId")
 
-        // Check if user has permission (owner or admin)
-        const canManage = await prisma.workspaceMember.findFirst({
+        if (!memberId && !invitationId) {
+            try {
+                const body = await request.json()
+                memberId = body.memberId
+                invitationId = body.invitationId
+            } catch {
+                // Ignore body parse errors if searchParams were expected
+            }
+        }
+
+        // Fetch workspace and permissions
+        const workspace = await prisma.workspace.findUnique({
+            where: { id }
+        })
+
+        if (!workspace) {
+            return NextResponse.json({ error: "Workspace not found" }, { status: 404 })
+        }
+
+        const callerMember = await prisma.workspaceMember.findFirst({
             where: {
                 workspaceId: id,
-                userId: session.user.id,
-                role: { in: ["owner", "admin"] }
+                userId: session.user.id
             }
         })
 
-        const isOwner = await prisma.workspace.findFirst({
-            where: { id: id, userId: session.user.id }
-        })
-
-        if (!canManage && !isOwner) {
-            return NextResponse.json({ error: "Unauthorized to manage members" }, { status: 403 })
-        }
+        const isOwner = workspace.userId === session.user.id || callerMember?.role === "owner"
+        const isAdmin = callerMember?.role === "admin"
+        const canManage = isOwner || isAdmin
 
         if (memberId) {
-            const member = await prisma.workspaceMember.findUnique({
+            const targetMember = await prisma.workspaceMember.findUnique({
                 where: { id: memberId }
             })
 
-            if (!member || member.workspaceId !== id) {
+            if (!targetMember || targetMember.workspaceId !== id) {
                 return NextResponse.json({ error: "Member not found in this workspace" }, { status: 404 })
             }
 
-            if (member.role === "owner") {
-                return NextResponse.json({ error: "Cannot remove workspace owner" }, { status: 400 })
+            const isSelf = targetMember.userId === session.user.id
+
+            // Check permission: must be manager OR removing self
+            if (!canManage && !isSelf) {
+                return NextResponse.json({ error: "Unauthorized to remove this member" }, { status: 403 })
+            }
+
+            // Cannot remove the primary creator of the workspace
+            if (workspace.userId === targetMember.userId) {
+                return NextResponse.json({ error: "Cannot remove the workspace creator" }, { status: 400 })
+            }
+
+            // Non-owner cannot remove an owner
+            if (targetMember.role === "owner" && !isOwner && !isSelf) {
+                return NextResponse.json({ error: "Only owners can remove other owners" }, { status: 403 })
             }
 
             await prisma.workspaceMember.delete({
                 where: { id: memberId }
             })
 
-            return NextResponse.json({ success: true, message: "Member removed" })
+            return NextResponse.json({ success: true, message: "Member removed successfully" })
         }
 
         if (invitationId) {
+            if (!canManage) {
+                return NextResponse.json({ error: "Unauthorized to manage invitations" }, { status: 403 })
+            }
+
             const invitation = await prisma.invitation.findUnique({
                 where: { id: invitationId }
             })
@@ -215,7 +244,7 @@ export async function DELETE(
                 where: { id: invitationId }
             })
 
-            return NextResponse.json({ success: true, message: "Invitation revoked" })
+            return NextResponse.json({ success: true, message: "Invitation revoked successfully" })
         }
 
         return NextResponse.json({ error: "Missing memberId or invitationId" }, { status: 400 })
@@ -224,3 +253,79 @@ export async function DELETE(
         return NextResponse.json({ error: "Internal server error" }, { status: 500 })
     }
 }
+
+export async function PATCH(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id } = await params
+    const session = await auth()
+    if (!session?.user?.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    try {
+        const body = await request.json()
+        const { memberId, role } = body
+
+        if (!memberId || !role) {
+            return NextResponse.json({ error: "Member ID and role are required" }, { status: 400 })
+        }
+
+        if (!["admin", "member"].includes(role)) {
+            return NextResponse.json({ error: "Invalid role. Role must be 'admin' or 'member'" }, { status: 400 })
+        }
+
+        // Check caller permission (owner or admin)
+        const workspace = await prisma.workspace.findUnique({
+            where: { id }
+        })
+        if (!workspace) {
+            return NextResponse.json({ error: "Workspace not found" }, { status: 404 })
+        }
+
+        const callerMember = await prisma.workspaceMember.findFirst({
+            where: {
+                workspaceId: id,
+                userId: session.user.id
+            }
+        })
+
+        const isOwner = workspace.userId === session.user.id || callerMember?.role === "owner"
+        const isAdmin = callerMember?.role === "admin"
+
+        if (!isOwner && !isAdmin) {
+            return NextResponse.json({ error: "Unauthorized to change member roles" }, { status: 403 })
+        }
+
+        const targetMember = await prisma.workspaceMember.findUnique({
+            where: { id: memberId }
+        })
+
+        if (!targetMember || targetMember.workspaceId !== id) {
+            return NextResponse.json({ error: "Member not found in this workspace" }, { status: 404 })
+        }
+
+        // Cannot change the role of the workspace creator
+        if (workspace.userId === targetMember.userId) {
+            return NextResponse.json({ error: "Cannot modify workspace owner role" }, { status: 400 })
+        }
+
+        // Only owners can change an owner or modify if target is owner
+        if (targetMember.role === "owner" && !isOwner) {
+            return NextResponse.json({ error: "Only owners can modify owner roles" }, { status: 403 })
+        }
+
+        const updated = await prisma.workspaceMember.update({
+            where: { id: memberId },
+            data: { role },
+            include: { user: { select: { id: true, name: true, email: true } } }
+        })
+
+        return NextResponse.json(updated)
+    } catch (error) {
+        console.error("Failed to update member role:", error)
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    }
+}
+

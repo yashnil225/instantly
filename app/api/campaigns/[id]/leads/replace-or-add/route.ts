@@ -3,6 +3,8 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { getLeadMemoryMap } from '@/lib/lead-memory'
 
+import { canUserEditCampaign } from '@/lib/permissions'
+
 export const dynamic = 'force-dynamic'
 
 export async function POST(
@@ -16,6 +18,12 @@ export async function POST(
         }
 
         const { id: campaignId } = await params
+
+        const check = await canUserEditCampaign(session.user.id, campaignId)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
+        }
+
         const body = await request.json()
         const { action = 'add', jobId, leads: customLeads, includeRisky = false } = body
 

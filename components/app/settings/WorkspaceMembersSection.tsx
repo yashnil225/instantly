@@ -167,6 +167,23 @@ export function WorkspaceMembersSection({ workspaceId }: { workspaceId: string }
         }
     }
 
+    const handleUpdateRole = async (memberId: string, newRole: string) => {
+        try {
+            const res = await fetch(`/api/workspaces/${workspaceId}/members`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ memberId, role: newRole })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Failed to update role")
+
+            toast({ title: "Role Updated", description: `Member role updated to ${newRole}` })
+            fetchData()
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" })
+        }
+    }
+
     if (loading) return <div className="p-8 text-center text-gray-500">Loading workspace details...</div>
 
     return (
@@ -266,9 +283,18 @@ export function WorkspaceMembersSection({ workspaceId }: { workspaceId: string }
                                             Owner
                                         </span>
                                     ) : (
-                                        <span className="capitalize text-gray-300 bg-[#2a2a2a] px-2 py-0.5 rounded text-xs">
-                                            {member.role}
-                                        </span>
+                                        <Select 
+                                            value={member.role} 
+                                            onValueChange={(val) => handleUpdateRole(member.id, val)}
+                                        >
+                                            <SelectTrigger className="w-28 h-7 text-xs bg-[#1a1a1a] border-[#333] text-gray-200">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-[#1a1a1a] border-[#333] text-white">
+                                                <SelectItem value="member">Member</SelectItem>
+                                                <SelectItem value="admin">Admin</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     )}
                                 </div>
                                 <div className="text-right">

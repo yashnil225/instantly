@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/components/ui/use-toast"
@@ -53,6 +54,8 @@ export function CampaignImportModal({
     const [campaigns, setCampaigns] = useState<CampaignOption[]>([])
     const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false)
     const [selectedCampaignId, setSelectedCampaignId] = useState<string>("")
+    const [isCreatingNew, setIsCreatingNew] = useState(false)
+    const [newCampaignName, setNewCampaignName] = useState("")
     const [action, setAction] = useState<'add' | 'replace'>('add')
     const [includeRisky, setIncludeRisky] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -71,6 +74,8 @@ export function CampaignImportModal({
                     setCampaigns(list)
                     if (list.length > 0 && !selectedCampaignId) {
                         setSelectedCampaignId(list[0].id)
+                    } else if (list.length === 0) {
+                        setIsCreatingNew(true)
                     }
                 }
             } catch (err) {
@@ -81,10 +86,11 @@ export function CampaignImportModal({
         }
 
         fetchCampaigns()
-    }, [open])
+        setNewCampaignName(jobFileName ? `${jobFileName.replace(/\.[^/.]+$/, "")} Campaign` : "Verified Leads Campaign")
+    }, [open, jobFileName])
 
     const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId)
-    const currentLeadCount = selectedCampaign?._count?.leads || 0
+    const currentLeadCount = isCreatingNew ? 0 : (selectedCampaign?._count?.leads || 0)
     const totalToImport = validCount + (includeRisky ? riskyCount : 0)
 
     // Automatically adapt action choice if campaign is empty
@@ -95,19 +101,41 @@ export function CampaignImportModal({
     }, [currentLeadCount])
 
     const handleImport = async () => {
-        if (!selectedCampaignId) {
-            toast({ title: "Campaign required", description: "Please select a target campaign", variant: "destructive" })
-            return
-        }
-
         setIsSubmitting(true)
         try {
-            const res = await fetch(`/api/campaigns/${selectedCampaignId}/leads/replace-or-add`, {
+            let targetCampaignId = selectedCampaignId
+
+            // If creating a new campaign on the fly
+            if (isCreatingNew) {
+                if (!newCampaignName.trim()) {
+                    toast({ title: "Campaign name required", description: "Please enter a name for the new campaign", variant: "destructive" })
+                    setIsSubmitting(false)
+                    return
+                }
+
+                const createRes = await fetch("/api/campaigns", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name: newCampaignName.trim() })
+                })
+
+                const createdCampaign = await createRes.json()
+                if (!createRes.ok) throw new Error(createdCampaign.error || "Failed to create new campaign")
+                targetCampaignId = createdCampaign.id
+            }
+
+            if (!targetCampaignId) {
+                toast({ title: "Campaign required", description: "Please select or create a target campaign", variant: "destructive" })
+                setIsSubmitting(false)
+                return
+            }
+
+            const res = await fetch(`/api/campaigns/${targetCampaignId}/leads/replace-or-add`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     jobId,
-                    action,
+                    action: isCreatingNew ? 'add' : action,
                     includeRisky
                 })
             })
@@ -164,50 +192,85 @@ export function CampaignImportModal({
                     </div>
                 </div>
 
-                {/* Campaign Selection */}
-                <div className="space-y-2.5">
-                    <Label className="text-sm font-semibold flex items-center justify-between">
-                        <span>Select Target Campaign</span>
-                        {isLoadingCampaigns && <RefreshCw className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-                    </Label>
+                {/* Campaign Selection / Creation */}
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <Label className="text-sm font-semibold">Target Campaign</Label>
+                        <button
+                            type="button"
+                            onClick={() => setIsCreatingNew(!isCreatingNew)}
+                            className="text-xs text-blue-500 hover:text-blue-400 font-medium transition-colors"
+                        >
+                            {isCreatingNew ? "← Select existing campaign" : "+ Create new campaign"}
+                        </button>
+                    </div>
 
-                    {campaigns.length === 0 && !isLoadingCampaigns ? (
-                        <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4 shrink-0" />
-                            <span>No campaigns found. Please create a campaign in the Campaigns tab first.</span>
+                    {isCreatingNew ? (
+                        <div className="space-y-2">
+                            <Input
+                                placeholder="e.g. Q3 Outreach Campaign"
+                                value={newCampaignName}
+                                onChange={(e) => setNewCampaignName(e.target.value)}
+                                className="h-11 bg-background"
+                                autoFocus
+                            />
+                            <p className="text-[11px] text-muted-foreground">A fresh new campaign will be created with these leads.</p>
                         </div>
                     ) : (
-                        <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
-                            <SelectTrigger className="w-full h-11 bg-background">
-                                <SelectValue placeholder="Choose a campaign..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {campaigns.map(c => (
-                                    <SelectItem key={c.id} value={c.id}>
-                                        <div className="flex items-center justify-between gap-4 w-full">
-                                            <span className="font-medium">{c.name}</span>
-                                            <span className="text-xs text-muted-foreground">
-                                                ({c._count?.leads || 0} existing leads)
-                                            </span>
-                                        </div>
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <div className="space-y-2">
+                            {campaigns.length === 0 && !isLoadingCampaigns ? (
+                                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <AlertCircle className="h-4 w-4 shrink-0" />
+                                        <span>No existing campaigns found.</span>
+                                    </div>
+                                    <Button size="sm" variant="outline" onClick={() => setIsCreatingNew(true)} className="h-7 text-xs">
+                                        Create One Now
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Select value={selectedCampaignId} onValueChange={(val) => {
+                                    if (val === "__new__") {
+                                        setIsCreatingNew(true)
+                                    } else {
+                                        setSelectedCampaignId(val)
+                                    }
+                                }}>
+                                    <SelectTrigger className="w-full h-11 bg-background">
+                                        <SelectValue placeholder="Choose a campaign..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="__new__" className="text-blue-500 font-semibold border-b border-border/40 pb-2">
+                                            + Create New Campaign
+                                        </SelectItem>
+                                        {campaigns.map(c => (
+                                            <SelectItem key={c.id} value={c.id}>
+                                                <div className="flex items-center justify-between gap-4 w-full">
+                                                    <span className="font-medium">{c.name}</span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        ({c._count?.leads || 0} existing leads)
+                                                    </span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
                     )}
                 </div>
 
                 {/* Action Mode: Add vs Replace */}
-                {selectedCampaign && (
+                {(selectedCampaign || isCreatingNew) && (
                     <div className="space-y-3">
                         <Label className="text-sm font-semibold">Import Method</Label>
                         
-                        {currentLeadCount === 0 ? (
+                        {(currentLeadCount === 0 || isCreatingNew) ? (
                             <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/20 text-xs text-foreground flex items-center gap-2.5">
                                 <PlusCircle className="h-4 w-4 text-primary shrink-0" />
                                 <div>
                                     <strong className="block text-primary">Fresh Campaign Import</strong>
-                                    This campaign has 0 leads. All verified valid leads will be added directly.
+                                    All verified valid leads will be added directly into the campaign.
                                 </div>
                             </div>
                         ) : (
@@ -283,18 +346,18 @@ export function CampaignImportModal({
                     <Button
                         size="sm"
                         onClick={handleImport}
-                        disabled={isSubmitting || !selectedCampaignId || campaigns.length === 0}
+                        disabled={isSubmitting || (!isCreatingNew && !selectedCampaignId) || (isCreatingNew && !newCampaignName.trim())}
                         className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 font-semibold"
                     >
                         {isSubmitting ? (
                             <>
                                 <RefreshCw className="h-4 w-4 animate-spin" />
-                                Importing to Campaign...
+                                {isCreatingNew ? 'Creating & Importing...' : 'Importing to Campaign...'}
                             </>
                         ) : (
                             <>
                                 <Send className="h-4 w-4" />
-                                {action === 'replace' && currentLeadCount > 0 ? 'Replace & Add Leads' : 'Add to Campaign'}
+                                {isCreatingNew ? 'Create & Add to Campaign' : (action === 'replace' && currentLeadCount > 0 ? 'Replace & Add Leads' : 'Add to Campaign')}
                             </>
                         )}
                     </Button>

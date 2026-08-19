@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { calculateWarmupLimit } from '@/lib/warmup'
-
+import { auth } from '@/auth'
+import { canUserViewAccount, canUserEditAccount } from '@/lib/permissions'
 
 // GET - Fetch single account with warmup stats
 export async function GET(
@@ -10,6 +11,15 @@ export async function GET(
 ) {
     try {
         const { id } = await params
+        const session = await auth()
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const check = await canUserViewAccount(session.user.id, id)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
+        }
 
         const account = await prisma.emailAccount.findUnique({
             where: { id },
@@ -98,6 +108,16 @@ export async function PATCH(
 ) {
     try {
         const { id } = await params
+        const session = await auth()
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const check = await canUserEditAccount(session.user.id, id)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
+        }
+
         const body = await request.json()
 
         // Fetch existing account first (needed for verification and partial updates)
@@ -224,6 +244,15 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params
+        const session = await auth()
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const check = await canUserEditAccount(session.user.id, id)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
+        }
 
         // Check if account exists first
         const existingAccount = await prisma.emailAccount.findUnique({ where: { id } })

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import { getEmailQueue } from '@/lib/queue'
 import { prisma } from '@/lib/prisma'
+import { canUserEditCampaign } from '@/lib/permissions'
 
 // Launch a campaign - starts sending emails
 export async function POST(
@@ -9,6 +11,16 @@ export async function POST(
 ) {
     try {
         const { id } = await params
+        const session = await auth()
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        const check = await canUserEditCampaign(session.user.id, id)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
+        }
+
         const campaignId = id
 
         // Get campaign with leads and sequences

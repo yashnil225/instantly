@@ -25,6 +25,8 @@ export async function GET(
     return NextResponse.json(sequences)
 }
 
+import { canUserEditCampaign } from '@/lib/permissions'
+
 export async function POST(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -36,18 +38,13 @@ export async function POST(
     }
 
     try {
+        const check = await canUserEditCampaign(session.user.id, id)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
+        }
+
         const body = await request.json()
         const { steps } = body
-
-        // Verify campaign exists (removed strict userId check for workspace compatibility)
-        const campaign = await prisma.campaign.findFirst({
-            where: { id }
-        })
-
-        if (!campaign) {
-            console.error(`Campaign not found: ${id}`)
-            return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
-        }
 
         const campaignId = id
 

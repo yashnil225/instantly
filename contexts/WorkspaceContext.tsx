@@ -47,25 +47,28 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<string | null>(null)
     const isInitializedRef = React.useRef(false)
 
-    // Initialize selected workspace from storage and run migration
+    // Initialize and validate selected workspace from storage
     useEffect(() => {
-        if (workspaces.length > 0 && !isInitializedRef.current) {
-            const migratedId = migrateWorkspaceStorage(workspaces)
+        if (workspaces.length > 0) {
             const storedId = getSelectedWorkspaceId()
             
-            // Validate that stored workspace still exists
+            // Check if stored workspace is still accessible
             if (storedId && workspaces.find(w => w.id === storedId)) {
-                setSelectedWorkspaceIdState(storedId)
-            } else if (migratedId && workspaces.find(w => w.id === migratedId)) {
-                setSelectedWorkspaceIdState(migratedId)
+                if (!isInitializedRef.current || selectedWorkspaceId !== storedId) {
+                    setSelectedWorkspaceIdState(storedId)
+                }
             } else {
-                // Default to null (My Organization - show all)
+                // If stored workspace was deleted or member was removed, immediately reset UI!
+                if (storedId) {
+                    console.log(`[WorkspaceContext] Workspace ${storedId} is no longer accessible. Evicting from UI state.`)
+                    setSelectedWorkspaceId(null)
+                }
                 setSelectedWorkspaceIdState(null)
             }
             
             isInitializedRef.current = true
         }
-    }, [workspaces])
+    }, [workspaces, selectedWorkspaceId])
 
     // Listen for storage changes (cross-tab sync)
     useEffect(() => {
@@ -173,6 +176,21 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         refreshWorkspaces()
+
+        const handleFocus = () => {
+            refreshWorkspaces()
+        }
+        window.addEventListener('focus', handleFocus)
+
+        // Periodic background sync every 15s to keep UI updated if removed or deleted by another admin
+        const interval = setInterval(() => {
+            refreshWorkspaces()
+        }, 15000)
+
+        return () => {
+            window.removeEventListener('focus', handleFocus)
+            clearInterval(interval)
+        }
     }, [refreshWorkspaces])
 
     return (

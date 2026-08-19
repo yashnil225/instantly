@@ -19,26 +19,43 @@ export async function GET(request: Request) {
     // Build where clause for workspace filtering
     const filter = searchParams.get('filter') || 'all'
     const search = searchParams.get('search') || ''
-
     const tags = searchParams.get('tags')?.split(',').filter(Boolean) || []
 
+    // Fetch all workspaces user has access to
+    const userWorkspaces = await prisma.workspace.findMany({
+        where: {
+            OR: [
+                { userId: session.user.id },
+                { members: { some: { userId: session.user.id } } }
+            ]
+        },
+        select: { id: true }
+    })
+    const accessibleWorkspaceIds = userWorkspaces.map(w => w.id)
+
+    let targetWorkspaceIds = accessibleWorkspaceIds
+    if (workspaceId && workspaceId !== 'all') {
+        targetWorkspaceIds = accessibleWorkspaceIds.filter(id => id === workspaceId)
+    }
+
     const whereClause: Record<string, unknown> = {
-        userId: session.user.id
+        OR: [
+            {
+                workspaces: {
+                    some: {
+                        workspaceId: { in: targetWorkspaceIds }
+                    }
+                }
+            },
+            // Fallback for owned accounts if viewing all
+            ...((!workspaceId || workspaceId === 'all') ? [{ userId: session.user.id }] : [])
+        ]
     }
 
     if (tags.length > 0) {
         whereClause.tags = {
             some: {
                 tagId: { in: tags }
-            }
-        }
-    }
-
-    // Filter by workspace using EmailAccountWorkspace junction table
-    if (workspaceId && workspaceId !== 'all') {
-        whereClause.workspaces = {
-            some: {
-                workspaceId: workspaceId
             }
         }
     }

@@ -31,12 +31,11 @@ export function SettingsTopNav() {
                 Billing & Usage
             </Link>
             <Link
-                href="/settings/profile"
+                href="/settings"
                 className={cn(
                     "pb-3 transition-colors",
-                    // Active for profile, workspace, groups, labels, tags, agency, logs, visitors
-                    // or just checking if it is NOT the others
-                    (pathname === "/settings" || pathname.startsWith("/settings/profile") || pathname.startsWith("/settings/workspace") || pathname.startsWith("/settings/groups") || pathname.startsWith("/settings/labels") || pathname.startsWith("/settings/tags") || pathname.startsWith("/settings/agency") || pathname.startsWith("/settings/logs"))
+                    // Active for main settings and all its sub-sections
+                    (pathname === "/settings" || pathname === "/settings/" || pathname.startsWith("/settings/profile") || pathname.startsWith("/settings/workspace") || pathname.startsWith("/settings/groups") || pathname.startsWith("/settings/labels") || pathname.startsWith("/settings/tags") || pathname.startsWith("/settings/agency") || pathname.startsWith("/settings/logs"))
                         ? "text-blue-500 border-b-2 border-blue-500"
                         : "text-muted-foreground hover:text-foreground"
                 )}

@@ -25,16 +25,36 @@ export async function GET(request: Request) {
         : multipleWorkspaceIds
 
     try {
+        // Fetch all workspaces user is an owner or member of
+        const userWorkspaces = await prisma.workspace.findMany({
+            where: {
+                OR: [
+                    { userId: session.user.id },
+                    { members: { some: { userId: session.user.id } } }
+                ]
+            },
+            select: { id: true }
+        })
+        const accessibleWorkspaceIds = userWorkspaces.map(w => w.id)
+
+        let targetWorkspaceIds = accessibleWorkspaceIds
+        if (workspaceIds.length > 0) {
+            targetWorkspaceIds = workspaceIds.filter(id => accessibleWorkspaceIds.includes(id))
+        }
+
         const campaigns = await prisma.campaign.findMany({
             where: {
-                userId: session.user.id,
-                ...(workspaceIds.length > 0 ? {
-                    campaignWorkspaces: {
-                        some: {
-                            workspaceId: { in: workspaceIds }
+                OR: [
+                    {
+                        campaignWorkspaces: {
+                            some: {
+                                workspaceId: { in: targetWorkspaceIds }
+                            }
                         }
-                    }
-                } : {}),
+                    },
+                    // Include directly owned campaigns if no specific workspace is filtered
+                    ...(workspaceIds.length === 0 ? [{ userId: session.user.id }] : [])
+                ],
                 ...(tagIds.length > 0 ? {
                     tags: {
                         some: {
@@ -210,6 +230,26 @@ export async function POST(request: Request) {
 
         if (!name) {
             return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+        }
+
+        if (workspaceIds && workspaceIds.length > 0) {
+            // Check if user is at least admin or owner of all target workspaces
+            for (const wsId of workspaceIds) {
+                const ws = await prisma.workspace.findUnique({
+                    where: { id: wsId },
+                    include: { members: { where: { userId: session.user.id } } }
+                })
+                if (!ws) {
+                    return NextResponse.json({ error: 'Workspace not found' }, { status: 404 })
+                }
+                const isOwner = ws.userId === session.user.id || ws.members[0]?.role === 'owner'
+                const isAdmin = ws.members[0]?.role === 'admin'
+                if (!isOwner && !isAdmin) {
+                    return NextResponse.json({ 
+                        error: 'Read-only access: only Admins and Owners can create campaigns in this workspace.' 
+                    }, { status: 403 })
+                }
+            }
         }
 
         const campaign = await prisma.campaign.create({

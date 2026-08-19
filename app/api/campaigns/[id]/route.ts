@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
+import { canUserEditCampaign, canUserViewCampaign } from '@/lib/permissions'
 
 export async function GET(
     request: Request,
@@ -11,6 +12,11 @@ export async function GET(
     const session = await auth()
     if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const check = await canUserViewCampaign(session.user.id, id)
+    if (!check.allowed) {
+        return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -30,10 +36,7 @@ export async function GET(
     }
 
     const campaign = await prisma.campaign.findUnique({
-        where: {
-            id,
-            userId: session.user.id
-        },
+        where: { id },
         include: {
             campaignWorkspaces: {
                 include: { workspace: true }
@@ -45,7 +48,7 @@ export async function GET(
     })
 
     if (!campaign) {
-        return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+        return NextResponse.json({ error: 'Campaign not found or unauthorized' }, { status: 404 })
     }
 
     // Deduplicate SENT events in JS to bypass historical duplicate records
@@ -93,7 +96,6 @@ export async function GET(
     return NextResponse.json({ ...campaign, ...aggregatedStats })
 }
 
-
 export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -105,6 +107,11 @@ export async function PATCH(
     }
 
     try {
+        const check = await canUserEditCampaign(session.user.id, id)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
+        }
+
         const body = await request.json()
         const { workspaceIds, ...updateData } = body
 
@@ -143,7 +150,7 @@ export async function PATCH(
         }
 
         const campaign = await prisma.campaign.update({
-            where: { id: id, userId: session.user.id },
+            where: { id: id },
             data: updateData,
             include: {
                 campaignWorkspaces: {
@@ -169,8 +176,13 @@ export async function DELETE(
     }
 
     try {
+        const check = await canUserEditCampaign(session.user.id, id)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
+        }
+
         await prisma.campaign.delete({
-            where: { id: id, userId: session.user.id }
+            where: { id: id }
         })
         return NextResponse.json({ success: true })
     } catch (error) {

@@ -49,6 +49,8 @@ export async function GET(
     }
 }
 
+import { canUserEditCampaign } from "@/lib/permissions"
+
 export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -57,8 +59,13 @@ export async function PUT(
         const { id } = await params
         const session = await auth()
 
-        if (!session?.user?.email) {
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+
+        const check = await canUserEditCampaign(session.user.id, id)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || "Forbidden" }, { status: 403 })
         }
 
         const body = await request.json()

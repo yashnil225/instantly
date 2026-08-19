@@ -56,6 +56,7 @@ interface WorkspaceWithDetails {
             email: string
         }
     }>
+    invitations?: Invitation[]
     leadCount?: number
 }
 
@@ -116,12 +117,13 @@ export function WorkspacesListSection() {
                             fetch(`/api/workspaces/${ws.id}/stats`)
                         ])
 
-                        const membersData = membersRes.ok ? await membersRes.json() : { members: [] }
+                        const membersData = membersRes.ok ? await membersRes.json() : { members: [], invitations: [] }
                         const statsData = leadRes.ok ? await leadRes.json() : { leadCount: 0 }
 
                         return {
                             ...ws,
                             members: membersData.members || [],
+                            invitations: membersData.invitations || [],
                             leadCount: statsData.leadCount || 0,
                             _count: {
                                 ...ws._count,
@@ -134,6 +136,7 @@ export function WorkspacesListSection() {
                         return {
                             ...ws,
                             members: [],
+                            invitations: [],
                             leadCount: 0,
                             _count: {
                                 ...ws._count,
@@ -227,6 +230,54 @@ export function WorkspacesListSection() {
         }
     }
 
+    const handleRemoveMember = async (workspaceId: string, memberId: string) => {
+        try {
+            const res = await fetch(`/api/workspaces/${workspaceId}/members?memberId=${memberId}`, {
+                method: 'DELETE'
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Failed to remove member")
+
+            toast({ title: "Member Removed", description: "The member has been removed from this workspace" })
+            await fetchWorkspaceDetails()
+            await refreshWorkspaces()
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" })
+        }
+    }
+
+    const handleRevokeInvite = async (workspaceId: string, invitationId: string) => {
+        try {
+            const res = await fetch(`/api/workspaces/${workspaceId}/members?invitationId=${invitationId}`, {
+                method: 'DELETE'
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Failed to revoke invitation")
+
+            toast({ title: "Invitation Revoked", description: "The invitation has been cancelled" })
+            await fetchWorkspaceDetails()
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" })
+        }
+    }
+
+    const handleUpdateRole = async (workspaceId: string, memberId: string, newRole: string) => {
+        try {
+            const res = await fetch(`/api/workspaces/${workspaceId}/members`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ memberId, role: newRole })
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || "Failed to update role")
+
+            toast({ title: "Role Updated", description: `Member role updated to ${newRole}` })
+            await fetchWorkspaceDetails()
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" })
+        }
+    }
+
     const getRoleBadge = (role: string) => {
         if (role === 'owner') {
             return <span className="text-xs text-gray-500 font-medium">Owner</span>
@@ -294,8 +345,8 @@ export function WorkspacesListSection() {
                                 <div className="col-span-2 flex items-center justify-end gap-1">
                                     <button
                                         onClick={(e) => {
-                                            e.stopPropagation()
-                                            handleRename(workspace)
+                                             e.stopPropagation()
+                                             handleRename(workspace)
                                         }}
                                         className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                                         title="Rename"
@@ -391,10 +442,36 @@ export function WorkspacesListSection() {
                                                                 <div className="text-white text-sm">{member.user.name || 'Unknown'}</div>
                                                                 <div className="text-xs text-gray-500">{member.user.email}</div>
                                                             </div>
-                                                            <div>{getRoleBadge(member.role)}</div>
+                                                            <div>
+                                                                {member.role === 'owner' ? (
+                                                                    <span className="text-xs text-gray-500 font-medium">Owner</span>
+                                                                ) : (
+                                                                    <Select 
+                                                                        value={member.role} 
+                                                                        onValueChange={(val) => handleUpdateRole(workspace.id, member.id, val)}
+                                                                    >
+                                                                        <SelectTrigger className="w-24 h-7 text-xs bg-[#1a1a1a] border-[#333] text-gray-200">
+                                                                            <SelectValue />
+                                                                        </SelectTrigger>
+                                                                        <SelectContent className="bg-[#1a1a1a] border-[#333]">
+                                                                            <SelectItem value="member">Member</SelectItem>
+                                                                            <SelectItem value="admin">Admin</SelectItem>
+                                                                        </SelectContent>
+                                                                    </Select>
+                                                                )}
+                                                            </div>
                                                             <div className="text-right">
                                                                 {member.role !== 'owner' && (
-                                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-500 hover:text-red-500">
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            handleRemoveMember(workspace.id, member.id)
+                                                                        }}
+                                                                        className="h-7 w-7 text-gray-500 hover:text-red-500 hover:bg-red-500/10"
+                                                                        title="Remove Member"
+                                                                    >
                                                                         <Trash2 className="h-3.5 w-3.5" />
                                                                     </Button>
                                                                 )}
@@ -408,6 +485,38 @@ export function WorkspacesListSection() {
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* Pending Invitations */}
+                                        {workspace.invitations && workspace.invitations.length > 0 && (
+                                            <div className="space-y-2 pt-2">
+                                                <h5 className="text-xs font-semibold text-indigo-400">Pending Invitations</h5>
+                                                <div className="bg-[#111] border border-[#2a2a2a] rounded-lg divide-y divide-[#2a2a2a] overflow-hidden">
+                                                    {workspace.invitations.map((invite) => (
+                                                        <div key={invite.id} className="grid grid-cols-3 p-3 items-center opacity-80">
+                                                            <div className="text-sm text-white italic truncate">{invite.email}</div>
+                                                            <div>
+                                                                <span className="text-xs text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded">
+                                                                    Invited ({invite.role})
+                                                                </span>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="sm" 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        handleRevokeInvite(workspace.id, invite.id)
+                                                                    }}
+                                                                    className="text-xs text-gray-400 hover:text-red-400 hover:bg-red-500/10 h-7"
+                                                                >
+                                                                    Revoke
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

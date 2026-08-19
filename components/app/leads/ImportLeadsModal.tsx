@@ -753,9 +753,6 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                             <ShieldCheck className="h-4 w-4 text-emerald-400" />
                                             <span>Verify leads before importing</span>
                                         </label>
-                                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2.5 py-0.5 flex items-center gap-1">
-                                            <span className="text-emerald-400 text-xs font-semibold">100% Free • In-Memory</span>
-                                        </div>
                                     </div>
                                 </div>
                             </div>

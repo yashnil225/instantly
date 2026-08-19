@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { canUserEditCampaign } from '@/lib/permissions'
 
 export async function GET(
     request: Request,
@@ -12,13 +13,30 @@ export async function GET(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Verify campaign ownership
+    // Verify user has access to campaign
     const campaign = await prisma.campaign.findFirst({
-        where: { id, userId: session.user.id }
+        where: {
+            id,
+            OR: [
+                { userId: session.user.id },
+                {
+                    campaignWorkspaces: {
+                        some: {
+                            workspace: {
+                                OR: [
+                                    { userId: session.user.id },
+                                    { members: { some: { userId: session.user.id } } }
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
+        }
     })
 
     if (!campaign) {
-        return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
+        return NextResponse.json({ error: 'Campaign not found or unauthorized' }, { status: 404 })
     }
 
     const leads = await prisma.lead.findMany({
@@ -39,20 +57,16 @@ export async function POST(
     }
 
     try {
+        const check = await canUserEditCampaign(session.user.id, id)
+        if (!check.allowed) {
+            return NextResponse.json({ error: check.reason || 'Forbidden' }, { status: 403 })
+        }
+
         const body = await request.json()
         const { email, firstName, lastName, company } = body
 
         if (!email) {
             return NextResponse.json({ error: 'Email is required' }, { status: 400 })
-        }
-
-        // Verify campaign ownership
-        const campaign = await prisma.campaign.findFirst({
-            where: { id, userId: session.user.id }
-        })
-
-        if (!campaign) {
-            return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
         }
 
         // Deduplication check

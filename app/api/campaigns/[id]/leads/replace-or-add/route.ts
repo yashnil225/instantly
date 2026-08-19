@@ -120,13 +120,37 @@ export async function POST(
         // Delete only uncontacted/unverified 'new' and 'lead' status leads in this campaign.
         // Any leads already contacted/sent/replied/bounced are preserved safely.
         if (action === 'replace') {
-            const deletedUncontacted = await prisma.lead.deleteMany({
+            const leadsToDelete = await prisma.lead.findMany({
                 where: {
                     campaignId,
                     status: { in: ['new', 'lead'] }
-                }
+                },
+                select: { id: true }
             })
-            replacedCount = deletedUncontacted.count
+
+            const leadIds = leadsToDelete.map(l => l.id)
+
+            if (leadIds.length > 0) {
+                // Delete child relations first to prevent SQLite/Turso foreign key constraint errors
+                await prisma.sendingEvent.deleteMany({
+                    where: { leadId: { in: leadIds } }
+                }).catch(() => {})
+
+                await prisma.leadTag.deleteMany({
+                    where: { leadId: { in: leadIds } }
+                }).catch(() => {})
+
+                await prisma.reminder.deleteMany({
+                    where: { leadId: { in: leadIds } }
+                }).catch(() => {})
+
+                const deletedUncontacted = await prisma.lead.deleteMany({
+                    where: {
+                        id: { in: leadIds }
+                    }
+                })
+                replacedCount = deletedUncontacted.count
+            }
         }
 
         // 3. Deduplicate against leads currently remaining in the campaign

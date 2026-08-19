@@ -50,11 +50,6 @@ export default function WorkspacesPage() {
     const [inviteRole, setInviteRole] = useState("member")
     const [inviting, setInviting] = useState(false)
 
-    useEffect(() => {
-        refreshWorkspaces()
-    }, [refreshWorkspaces])
-
-
     const handleUpdateValue = async (id: string, value: string) => {
         try {
             const res = await fetch(`/api/workspaces/${id}`, {

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import Papa from 'papaparse'
+import { auth } from '@/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,6 +10,7 @@ export async function GET(
     { params }: { params: Promise<{ jobId: string }> }
 ) {
     const { jobId } = await params
+    const session = await auth()
     const url = new URL(request.url)
     const action = url.searchParams.get('action')
     const filterType = url.searchParams.get('type') || 'all' // all, valid, risky, invalid
@@ -19,6 +21,10 @@ export async function GET(
 
     if (!job) {
         return NextResponse.json({ error: 'Job not found or already deleted' }, { status: 404 })
+    }
+
+    if (job.userId && session?.user?.id && job.userId !== session.user.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     // If standard status poll, return JSON
@@ -97,8 +103,16 @@ export async function DELETE(
     { params }: { params: Promise<{ jobId: string }> }
 ) {
     const { jobId } = await params
+    const session = await auth()
 
     try {
+        const job = await prisma.verificationJob.findUnique({ where: { id: jobId } })
+        if (!job) return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+
+        if (job.userId && session?.user?.id && job.userId !== session.user.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        }
+
         await prisma.verificationJob.delete({
             where: { id: jobId }
         })

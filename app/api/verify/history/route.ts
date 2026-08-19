@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { auth } from '@/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
+        const session = await auth()
+        const currentUserId = session?.user?.id || null
+
         const jobs = await prisma.verificationJob.findMany({
+            where: currentUserId ? { userId: currentUserId } : { userId: null },
             orderBy: { createdAt: 'desc' },
             take: 30,
             select: {
@@ -34,9 +39,15 @@ export async function GET() {
 
 export async function DELETE() {
     try {
-        await prisma.verificationJob.deleteMany({})
-        return NextResponse.json({ success: true, message: 'All verification jobs and records deleted from database' })
+        const session = await auth()
+        const currentUserId = session?.user?.id || null
+
+        await prisma.verificationJob.deleteMany({
+            where: currentUserId ? { userId: currentUserId } : { userId: null }
+        })
+        return NextResponse.json({ success: true, message: 'Your verification jobs and records deleted from database' })
     } catch (e: any) {
         return NextResponse.json({ error: e.message || 'Failed to clear history' }, { status: 500 })
     }
 }
+

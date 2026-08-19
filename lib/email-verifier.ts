@@ -1,6 +1,7 @@
 import dns from 'dns'
 import net from 'net'
 import axios from 'axios'
+import { prisma } from '@/lib/prisma'
 
 export interface VerificationResult {
     email: string
@@ -20,7 +21,7 @@ export interface VerificationResult {
 
 // In-memory DNS MX cache for batch speed & zero latency
 const mxCache = new Map<string, { mxRecords: dns.MxRecord[]; timestamp: number }>()
-const MX_CACHE_TTL = 30 * 60 * 1000 // 30 minutes
+const MX_CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
 // 1. Common Typo Map
 const TYPO_MAP: Record<string, string> = {
@@ -75,7 +76,7 @@ const DISPOSABLE_DOMAINS = new Set([
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
 
 /**
- * Fast DNS MX resolution with caching
+ * Fast DNS MX resolution with caching & ultra-short 500ms timeout
  */
 async function getDomainMx(domain: string): Promise<dns.MxRecord[]> {
     const cached = mxCache.get(domain)
@@ -86,7 +87,7 @@ async function getDomainMx(domain: string): Promise<dns.MxRecord[]> {
     try {
         const resolveMxPromise = dns.promises.resolveMx(domain)
         const timeoutPromise = new Promise<dns.MxRecord[]>((_, reject) =>
-            setTimeout(() => reject(new Error('DNS timeout')), 1200)
+            setTimeout(() => reject(new Error('DNS timeout')), 500)
         )
         const records = await Promise.race([resolveMxPromise, timeoutPromise])
         records.sort((a, b) => a.priority - b.priority)
@@ -96,7 +97,7 @@ async function getDomainMx(domain: string): Promise<dns.MxRecord[]> {
         try {
             const resolveAPromise = dns.promises.resolve4(domain)
             const aTimeout = new Promise<string[]>((_, reject) =>
-                setTimeout(() => reject(new Error('DNS timeout')), 800)
+                setTimeout(() => reject(new Error('DNS timeout')), 300)
             )
             const aRecords = await Promise.race([resolveAPromise, aTimeout])
             if (aRecords.length > 0) {
@@ -122,15 +123,11 @@ async function probeMicrosoftMailbox(email: string): Promise<{ checked: boolean;
                     'Content-Type': 'application/json',
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
                 },
-                timeout: 1800
+                timeout: 800
             }
         )
 
         const ifExistsResult = res.data?.IfExistsResult
-        // 0 = User exists
-        // 1 = User does not exist
-        // 5 = Federation / Custom SSO
-        // 6 = Domain not found in tenant
         if (ifExistsResult === 0) {
             return { checked: true, exists: true, reason: 'Active mailbox confirmed on Microsoft 365' }
         } else if (ifExistsResult === 1) {
@@ -151,13 +148,12 @@ async function probeGoogleMailbox(email: string): Promise<{ checked: boolean; ex
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                 },
-                timeout: 1800,
+                timeout: 800,
                 maxRedirects: 0,
                 validateStatus: () => true
             }
         )
 
-        // If Google returns Set-Cookie with COMPASS token, account is registered
         const cookies = res.headers['set-cookie'] || []
         const hasCompass = cookies.some(c => c.includes('COMPASS='))
         if (hasCompass) {
@@ -168,7 +164,7 @@ async function probeGoogleMailbox(email: string): Promise<{ checked: boolean; ex
 }
 
 /**
- * Multi-layer email verification engine with direct HTTPS Provider Probes
+ * Multi-layer email verification engine with Database-First Cache and Direct HTTPS Provider Probes
  */
 export async function verifyEmail(emailInput: string): Promise<VerificationResult> {
     const email = (emailInput || '').trim()
@@ -193,11 +189,69 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
     const [localPart, domainPart] = email.split('@')
     const local = localPart.toLowerCase()
     const domain = domainPart.toLowerCase()
+    const lowerEmail = email.toLowerCase()
 
     // Typo suggestion
     const suggestedFix = TYPO_MAP[domain] ? `${localPart}@${TYPO_MAP[domain]}` : undefined
 
-    // --- Step 2: Disposable Check ---
+    // --- Step 2: Database Cache Pre-Check (Zero Latency & 0 Timeout Risk) ---
+    try {
+        const dbResult = await prisma.verificationResultItem.findFirst({
+            where: { email: lowerEmail },
+            select: { status: true, reason: true, score: true },
+            orderBy: { id: 'desc' }
+        })
+        if (dbResult) {
+            return {
+                email,
+                status: dbResult.status as any,
+                reason: dbResult.reason || 'Verified from database cache',
+                score: dbResult.score || (dbResult.status === 'valid' ? 98 : dbResult.status === 'risky' ? 70 : 0),
+                isSyntaxValid: true,
+                isDisposable: dbResult.status === 'disposable',
+                isRoleBased: false,
+                isFreeProvider: FREE_PROVIDERS.has(domain),
+                hasMx: dbResult.status !== 'invalid',
+                checkedAt: now
+            }
+        }
+
+        const dbLead = await prisma.lead.findFirst({
+            where: { email: lowerEmail },
+            select: { status: true }
+        })
+        if (dbLead) {
+            if (dbLead.status === 'replied' || dbLead.status === 'contacted' || dbLead.status === 'sequence_complete') {
+                return {
+                    email,
+                    status: 'valid',
+                    reason: 'Verified active deliverable lead (DB cache)',
+                    score: 99,
+                    isSyntaxValid: true,
+                    isDisposable: false,
+                    isRoleBased: false,
+                    isFreeProvider: FREE_PROVIDERS.has(domain),
+                    hasMx: true,
+                    checkedAt: now
+                }
+            } else if (dbLead.status === 'bounced') {
+                return {
+                    email,
+                    status: 'invalid',
+                    reason: 'Known bounced lead (DB cache)',
+                    score: 0,
+                    isSyntaxValid: true,
+                    isDisposable: false,
+                    isRoleBased: false,
+                    isFreeProvider: FREE_PROVIDERS.has(domain),
+                    hasMx: false,
+                    checkedAt: now
+                }
+            }
+        }
+    } catch {}
+
+    // --- Step 3: Disposable Check ---
     const isDisposable = DISPOSABLE_DOMAINS.has(domain) || domain.includes('tempmail') || domain.includes('throwaway') || domain.includes('disposable')
     if (isDisposable) {
         return {

@@ -125,32 +125,41 @@ export default function EmailVerifierPage() {
         if (drivingJobsRef.current.has(jobId)) return
         drivingJobsRef.current.add(jobId)
 
+        let consecutiveErrors = 0
         try {
             while (true) {
-                const res = await fetch("/api/verify/process-chunk", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ jobId, batchSize: 35 })
-                })
+                try {
+                    const res = await fetch("/api/verify/process-chunk", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ jobId, batchSize: 25 })
+                    })
 
-                if (!res.ok) {
-                    break
+                    if (!res.ok) {
+                        consecutiveErrors++
+                        if (consecutiveErrors >= 4) break
+                        await new Promise(r => setTimeout(r, 800))
+                        continue
+                    }
+
+                    consecutiveErrors = 0
+                    const data = await res.json()
+
+                    setActiveJobs(prev => prev.map(j => (j.id === jobId ? { ...j, ...data } : j)))
+                    setHistory(prev => prev.map(j => (j.id === jobId ? { ...j, ...data } : j)))
+
+                    if (data.completed || data.status === 'completed' || data.status === 'canceled') {
+                        break
+                    }
+
+                    // Small 30ms yield
+                    await new Promise(r => setTimeout(r, 30))
+                } catch (e) {
+                    consecutiveErrors++
+                    if (consecutiveErrors >= 4) break
+                    await new Promise(r => setTimeout(r, 800))
                 }
-
-                const data = await res.json()
-
-                setActiveJobs(prev => prev.map(j => (j.id === jobId ? { ...j, ...data } : j)))
-                setHistory(prev => prev.map(j => (j.id === jobId ? { ...j, ...data } : j)))
-
-                if (data.completed || data.status === 'completed' || data.status === 'canceled') {
-                    break
-                }
-
-                // Small 40ms yield
-                await new Promise(r => setTimeout(r, 40))
             }
-        } catch (e) {
-            console.error("Chunk processing error", e)
         } finally {
             drivingJobsRef.current.delete(jobId)
         }
@@ -460,6 +469,25 @@ export default function EmailVerifierPage() {
                                             </div>
 
                                             <div className="flex items-center gap-1.5">
+                                                {job.status !== 'completed' && job.status !== 'canceled' && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setActiveJobs(prev => {
+                                                                const found = prev.find(p => p.id === job.id)
+                                                                if (!found) return [...prev, { ...job, status: 'processing' }]
+                                                                return prev.map(p => p.id === job.id ? { ...p, status: 'processing' } : p)
+                                                            })
+                                                            driveJobVerification(job.id)
+                                                        }}
+                                                        className="text-xs border-primary/40 text-primary hover:bg-primary/10 gap-1 font-semibold mr-1"
+                                                    >
+                                                        <RefreshCw className="h-3.5 w-3.5" />
+                                                        {job.status === 'processing' ? 'Accelerate' : 'Resume'}
+                                                    </Button>
+                                                )}
+
                                                 {job.status === 'processing' && (
                                                     <Button
                                                         variant="outline"

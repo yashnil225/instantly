@@ -18,6 +18,7 @@ const client = createClient({
 const statements = [
     `CREATE TABLE IF NOT EXISTS "VerificationJob" (
         "id" TEXT PRIMARY KEY,
+        "userId" TEXT,
         "fileName" TEXT NOT NULL,
         "total" INTEGER NOT NULL DEFAULT 0,
         "processed" INTEGER NOT NULL DEFAULT 0,
@@ -29,11 +30,15 @@ const statements = [
         "status" TEXT NOT NULL DEFAULT 'processing',
         "currentLog" TEXT,
         "headers" TEXT NOT NULL,
+        "rawRowsJson" TEXT,
         "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "completedAt" DATETIME
     );`,
     `CREATE INDEX IF NOT EXISTS "VerificationJob_createdAt_idx" ON "VerificationJob"("createdAt");`,
+    `CREATE INDEX IF NOT EXISTS "VerificationJob_userId_idx" ON "VerificationJob"("userId");`,
+    `ALTER TABLE "VerificationJob" ADD COLUMN "userId" TEXT;`,
+    `ALTER TABLE "VerificationJob" ADD COLUMN "rawRowsJson" TEXT;`,
     `CREATE TABLE IF NOT EXISTS "VerificationResultItem" (
         "id" TEXT PRIMARY KEY,
         "jobId" TEXT NOT NULL,
@@ -46,7 +51,22 @@ const statements = [
         CONSTRAINT "VerificationResultItem_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "VerificationJob" ("id") ON DELETE CASCADE ON UPDATE CASCADE
     );`,
     `CREATE INDEX IF NOT EXISTS "VerificationResultItem_jobId_idx" ON "VerificationResultItem"("jobId");`,
-    `CREATE INDEX IF NOT EXISTS "VerificationResultItem_status_idx" ON "VerificationResultItem"("status");`
+    `CREATE INDEX IF NOT EXISTS "VerificationResultItem_status_idx" ON "VerificationResultItem"("status");`,
+    `CREATE TABLE IF NOT EXISTS "LeadStatusMemory" (
+        "id" TEXT PRIMARY KEY,
+        "email" TEXT NOT NULL,
+        "campaignId" TEXT NOT NULL,
+        "workspaceId" TEXT,
+        "status" TEXT NOT NULL,
+        "stepReached" INTEGER NOT NULL DEFAULT 1,
+        "metadata" TEXT,
+        "lastContactedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "LeadStatusMemory_email_campaignId_key" ON "LeadStatusMemory"("email", "campaignId");`,
+    `CREATE INDEX IF NOT EXISTS "LeadStatusMemory_campaignId_idx" ON "LeadStatusMemory"("campaignId");`,
+    `CREATE INDEX IF NOT EXISTS "LeadStatusMemory_email_idx" ON "LeadStatusMemory"("email");`
 ];
 
 async function syncTursoVerifier() {

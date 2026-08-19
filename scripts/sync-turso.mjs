@@ -21,6 +21,27 @@ const alterStatements = [
     'ALTER TABLE EmailAccount ADD COLUMN lastSyncedAt DATETIME;',
     'ALTER TABLE EmailAccount ADD COLUMN bounceCount INTEGER DEFAULT 0;',
     'ALTER TABLE EmailAccount ADD COLUMN errorDetail TEXT;',
+
+    // VerificationJob columns
+    'ALTER TABLE VerificationJob ADD COLUMN userId TEXT;',
+    'ALTER TABLE VerificationJob ADD COLUMN rawRowsJson TEXT;',
+
+    // LeadStatusMemory table
+    `CREATE TABLE IF NOT EXISTS "LeadStatusMemory" (
+        "id" TEXT PRIMARY KEY,
+        "email" TEXT NOT NULL,
+        "campaignId" TEXT NOT NULL,
+        "workspaceId" TEXT,
+        "status" TEXT NOT NULL,
+        "stepReached" INTEGER NOT NULL DEFAULT 1,
+        "metadata" TEXT,
+        "lastContactedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "LeadStatusMemory_email_campaignId_key" ON "LeadStatusMemory"("email", "campaignId");`,
+    `CREATE INDEX IF NOT EXISTS "LeadStatusMemory_campaignId_idx" ON "LeadStatusMemory"("campaignId");`,
+    `CREATE INDEX IF NOT EXISTS "LeadStatusMemory_email_idx" ON "LeadStatusMemory"("email");`
 ];
 
 async function syncSchema() {

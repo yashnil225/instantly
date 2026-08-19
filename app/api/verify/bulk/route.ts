@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyEmail } from '@/lib/email-verifier'
 import Papa from 'papaparse'
+import { auth } from '@/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,6 +74,9 @@ function parseSmartCsv(content: string): { headers: string[]; rows: Array<Record
 
 export async function POST(request: Request) {
     try {
+        const session = await auth()
+        const currentUserId = session?.user?.id || null
+
         const formData = await request.formData()
         const file = formData.get('file') as File | null
 
@@ -87,10 +91,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'CSV file contains no valid email leads' }, { status: 400 })
         }
 
-        // --- 1. Enforce 30-Job Capacity Limit (FIFO) ---
-        const totalExistingJobs = await prisma.verificationJob.count()
+        // --- 1. Enforce 30-Job Capacity Limit per User (FIFO) ---
+        const userFilter = currentUserId ? { userId: currentUserId } : { userId: null }
+        const totalExistingJobs = await prisma.verificationJob.count({
+            where: userFilter
+        })
+
         if (totalExistingJobs >= 30) {
             const jobsToDelete = await prisma.verificationJob.findMany({
+                where: userFilter,
                 orderBy: { createdAt: 'asc' },
                 take: (totalExistingJobs - 29),
                 select: { id: true }
@@ -105,6 +114,7 @@ export async function POST(request: Request) {
         // --- 2. Create Job in Database ---
         const newJob = await prisma.verificationJob.create({
             data: {
+                userId: currentUserId,
                 fileName: file.name,
                 total: rows.length,
                 processed: 0,

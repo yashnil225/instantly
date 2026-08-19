@@ -57,18 +57,16 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                 if (!isInitializedRef.current || selectedWorkspaceId !== storedId) {
                     setSelectedWorkspaceIdState(storedId)
                 }
-            } else {
+            } else if (storedId) {
                 // If stored workspace was deleted or member was removed, immediately reset UI!
-                if (storedId) {
-                    console.log(`[WorkspaceContext] Workspace ${storedId} is no longer accessible. Evicting from UI state.`)
-                    setSelectedWorkspaceId(null)
-                }
+                console.log(`[WorkspaceContext] Workspace ${storedId} is no longer accessible. Evicting from UI state.`)
+                setSelectedWorkspaceId(null)
                 setSelectedWorkspaceIdState(null)
             }
             
             isInitializedRef.current = true
         }
-    }, [workspaces, selectedWorkspaceId])
+    }, [workspaces])
 
     // Listen for storage changes (cross-tab sync)
     useEffect(() => {
@@ -91,7 +89,23 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             const res = await fetch('/api/workspaces')
             if (res.ok) {
                 const data = await res.json()
-                setWorkspaces(Array.isArray(data) ? data : [])
+                const newWorkspaces = Array.isArray(data) ? data : []
+                setWorkspaces(prev => {
+                    // Deep/shallow compare to avoid creating a new array reference if data hasn't changed
+                    if (
+                        prev.length === newWorkspaces.length &&
+                        prev.every((w, idx) => 
+                            w.id === newWorkspaces[idx]?.id && 
+                            w.name === newWorkspaces[idx]?.name && 
+                            w.opportunityValue === newWorkspaces[idx]?.opportunityValue &&
+                            w.isDefault === newWorkspaces[idx]?.isDefault &&
+                            w._count?.campaignWorkspaces === newWorkspaces[idx]?._count?.campaignWorkspaces
+                        )
+                    ) {
+                        return prev
+                    }
+                    return newWorkspaces
+                })
             }
         } catch (error) {
             console.error("Failed to fetch workspaces:", error)

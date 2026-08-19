@@ -106,7 +106,11 @@ export function WorkspacesListSection() {
             return
         }
 
-        setLoading(true)
+        // Only set full page loading if we don't have workspaces rendered yet
+        if (workspaces.length === 0) {
+            setLoading(true)
+        }
+
         try {
             // Fetch detailed info for each workspace
             const detailedWorkspaces = await Promise.all(
@@ -285,7 +289,7 @@ export function WorkspacesListSection() {
         return <span className="capitalize text-gray-300 bg-[#2a2a2a] px-2 py-0.5 rounded text-xs">{role}</span>
     }
 
-    if (loading) {
+    if (loading && workspaces.length === 0) {
         return (
             <div className="p-8 text-center text-gray-500 flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Upload, X, Check, FileText, Search, Mail, Loader2, ChevronLeft, ArrowRight } from "lucide-react"
+import { Upload, X, Check, FileText, Search, Mail, Loader2, ChevronLeft, ArrowRight, ShieldCheck } from "lucide-react"
 import { useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/components/ui/use-toast"
@@ -60,6 +60,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
         lists: true,
         workspace: true
     })
+    const [verifyBeforeImport, setVerifyBeforeImport] = useState(true)
 
     // Recovery useEffect: If we have parsedData but no headers (e.g. from Sheets or potential race condition), recover them
     useEffect(() => {
@@ -329,6 +330,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                 let processed = 0
 
                 // Upload in batches for large datasets with progress tracking
+                let lastResponseData: any = null
                 for (let i = 0; i < mappedLeads.length; i += BATCH_SIZE) {
                     const batch = mappedLeads.slice(i, i + BATCH_SIZE)
 
@@ -337,23 +339,26 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             type: 'json',
-                            leads: batch
+                            leads: batch,
+                            verifyBeforeImport,
+                            duplicateCheck
                         }),
                     })
 
+                    const data = await res.json()
                     if (!res.ok) {
-                        const data = await res.json()
                         throw new Error(data.error || "Upload failed")
                     }
 
+                    lastResponseData = data
                     processed += batch.length
                     const progress = Math.round((processed / totalLeads) * 100)
                     setUploadProgress(progress)
                 }
 
                 toast({
-                    title: "Import Successful",
-                    description: `Successfully imported ${totalLeads} leads.`
+                    title: "Import Successful 🎉",
+                    description: lastResponseData?.message || `Successfully processed ${totalLeads} leads.`
                 })
 
                 onImportSuccess()
@@ -738,11 +743,18 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                                 {/* Verify */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-5 h-5 border-2 border-[#333] rounded-[4px]"></div>
-                                        <span className="text-gray-300 text-sm font-medium">Verify leads</span>
-                                        <div className="bg-[#1a1a1a] border border-[#333] rounded-full px-2 py-0.5 flex items-center gap-1">
-                                            <span className="text-yellow-500 text-[10px]">🪙</span>
-                                            <span className="text-xs text-gray-400">0.25 / Row</span>
+                                        <Checkbox
+                                            id="verify-leads-check"
+                                            checked={verifyBeforeImport}
+                                            onCheckedChange={(c) => setVerifyBeforeImport(!!c)}
+                                            className="border-[#333] data-[state=checked]:bg-emerald-600 border-emerald-500/40"
+                                        />
+                                        <label htmlFor="verify-leads-check" className="text-gray-200 text-sm font-medium cursor-pointer flex items-center gap-1.5">
+                                            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                                            <span>Verify leads before importing</span>
+                                        </label>
+                                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-full px-2.5 py-0.5 flex items-center gap-1">
+                                            <span className="text-emerald-400 text-xs font-semibold">100% Free • In-Memory</span>
                                         </div>
                                     </div>
                                 </div>

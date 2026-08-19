@@ -98,6 +98,7 @@ interface Email {
     hasReply: boolean
     hasAttachment?: boolean // Track if email has attachments
     sentFrom?: string
+    senderAccountName?: string
     recipient?: string
     recipientEmail?: string
     messages?: {
@@ -1992,9 +1993,9 @@ ${selectedEmail.body || selectedEmail.preview}
                                     </div>
 
                                     <div className="text-xs text-[#71717a]">
-                                        From: <span className="text-[#a1a1aa]">{selectedEmail.fromName || selectedEmail.from}</span> &lt;{selectedEmail.from}&gt;
+                                        From: <span className="text-[#a1a1aa] font-medium">{selectedEmail.fromName || selectedEmail.from}</span> &lt;{selectedEmail.from}&gt;
                                         <br />
-                                        to: <span className="text-[#a1a1aa]">{selectedEmail.recipient || session?.user?.name || 'You'}</span> &lt;{selectedEmail.sentFrom || (selectedEmail as any).to || session?.user?.email || ''}&gt;
+                                        to: <span className="text-[#a1a1aa] font-medium">{selectedEmail.senderAccountName || session?.user?.name || 'You'}</span> &lt;{selectedEmail.sentFrom || session?.user?.email || ''}&gt;
                                     </div>
 
                                     <div className="mt-4" onClick={e => e.stopPropagation()}>

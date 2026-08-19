@@ -230,22 +230,35 @@ export async function sendWarmupEmails(guard?: { isTimedOut: () => boolean, elap
 }
 
 async function sendWarmupEmail(from: any, to: any) {
-    const subjects = [
-        'Quick check-in',
-        'Following up',
-        'Touching base',
-        'Hope you\'re doing well',
-        'Quick question'
+    const warmupTopics = [
+        {
+            subject: 'Quick question regarding next week\'s agenda',
+            body: `Hi ${to.firstName || 'there'},\n\nHope you are having a productive week. Just wanted to quickly verify if we are still on track for the deliverables we discussed earlier?\n\nLet me know if you need any additional context from our end.\n\nBest regards,\n${from.firstName || 'Team'}`
+        },
+        {
+            subject: 'Following up on the project notes',
+            body: `Hey ${to.firstName || 'there'},\n\nSharing a quick update regarding the timeline. Everything looks solid on our side so far. Let\'s sync up briefly when you have a free moment.\n\nCheers,\n${from.firstName || 'Team'}`
+        },
+        {
+            subject: 'Feedback on the quarterly overview deck',
+            body: `Hello ${to.firstName || 'there'},\n\nI reviewed the summary draft you shared. The numbers look promising and the direction is spot on. I added a couple of minor comments in the margin.\n\nTalk soon,\n${from.firstName || 'Team'}`
+        },
+        {
+            subject: 'Touching base on the recent updates',
+            body: `Hi ${to.firstName || 'there'},\n\nJust touching base to see how things are progressing on your side. Let me know if there is anything I can assist with this week.\n\nThanks,\n${from.firstName || 'Team'}`
+        },
+        {
+            subject: 'Resource sharing & quick follow up',
+            body: `Hey ${to.firstName || 'there'},\n\nCame across an insightful case study earlier today that reminded me of our conversation. Wanted to pass it along in case it proves useful.\n\nHave a great rest of your day,\n${from.firstName || 'Team'}`
+        },
+        {
+            subject: 'Schedule check for Thursday afternoon',
+            body: `Hi ${to.firstName || 'there'},\n\nWould you have 10 minutes open this Thursday around 2 PM to run through the finalized plan?\n\nBest,\n${from.firstName || 'Team'}`
+        }
     ]
 
-    const bodies = [
-        `Hi there,\n\nJust wanted to check in and see how things are going.\n\nBest regards,\n${from.firstName || 'Team'}`,
-        `Hello,\n\nHope you're having a great day!\n\nCheers,\n${from.firstName || 'Team'}`,
-        `Hi,\n\nJust following up on our previous conversation.\n\nThanks,\n${from.firstName || 'Team'}`
-    ]
-
-    const subject = subjects[Math.floor(Math.random() * subjects.length)]
-    const body = bodies[Math.floor(Math.random() * bodies.length)]
+    const selected = warmupTopics[Math.floor(Math.random() * warmupTopics.length)]
+    const warmupUniqueId = `warmup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 
     await sendEmail({
         config: {
@@ -255,8 +268,8 @@ async function sendWarmupEmail(from: any, to: any) {
             pass: from.smtpPass || ''
         },
         to: to.email,
-        subject,
-        html: body.replace(/\n/g, '<br>'),
+        subject: selected.subject,
+        html: selected.body.replace(/\n/g, '<br>'),
         fromName: `${from.firstName || ''} ${from.lastName || ''}`.trim() || from.email,
         fromEmail: from.email
     })
@@ -265,10 +278,9 @@ async function sendWarmupEmail(from: any, to: any) {
     await logWarmupActivity(
         from.id,
         'send',
-        `Sent warmup email to ${to.email}`,
+        `Sent positive warmup conversation (${selected.subject}) to ${to.email}`,
         to.email
     )
-    // NOTE: Health score is updated once per account in sendWarmupEmails(), not here.
 }
 
 // Reset daily counters at midnight

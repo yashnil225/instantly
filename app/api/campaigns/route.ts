@@ -116,6 +116,7 @@ export async function GET(request: Request) {
             FROM "SendingEvent"
             WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
             AND "type" = 'sent'
+            AND "metadata" LIKE '%"step":%'
             AND "createdAt" >= ${todayUTC}
             GROUP BY "campaignId"
         `

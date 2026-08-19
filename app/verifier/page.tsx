@@ -23,7 +23,8 @@ import {
     X,
     Info,
     ArrowRight,
-    Database
+    Database,
+    Send
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -31,6 +32,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
+import { CampaignImportModal } from "@/components/app/verifier/CampaignImportModal"
 
 interface VerificationResult {
     email: string
@@ -83,6 +85,10 @@ export default function EmailVerifierPage() {
     const [history, setHistory] = useState<StoredJob[]>([])
     const [isLoadingHistory, setIsLoadingHistory] = useState(false)
     const [downloadingKey, setDownloadingKey] = useState<string | null>(null)
+
+    // Campaign Import Modal State
+    const [importModalOpen, setImportModalOpen] = useState(false)
+    const [importTargetJob, setImportTargetJob] = useState<StoredJob | null>(null)
 
     // Load history from Database on mount and tab switch
     const fetchHistoryFromDb = async () => {
@@ -521,10 +527,21 @@ export default function EmailVerifierPage() {
                                             </Badge>
                                         </div>
 
-                                        {/* Download Buttons when Done */}
+                                        {/* Download & Campaign Import Buttons when Done */}
                                         {(job.status === 'completed' || job.processed > 0) && (
                                             <div className="pt-3 border-t border-border/40 flex flex-wrap items-center justify-between gap-3">
                                                 <div className="flex flex-wrap items-center gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setImportTargetJob(job)
+                                                            setImportModalOpen(true)
+                                                        }}
+                                                        className="bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 text-xs gap-1.5 shadow-sm font-semibold"
+                                                    >
+                                                        <Send className="h-3.5 w-3.5" />
+                                                        Add / Replace in Campaign
+                                                    </Button>
                                                     <Button
                                                         size="sm"
                                                         disabled={downloadingKey === `${job.id}-valid`}
@@ -781,6 +798,17 @@ export default function EmailVerifierPage() {
                                                 <div className="flex items-center justify-end gap-2">
                                                     <Button
                                                         size="sm"
+                                                        onClick={() => {
+                                                            setImportTargetJob(item)
+                                                            setImportModalOpen(true)
+                                                        }}
+                                                        className="h-8 text-xs gap-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-semibold"
+                                                    >
+                                                        <Send className="h-3 w-3" />
+                                                        To Campaign
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
                                                         variant="outline"
                                                         disabled={downloadingKey === `${item.id}-valid`}
                                                         onClick={() => handleDownload(item.id, 'valid')}
@@ -826,6 +854,19 @@ export default function EmailVerifierPage() {
                     )}
                 </TabsContent>
             </Tabs>
+
+            {/* Campaign Import Modal */}
+            <CampaignImportModal
+                open={importModalOpen}
+                onOpenChange={setImportModalOpen}
+                jobId={importTargetJob?.id}
+                jobFileName={importTargetJob?.fileName}
+                validCount={importTargetJob?.validCount}
+                riskyCount={importTargetJob?.riskyCount}
+                onSuccess={() => {
+                    fetchHistoryFromDb()
+                }}
+            />
         </div>
     )
 }

@@ -286,51 +286,59 @@ export async function syncAccountInbox(
                                             if (matchedSentEvent && matchedSentEvent.lead) {
                                                 const lead = matchedSentEvent.lead
 
-                                                // Duplicate guard: skip if reply with this messageId already recorded
-                                                const existingReply = parsed.messageId
-                                                    ? await prisma.sendingEvent.findFirst({
-                                                        where: {
-                                                            leadId: lead.id,
-                                                            type: 'reply',
-                                                            metadata: { contains: parsed.messageId }
-                                                        }
-                                                    })
-                                                    : null
+                                                const cleanMessageId = (parsed.messageId || '').replace(/[<>]/g, '').trim()
+                                                const existingReply = await prisma.sendingEvent.findFirst({
+                                                    where: {
+                                                        leadId: lead.id,
+                                                        type: 'reply',
+                                                        ...(cleanMessageId ? { metadata: { contains: cleanMessageId } } : {})
+                                                    }
+                                                })
 
                                                 if (existingReply) {
-                                                    console.log(`⚡ Reply already recorded (msgId: ${parsed.messageId}), skipping`)
+                                                    console.log(`⚡ Reply already recorded (msgId: ${cleanMessageId}), skipping duplicate`)
                                                 } else {
                                                     const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
-                                                    await prisma.$transaction([
+                                                    const isFirstReplyForLead = lead.status !== 'replied'
+
+                                                    const tx: any[] = [
                                                         prisma.sendingEvent.create({
                                                             data: {
                                                                 type: 'reply',
                                                                 leadId: lead.id,
                                                                 campaignId: matchedSentEvent.campaignId,
                                                                 emailAccountId: account.id,
-                                                                metadata: JSON.stringify({ subject: parsed.subject, from, messageId: parsed.messageId }),
+                                                                metadata: JSON.stringify({ subject: parsed.subject, from, messageId: cleanMessageId || parsed.messageId }),
                                                                 details: (typeof parsed.html === 'string' && parsed.html.trim().length > 0) ? parsed.html : (parsed.textAsHtml || parsed.text || "")
                                                             }
                                                         }),
-                                                        prisma.lead.update({ where: { id: lead.id }, data: { status: 'replied' } }),
-                                                        prisma.campaign.update({ where: { id: matchedSentEvent.campaignId }, data: { replyCount: { increment: 1 } } }),
-                                                        prisma.campaignStat.upsert({
-                                                            where: {
-                                                                campaignId_date: {
+                                                        prisma.lead.update({ where: { id: lead.id }, data: { status: 'replied' } })
+                                                    ]
+
+                                                    // Only increment campaign stats once per lead
+                                                    if (isFirstReplyForLead) {
+                                                        tx.push(
+                                                            prisma.campaign.update({ where: { id: matchedSentEvent.campaignId }, data: { replyCount: { increment: 1 } } }),
+                                                            prisma.campaignStat.upsert({
+                                                                where: {
+                                                                    campaignId_date: {
+                                                                        campaignId: matchedSentEvent.campaignId,
+                                                                        date: todayUTC
+                                                                    }
+                                                                },
+                                                                create: {
                                                                     campaignId: matchedSentEvent.campaignId,
-                                                                    date: todayUTC
+                                                                    date: todayUTC,
+                                                                    replied: 1
+                                                                },
+                                                                update: {
+                                                                    replied: { increment: 1 }
                                                                 }
-                                                            },
-                                                            create: {
-                                                                campaignId: matchedSentEvent.campaignId,
-                                                                date: todayUTC,
-                                                                replied: 1
-                                                            },
-                                                            update: {
-                                                                replied: { increment: 1 }
-                                                            }
-                                                        })
-                                                    ])
+                                                            })
+                                                        )
+                                                    }
+
+                                                    await prisma.$transaction(tx)
                                                     // Classify reply to power Positive Reply Rate metric
                                                     try {
                                                         const replyText = ((parsed.subject || '') + ' ' + (parsed.text || '')).toLowerCase()

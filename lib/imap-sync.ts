@@ -258,21 +258,19 @@ export async function syncReplies(account: EmailAccount) {
                         const sentEvent = matchedSentEvent
                         console.log(`Reply detected from ${from} for lead ${sentEvent.lead.email}`)
 
-                        // Duplicate guard: skip if we already have a reply event
-                        // that matches this exact message ID (handles re-scanning old emails)
-                        const existingReply = parsed.messageId
-                            ? await prisma.sendingEvent.findFirst({
-                                where: {
-                                    leadId: sentEvent.leadId,
-                                    type: 'reply',
-                                    metadata: { contains: parsed.messageId }
-                                }
-                            })
-                            : null
+                        const cleanMessageId = (parsed.messageId || '').replace(/[<>]/g, '').trim()
+                        const existingReply = await prisma.sendingEvent.findFirst({
+                            where: {
+                                leadId: sentEvent.leadId,
+                                type: 'reply',
+                                ...(cleanMessageId ? { metadata: { contains: cleanMessageId } } : {})
+                            }
+                        })
 
                         if (existingReply) {
-                            console.log(`⚡ Reply already recorded (msgId: ${parsed.messageId}), skipping`)
+                            console.log(`⚡ Reply already recorded (msgId: ${cleanMessageId}), skipping`)
                         } else {
+                            const isFirstReplyForLead = sentEvent.lead.status !== 'replied'
                             // Create reply event
                             const bodyText = parsed.text || ''
                             const htmlBody = parsed.html || parsed.textAsHtml || parsed.text || ''
@@ -287,8 +285,7 @@ export async function syncReplies(account: EmailAccount) {
                                         to: getAddressString(parsed.to),
                                         subject: parsed.subject,
                                         date: parsed.date,
-                                        messageId: parsed.messageId,
-                                        // Fallback fields for UI display when details is not rendered
+                                        messageId: cleanMessageId || parsed.messageId,
                                         bodyText: bodyText.slice(0, 500),
                                         snippet: bodyText.slice(0, 200)
                                     }),
@@ -311,11 +308,13 @@ export async function syncReplies(account: EmailAccount) {
                                 })
                             }
 
-                            // Update campaign stats
-                            await prisma.campaign.update({
-                                where: { id: sentEvent.campaignId },
-                                data: { replyCount: { increment: 1 } }
-                            })
+                            // Update campaign stats once per lead
+                            if (isFirstReplyForLead) {
+                                await prisma.campaign.update({
+                                    where: { id: sentEvent.campaignId },
+                                    data: { replyCount: { increment: 1 } }
+                                })
+                            }
 
                             // If stopOnReply is enabled, we could pause the campaign for this lead
                             if (sentEvent.campaign.stopOnReply) {

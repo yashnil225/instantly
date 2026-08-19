@@ -801,3 +801,24 @@ model VerificationResultItem {
   @@index([status])
 }
 
+// Persistent memory for lead status across lead deletions and re-uploads
+model LeadStatusMemory {
+  id              String   @id @default(cuid())
+  email           String
+  campaignId      String
+  workspaceId     String?
+  status          String   // contacted, replied, bounced, unsubscribed, sequence_complete
+  stepReached     Int      @default(1)
+  lastContactedAt DateTime @default(now())
+  metadata        String?  // JSON for extra context
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([email, campaignId], name: "email_campaignId")
+  @@index([email])
+  @@index([campaignId])
+  @@index([workspaceId, email])
+}
+
+

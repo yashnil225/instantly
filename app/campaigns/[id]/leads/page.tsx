@@ -241,7 +241,8 @@ export default function LeadsPage() {
     const completedCount = leads.filter(l => l.status === 'completed' || l.status === 'sequence_complete').length
     const bouncedCount = leads.filter(l => l.status === 'bounced').length
     const repliedCount = leads.filter(l => l.status === 'replied').length
-    const contactedCount = leads.filter(l => l.status === 'contacted' || l.status === 'replied' || l.status === 'completed' || l.status === 'sequence_complete').length
+    const unsubscribedCount = leads.filter(l => l.status === 'unsubscribed').length
+    const contactedCount = leads.filter(l => l.status === 'contacted' || l.status === 'replied' || l.status === 'completed' || l.status === 'sequence_complete' || l.status === 'unsubscribed').length
 
     const getStatusBadge = (status: string) => {
         switch (status) {
@@ -269,9 +270,16 @@ export default function LeadsPage() {
                 )
             case 'replied':
                 return (
-                    <div className="flex items-center gap-1.5 text-purple-400 text-sm">
-                        <CheckCircle className="h-4 w-4" />
+                    <div className="flex items-center gap-1.5 text-pink-400 text-sm">
+                        <Heart className="h-4 w-4 fill-pink-400/20" />
                         <span>Replied</span>
+                    </div>
+                )
+            case 'unsubscribed':
+                return (
+                    <div className="flex items-center gap-1.5 text-purple-400 text-sm">
+                        <AtSign className="h-4 w-4" />
+                        <span>Unsubscribed</span>
                     </div>
                 )
             default:
@@ -308,13 +316,13 @@ export default function LeadsPage() {
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-[#1a1a1a] border-[#333] text-white p-3">
                                     <div className="font-medium">Total number of leads</div>
-                                    <div className="text-gray-400 text-xs">(this value is updated every 5 minutes): {totalLeads}</div>
+                                    <div className="text-gray-400 text-xs">(Total leads in campaign): {totalLeads}</div>
                                 </TooltipContent>
                             </Tooltip>
                             <span className="text-[#333]">|</span>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <span className="flex items-center gap-1 cursor-help"><Mail className="h-3.5 w-3.5" /> {contactedCount}</span>
+                                    <span className="flex items-center gap-1 cursor-help text-blue-400"><Mail className="h-3.5 w-3.5" /> {contactedCount}</span>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-[#1a1a1a] border-[#333] text-white p-3">
                                     <div className="font-medium">Sequence started: {contactedCount}</div>
@@ -324,11 +332,21 @@ export default function LeadsPage() {
                             <span className="text-[#333]">|</span>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <span className="flex items-center gap-1 text-red-400 cursor-help"><Heart className="h-3.5 w-3.5" /> {bouncedCount}</span>
+                                    <span className="flex items-center gap-1 text-pink-400 cursor-help"><Heart className="h-3.5 w-3.5 fill-pink-400/20" /> {repliedCount}</span>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-[#1a1a1a] border-[#333] text-white p-3">
-                                    <div className="font-medium">Number of bounced leads: {bouncedCount}</div>
-                                    <div className="text-gray-400 text-xs">({contactedCount > 0 ? Math.round((bouncedCount / contactedCount) * 100) : 0}% of contacted so far)</div>
+                                    <div className="font-medium">Replied leads: {repliedCount}</div>
+                                    <div className="text-gray-400 text-xs">({contactedCount > 0 ? Math.round((repliedCount / contactedCount) * 100) : 0}% reply rate)</div>
+                                </TooltipContent>
+                            </Tooltip>
+                            <span className="text-[#333]">|</span>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span className="flex items-center gap-1 text-red-400 cursor-help"><XCircle className="h-3.5 w-3.5" /> {bouncedCount}</span>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-[#1a1a1a] border-[#333] text-white p-3">
+                                    <div className="font-medium">Bounced leads: {bouncedCount}</div>
+                                    <div className="text-gray-400 text-xs">({contactedCount > 0 ? Math.round((bouncedCount / contactedCount) * 100) : 0}% bounce rate)</div>
                                 </TooltipContent>
                             </Tooltip>
                             <span className="text-[#333]">|</span>
@@ -337,18 +355,18 @@ export default function LeadsPage() {
                                     <span className="flex items-center gap-1 text-green-400 cursor-help"><CheckCircle className="h-3.5 w-3.5" /> {completedCount}</span>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-[#1a1a1a] border-[#333] text-white p-3">
-                                    <div className="font-medium">Completed leads: {completedCount}</div>
+                                    <div className="font-medium">Sequence Completed: {completedCount}</div>
                                     <div className="text-gray-400 text-xs">({totalLeads > 0 ? Math.round((completedCount / totalLeads) * 100) : 0}% of total leads)</div>
                                 </TooltipContent>
                             </Tooltip>
                             <span className="text-[#333]">|</span>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <span className="flex items-center gap-1 text-purple-400 cursor-help"><AtSign className="h-3.5 w-3.5" /> {repliedCount}</span>
+                                    <span className="flex items-center gap-1 text-purple-400 cursor-help"><AtSign className="h-3.5 w-3.5" /> {unsubscribedCount}</span>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-[#1a1a1a] border-[#333] text-white p-3">
-                                    <div className="font-medium">Unsubscribed: {repliedCount}</div>
-                                    <div className="text-gray-400 text-xs">({totalLeads > 0 ? Math.round((repliedCount / totalLeads) * 100) : 0}% of total leads)</div>
+                                    <div className="font-medium">Unsubscribed leads: {unsubscribedCount}</div>
+                                    <div className="text-gray-400 text-xs">({contactedCount > 0 ? Math.round((unsubscribedCount / contactedCount) * 100) : 0}% unsubscribed rate)</div>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
@@ -396,7 +414,7 @@ export default function LeadsPage() {
                         link.click();
                         document.body.removeChild(link);
                     }}>
-                        <Filter className="h-4 w-4 mr-2 rotate-180" /> {/* Using rotate for export-like icon or just generic */}
+                        <Filter className="h-4 w-4 mr-2 rotate-180" />
                         Export
                     </Button>
                     <div className="relative">
@@ -415,7 +433,7 @@ export default function LeadsPage() {
                         {filterOpen && (
                             <div className="absolute top-10 right-0 w-48 bg-[#1a1a1a] border border-[#333] rounded-lg p-2 z-50">
                                 <div className="text-xs font-semibold text-gray-500 uppercase px-2 py-1 mb-1">Status</div>
-                                {['all', 'completed', 'bounced', 'contacted', 'replied'].map(status => (
+                                {['all', 'new', 'contacted', 'replied', 'bounced', 'completed', 'unsubscribed'].map(status => (
                                     <div
                                         key={status}
                                         className={cn(

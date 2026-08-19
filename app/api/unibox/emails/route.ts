@@ -243,7 +243,9 @@ export async function GET(request: NextRequest) {
                     include: {
                         emailAccount: {
                             select: {
-                                email: true
+                                email: true,
+                                firstName: true,
+                                lastName: true
                             }
                         }
                     }
@@ -260,16 +262,21 @@ export async function GET(request: NextRequest) {
 
         // Transform to email format for Unibox
         const emails = leads.map(lead => {
-            const lastEvent = lead.events[0]
             const replyEvent = lead.events.find(e => e.type === "reply")
             const sentEvent = lead.events.find(e => e.type === "sent")
+            const senderAccount = sentEvent?.emailAccount || lead.events.find(e => e.emailAccount)?.emailAccount
+            const accountEmail = senderAccount?.email || ''
+            const senderAccountName = senderAccount
+                ? `${senderAccount.firstName || ''} ${senderAccount.lastName || ''}`.trim() || senderAccount.email
+                : session?.user?.name || 'You'
+
+            const leadName = `${lead.firstName || ""} ${lead.lastName || ""}`.trim() || lead.email
 
             // Get preview from reply content if available - show full content
             let preview = "Waiting for response"
             if (replyEvent?.details) {
                 preview = replyEvent.details.trim()
             } else if (replyEvent) {
-                // Try extracting body from stored metadata (bodyText or snippet)
                 try {
                     const meta = JSON.parse(replyEvent.metadata || '{}')
                     preview = meta.bodyText?.trim() || meta.snippet?.trim() || "Replied to your email"
@@ -281,10 +288,35 @@ export async function GET(request: NextRequest) {
             // Check if any event has attachments
             const hasAttachment = lead.events.some(e => e.hasAttachment)
 
+            // Map threaded messages in chronological order
+            const messages = lead.events.map(event => {
+                let body = event.details || ''
+                if (!body && event.metadata) {
+                    try {
+                        const meta = JSON.parse(event.metadata)
+                        body = meta.bodyText || meta.snippet || ''
+                    } catch {}
+                }
+                const isSentByMe = event.type === 'sent'
+                const eventSenderName = event.emailAccount
+                    ? `${event.emailAccount.firstName || ''} ${event.emailAccount.lastName || ''}`.trim() || event.emailAccount.email
+                    : senderAccountName
+
+                return {
+                    id: event.id,
+                    type: event.type as 'sent' | 'reply',
+                    subject: event.metadata ? (JSON.parse(event.metadata || '{}').subject || 'Email') : 'Email',
+                    body,
+                    timestamp: event.createdAt,
+                    from: isSentByMe ? eventSenderName : leadName,
+                    to: isSentByMe ? leadName : (event.emailAccount?.email || accountEmail || 'You'),
+                    isMe: isSentByMe
+                }
+            })
+
             return {
                 id: lead.id,
-
-                fromName: `${lead.firstName || ""} ${lead.lastName || ""}`.trim() || lead.email,
+                fromName: leadName,
                 company: lead.company,
                 subject: replyEvent ? "Re: " + (sentEvent?.metadata ? JSON.parse(sentEvent.metadata).subject : "Follow up") : (sentEvent?.metadata ? JSON.parse(sentEvent.metadata).subject : "Follow up"),
                 preview,
@@ -298,10 +330,14 @@ export async function GET(request: NextRequest) {
                 campaign: lead.campaign,
                 hasReply: !!replyEvent,
                 hasAttachment,
-                sentFrom: lastEvent?.emailAccount?.email,
-                from: lastEvent?.type === 'sent' ? lastEvent.emailAccount?.email : lead.email,
-                to: lastEvent?.type === 'sent' ? lead.email : lastEvent?.emailAccount?.email,
-                isMe: lastEvent?.type === 'sent',
+                sentFrom: accountEmail,
+                senderAccountName,
+                from: lead.email,
+                to: accountEmail,
+                recipient: leadName,
+                recipientEmail: lead.email,
+                isMe: false,
+                messages,
                 tags: lead.tags.map(t => t.tag)
             }
         })

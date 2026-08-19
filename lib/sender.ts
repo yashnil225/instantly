@@ -5,6 +5,7 @@ import { calculateWarmupLimit } from './warmup'
 import nodemailer from 'nodemailer'
 import { AutomationFilter } from './replies'
 import { replaceVariables } from './variables'
+import { recordLeadMemory } from './lead-memory'
 
 /** Returns known SMTP defaults for major providers to prevent localhost fallback */
 function getSmtpDefaults(provider: string): { host: string; port: number } | null {
@@ -348,30 +349,14 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 const actualSentToday = await prisma.sendingEvent.count({
                     where: {
                         campaignId: campaign.id,
-                        type: { in: ['sent', 'pending', 'failed', 'delivered', 'bounced'] },
-                        createdAt: { gte: todayUTC }
+                        type: 'sent',
+                        createdAt: { gte: todayUTC },
+                        metadata: { contains: '"step":' }
                     }
                 })
 
                 if (actualSentToday >= campaign.dailyLimit) {
-                    console.warn(`[Sender] Campaign ${campaign.id} reached daily limit (${campaign.dailyLimit}) mid-batch. Automatically pausing.`)
-                    
-                    const tomorrow = new Date()
-                    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1)
-                    tomorrow.setUTCHours(0, 0, 0, 0)
-
-                    await prisma.campaign.update({
-                        where: { id: campaign.id },
-                        data: {
-                            status: 'paused',
-                            settings: JSON.stringify({
-                                ...settings,
-                                autoResumeAt: tomorrow.toISOString(),
-                                autoResumeReason: 'daily_limit'
-                            })
-                        }
-                    })
-                    
+                    console.log(`[Sender] Campaign ${campaign.id} reached daily limit (${campaign.dailyLimit}) for today. Stopping batch for this campaign (will continue tomorrow).`)
                     break
                 }
             }
@@ -413,22 +398,25 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
             if (sentForThisCampaign >= availableAccounts.length * 5) break
 
-            // Determine Next Step
+            // If lead already replied, bounced, or unsubscribed, never email again
+            if (lead.status === 'replied' || lead.status === 'bounced' || lead.status === 'unsubscribed') {
+                continue
+            }
+
+            // Determine Next Step strictly from database sent history
             let nextStepNumber = 1
             let lastEventDate = null
             let previousEvent = null
 
-            if (lead.events.length > 0) {
-                const sentEvents = await prisma.sendingEvent.findMany({
-                    where: { leadId: lead.id, type: 'sent', campaignId: campaign.id },
-                    orderBy: { createdAt: 'desc' }
-                })
-                const sentCount = sentEvents.length
-                nextStepNumber = sentCount + 1
-                if (sentCount > 0) {
-                    lastEventDate = sentEvents[0].createdAt
-                    previousEvent = sentEvents[0]
-                }
+            const sentEvents = await prisma.sendingEvent.findMany({
+                where: { leadId: lead.id, type: 'sent', campaignId: campaign.id },
+                orderBy: { createdAt: 'desc' }
+            })
+            const sentCount = sentEvents.length
+            nextStepNumber = sentCount + 1
+            if (sentCount > 0) {
+                lastEventDate = sentEvents[0].createdAt
+                previousEvent = sentEvents[0]
             }
 
             // Max New Leads per Day Check
@@ -442,6 +430,12 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     await prisma.lead.update({
                         where: { id: lead.id },
                         data: { status: 'sequence_complete', nextSendAt: null }
+                    })
+                    await recordLeadMemory({
+                        campaignId: campaign.id,
+                        email: lead.email,
+                        status: 'sequence_complete',
+                        stepReached: nextStepNumber
                     })
                 }
                 continue
@@ -457,7 +451,11 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 if (diffTime < requiredGapMs) continue
             }
 
-            // Duplicate Prevention
+            // Strict Duplicate Prevention (Never send Step 1 twice, and never send an already queued step)
+            if (nextStepNumber === 1 && sentCount > 0) {
+                continue
+            }
+
             const alreadySent = await prisma.sendingEvent.findFirst({
                 where: {
                     leadId: lead.id,
@@ -751,6 +749,14 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         update: { sent: { increment: 1 } }
                     })
                 ])
+
+                // Record persistent contact state across any future deletions or re-uploads
+                await recordLeadMemory({
+                    campaignId: campaign.id,
+                    email: lead.email,
+                    status: 'contacted',
+                    stepReached: nextStepNumber
+                })
 
                 // Schedule Next Step
                 const nextStep = campaign.sequences[nextStepNumber]

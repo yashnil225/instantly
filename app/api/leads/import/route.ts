@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { getLeadMemoryMap } from '@/lib/lead-memory'
 
 export async function POST(request: Request) {
     const session = await auth()
@@ -56,17 +57,24 @@ export async function POST(request: Request) {
         // Actually, createMany with skipDuplicates is best if supported by DB.
         // Let's iterate for safety and updates.
 
+        const candidateEmails = leads.map((l: any) => (l.email || '').trim().toLowerCase()).filter(Boolean)
+        const memoryMap = await getLeadMemoryMap(campaignId, candidateEmails)
+
         const operations = leads.map((lead: any) => {
+            const rawEmail = (lead.email || '').trim().toLowerCase()
             // Validate email
-            if (!lead.email || !lead.email.includes('@')) {
+            if (!rawEmail || !rawEmail.includes('@')) {
                 errorCount++
                 return null
             }
 
+            const memory = memoryMap.get(rawEmail)
+            const initialStatus = memory?.status && memory.status !== 'new' ? memory.status : 'new'
+
             return prisma.lead.upsert({
                 where: {
                     email_campaignId: {
-                        email: lead.email,
+                        email: rawEmail,
                         campaignId: campaignId
                     }
                 },
@@ -76,18 +84,18 @@ export async function POST(request: Request) {
                     company: lead.companyName || lead.company,
                     website: lead.website,
                     phone: lead.phone,
-                    // Don't overwrite status if already there, unless we want to reset? 
-                    // Usually importing again might mean updating info, not resetting status.
+                    // If this lead was previously contacted in this campaign, preserve that state
+                    ...(memory?.status ? { status: memory.status } : {})
                 },
                 create: {
-                    email: lead.email,
+                    email: rawEmail,
                     firstName: lead.firstName,
                     lastName: lead.lastName,
                     company: lead.companyName || lead.company,
                     website: lead.website,
                     phone: lead.phone,
                     campaignId: campaignId,
-                    status: 'lead'
+                    status: initialStatus
                 }
             })
         }).filter(Boolean) as any[]

@@ -48,6 +48,7 @@ import {
 import { TemplatesModal } from "@/components/app/campaigns/TemplatesModal"
 import { RichEditor } from "@/components/ui/rich-editor"
 import { EmailPreviewModal } from "@/components/app/campaigns/EmailPreviewModal"
+import { SpamInspectorPanel } from "@/components/app/campaigns/SpamInspectorPanel"
 
 // Types matching backend
 interface SequenceVariant {
@@ -104,6 +105,7 @@ export default function SequencesPage() {
 
     // Spam Score State
     const [spamResult, setSpamResult] = useState<SpamCheckResult | null>(null)
+    const [showSpamInspector, setShowSpamInspector] = useState(true)
 
     // Fetch available variables from campaign leads
     useEffect(() => {
@@ -627,23 +629,27 @@ export default function SequencesPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    {/* Spam Score Badge */}
+                                    {/* Spam Score Badge / Inspector Toggle */}
                                     {spamResult && (
-                                        <div className={cn(
-                                            "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border",
-                                            spamResult.grade === 'A' || spamResult.grade === 'B'
-                                                ? "bg-green-900/30 text-green-400 border-green-800/50"
-                                                : spamResult.grade === 'C'
-                                                    ? "bg-yellow-900/30 text-yellow-400 border-yellow-800/50"
-                                                    : "bg-red-900/30 text-red-400 border-red-800/50"
-                                        )}>
+                                        <button
+                                            onClick={() => setShowSpamInspector(!showSpamInspector)}
+                                            className={cn(
+                                                "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer",
+                                                spamResult.grade === 'A' || spamResult.grade === 'B'
+                                                    ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                                                    : spamResult.grade === 'C'
+                                                        ? "bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20"
+                                                        : "bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20"
+                                            )}
+                                            title="Click to toggle Spam & Deliverability Inspector"
+                                        >
                                             {spamResult.passed ? (
                                                 <CheckCircle className="h-3.5 w-3.5" />
                                             ) : (
                                                 <AlertTriangle className="h-3.5 w-3.5" />
                                             )}
-                                            <span>Spam: {spamResult.grade}</span>
-                                        </div>
+                                            <span>Spam: {spamResult.grade} ({spamResult.score}/100)</span>
+                                        </button>
                                     )}
                                     <Button
                                         variant="outline"
@@ -658,6 +664,25 @@ export default function SequencesPage() {
                                     </Button>
                                 </div>
                             </div>
+
+                            {/* Live Spam & Deliverability Inspector Panel */}
+                            {showSpamInspector && spamResult && (
+                                <div className="px-6 py-2 bg-[#080808] border-b border-border/40">
+                                    <SpamInspectorPanel
+                                        result={spamResult}
+                                        subject={activeVariant.subject || ''}
+                                        body={activeVariant.body || ''}
+                                        onApplyFix={(fixedSubject, fixedBody) => {
+                                            updateStep(activeStepIndex, 'variant', fixedSubject, activeStep.activeVariant, 'subject')
+                                            updateStep(activeStepIndex, 'variant', fixedBody, activeStep.activeVariant, 'body')
+                                            toast({
+                                                title: "Spam Words Auto-Fixed ✨",
+                                                description: "Cleaned subject and body with high-deliverability alternatives."
+                                            })
+                                        }}
+                                    />
+                                </div>
+                            )}
 
                             {/* Editor Area with Toolbar */}
                             <div className="flex-1 flex flex-col bg-[#0a0a0a] overflow-hidden">

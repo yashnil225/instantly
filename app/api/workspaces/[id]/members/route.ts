@@ -35,7 +35,11 @@ export async function GET(
         })
 
         const invitations = await prisma.invitation.findMany({
-            where: { workspaceId: id },
+            where: { 
+                workspaceId: id,
+                status: 'pending',
+                expiresAt: { gt: new Date() }
+            },
             orderBy: { createdAt: 'desc' }
         })
 
@@ -60,6 +64,12 @@ export async function POST(
         const body = await request.json()
         const { email, role } = body
 
+        if (!email) {
+            return NextResponse.json({ error: "Email is required" }, { status: 400 })
+        }
+
+        const normalizedEmail = email.toLowerCase().trim()
+
         // Check if user has permission to invite (owner or admin)
         const canInvite = await prisma.workspaceMember.findFirst({
             where: {
@@ -78,7 +88,7 @@ export async function POST(
         }
 
         // Check if user already exists
-        const existingUser = await prisma.user.findUnique({ where: { email } })
+        const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })
 
         if (existingUser) {
             // Check if already a member
@@ -106,18 +116,29 @@ export async function POST(
             })
             return NextResponse.json(member)
         } else {
-            // Create invitation
-            // For now, simpler implementation: just return success mock since we don't have email sending
-            // But we will save to DB
-
-            const invitation = await prisma.invitation.create({
-                data: {
-                    email,
+            // Create or update existing invitation
+            const invitation = await prisma.invitation.upsert({
+                where: {
+                    workspaceId_email: {
+                        workspaceId: id,
+                        email: normalizedEmail
+                    }
+                },
+                create: {
+                    email: normalizedEmail,
                     workspaceId: id,
                     role: role || 'member',
                     token: Math.random().toString(36).substring(7),
                     inviterId: session.user.id,
+                    status: 'pending',
                     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+                },
+                update: {
+                    role: role || 'member',
+                    token: Math.random().toString(36).substring(7),
+                    inviterId: session.user.id,
+                    status: 'pending',
+                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
                 }
             })
 
@@ -125,6 +146,81 @@ export async function POST(
         }
     } catch (error) {
         console.error("Failed to invite member:", error)
+        return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    }
+}
+
+export async function DELETE(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id } = await params
+    const session = await auth()
+    if (!session?.user?.id) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    try {
+        const { searchParams } = new URL(request.url)
+        const memberId = searchParams.get("memberId")
+        const invitationId = searchParams.get("invitationId")
+
+        // Check if user has permission (owner or admin)
+        const canManage = await prisma.workspaceMember.findFirst({
+            where: {
+                workspaceId: id,
+                userId: session.user.id,
+                role: { in: ["owner", "admin"] }
+            }
+        })
+
+        const isOwner = await prisma.workspace.findFirst({
+            where: { id: id, userId: session.user.id }
+        })
+
+        if (!canManage && !isOwner) {
+            return NextResponse.json({ error: "Unauthorized to manage members" }, { status: 403 })
+        }
+
+        if (memberId) {
+            const member = await prisma.workspaceMember.findUnique({
+                where: { id: memberId }
+            })
+
+            if (!member || member.workspaceId !== id) {
+                return NextResponse.json({ error: "Member not found in this workspace" }, { status: 404 })
+            }
+
+            if (member.role === "owner") {
+                return NextResponse.json({ error: "Cannot remove workspace owner" }, { status: 400 })
+            }
+
+            await prisma.workspaceMember.delete({
+                where: { id: memberId }
+            })
+
+            return NextResponse.json({ success: true, message: "Member removed" })
+        }
+
+        if (invitationId) {
+            const invitation = await prisma.invitation.findUnique({
+                where: { id: invitationId }
+            })
+
+            if (!invitation || invitation.workspaceId !== id) {
+                return NextResponse.json({ error: "Invitation not found in this workspace" }, { status: 404 })
+            }
+
+            await prisma.invitation.delete({
+                where: { id: invitationId }
+            })
+
+            return NextResponse.json({ success: true, message: "Invitation revoked" })
+        }
+
+        return NextResponse.json({ error: "Missing memberId or invitationId" }, { status: 400 })
+    } catch (error) {
+        console.error("Failed to delete member or invitation:", error)
         return NextResponse.json({ error: "Internal server error" }, { status: 500 })
     }
 }

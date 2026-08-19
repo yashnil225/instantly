@@ -103,8 +103,46 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         }
                     })
                     console.log(`[NextAuth] Created default workspace for user ${user.id}`)
+
+                    // Auto-claim pending invitations if email exists
+                    if (user.email) {
+                        const normalizedEmail = user.email.toLowerCase().trim()
+                        const pendingInvitations = await prisma.invitation.findMany({
+                            where: {
+                                email: normalizedEmail,
+                                status: "pending",
+                                expiresAt: { gt: new Date() }
+                            }
+                        })
+
+                        for (const invite of pendingInvitations) {
+                            const existingMember = await prisma.workspaceMember.findUnique({
+                                where: {
+                                    workspaceId_userId: {
+                                        workspaceId: invite.workspaceId,
+                                        userId: user.id
+                                    }
+                                }
+                            })
+
+                            if (!existingMember) {
+                                await prisma.workspaceMember.create({
+                                    data: {
+                                        workspaceId: invite.workspaceId,
+                                        userId: user.id,
+                                        role: invite.role || "member"
+                                    }
+                                })
+                            }
+
+                            await prisma.invitation.update({
+                                where: { id: invite.id },
+                                data: { status: "accepted" }
+                            })
+                        }
+                    }
                 } catch (error) {
-                    console.error(`[NextAuth] Failed to create workspace for new user ${user.id}:`, error)
+                    console.error(`[NextAuth] Failed to create workspace/process invites for new user ${user.id}:`, error)
                 }
             }
         }

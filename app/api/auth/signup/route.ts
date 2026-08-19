@@ -14,9 +14,11 @@ export async function POST(request: Request) {
             )
         }
 
+        const normalizedEmail = email.toLowerCase().trim()
+
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
-            where: { email }
+            where: { email: normalizedEmail }
         })
 
         if (existingUser) {
@@ -29,12 +31,12 @@ export async function POST(request: Request) {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        // Create user and default workspace in a transaction
+        // Create user and default workspace in a transaction, and process any pending invitations
         const result = await prisma.$transaction(async (tx) => {
             const newUser = await tx.user.create({
                 data: {
                     name,
-                    email,
+                    email: normalizedEmail,
                     password: hashedPassword,
                 }
             })
@@ -53,6 +55,43 @@ export async function POST(request: Request) {
                     }
                 }
             })
+
+            // Find all pending invitations for this email
+            const pendingInvitations = await tx.invitation.findMany({
+                where: {
+                    email: normalizedEmail,
+                    status: "pending",
+                    expiresAt: { gt: new Date() }
+                }
+            })
+
+            // Add user as member to all workspaces they were invited to
+            for (const invite of pendingInvitations) {
+                const existingMember = await tx.workspaceMember.findUnique({
+                    where: {
+                        workspaceId_userId: {
+                            workspaceId: invite.workspaceId,
+                            userId: newUser.id
+                        }
+                    }
+                })
+
+                if (!existingMember) {
+                    await tx.workspaceMember.create({
+                        data: {
+                            workspaceId: invite.workspaceId,
+                            userId: newUser.id,
+                            role: invite.role || "member"
+                        }
+                    })
+                }
+
+                // Mark invitation as accepted
+                await tx.invitation.update({
+                    where: { id: invite.id },
+                    data: { status: "accepted" }
+                })
+            }
 
             return { user: newUser, workspace }
         })

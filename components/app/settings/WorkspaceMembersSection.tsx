@@ -135,6 +135,38 @@ export function WorkspaceMembersSection({ workspaceId }: { workspaceId: string }
         }
     }
 
+    const handleRemoveMember = async (memberId: string) => {
+        try {
+            const res = await fetch(`/api/workspaces/${workspaceId}/members?memberId=${memberId}`, {
+                method: 'DELETE'
+            })
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.error || "Failed to remove member")
+            }
+            toast({ title: "Member removed", description: "The member has been removed from this workspace" })
+            fetchData()
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" })
+        }
+    }
+
+    const handleRevokeInvite = async (invitationId: string) => {
+        try {
+            const res = await fetch(`/api/workspaces/${workspaceId}/members?invitationId=${invitationId}`, {
+                method: 'DELETE'
+            })
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.error || "Failed to revoke invitation")
+            }
+            toast({ title: "Invitation revoked", description: "The invitation has been cancelled" })
+            fetchData()
+        } catch (error: any) {
+            toast({ title: "Error", description: error.message, variant: "destructive" })
+        }
+    }
+
     if (loading) return <div className="p-8 text-center text-gray-500">Loading workspace details...</div>
 
     return (
@@ -241,7 +273,12 @@ export function WorkspaceMembersSection({ workspaceId }: { workspaceId: string }
                                 </div>
                                 <div className="text-right">
                                     {member.role !== 'owner' && (
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-red-500 hover:bg-[#2a1a1a]">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={() => handleRemoveMember(member.id)}
+                                            className="h-8 w-8 text-gray-500 hover:text-red-500 hover:bg-[#2a1a1a]"
+                                        >
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     )}
@@ -268,7 +305,14 @@ export function WorkspaceMembersSection({ workspaceId }: { workspaceId: string }
                                             </span>
                                         </div>
                                         <div className="text-right">
-                                            <Button variant="ghost" size="sm" className="text-gray-400">Revoke</Button>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                onClick={() => handleRevokeInvite(invite.id)}
+                                                className="text-gray-400 hover:text-red-400"
+                                            >
+                                                Revoke
+                                            </Button>
                                         </div>
                                     </div>
                                 ))}

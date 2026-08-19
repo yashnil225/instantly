@@ -84,7 +84,10 @@ export async function sendWarmupReply(
             host: config.host,
             port: config.port,
             secure: config.port === 465,
-            auth: { user: config.user, pass: config.pass }
+            auth: { user: config.user, pass: config.pass },
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000
         })
 
         // Extract sender name from email

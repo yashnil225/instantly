@@ -56,7 +56,15 @@ async function runReplyCheck() {
                     data: { lastSyncedAt: new Date() }
                 })
 
-                const result = await syncAccountInbox(account, guard)
+                const syncPromise = syncAccountInbox(account, guard)
+                const ceilingPromise = new Promise<{ replies: number; bounces: number; sentSynced: number }>((resolve) =>
+                    setTimeout(() => {
+                        console.warn(`[check-replies] Hard 18s ceiling reached for ${account.email}, yielding safely`)
+                        resolve({ replies: 0, bounces: 0, sentSynced: 0 })
+                    }, 18000)
+                )
+
+                const result = await Promise.race([syncPromise, ceilingPromise])
                 totalReplies += result.replies
                 totalBounces += result.bounces
                 console.log(`[check-replies] ${account.email}: +${result.replies} replies, +${result.bounces} bounces, +${result.sentSynced} sent synced`)

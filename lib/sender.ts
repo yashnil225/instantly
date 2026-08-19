@@ -43,7 +43,7 @@ function injectTracking(html: string, eventId: string, baseUrl: string, trackLin
 
 export async function processBatch(options: { filter?: AutomationFilter } = {}) {
     const startTime = Date.now()
-    const TIMEOUT_SAFETY_MARGIN = 48 * 1000 // 48 seconds to aggressively avoid 60s Vercel limit
+    const TIMEOUT_SAFETY_MARGIN = 20 * 1000 // 20 seconds safety margin to aggressively avoid 60s Vercel limit
 
     const { filter } = options
     console.log("Starting batch processing...")
@@ -688,7 +688,10 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     host: smtpHost,
                     port: smtpPort,
                     secure: smtpPort === 465,
-                    auth: { user: account.smtpUser || account.email, pass: account.smtpPass! }
+                    auth: { user: account.smtpUser || account.email, pass: account.smtpPass! },
+                    connectionTimeout: 8000,
+                    greetingTimeout: 8000,
+                    socketTimeout: 10000
                 })
 
                 const senderName = `${account.firstName || ''} ${account.lastName || ''}`.trim() || account.email

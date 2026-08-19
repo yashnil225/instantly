@@ -20,6 +20,9 @@ export async function createTransporter(config: EmailConfig) {
             user: config.user,
             pass: config.pass,
         },
+        connectionTimeout: 8000,
+        greetingTimeout: 8000,
+        socketTimeout: 10000,
     })
 }
 

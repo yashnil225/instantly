@@ -86,8 +86,22 @@ export async function GET(
         // Extract campaigns from the join table
         const campaigns = (account.campaignAccounts as any[])?.map((ca: any) => ca.campaign) || []
 
+        // Live sent today count from SendingEvent
+        const todayUTCStart = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+        const actualSendsToday = await prisma.sendingEvent.count({
+            where: {
+                emailAccountId: id,
+                type: 'sent',
+                createdAt: { gte: todayUTCStart },
+                metadata: { contains: '"step":' }
+            }
+        })
+        const liveSentToday = Math.max(account.sentToday || 0, actualSendsToday)
+
         return NextResponse.json({
             ...account,
+            sentToday: liveSentToday,
+            emailsSent: liveSentToday,
             warmupStats,
             chartData,
             warmupStarted,
@@ -139,6 +153,8 @@ export async function PATCH(
 
         // Campaign settings
         if (body.dailyLimit !== undefined) updateData.dailyLimit = parseInt(body.dailyLimit)
+        else if (body.emailsLimit !== undefined) updateData.dailyLimit = parseInt(body.emailsLimit)
+
         if (body.minWaitTime !== undefined) updateData.minWaitTime = parseInt(body.minWaitTime)
         if (body.slowRamp !== undefined) updateData.slowRamp = body.slowRamp
 
@@ -148,6 +164,7 @@ export async function PATCH(
         }
         if (body.warmupTag !== undefined) updateData.warmupTag = body.warmupTag
         if (body.warmupDailyLimit !== undefined) updateData.warmupDailyLimit = parseInt(body.warmupDailyLimit)
+        else if (body.warmupEmailsLimit !== undefined) updateData.warmupDailyLimit = parseInt(body.warmupEmailsLimit)
         if (body.warmupMaxPerDay !== undefined) updateData.warmupMaxPerDay = parseInt(body.warmupMaxPerDay)
         if (body.warmupReplyRate !== undefined) updateData.warmupReplyRate = parseInt(body.warmupReplyRate)
         if (body.warmupDailyIncrease !== undefined) updateData.warmupDailyIncrease = parseInt(body.warmupDailyIncrease)

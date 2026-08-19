@@ -29,33 +29,43 @@ export async function GET(request: Request) {
 }
 
 async function runWarmupTasks() {
-    // 45s guard = 15s buffer before Hobby 60s hard kill
-    // Extra headroom needed because a single in-flight SMTP send can take 5-10s after the guard trips.
-    const guard = createTimeoutGuard(45_000)
+    // 20s guard = 40s buffer before Hobby 60s hard kill
+    const guard = createTimeoutGuard(20_000)
 
     // Rotate through phases: 1 → 2 → 3 → 1 → ...
     lastPhase = (lastPhase % 3) + 1
     const phase = lastPhase
 
-    console.log(`[Warmup] Running phase ${phase}/3 (50s budget)...`)
+    console.log(`[Warmup] Running phase ${phase}/3 (20s budget)...`)
 
     try {
-        switch (phase) {
-            case 1:
-                await sendWarmupEmails(guard)
-                console.log(`[Warmup] Phase 1 (send) done (${guard.elapsedSec()}s)`)
-                break
+        const phasePromise = (async () => {
+            switch (phase) {
+                case 1:
+                    await sendWarmupEmails(guard)
+                    console.log(`[Warmup] Phase 1 (send) done (${guard.elapsedSec()}s)`)
+                    break
 
-            case 2:
-                const poolResults = await runPoolWarmupCycle(guard)
-                console.log(`[Warmup] Phase 2 (pool) done — Sent ${poolResults.sent}, Errors ${poolResults.errors} (${guard.elapsedSec()}s)`)
-                break
+                case 2:
+                    const poolResults = await runPoolWarmupCycle(guard)
+                    console.log(`[Warmup] Phase 2 (pool) done — Sent ${poolResults.sent}, Errors ${poolResults.errors} (${guard.elapsedSec()}s)`)
+                    break
 
-            case 3:
-                await processWarmupMaintenance(guard)
-                console.log(`[Warmup] Phase 3 (maintenance) done (${guard.elapsedSec()}s)`)
-                break
-        }
+                case 3:
+                    await processWarmupMaintenance(guard)
+                    console.log(`[Warmup] Phase 3 (maintenance) done (${guard.elapsedSec()}s)`)
+                    break
+            }
+        })()
+
+        const ceilingPromise = new Promise<void>((resolve) =>
+            setTimeout(() => {
+                console.warn(`[Warmup] Hard 22s ceiling reached in phase ${phase}, exiting safely`)
+                resolve()
+            }, 22000)
+        )
+
+        await Promise.race([phasePromise, ceilingPromise])
     } catch (error: any) {
         console.error(`[Warmup] Phase ${phase} failed:`, error?.message || error)
     }

@@ -99,31 +99,56 @@ export async function GET(request: Request) {
         prisma.emailAccount.count({ where: whereClause })
     ])
 
+    const todayUTCStart = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+
+    // Get live actual sends today per account
+    const todayEvents = await prisma.sendingEvent.groupBy({
+        by: ['emailAccountId'],
+        where: {
+            createdAt: { gte: todayUTCStart },
+            type: 'sent',
+            metadata: { contains: '"step":' }
+        },
+        _count: { id: true }
+    })
+
+    const sentCountMap = new Map<string, number>()
+    for (const ev of todayEvents) {
+        if (ev.emailAccountId) {
+            sentCountMap.set(ev.emailAccountId, ev._count.id)
+        }
+    }
+
     // Transform to match frontend interface
-    const transformedAccounts = accounts.map(acc => ({
-        id: acc.id,
-        email: acc.email,
-        status: acc.status as "active" | "paused" | "error" | "warmup",
-        emailsSent: acc.sentToday || 0,
-        emailsLimit: acc.dailyLimit || 300,
-        dailyLimit: acc.dailyLimit || 300,
-        warmupEmails: acc.warmupSentToday || 0,
-        warmupEmailsLimit: acc.warmupDailyLimit || 50,
-        warmupDailyLimit: acc.warmupDailyLimit || 50,
-        healthScore: acc.healthScore || 100,
-        hasError: acc.status === 'error',
-        isWarming: acc.warmupEnabled || false,
-        isDFY: false, // TODO: Add DFY tracking
-        isInCampaign: acc.campaignAccounts.length > 0,
-        hasCustomDomain: !!acc.provider,
-        trackingDomainEnabled: acc.trackingDomainEnabled,
-        customDomain: acc.customDomain,
-        firstName: acc.firstName,
-        lastName: acc.lastName,
-        signature: acc.signature,
-        tags: acc.tags.map(t => t.tag), // Flatten relation
-        workspaces: acc.workspaces // Include workspace assignments
-    }))
+    const transformedAccounts = accounts.map(acc => {
+        const actualSent = sentCountMap.get(acc.id) || 0
+        const displaySent = Math.max(acc.sentToday || 0, actualSent)
+
+        return {
+            id: acc.id,
+            email: acc.email,
+            status: acc.status as "active" | "paused" | "error" | "warmup",
+            emailsSent: displaySent,
+            emailsLimit: acc.dailyLimit || 300,
+            dailyLimit: acc.dailyLimit || 300,
+            warmupEmails: acc.warmupSentToday || 0,
+            warmupEmailsLimit: acc.warmupDailyLimit || 50,
+            warmupDailyLimit: acc.warmupDailyLimit || 50,
+            healthScore: acc.healthScore || 100,
+            hasError: acc.status === 'error',
+            isWarming: acc.warmupEnabled || false,
+            isDFY: false,
+            isInCampaign: acc.campaignAccounts.length > 0,
+            hasCustomDomain: !!acc.provider,
+            trackingDomainEnabled: acc.trackingDomainEnabled,
+            customDomain: acc.customDomain,
+            firstName: acc.firstName,
+            lastName: acc.lastName,
+            signature: acc.signature,
+            tags: acc.tags.map(t => t.tag),
+            workspaces: acc.workspaces
+        }
+    })
 
     return NextResponse.json({
         accounts: transformedAccounts,

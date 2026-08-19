@@ -141,7 +141,10 @@ export async function sendPoolWarmupEmail(
             host: sender.smtpHost,
             port: sender.smtpPort,
             secure: sender.smtpPort === 465,
-            auth: { user: sender.smtpUser, pass: sender.smtpPass }
+            auth: { user: sender.smtpUser, pass: sender.smtpPass },
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000
         })
 
         // Select random template type and content

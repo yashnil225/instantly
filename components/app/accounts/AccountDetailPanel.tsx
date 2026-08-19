@@ -412,17 +412,12 @@ export function AccountDetailPanel({ account, onClose, onUpdate }: AccountDetail
 
     // Actually perform the save API call
     const performSave = async () => {
-        // Validate: warmupDailyLimit should not exceed dailyLimit
+        // Auto-clamp: warmupDailyLimit cannot exceed dailyLimit
         const dailyLimitValue = dailyLimit === "" ? (account?.dailyLimit || 300) : (parseInt(dailyLimit) || 300)
-        const warmupLimitValue = warmupDailyLimit === "" ? (account?.warmupDailyLimit || 50) : (parseInt(warmupDailyLimit) || 50)
+        let warmupLimitValue = warmupDailyLimit === "" ? (account?.warmupDailyLimit || 50) : (parseInt(warmupDailyLimit) || 50)
         
         if (warmupLimitValue > dailyLimitValue) {
-            toast({ 
-                title: "Invalid Warmup Limit", 
-                description: `Warmup limit (${warmupLimitValue}) cannot exceed daily sending limit (${dailyLimitValue}).`,
-                variant: "destructive" 
-            })
-            return
+            warmupLimitValue = dailyLimitValue
         }
 
         setSaving(true)

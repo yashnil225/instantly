@@ -3,8 +3,8 @@ import { simpleParser, Source } from 'mailparser'
 import { prisma } from '@/lib/prisma'
 import type { EmailAccount } from '@prisma/client'
 
-const RETRY_ATTEMPTS = 3
-const RETRY_DELAYS = [2000, 4000, 8000] // More conservative backoff: 2s, 4s, 8s
+const RETRY_ATTEMPTS = 2
+const RETRY_DELAYS = [1000, 2000]
 
 const TRANSIENT_ERRORS = ['ECONNRESET', 'ETIMEDOUT', 'ENETUNREACH', 'ECONNREFUSED', 'EAI_AGAIN', 'socket hang up', 'read ECONNRESET', 'timed out']
 const PERMANENT_ERRORS = ['EAUTH', 'ENOTFOUND', 'Authentication', 'invalid credentials', 'Invalid credentials', 'BadCredentials', 'Username and Password not accepted']
@@ -36,7 +36,7 @@ const endImap = (imapConnection: Imap) => {
         const timeout = setTimeout(() => {
             imapConnection.destroy()
             resolve()
-        }, 5000)
+        }, 2000)
 
         imapConnection.once('end', () => {
             clearTimeout(timeout)
@@ -71,14 +71,12 @@ async function withRetry<T>(
             lastError = error
 
             if (isPermanentError(error)) {
-                // Only log error for permanent failures
                 console.error(`[IMAP] Permanent error for ${accountEmail} (${operationName}):`, error.message || error)
                 throw error
             }
 
             if (isTransientError(error)) {
                 const delay = RETRY_DELAYS[attempt] || RETRY_DELAYS[RETRY_DELAYS.length - 1]
-                // Log as warning for retries, not error
                 console.warn(`[IMAP] Connection blip for ${accountEmail} (${operationName}), retry ${attempt + 1}/${RETRY_ATTEMPTS} in ${delay}ms...`)
 
                 if (attempt < RETRY_ATTEMPTS - 1) {
@@ -105,7 +103,7 @@ export async function syncAccountInbox(
     const inboxResult = await withRetry(async (attempt) => {
         if (attempt === 0) {
             // Small jitter
-            await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 1000)))
+            await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 300)))
         }
 
         return new Promise<{ replies: number, bounces: number }>((resolve, reject) => {
@@ -119,8 +117,8 @@ export async function syncAccountInbox(
                     rejectUnauthorized: false,
                     minVersion: 'TLSv1.2'
                 },
-                connTimeout: 20000, // Increased for serverless cold-starts
-                authTimeout: 20000,
+                connTimeout: 8000,
+                authTimeout: 8000,
                 keepalive: false
             })
 
@@ -129,9 +127,9 @@ export async function syncAccountInbox(
             let isResolved = false
 
             const hardTimeout = setTimeout(() => {
-                console.warn(`[INBOX] Hard timeout (12s) reached for ${account.email}, forcing safe resolve`)
+                console.warn(`[INBOX] Hard timeout (8s) reached for ${account.email}, forcing safe resolve`)
                 safeResolve()
-            }, 12000)
+            }, 8000)
 
             const safeReject = async (err: any) => {
                 if (isResolved) return
@@ -439,8 +437,8 @@ async function syncSentFolder(account: EmailAccount, guard?: { isTimedOut: () =>
                 port: account.imapPort || 993,
                 tls: true,
                 tlsOptions: { rejectUnauthorized: false, minVersion: 'TLSv1.2' },
-                connTimeout: 10000,
-                authTimeout: 10000,
+                connTimeout: 6000,
+                authTimeout: 6000,
                 keepalive: false
             })
 
@@ -448,9 +446,9 @@ async function syncSentFolder(account: EmailAccount, guard?: { isTimedOut: () =>
             let isResolved = false
 
             const hardTimeout = setTimeout(() => {
-                console.warn(`[SENT] Hard timeout (10s) reached for ${account.email}, forcing safe end`)
+                console.warn(`[SENT] Hard timeout (6s) reached for ${account.email}, forcing safe end`)
                 safeEnd()
-            }, 10000)
+            }, 6000)
 
             const safeEnd = async (err?: Error) => {
                 if (isResolved) return

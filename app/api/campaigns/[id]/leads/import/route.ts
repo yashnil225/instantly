@@ -117,21 +117,70 @@ export async function POST(
         let invalidSkipped = 0
         let leadsToInsert = validCandidates
 
-        // --- Inline In-Memory Verification (If Toggled) ---
-        // Runs in server memory with 0 DB bloat and never touches verifier history
+        // --- Database-First Verification (If Toggled) ---
+        // Checks local database cache first (0ms) and saves new results directly to DB
         if (verifyBeforeImport) {
+            const candidateEmails = validCandidates.map(l => l.email.toLowerCase())
+            const dbCacheMap = new Map<string, { status: string; isValid: boolean }>()
+
+            try {
+                const [cachedResults, cachedLeads] = await Promise.all([
+                    prisma.verificationResultItem.findMany({
+                        where: { email: { in: candidateEmails } },
+                        select: { email: true, status: true }
+                    }),
+                    prisma.lead.findMany({
+                        where: { email: { in: candidateEmails } },
+                        select: { email: true, status: true }
+                    })
+                ])
+
+                for (const item of cachedResults) {
+                    dbCacheMap.set(item.email.toLowerCase(), {
+                        status: item.status,
+                        isValid: item.status === 'valid'
+                    })
+                }
+
+                for (const lead of cachedLeads) {
+                    const em = lead.email.toLowerCase()
+                    if (!dbCacheMap.has(em)) {
+                        if (lead.status === 'replied' || lead.status === 'contacted' || lead.status === 'sequence_complete') {
+                            dbCacheMap.set(em, { status: 'valid', isValid: true })
+                        } else if (lead.status === 'bounced') {
+                            dbCacheMap.set(em, { status: 'invalid', isValid: false })
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Import DB verification cache pre-fetch warning:', err)
+            }
+
             const verifiedLeads: any[] = []
-            const CHUNK_SIZE = 15
+            const newVerifiedToStore: any[] = []
+            const CHUNK_SIZE = 25
 
             for (let i = 0; i < validCandidates.length; i += CHUNK_SIZE) {
                 const chunk = validCandidates.slice(i, i + CHUNK_SIZE)
                 const results = await Promise.all(
                     chunk.map(async (lead) => {
+                        const em = lead.email.toLowerCase()
+                        if (dbCacheMap.has(em)) {
+                            return { lead, isValid: dbCacheMap.get(em)!.isValid }
+                        }
                         try {
                             const res = await verifyEmail(lead.email)
+                            newVerifiedToStore.push({
+                                email: lead.email,
+                                status: res.status,
+                                reason: res.reason,
+                                score: res.score,
+                                rowData: JSON.stringify(lead),
+                                jobId: 'import-inline'
+                            })
                             return { lead, isValid: res.status === 'valid' }
                         } catch {
-                            return { lead, isValid: true } // Safe fallback on unexpected error
+                            return { lead, isValid: true }
                         }
                     })
                 )
@@ -143,6 +192,23 @@ export async function POST(
                         invalidSkipped++
                     }
                 }
+            }
+
+            // Save any newly verified items to DB for future 0ms instant cache hits
+            if (newVerifiedToStore.length > 0) {
+                try {
+                    // Create verification job placeholder if not exists or skip jobId
+                    await prisma.verificationResultItem.createMany({
+                        data: newVerifiedToStore.map(item => ({
+                            email: item.email,
+                            status: item.status,
+                            reason: item.reason,
+                            score: item.score,
+                            rowData: item.rowData,
+                            jobId: 'import-cache'
+                        }))
+                    }).catch(() => {})
+                } catch {}
             }
 
             leadsToInsert = verifiedLeads
@@ -216,50 +282,48 @@ export async function POST(
             if (memory && memory.status && memory.status !== 'new' && memory.status !== 'lead') {
                 memoryRestoredCount++
                 return {
-                    ...lead,
+                    email: lead.email,
+                    firstName: lead.firstName || '',
+                    lastName: lead.lastName || '',
+                    company: lead.company || '',
+                    customFields: typeof lead.customFields === 'string' ? lead.customFields : lead.customFields ? JSON.stringify(lead.customFields) : null,
+                    campaignId,
                     status: memory.status,
-                    nextSendAt: null // Never auto-send from step 1 if previously contacted
+                    nextSendAt: null
                 }
             }
             return {
-                ...lead,
-                status: 'new'
+                email: lead.email,
+                firstName: lead.firstName || '',
+                lastName: lead.lastName || '',
+                company: lead.company || '',
+                customFields: typeof lead.customFields === 'string' ? lead.customFields : lead.customFields ? JSON.stringify(lead.customFields) : null,
+                campaignId,
+                status: 'new',
+                nextSendAt: null
             }
         })
 
-        // Bulk insert in batches
+        // Efficient bulk insert in chunks of 500 with createMany (Zero RAM accumulation)
         const BATCH_SIZE = 500
-        const createdLeads: any[] = []
+        let totalInserted = 0
 
         for (let i = 0; i < leadsWithStatus.length; i += BATCH_SIZE) {
             const batch = leadsWithStatus.slice(i, i + BATCH_SIZE)
-
-            const batchResult = await prisma.$transaction(
-                batch.map(lead => prisma.lead.create({
-                    data: {
-                        email: lead.email,
-                        firstName: lead.firstName,
-                        lastName: lead.lastName,
-                        company: lead.company,
-                        customFields: typeof lead.customFields === 'string' ? lead.customFields : lead.customFields ? JSON.stringify(lead.customFields) : null,
-                        campaignId,
-                        status: lead.status,
-                        nextSendAt: lead.nextSendAt !== undefined ? lead.nextSendAt : undefined
-                    }
-                }))
-            )
-
-            createdLeads.push(...batchResult)
+            const result = await prisma.lead.createMany({
+                data: batch
+            })
+            totalInserted += result.count
         }
 
-        const messageParts = [`Imported ${createdLeads.length} valid leads.`]
+        const messageParts = [`Imported ${totalInserted} valid leads.`]
         if (duplicateCount > 0) messageParts.push(`${duplicateCount} duplicates skipped.`)
         if (invalidSkipped > 0) messageParts.push(`${invalidSkipped} invalid emails dropped.`)
         if (memoryRestoredCount > 0) messageParts.push(`${memoryRestoredCount} previously-contacted statuses restored.`)
 
         return NextResponse.json({
             success: true,
-            count: createdLeads.length,
+            count: totalInserted,
             duplicatesSkipped: duplicateCount,
             invalidSkipped,
             memoryRestoredCount,

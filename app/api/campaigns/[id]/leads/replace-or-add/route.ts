@@ -173,37 +173,35 @@ export async function POST(
             }
         })
 
-        // 5. Bulk insert in batches
+        // 5. Bulk insert in batches with createMany (Zero RAM accumulation)
         const BATCH_SIZE = 500
-        const insertedLeads: any[] = []
+        let totalInserted = 0
 
         for (let i = 0; i < leadsWithStatus.length; i += BATCH_SIZE) {
             const batch = leadsWithStatus.slice(i, i + BATCH_SIZE)
-            const result = await prisma.$transaction(
-                batch.map(lead => prisma.lead.create({
-                    data: {
-                        email: lead.email,
-                        firstName: lead.firstName || null,
-                        lastName: lead.lastName || null,
-                        company: lead.company || null,
-                        customFields: lead.customFields || null,
-                        campaignId,
-                        status: lead.status,
-                        nextSendAt: lead.nextSendAt !== undefined ? lead.nextSendAt : undefined
-                    }
+            const result = await prisma.lead.createMany({
+                data: batch.map(lead => ({
+                    email: lead.email,
+                    firstName: lead.firstName || '',
+                    lastName: lead.lastName || '',
+                    company: lead.company || '',
+                    customFields: lead.customFields || null,
+                    campaignId,
+                    status: lead.status,
+                    nextSendAt: lead.nextSendAt !== undefined ? lead.nextSendAt : undefined
                 }))
-            )
-            insertedLeads.push(...result)
+            })
+            totalInserted += result.count
         }
 
-        const messageParts = [`Successfully ${action === 'replace' ? 'replaced & ' : ''}added ${insertedLeads.length} valid leads into "${campaign.name}".`]
+        const messageParts = [`Successfully ${action === 'replace' ? 'replaced & ' : ''}added ${totalInserted} valid leads into "${campaign.name}".`]
         if (duplicatesSkipped > 0) messageParts.push(`${duplicatesSkipped} duplicates skipped.`)
         if (replacedCount > 0) messageParts.push(`${replacedCount} unverified leads replaced.`)
         if (memoryRestoredCount > 0) messageParts.push(`${memoryRestoredCount} previously-contacted lead statuses restored.`)
 
         return NextResponse.json({
             success: true,
-            importedCount: insertedLeads.length,
+            importedCount: totalInserted,
             duplicatesSkipped,
             replacedCount,
             memoryRestoredCount,

@@ -702,8 +702,8 @@ ${selectedEmail.body || selectedEmail.preview}
                         // Aggressive deduplication by body content to fix UI duplicates
                         const bodyContent = body.trim()
                         if (bodyContent) {
-                            // Strip HTML tags for comparison to avoid whitespace/formatting differences
-                            const strippedBody = bodyContent.replace(/<[^>]*>/g, '').trim()
+                            // Strip HTML tags and entities for comparison to avoid whitespace/formatting differences
+                            const strippedBody = bodyContent.replace(/<[^>]*>/g, '').replace(/&[a-z0-9#]+;/gi, '').replace(/\s+/g, ' ').trim()
                             const dedupeKey = `${e.type}_${strippedBody}`
                             if (seenBodies.has(dedupeKey)) return
                             seenBodies.add(dedupeKey)

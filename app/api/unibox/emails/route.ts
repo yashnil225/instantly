@@ -313,8 +313,13 @@ export async function GET(request: NextRequest) {
             // Check if any event has attachments
             const hasAttachment = lead.events.some(e => e.hasAttachment)
 
-            // Map threaded messages in chronological order
-            const messages = lead.events.map(event => {
+            // Map threaded messages in chronological order, deduplicating any duplicate sent records
+            const messages: any[] = []
+            const seenMessageKeys = new Set<string>()
+
+            for (const event of lead.events) {
+                if (event.type !== 'sent' && event.type !== 'reply') continue
+
                 let body = event.details || ''
                 if (!body && event.metadata) {
                     try {
@@ -322,12 +327,24 @@ export async function GET(request: NextRequest) {
                         body = meta.bodyText || meta.snippet || ''
                     } catch {}
                 }
+
+                // Deduplicate identical content for same event type
+                const normalizedText = body
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/&[a-z0-9#]+;/gi, '')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+
+                const dedupeKey = `${event.type}_${normalizedText}`
+                if (normalizedText && seenMessageKeys.has(dedupeKey)) continue
+                if (normalizedText) seenMessageKeys.add(dedupeKey)
+
                 const isSentByMe = event.type === 'sent'
                 const eventSenderName = event.emailAccount
                     ? `${event.emailAccount.firstName || ''} ${event.emailAccount.lastName || ''}`.trim() || event.emailAccount.email
                     : senderAccountName
 
-                return {
+                messages.push({
                     id: event.id,
                     type: event.type as 'sent' | 'reply',
                     subject: event.metadata ? (JSON.parse(event.metadata || '{}').subject || 'Email') : 'Email',
@@ -336,8 +353,8 @@ export async function GET(request: NextRequest) {
                     from: isSentByMe ? eventSenderName : leadName,
                     to: isSentByMe ? leadName : (event.emailAccount?.email || accountEmail || 'You'),
                     isMe: isSentByMe
-                }
-            })
+                })
+            }
 
             return {
                 id: lead.id,

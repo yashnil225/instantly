@@ -507,10 +507,18 @@ async function syncSentFolder(account: EmailAccount, guard?: { isTimedOut: () =>
                                                     })
 
                                                     if (lead) {
-                                                        // Duplicate guard: skip if already tracked by messageId
+                                                        // Duplicate guard: skip if already tracked by messageId or metadata
+                                                        const cleanMsgId = parsed.messageId ? parsed.messageId.replace(/[<>]/g, '').trim() : ''
                                                         const existing = parsed.messageId
                                                             ? await prisma.sendingEvent.findFirst({
-                                                                where: { metadata: { contains: parsed.messageId } }
+                                                                where: {
+                                                                    OR: [
+                                                                        { messageId: parsed.messageId },
+                                                                        ...(cleanMsgId ? [{ messageId: cleanMsgId }] : []),
+                                                                        { metadata: { contains: parsed.messageId } },
+                                                                        ...(cleanMsgId ? [{ metadata: { contains: cleanMsgId } }] : [])
+                                                                    ]
+                                                                }
                                                             })
                                                             : null
 

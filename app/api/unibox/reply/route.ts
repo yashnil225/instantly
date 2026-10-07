@@ -83,7 +83,15 @@ export async function POST(request: Request) {
         }
 
         // 3. Send Reply
-        if (!account.smtpHost || !account.smtpPort) {
+        let smtpDefaults = null;
+        const providerStr = account.provider?.toLowerCase() || '';
+        if (providerStr === 'google') smtpDefaults = { host: 'smtp.gmail.com', port: 587 };
+        else if (providerStr === 'microsoft' || providerStr === 'outlook') smtpDefaults = { host: 'smtp.office365.com', port: 587 };
+
+        const smtpHost = account.smtpHost || smtpDefaults?.host;
+        const smtpPort = account.smtpPort || smtpDefaults?.port || 587;
+
+        if (!smtpHost) {
             return NextResponse.json({ 
                 error: 'Email account SMTP credentials not configured. Please reconnect or configure SMTP settings for this account.' 
             }, { status: 400 })
@@ -91,10 +99,10 @@ export async function POST(request: Request) {
 
         const nodemailer = (await import('nodemailer')).default
         const transporter = nodemailer.createTransport({
-            host: account.smtpHost,
-            port: account.smtpPort,
-            secure: account.smtpPort === 465,
-            auth: { user: account.smtpUser || '', pass: account.smtpPass || '' }
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
+            auth: { user: account.smtpUser || account.email, pass: account.smtpPass || '' }
         })
 
         // Fetch attachments if any

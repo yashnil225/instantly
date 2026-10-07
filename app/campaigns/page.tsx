@@ -38,8 +38,8 @@ import { WorkspaceDropdown } from "@/components/app/workspace/WorkspaceDropdown"
 import { WorkspaceManagerModal } from "@/components/app/workspace/WorkspaceManagerModal"
 import { DeleteConfirmationDialog } from "@/components/app/workspace/DeleteConfirmationDialog"
 import { useWorkspaces } from "@/contexts/WorkspaceContext"
-
 import { useToast } from "@/components/ui/use-toast"
+import { ResumeCampaignModal } from "@/components/app/campaigns/ResumeCampaignModal"
 
 // Wrapper component with Suspense for useSearchParams
 export default function CampaignsPageWithSuspense() {
@@ -63,6 +63,9 @@ function CampaignsPage() {
     const [expandedCampaignId, setExpandedCampaignId] = useState<string | null>(null)
     const [isCreating, setIsCreating] = useState(false)
     const [selectedTags, setSelectedTags] = useState<string[]>([])
+    const [togglingId, setTogglingId] = useState<string | null>(null)
+    const [resumeModalOpen, setResumeModalOpen] = useState(false)
+    const [campaignToResume, setCampaignToResume] = useState<any>(null)
 
     // URL state persistence
     const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "")
@@ -245,35 +248,37 @@ function CampaignsPage() {
         }
     }
 
-    const updateCampaignStatus = async (id: string, currentStatus: string) => {
-        // Normalize status check
-        const isCurrentlyActive = currentStatus.toLowerCase() === 'active'
-        const newStatus = isCurrentlyActive ? 'paused' : 'active'
+    const updateCampaignStatus = async (id: string, currentStatus: string, campaignObj?: any) => {
+        const isCurrentlyActive = currentStatus?.toLowerCase() === 'active'
 
-        // Always redirect to launch page for activation to perform checks
-        if (newStatus === 'active') {
-            router.push(`/campaigns/${id}/launch`)
+        // If currently active, clicking pause pauses directly with immediate feedback
+        if (isCurrentlyActive) {
+            setTogglingId(id)
+            try {
+                const res = await fetch(`/api/campaigns/${id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'paused' })
+                })
+                if (res.ok) {
+                    setCampaigns(prev => prev.map(c => c.id === id ? { ...c, status: 'paused' } : c))
+                    toast({ title: "Campaign Paused", description: "Campaign is now paused." })
+                } else {
+                    throw new Error("Failed to pause campaign")
+                }
+            } catch (error: any) {
+                toast({ title: "Error", description: error.message || "Failed to pause campaign", variant: "destructive" })
+            } finally {
+                setTogglingId(null)
+            }
             return
         }
 
-        try {
-            const res = await fetch(`/api/campaigns/${id}`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
-            })
-            if (res.ok) {
-                // Refresh list
-                const updatedCampaigns = campaigns.map(c =>
-                    c.id === id ? { ...c, status: newStatus } : c
-                )
-                setCampaigns(updatedCampaigns)
-                toast({ title: "Status updated", description: `Campaign is now ${newStatus}` })
-            } else {
-                throw new Error("Failed to update status")
-            }
-        } catch (error) {
-            toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
+        // If paused, draft, or error: open the pre-flight stats modal without leaving the page!
+        const target = campaignObj || campaigns.find(c => c.id === id)
+        if (target) {
+            setCampaignToResume(target)
+            setResumeModalOpen(true)
         }
     }
 
@@ -955,13 +960,17 @@ function CampaignsPage() {
                                         <Button
                                             variant="ghost"
                                             size="icon"
-                                            className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
-                                            onClick={() => updateCampaignStatus(campaign.id, campaign.status)}
+                                            disabled={togglingId === campaign.id}
+                                            className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0 transition-all"
+                                            onClick={() => updateCampaignStatus(campaign.id, campaign.status, campaign)}
+                                            title={campaign.status === "active" ? "Pause campaign" : "Resume campaign"}
                                         >
-                                            {campaign.status === "active" ? (
-                                                <Pause className="h-4 w-4 fill-current" />
+                                            {togglingId === campaign.id ? (
+                                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                            ) : campaign.status === "active" ? (
+                                                <Pause className="h-4 w-4 fill-current text-yellow-500" />
                                             ) : (
-                                                <Play className="h-4 w-4 fill-current" />
+                                                <Play className="h-4 w-4 fill-current text-green-500" />
                                             )}
                                         </Button>
                                         <DropdownMenu>
@@ -1321,6 +1330,22 @@ function CampaignsPage() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Unified Resume Campaign Modal with Pre-flight Metrics */}
+            {campaignToResume && (
+                <ResumeCampaignModal
+                    open={resumeModalOpen}
+                    onOpenChange={setResumeModalOpen}
+                    campaignId={campaignToResume.id}
+                    campaignName={campaignToResume.name}
+                    campaignStatus={campaignToResume.status}
+                    initialLeadsCount={campaignToResume._count?.leads}
+                    dailyLimit={campaignToResume.dailyLimit}
+                    onSuccess={() => {
+                        setCampaigns(prev => prev.map(c => c.id === campaignToResume.id ? { ...c, status: 'active' } : c))
+                    }}
+                />
+            )}
         </div >
     )
 }

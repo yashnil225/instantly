@@ -769,6 +769,15 @@ ${selectedEmail.body || selectedEmail.preview}
     const handleSendReply = async () => {
         if (!selectedEmail || !replyBody.trim()) return
 
+        if (replyMode === 'forward' && !forwardTo.trim()) {
+            toast({
+                title: "Recipient required",
+                description: "Please enter an email address in the 'To:' field to forward this email.",
+                variant: "destructive"
+            })
+            return
+        }
+
         pendingReplyRef.current = { emailId: selectedEmail.id, body: replyBody, mode: replyMode, forwardTo, forwardSubject }
         setIsUndoVisible(true)
         setReplyMode(null)
@@ -813,14 +822,20 @@ ${selectedEmail.body || selectedEmail.preview}
         try {
             let res
             if (params.mode === 'forward') {
+                const leadId = selectedEmail?.leadId || selectedEmail?.id
+                const campaignId = selectedEmail?.campaign?.id
+
                 res = await fetch('/api/emails/forward', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         emailId: params.emailId,
+                        leadId,
+                        campaignId,
                         to: params.forwardTo,
                         subject: params.forwardSubject,
-                        body: params.body
+                        body: params.body,
+                        attachmentIds: uploadedAttachmentIds
                     })
                 })
             } else {

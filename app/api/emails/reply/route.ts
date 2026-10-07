@@ -103,11 +103,20 @@ export async function POST(request: Request) {
             : `Re: ${originalSubject}`
 
         // 5. Send Email
+        let smtpDefaults = null
+        const providerStr = sendingAccount.provider?.toLowerCase() || ''
+        const emailLower = sendingAccount.email?.toLowerCase() || ''
+        if (providerStr === 'google' || emailLower.includes('@gmail.com')) {
+            smtpDefaults = { host: 'smtp.gmail.com', port: 587 }
+        } else if (providerStr === 'microsoft' || providerStr === 'outlook' || emailLower.includes('@outlook.com')) {
+            smtpDefaults = { host: 'smtp.office365.com', port: 587 }
+        }
+
         const info = await sendEmail({
             config: {
-                host: sendingAccount.smtpHost || '',
-                port: sendingAccount.smtpPort || 587,
-                user: sendingAccount.smtpUser || '',
+                host: sendingAccount.smtpHost || smtpDefaults?.host || '',
+                port: sendingAccount.smtpPort || smtpDefaults?.port || 587,
+                user: sendingAccount.smtpUser || sendingAccount.email,
                 pass: sendingAccount.smtpPass || '',
                 inReplyTo,
                 references

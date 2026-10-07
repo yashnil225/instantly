@@ -857,11 +857,16 @@ ${selectedEmail.body || selectedEmail.preview}
                     loadEmailBody(selectedEmail)
                 }
             } else {
-                toast({ title: "Error", description: "Failed to send email. Please try again.", variant: "destructive" })
+                let errorMsg = "Failed to send email. Please try again."
+                try {
+                    const data = await res.json()
+                    if (data.error) errorMsg = data.error
+                } catch (e) {}
+                toast({ title: "Error", description: errorMsg, variant: "destructive" })
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to send email:', error)
-            toast({ title: "Error", description: "Failed to send email", variant: "destructive" })
+            toast({ title: "Error", description: error.message || "Failed to send email", variant: "destructive" })
         } finally {
             setSendingReply(false)
             pendingReplyRef.current = null

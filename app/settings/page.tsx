@@ -22,13 +22,18 @@ export default async function SettingsPage() {
 
     if (!user) return redirect("/login")
 
-    // Attempt to find the first workspace for the user (similar to WorkspacePage logic)
+    // Find the primary/first workspace for the user (owned or member)
     const firstWorkspace = await prisma.workspace.findFirst({
         where: {
-            members: {
-                some: { userId: session.user.id }
-            }
-        }
+            OR: [
+                { userId: session.user.id },
+                { members: { some: { userId: session.user.id } } }
+            ]
+        },
+        orderBy: [
+            { isDefault: 'desc' },
+            { createdAt: 'asc' }
+        ]
     })
 
     return <SettingsOnePageView user={user} workspaceId={firstWorkspace?.id || null} />

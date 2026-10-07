@@ -4,6 +4,34 @@ import { auth } from '@/auth'
 
 export const dynamic = 'force-dynamic'
 
+async function verifyLeadAccess(userId: string, leadId: string) {
+    const lead = await prisma.lead.findUnique({
+        where: { id: leadId },
+        include: {
+            campaign: {
+                include: {
+                    campaignWorkspaces: {
+                        include: {
+                            workspace: {
+                                include: {
+                                    members: { where: { userId } }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
+    if (!lead) return null
+    const isOwner = lead.campaign.userId === userId
+    const isWsMember = lead.campaign.campaignWorkspaces.some(
+        cw => cw.workspace.userId === userId || cw.workspace.members.length > 0
+    )
+    if (!isOwner && !isWsMember) return null
+    return lead
+}
+
 // GET single lead
 export async function GET(
     request: Request,
@@ -16,6 +44,11 @@ export async function GET(
     }
 
     try {
+        const authorizedLead = await verifyLeadAccess(session.user.id, leadId)
+        if (!authorizedLead) {
+            return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+        }
+
         const lead = await prisma.lead.findUnique({
             where: { id: leadId },
             include: {
@@ -31,10 +64,6 @@ export async function GET(
                 }
             }
         })
-
-        if (!lead) {
-            return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
-        }
 
         return NextResponse.json(lead)
     } catch (error) {
@@ -54,6 +83,11 @@ export async function PATCH(
     }
 
     try {
+        const authorizedLead = await verifyLeadAccess(session.user.id, leadId)
+        if (!authorizedLead) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         const body = await request.json()
         const { aiLabel, campaignId, isRead, status } = body
 
@@ -91,14 +125,9 @@ export async function DELETE(
     }
 
     try {
-        // Get lead email before deletion
-        const lead = await prisma.lead.findUnique({
-            where: { id: leadId },
-            select: { email: true }
-        })
-
-        if (!lead) {
-            return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
+        const authorizedLead = await verifyLeadAccess(session.user.id, leadId)
+        if (!authorizedLead) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
 
         // Delete the lead
@@ -109,12 +138,12 @@ export async function DELETE(
         // Add to Blocklist
         await prisma.blocklist.create({
             data: {
-                email: lead.email,
+                email: authorizedLead.email,
                 reason: "Deleted via Unibox"
             }
         })
 
-        return NextResponse.json({ success: true, deletedEmail: lead.email, blocked: true })
+        return NextResponse.json({ success: true, deletedEmail: authorizedLead.email, blocked: true })
     } catch (error: any) {
         // Handle race condition where lead was already deleted
         if (error.code === 'P2025') {

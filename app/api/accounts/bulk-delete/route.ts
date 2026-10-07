@@ -19,15 +19,31 @@ export async function POST(request: Request) {
             )
         }
 
-        await prisma.emailAccount.deleteMany({
+        // Find workspaces where user is owner or admin
+        const userWorkspaces = await prisma.workspace.findMany({
+            where: {
+                OR: [
+                    { userId: session.user.id },
+                    { members: { some: { userId: session.user.id, role: { in: ['owner', 'admin'] } } } }
+                ]
+            },
+            select: { id: true }
+        })
+        const authorizedWorkspaceIds = userWorkspaces.map(w => w.id)
+
+        const deleteResult = await prisma.emailAccount.deleteMany({
             where: {
                 id: {
                     in: ids
-                }
+                },
+                OR: [
+                    { userId: session.user.id },
+                    { workspaces: { some: { workspaceId: { in: authorizedWorkspaceIds } } } }
+                ]
             }
         })
 
-        return NextResponse.json({ success: true, deleted: ids.length })
+        return NextResponse.json({ success: true, deleted: deleteResult.count })
     } catch (error) {
         console.error('Bulk delete error:', error)
         return NextResponse.json(

@@ -27,16 +27,37 @@ export async function GET(request: Request) {
         const tagsParam = searchParams.get('tags')
         const tagIds = tagsParam ? tagsParam.split(',') : []
 
-        const where: any = {}
+        // Fetch accessible workspaces
+        const userWorkspaces = await prisma.workspace.findMany({
+            where: {
+                OR: [
+                    { userId: session.user.id },
+                    { members: { some: { userId: session.user.id } } }
+                ]
+            },
+            select: { id: true }
+        })
+        const accessibleWorkspaceIds = userWorkspaces.map(w => w.id)
 
-        if (workspaceId && workspaceId !== 'all') {
-            where.campaign = {
+        if (workspaceId && workspaceId !== 'all' && !accessibleWorkspaceIds.includes(workspaceId)) {
+            return NextResponse.json({ leads: [], total: 0 })
+        }
+
+        const campaignFilter = (workspaceId && workspaceId !== 'all')
+            ? {
                 campaignWorkspaces: {
-                    some: {
-                        workspaceId: workspaceId
-                    }
+                    some: { workspaceId }
                 }
             }
+            : {
+                OR: [
+                    { userId: session.user.id },
+                    { campaignWorkspaces: { some: { workspaceId: { in: accessibleWorkspaceIds } } } }
+                ]
+            }
+
+        const where: any = {
+            campaign: campaignFilter
         }
 
         if (search) {

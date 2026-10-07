@@ -23,19 +23,39 @@ export async function GET(request: NextRequest) {
         // Get workspace filter
         const workspaceId = searchParams.get('workspaceId')
 
+        // Fetch user's accessible workspaces
+        const userWorkspaces = await prisma.workspace.findMany({
+            where: {
+                OR: [
+                    { userId: session.user.id },
+                    { members: { some: { userId: session.user.id } } }
+                ]
+            },
+            select: { id: true }
+        })
+        const accessibleWorkspaceIds = userWorkspaces.map(w => w.id)
+
+        if (workspaceId && workspaceId !== 'all' && !accessibleWorkspaceIds.includes(workspaceId)) {
+            return NextResponse.json([])
+        }
+
+        const campaignFilter = (workspaceId && workspaceId !== 'all')
+            ? {
+                campaignWorkspaces: {
+                    some: { workspaceId }
+                }
+            }
+            : {
+                OR: [
+                    { userId: session.user.id },
+                    { campaignWorkspaces: { some: { workspaceId: { in: accessibleWorkspaceIds } } } }
+                ]
+            }
+
         // Build filter conditions
         const where: any = {
             type: 'reply',
-            campaign: {
-                // Filter by workspace if specified
-                ...(workspaceId && workspaceId !== 'all' ? {
-                    campaignWorkspaces: {
-                        some: {
-                            workspaceId: workspaceId
-                        }
-                    }
-                } : {})
-            }
+            campaign: campaignFilter
         }
 
         // Filter by Campaign

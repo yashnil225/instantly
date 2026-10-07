@@ -204,6 +204,31 @@ export async function POST(request: Request) {
 
         const { workspaceIds } = body
 
+        // Fetch user's accessible workspaces
+        const userWorkspaces = await prisma.workspace.findMany({
+            where: {
+                OR: [
+                    { userId: session.user.id },
+                    { members: { some: { userId: session.user.id } } }
+                ]
+            },
+            select: { id: true, isDefault: true }
+        })
+        const accessibleWsIds = userWorkspaces.map(w => w.id)
+
+        let targetWsIds: string[] = []
+        if (workspaceIds && Array.isArray(workspaceIds) && workspaceIds.length > 0) {
+            targetWsIds = workspaceIds.filter((id: string) => accessibleWsIds.includes(id))
+        }
+
+        // If no workspace provided or valid, attach to user's default workspace
+        if (targetWsIds.length === 0) {
+            const defaultWs = userWorkspaces.find(w => w.isDefault) || userWorkspaces[0]
+            if (defaultWs) {
+                targetWsIds = [defaultWs.id]
+            }
+        }
+
         const account = await prisma.emailAccount.create({
             data: {
                 userId: session.user.id,
@@ -220,10 +245,9 @@ export async function POST(request: Request) {
                 imapUser,
                 imapPass,
                 status: 'active',
-                // Assign to workspace(s) if provided
-                ...(workspaceIds && workspaceIds.length > 0 && {
+                ...(targetWsIds.length > 0 && {
                     workspaces: {
-                        create: workspaceIds.map((workspaceId: string) => ({
+                        create: targetWsIds.map((workspaceId: string) => ({
                             workspaceId
                         }))
                     }

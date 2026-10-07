@@ -6,12 +6,46 @@ import { prisma } from "@/lib/prisma"
 export async function POST(req: Request) {
     try {
         const session = await auth()
-        if (!session?.user?.email) {
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
         const body = await req.json()
         const { action, emailId, leadId, data } = body
+
+        if (leadId) {
+            const leadCheck = await prisma.lead.findUnique({
+                where: { id: leadId },
+                include: {
+                    campaign: {
+                        include: {
+                            campaignWorkspaces: {
+                                include: {
+                                    workspace: {
+                                        include: {
+                                            members: { where: { userId: session.user.id } }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+
+            if (!leadCheck) {
+                return NextResponse.json({ error: "Lead not found" }, { status: 404 })
+            }
+
+            const isOwner = leadCheck.campaign.userId === session.user.id
+            const isWsMember = leadCheck.campaign.campaignWorkspaces.some(
+                cw => cw.workspace.userId === session.user.id || cw.workspace.members.length > 0
+            )
+
+            if (!isOwner && !isWsMember) {
+                return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+            }
+        }
 
         switch (action) {
             case "mark-unread":

@@ -132,13 +132,17 @@ export default function EmailVerifierPage() {
                     const res = await fetch("/api/verify/process-chunk", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ jobId, batchSize: 25 })
+                        body: JSON.stringify({ jobId, batchSize: 50 })
                     })
 
                     if (!res.ok) {
                         consecutiveErrors++
-                        if (consecutiveErrors >= 4) break
-                        await new Promise(r => setTimeout(r, 800))
+                        if (consecutiveErrors >= 8) {
+                            console.error(`Verification chunk aborted after ${consecutiveErrors} consecutive errors`)
+                            break
+                        }
+                        const backoff = Math.min(1000 * Math.pow(1.4, consecutiveErrors), 6000)
+                        await new Promise(r => setTimeout(r, backoff))
                         continue
                     }
 
@@ -156,8 +160,12 @@ export default function EmailVerifierPage() {
                     await new Promise(r => setTimeout(r, 30))
                 } catch (e) {
                     consecutiveErrors++
-                    if (consecutiveErrors >= 4) break
-                    await new Promise(r => setTimeout(r, 800))
+                    if (consecutiveErrors >= 8) {
+                        console.error(`Verification chunk network failure after ${consecutiveErrors} attempts`, e)
+                        break
+                    }
+                    const backoff = Math.min(1000 * Math.pow(1.4, consecutiveErrors), 6000)
+                    await new Promise(r => setTimeout(r, backoff))
                 }
             }
         } finally {
@@ -360,7 +368,7 @@ export default function EmailVerifierPage() {
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight">Email Verifier</h1>
                             <p className="text-sm text-muted-foreground">
-                                100% Free Built-in NeverBounce Engine • Saved in DB (Max 30 jobs FIFO)
+                                High-Speed Deliverability Engine • Stored in Database (Max 30 jobs)
                             </p>
                         </div>
                     </div>
@@ -741,7 +749,7 @@ export default function EmailVerifierPage() {
                                     </div>
                                     <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/30">
                                         {singleResult.hasMx ? <Check className="h-4 w-4 text-emerald-500" /> : <X className="h-4 w-4 text-rose-500" />}
-                                        <span className="truncate">MX: {singleResult.mxHost || "No MX Found"}</span>
+                                        <span className="truncate">MX: {singleResult.hasMx ? (singleResult.mxHost || "Active Server") : "No MX Found"}</span>
                                     </div>
                                     <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/30">
                                         {!singleResult.isDisposable ? <Check className="h-4 w-4 text-emerald-500" /> : <X className="h-4 w-4 text-rose-500" />}

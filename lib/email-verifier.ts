@@ -75,8 +75,12 @@ const DISPOSABLE_DOMAINS = new Set([
 
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/
 
+// Public high-reliability DNS resolvers to prevent local OS DNS refusal/timeouts
+const publicResolver = new dns.promises.Resolver()
+publicResolver.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4'])
+
 /**
- * Fast DNS MX resolution with caching & ultra-short 500ms timeout
+ * Fast DNS MX resolution with caching, public resolver, and strict MX requirement
  */
 async function getDomainMx(domain: string): Promise<dns.MxRecord[]> {
     const cached = mxCache.get(domain)
@@ -85,28 +89,30 @@ async function getDomainMx(domain: string): Promise<dns.MxRecord[]> {
     }
 
     try {
-        const resolveMxPromise = dns.promises.resolveMx(domain)
+        // Try public high-speed DNS resolver first with 1200ms budget
+        const resolvePromise = publicResolver.resolveMx(domain)
         const timeoutPromise = new Promise<dns.MxRecord[]>((_, reject) =>
-            setTimeout(() => reject(new Error('DNS timeout')), 500)
+            setTimeout(() => reject(new Error('DNS timeout')), 1200)
         )
-        const records = await Promise.race([resolveMxPromise, timeoutPromise])
+        const records = await Promise.race([resolvePromise, timeoutPromise])
         records.sort((a, b) => a.priority - b.priority)
         mxCache.set(domain, { mxRecords: records, timestamp: Date.now() })
         return records
     } catch {
         try {
-            const resolveAPromise = dns.promises.resolve4(domain)
-            const aTimeout = new Promise<string[]>((_, reject) =>
-                setTimeout(() => reject(new Error('DNS timeout')), 300)
+            // Fallback to system DNS resolver
+            const sysPromise = dns.promises.resolveMx(domain)
+            const timeoutPromise = new Promise<dns.MxRecord[]>((_, reject) =>
+                setTimeout(() => reject(new Error('DNS timeout')), 800)
             )
-            const aRecords = await Promise.race([resolveAPromise, aTimeout])
-            if (aRecords.length > 0) {
-                const fallbackMx = [{ exchange: domain, priority: 10 }]
-                mxCache.set(domain, { mxRecords: fallbackMx, timestamp: Date.now() })
-                return fallbackMx
-            }
-        } catch {}
-        return []
+            const records = await Promise.race([sysPromise, timeoutPromise])
+            records.sort((a, b) => a.priority - b.priority)
+            mxCache.set(domain, { mxRecords: records, timestamp: Date.now() })
+            return records
+        } catch {
+            // No MX record exists -> Cannot receive email
+            return []
+        }
     }
 }
 
@@ -194,63 +200,6 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
     // Typo suggestion
     const suggestedFix = TYPO_MAP[domain] ? `${localPart}@${TYPO_MAP[domain]}` : undefined
 
-    // --- Step 2: Database Cache Pre-Check (Zero Latency & 0 Timeout Risk) ---
-    try {
-        const dbResult = await prisma.verificationResultItem.findFirst({
-            where: { email: lowerEmail },
-            select: { status: true, reason: true, score: true },
-            orderBy: { id: 'desc' }
-        })
-        if (dbResult) {
-            return {
-                email,
-                status: dbResult.status as any,
-                reason: dbResult.reason || 'Verified from database cache',
-                score: dbResult.score || (dbResult.status === 'valid' ? 98 : dbResult.status === 'risky' ? 70 : 0),
-                isSyntaxValid: true,
-                isDisposable: dbResult.status === 'disposable',
-                isRoleBased: false,
-                isFreeProvider: FREE_PROVIDERS.has(domain),
-                hasMx: dbResult.status !== 'invalid',
-                checkedAt: now
-            }
-        }
-
-        const dbLead = await prisma.lead.findFirst({
-            where: { email: lowerEmail },
-            select: { status: true }
-        })
-        if (dbLead) {
-            if (dbLead.status === 'replied' || dbLead.status === 'contacted' || dbLead.status === 'sequence_complete') {
-                return {
-                    email,
-                    status: 'valid',
-                    reason: 'Verified active deliverable lead (DB cache)',
-                    score: 99,
-                    isSyntaxValid: true,
-                    isDisposable: false,
-                    isRoleBased: false,
-                    isFreeProvider: FREE_PROVIDERS.has(domain),
-                    hasMx: true,
-                    checkedAt: now
-                }
-            } else if (dbLead.status === 'bounced') {
-                return {
-                    email,
-                    status: 'invalid',
-                    reason: 'Known bounced lead (DB cache)',
-                    score: 0,
-                    isSyntaxValid: true,
-                    isDisposable: false,
-                    isRoleBased: false,
-                    isFreeProvider: FREE_PROVIDERS.has(domain),
-                    hasMx: false,
-                    checkedAt: now
-                }
-            }
-        }
-    } catch {}
-
     // --- Step 3: Disposable Check ---
     const isDisposable = DISPOSABLE_DOMAINS.has(domain) || domain.includes('tempmail') || domain.includes('throwaway') || domain.includes('disposable')
     if (isDisposable) {
@@ -291,77 +240,94 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
         }
     }
 
-    const primaryMx = mxRecords[0].exchange.toLowerCase()
+    const primaryMx = (mxRecords[0]?.exchange || '').toLowerCase().trim()
 
-    // --- Step 4: Direct HTTPS Provider Mailbox Probing (Zero Blocked Ports) ---
-    // A. Microsoft 365 / Outlook Probe
-    if (primaryMx.includes('outlook.com') || primaryMx.includes('protection.outlook.com') || domain === 'hotmail.com' || domain === 'outlook.com') {
-        const msProbe = await probeMicrosoftMailbox(email)
-        if (msProbe.checked) {
-            if (msProbe.exists === true) {
-                return {
-                    email,
-                    status: isRoleBased ? 'risky' : 'valid',
-                    reason: isRoleBased ? 'Role-based email on Microsoft 365' : 'Mailbox active & verified on Microsoft 365',
-                    score: isRoleBased ? 80 : 99,
-                    isSyntaxValid: true,
-                    isDisposable: false,
-                    isRoleBased,
-                    isFreeProvider,
-                    hasMx: true,
-                    mxHost: primaryMx,
-                    suggestedFix,
-                    checkedAt: now
-                }
-            } else if (msProbe.exists === false) {
-                return {
-                    email,
-                    status: 'invalid',
-                    reason: 'Mailbox does not exist on Microsoft 365 (User Not Found)',
-                    score: 0,
-                    isSyntaxValid: true,
-                    isDisposable: false,
-                    isRoleBased,
-                    isFreeProvider,
-                    hasMx: true,
-                    mxHost: primaryMx,
-                    suggestedFix,
-                    checkedAt: now
-                }
-            }
+    // RFC 7505 Null MX Check (Domains that explicitly reject all incoming emails)
+    if (!primaryMx || primaryMx === '.' || primaryMx === '0.0.0.0' || primaryMx === '127.0.0.1' || primaryMx.includes('localhost')) {
+        return {
+            email,
+            status: 'invalid',
+            reason: 'Domain explicitly rejects all incoming email (Null MX RFC 7505)',
+            score: 0,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased,
+            isFreeProvider,
+            hasMx: false,
+            suggestedFix,
+            checkedAt: now
         }
     }
 
-    // B. Google Workspace / Gmail Probe
+    // --- Step 4: Provider-Specific MX Recognition & Deliverability Scoring ---
+    let providerName = 'Custom Mail Server'
+    let deliverabilityScore = 95
+
     if (primaryMx.includes('google.com') || primaryMx.includes('googlemail.com') || domain === 'gmail.com') {
-        const gProbe = await probeGoogleMailbox(email)
-        if (gProbe.checked && gProbe.exists === true) {
-            return {
-                email,
-                status: isRoleBased ? 'risky' : 'valid',
-                reason: isRoleBased ? 'Role-based email on Google Workspace' : 'Mailbox active & verified on Google Workspace',
-                score: isRoleBased ? 80 : 99,
-                isSyntaxValid: true,
-                isDisposable: false,
-                isRoleBased,
-                isFreeProvider,
-                hasMx: true,
-                mxHost: primaryMx,
-                suggestedFix,
-                checkedAt: now
-            }
+        providerName = 'Google Workspace'
+        deliverabilityScore = 99
+    } else if (primaryMx.includes('outlook.com') || primaryMx.includes('protection.outlook.com') || domain === 'hotmail.com' || domain === 'outlook.com') {
+        providerName = 'Microsoft 365'
+        deliverabilityScore = 99
+    } else if (primaryMx.includes('yahoodns.net') || domain.includes('yahoo')) {
+        providerName = 'Yahoo Mail'
+        deliverabilityScore = 92
+    } else if (primaryMx.includes('zoho.com') || primaryMx.includes('zoho.in')) {
+        providerName = 'Zoho Mail'
+        deliverabilityScore = 96
+    } else if (primaryMx.includes('apple.com') || primaryMx.includes('icloud.com')) {
+        providerName = 'Apple iCloud'
+        deliverabilityScore = 95
+    } else if (primaryMx.includes('protonmail.ch') || primaryMx.includes('proton.me')) {
+        providerName = 'ProtonMail'
+        deliverabilityScore = 95
+    }
+
+    // Role-based on free provider penalty (e.g. admin@gmail.com, support@yahoo.com)
+    if (isRoleBased && isFreeProvider) {
+        return {
+            email,
+            status: 'risky',
+            reason: `Role-based address on free provider (${local}@${domain})`,
+            score: 65,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: true,
+            isFreeProvider: true,
+            hasMx: true,
+            mxHost: primaryMx,
+            suggestedFix,
+            checkedAt: now
         }
     }
 
-    // --- Step 5: General MX Deliverability ---
+    // General Role-Based email on corporate domain (e.g. info@company.com)
+    if (isRoleBased) {
+        return {
+            email,
+            status: 'risky',
+            reason: `Role-based address on ${providerName} (Higher spam complaint rate)`,
+            score: 75,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: true,
+            isFreeProvider,
+            hasMx: true,
+            mxHost: primaryMx,
+            suggestedFix,
+            checkedAt: now
+        }
+    }
+
+    // --- Step 5: High Deliverability Valid Mailbox ---
     return {
         email,
-        status: isRoleBased ? 'risky' : 'valid',
-        reason: isRoleBased ? 'Role-based email address (e.g. info@, sales@)' : 'Valid syntax & active mail exchange servers verified',
-        score: isRoleBased ? 75 : 92,
+        status: 'valid',
+        reason: `Active mail exchange verified on ${providerName}`,
+        score: isFreeProvider ? 90 : deliverabilityScore,
         isSyntaxValid: true,
         isDisposable: false,
-        isRoleBased,
+        isRoleBased: false,
         isFreeProvider,
         hasMx: true,
         mxHost: primaryMx,

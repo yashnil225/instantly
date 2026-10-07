@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 
+async function canUserManageAgencyWorkspace(userId: string, workspaceId: string): Promise<boolean> {
+    const ws = await prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        include: {
+            members: {
+                where: { userId, role: { in: ['owner', 'admin'] } }
+            }
+        }
+    })
+    if (!ws) return false
+    return ws.userId === userId || ws.members.length > 0
+}
+
 // GET agency settings
 export async function GET(request: NextRequest) {
     const session = await auth()
@@ -14,6 +27,11 @@ export async function GET(request: NextRequest) {
 
     if (!workspaceId) {
         return NextResponse.json({ error: 'workspaceId required' }, { status: 400 })
+    }
+
+    const allowed = await canUserManageAgencyWorkspace(session.user.id, workspaceId)
+    if (!allowed) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     // Get or create agency settings
@@ -50,6 +68,11 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: 'workspaceId required' }, { status: 400 })
     }
 
+    const allowed = await canUserManageAgencyWorkspace(session.user.id, workspaceId)
+    if (!allowed) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const settings = await prisma.agencySettings.upsert({
         where: { workspaceId },
         update: {
@@ -80,6 +103,11 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'workspaceId and email required' }, { status: 400 })
     }
 
+    const allowed = await canUserManageAgencyWorkspace(session.user.id, workspaceId)
+    if (!allowed) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const client = await prisma.agencyClient.create({
         data: {
             workspaceId,
@@ -103,6 +131,19 @@ export async function DELETE(request: NextRequest) {
 
     if (!clientId) {
         return NextResponse.json({ error: 'clientId required' }, { status: 400 })
+    }
+
+    const client = await prisma.agencyClient.findUnique({
+        where: { id: clientId }
+    })
+
+    if (!client) {
+        return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+    }
+
+    const allowed = await canUserManageAgencyWorkspace(session.user.id, client.workspaceId)
+    if (!allowed) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     await prisma.agencyClient.delete({

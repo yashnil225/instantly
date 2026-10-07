@@ -42,45 +42,60 @@ export async function GET(request: Request) {
                 startDate.setDate(now.getDate() - 7)
         }
 
-        // Fetch workspace for opportunity value
-        const workspace = workspaceId && workspaceId !== 'all'
-            ? await prisma.workspace.findUnique({ where: { id: workspaceId } })
-            : await prisma.workspace.findFirst({ where: { userId: session.user.id, isDefault: true } })
+        // Fetch all workspaces user has access to
+        const userWorkspaces = await prisma.workspace.findMany({
+            where: {
+                OR: [
+                    { userId: session.user.id },
+                    { members: { some: { userId: session.user.id } } }
+                ]
+            },
+            select: { id: true, opportunityValue: true, isDefault: true }
+        })
+        const accessibleWorkspaceIds = userWorkspaces.map(w => w.id)
+
+        // Validate workspace access
+        if (workspaceId && workspaceId !== 'all' && !accessibleWorkspaceIds.includes(workspaceId)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
+        const targetWorkspaceIds = (workspaceId && workspaceId !== 'all')
+            ? [workspaceId]
+            : accessibleWorkspaceIds
+
+        const workspace = (workspaceId && workspaceId !== 'all')
+            ? userWorkspaces.find(w => w.id === workspaceId)
+            : (userWorkspaces.find(w => w.isDefault) || userWorkspaces[0])
 
         const opportunityValue = workspace?.opportunityValue || 5000
 
-        // Fetch leads for opportunities
+        // Build campaign condition for user's isolated scope
+        const campaignScopeFilter = (workspaceId && workspaceId !== 'all')
+            ? {
+                campaignWorkspaces: {
+                    some: { workspaceId: { in: targetWorkspaceIds } }
+                }
+            }
+            : {
+                OR: [
+                    { userId: session.user.id },
+                    { campaignWorkspaces: { some: { workspaceId: { in: accessibleWorkspaceIds } } } }
+                ]
+            }
+
+        // Fetch leads for opportunities strictly within user scope
         const leads = await prisma.lead.findMany({
             where: {
                 createdAt: { gte: startDate },
-                ...(workspaceId && workspaceId !== 'all' ? {
-                    campaign: {
-                        campaignWorkspaces: {
-                            some: { workspaceId }
-                        }
-                    }
-                } : {
-                    campaign: {
-                        userId: session.user.id
-                    }
-                })
+                campaign: campaignScopeFilter
             }
         })
 
-        // Opportunities = leads that have received replies (actual reply events from the campaign)
-        // Count reply events, not just status, for accurate opportunity calculation
-        // Fetch events for accurate real-time stats (replacing CampaignStat aggregation)
-        // We fetch ALL events for the filtered scope to ensure 100% accuracy and real-time updates
+        // Fetch events for accurate real-time stats within user scope
         let events = await prisma.sendingEvent.findMany({
             where: {
                 createdAt: { gte: startDate },
-                ...(workspaceId && workspaceId !== 'all' ? {
-                    campaign: {
-                        campaignWorkspaces: { some: { workspaceId } }
-                    }
-                } : {
-                    campaign: { userId: session.user.id }
-                })
+                campaign: campaignScopeFilter
             }
         })
 
@@ -105,13 +120,7 @@ export async function GET(request: Request) {
             where: {
                 type: 'reply',
                 createdAt: { gte: startDate },
-                ...(workspaceId && workspaceId !== 'all' ? {
-                    campaign: {
-                        campaignWorkspaces: { some: { workspaceId } }
-                    }
-                } : {
-                    campaign: { userId: session.user.id }
-                })
+                campaign: campaignScopeFilter
             },
             include: { lead: true }
         })
@@ -186,9 +195,12 @@ export async function GET(request: Request) {
             }
         }
 
-        // Calculate account-level stats filtered by workspace
+        // Calculate account-level stats filtered by user and workspace access
         const accountWhere: any = {
-            userId: session.user.id
+            OR: [
+                { userId: session.user.id },
+                { workspaces: { some: { workspaceId: { in: targetWorkspaceIds } } } }
+            ]
         }
 
         if (workspaceId && workspaceId !== 'all') {
@@ -209,11 +221,7 @@ export async function GET(request: Request) {
                 sendingEvents: {
                     where: { 
                         createdAt: { gte: startDate },
-                        ...(workspaceId && workspaceId !== 'all' ? {
-                            campaign: {
-                                campaignWorkspaces: { some: { workspaceId } }
-                            }
-                        } : {})
+                        campaign: campaignScopeFilter
                     },
                     select: { type: true, leadId: true, metadata: true }
                 }
@@ -249,6 +257,8 @@ export async function GET(request: Request) {
                 dynamicHealth = Math.max(15, Math.round(100 - (accBounceRate * 2.2)))
             }
 
+            const delivered = Math.max(0, sent - bounced)
+
             return {
                 id: acc.id,
                 email: acc.email,
@@ -257,13 +267,21 @@ export async function GET(request: Request) {
                 sent,
                 opens: opened,
                 replies: replied,
-                openRate: sent > 0 ? Math.min(Math.round((opened / sent) * 100), 100) : 0,
-                replyRate: sent > 0 ? Math.min(Math.round((replied / sent) * 100), 100) : 0
+                openRate: delivered > 0 ? Math.min(Math.round((opened / delivered) * 100), 100) : 0,
+                replyRate: delivered > 0 ? Math.min(Math.round((replied / delivered) * 100), 100) : 0
             }
         }))
 
-        // Dynamic Deliverability Score Calculation
-        const rawSpamRate = 0.4
+        // Instantly.ai Standard Spam Complaint Rate: SR = (Complaints / (Sent - Bounced)) * 100
+        // Unsubscribes are explicitly isolated from spam complaints to protect domain reputation analytics
+        const spamComplaintsCount = events.filter((e: any) => 
+            e.type === 'spam_complaint' || 
+            (e.type === 'reply' && (e.metadata?.includes('spam') || e.metadata?.includes('complaint')))
+        ).length
+
+        const unsubscribesCount = events.filter((e: any) => e.type === 'unsubscribe').length
+        const rawSpamRate = deliveredCount > 0 ? Number(((spamComplaintsCount / deliveredCount) * 100).toFixed(2)) : 0.0
+        const unsubscribeRate = deliveredCount > 0 ? Number(((unsubscribesCount / deliveredCount) * 100).toFixed(2)) : 0.0
         let calculatedScore = 100
 
         // Penalty for high bounce rate (> 3% is risky, > 5% is critical)
@@ -274,21 +292,21 @@ export async function GET(request: Request) {
             calculatedScore -= bouncePenalty
         }
 
-        // Penalty for spam rate (> 0.1% is monitored by Google/Yahoo)
+        // Penalty for spam rate (> 0.1% is monitored by Google/Yahoo, > 0.3% is heavy penalty)
         if (rawSpamRate > 0.1) {
-            calculatedScore -= (rawSpamRate * 8)
+            calculatedScore -= (rawSpamRate * 15)
         }
 
         // Engagement bonus (healthy opens & replies boost reputation score)
-        if (sentEmailsCount > 10) {
-            const openBonus = Math.min(5, (totalOpenedCount / sentEmailsCount) * 8)
-            const replyBonus = Math.min(5, (totalReplied / sentEmailsCount) * 15)
+        if (deliveredCount > 10) {
+            const openBonus = Math.min(5, (totalOpenedCount / deliveredCount) * 8)
+            const replyBonus = Math.min(5, (totalReplied / deliveredCount) * 15)
             calculatedScore += (openBonus + replyBonus)
         }
 
         const dynamicOverallScore = Math.max(10, Math.min(100, Math.round(calculatedScore)))
 
-        // Build real-time deliverability warnings
+        // Build real-time deliverability warnings based on Instantly thresholds
         const recentIssues: any[] = []
         if (bounceRate > 5) {
             recentIssues.push({
@@ -306,8 +324,14 @@ export async function GET(request: Request) {
 
         if (rawSpamRate > 0.3) {
             recentIssues.push({
+                type: "error",
+                message: `Critical: Spam complaint rate (${rawSpamRate}%) exceeds 0.3% threshold. Google/Yahoo reputation at risk.`,
+                timestamp: "Active alert"
+            })
+        } else if (rawSpamRate > 0.1) {
+            recentIssues.push({
                 type: "warning",
-                message: "Spam rate exceeds 0.3%. Ensure 'Insert Unsubscribe Header' is enabled in Campaign Options.",
+                message: `Spam complaint rate (${rawSpamRate}%) is above 0.1% target. Ensure unsubscribes are enabled.`,
                 timestamp: "Active alert"
             })
         }
@@ -316,8 +340,9 @@ export async function GET(request: Request) {
             overallScore: dynamicOverallScore,
             bounceRate,
             spamRate: rawSpamRate,
-            openRate: sentEmailsCount > 0 ? Math.min(Math.round((totalOpenedCount / sentEmailsCount) * 100), 100) : 0,
-            replyRate: sentEmailsCount > 0 ? Math.min(Math.round((totalReplied / sentEmailsCount) * 100), 100) : 0,
+            unsubscribeRate,
+            openRate: deliveredCount > 0 ? Math.min(Math.round((totalOpenedCount / deliveredCount) * 100), 100) : 0,
+            replyRate: deliveredCount > 0 ? Math.min(Math.round((totalReplied / deliveredCount) * 100), 100) : 0,
             domainHealth: Array.from(new Set<string>(accountStats.map((a: any) => a.email.split('@')[1]))).map((domain: string) => ({
                 domain,
                 spf: true,
@@ -340,13 +365,7 @@ export async function GET(request: Request) {
 
         // Per-campaign funnels — fetch campaigns in scope
         const campaignsInScope = await prisma.campaign.findMany({
-            where: {
-                ...(workspaceId && workspaceId !== 'all' ? {
-                    campaignWorkspaces: { some: { workspaceId } }
-                } : {
-                    userId: session.user.id
-                })
-            },
+            where: campaignScopeFilter,
             select: { id: true, name: true }
         })
 

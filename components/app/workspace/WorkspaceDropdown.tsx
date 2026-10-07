@@ -32,9 +32,10 @@ export function WorkspaceDropdown({
     selectedWorkspaceId: externalSelectedId,
     showQuickActions = true
 }: WorkspaceDropdownProps) {
-    const { workspaces, selectedWorkspaceId: contextSelectedId, switchWorkspace, isLoading } = useWorkspaces()
+    const { workspaces, invitations, selectedWorkspaceId: contextSelectedId, switchWorkspace, isLoading, refreshWorkspaces } = useWorkspaces()
     const [workspaceSearch, setWorkspaceSearch] = useState("")
     const [open, setOpen] = useState(false)
+    const [processingInviteId, setProcessingInviteId] = useState<string | null>(null)
 
     // Use external selected ID if provided, otherwise use context
     const selectedWorkspaceId = externalSelectedId !== undefined ? externalSelectedId : contextSelectedId
@@ -71,6 +72,22 @@ export function WorkspaceDropdown({
             switchWorkspace(workspaceId)
         }
         setOpen(false)
+    }
+
+    const handleInviteAction = async (e: React.MouseEvent, inviteId: string, action: 'accept' | 'reject') => {
+        e.stopPropagation()
+        e.preventDefault()
+        setProcessingInviteId(inviteId)
+        try {
+            const res = await fetch(`/api/invitations/${inviteId}/${action}`, { method: 'POST' })
+            if (res.ok) {
+                await refreshWorkspaces()
+            }
+        } catch (error) {
+            console.error(`Failed to ${action} invitation:`, error)
+        } finally {
+            setProcessingInviteId(null)
+        }
     }
 
     return (
@@ -164,6 +181,44 @@ export function WorkspaceDropdown({
                 )}
 
                 <DropdownMenuSeparator className="bg-muted" />
+
+                {/* Invitations Section */}
+                {invitations && invitations.length > 0 && (
+                    <>
+                        <div className="px-2 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Pending Invitations
+                        </div>
+                        {invitations.map((invitation) => (
+                            <div key={invitation.id} className="flex flex-col gap-2 p-2 hover:bg-secondary rounded-sm group/invite transition-colors cursor-default">
+                                <div className="text-sm truncate">
+                                    <span className="font-semibold">{invitation.workspace.name}</span>
+                                    <span className="text-muted-foreground ml-2 text-xs">by {invitation.inviter.name || invitation.inviter.email}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="default"
+                                        className="h-6 text-xs flex-1 bg-blue-600 hover:bg-blue-700"
+                                        disabled={processingInviteId === invitation.id}
+                                        onClick={(e) => handleInviteAction(e, invitation.id, 'accept')}
+                                    >
+                                        Accept
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-6 text-xs flex-1 border-red-500/20 text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                                        disabled={processingInviteId === invitation.id}
+                                        onClick={(e) => handleInviteAction(e, invitation.id, 'reject')}
+                                    >
+                                        Decline
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                        <DropdownMenuSeparator className="bg-muted" />
+                    </>
+                )}
 
                 {/* Add Workspace */}
                 <DropdownMenuItem

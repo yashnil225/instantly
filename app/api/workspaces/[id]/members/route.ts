@@ -87,63 +87,33 @@ export async function POST(
             return NextResponse.json({ error: "Unauthorized to invite members" }, { status: 403 })
         }
 
-        // Check if user already exists
-        const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })
-
-        if (existingUser) {
-            // Check if already a member
-            const isMember = await prisma.workspaceMember.findUnique({
-                where: {
-                    workspaceId_userId: {
-                        workspaceId: id,
-                        userId: existingUser.id
-                    }
+        // Create or update existing invitation
+        const invitation = await prisma.invitation.upsert({
+            where: {
+                workspaceId_email: {
+                    workspaceId: id,
+                    email: normalizedEmail
                 }
-            })
-
-            if (isMember) {
-                return NextResponse.json({ error: "User is already a member" }, { status: 400 })
+            },
+            create: {
+                email: normalizedEmail,
+                workspaceId: id,
+                role: role || 'member',
+                token: Math.random().toString(36).substring(7),
+                inviterId: session.user.id,
+                status: 'pending',
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+            },
+            update: {
+                role: role || 'member',
+                token: Math.random().toString(36).substring(7),
+                inviterId: session.user.id,
+                status: 'pending',
+                expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
             }
+        })
 
-            // Add directly
-            const member = await prisma.workspaceMember.create({
-                data: {
-                    workspaceId: id,
-                    userId: existingUser.id,
-                    role: role || 'member'
-                },
-                include: { user: true }
-            })
-            return NextResponse.json(member)
-        } else {
-            // Create or update existing invitation
-            const invitation = await prisma.invitation.upsert({
-                where: {
-                    workspaceId_email: {
-                        workspaceId: id,
-                        email: normalizedEmail
-                    }
-                },
-                create: {
-                    email: normalizedEmail,
-                    workspaceId: id,
-                    role: role || 'member',
-                    token: Math.random().toString(36).substring(7),
-                    inviterId: session.user.id,
-                    status: 'pending',
-                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-                },
-                update: {
-                    role: role || 'member',
-                    token: Math.random().toString(36).substring(7),
-                    inviterId: session.user.id,
-                    status: 'pending',
-                    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-                }
-            })
-
-            return NextResponse.json({ invitation, message: "Invitation created (mock email sent)" })
-        }
+        return NextResponse.json({ invitation, message: "Invitation created successfully" })
     } catch (error) {
         console.error("Failed to invite member:", error)
         return NextResponse.json({ error: "Internal server error" }, { status: 500 })

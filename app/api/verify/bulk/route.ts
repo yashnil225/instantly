@@ -75,7 +75,10 @@ function parseSmartCsv(content: string): { headers: string[]; rows: Array<Record
 export async function POST(request: Request) {
     try {
         const session = await auth()
-        const currentUserId = session?.user?.id || null
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const currentUserId = session.user.id
 
         const formData = await request.formData()
         const file = formData.get('file') as File | null
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
         }
 
         // --- 1. Enforce 30-Job Capacity Limit per User (FIFO) ---
-        const userFilter = currentUserId ? { userId: currentUserId } : { userId: null }
+        const userFilter = { userId: currentUserId }
         const totalExistingJobs = await prisma.verificationJob.count({
             where: userFilter
         })
@@ -111,7 +114,10 @@ export async function POST(request: Request) {
             }
         }
 
-        // --- 2. Create Job in Database ---
+        // --- 2. Compact rows into a 2D array to cut JSON size by ~80% for large files (e.g. 8k leads) ---
+        const compactRows = rows.map(r => headers.map(h => r[h] || ''))
+
+        // --- 3. Create Job in Database ---
         const newJob = await prisma.verificationJob.create({
             data: {
                 userId: currentUserId,
@@ -126,7 +132,7 @@ export async function POST(request: Request) {
                 status: 'processing',
                 currentLog: `Identified ${rows.length} leads in column "${emailField}". Starting verification...`,
                 headers: JSON.stringify(headers),
-                rawRowsJson: JSON.stringify(rows)
+                rawRowsJson: JSON.stringify(compactRows)
             }
         })
 

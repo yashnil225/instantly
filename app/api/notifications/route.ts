@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/auth"
 
 export async function GET(request: Request) {
     try {
+        const session = await auth()
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+
         const { searchParams } = new URL(request.url)
         const limit = parseInt(searchParams.get("limit") || "20")
         const offset = parseInt(searchParams.get("offset") || "0")
         const unreadOnly = searchParams.get("unreadOnly") === "true"
 
-        // In a real app, get userId from session
-        const userId = "demo-user"
+        const userId = session.user.id
 
         const where: any = { userId }
         if (unreadOnly) {
@@ -49,11 +54,15 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const session = await auth()
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
+
         const body = await request.json()
         const { type, title, message, link, metadata } = body
 
-        // In a real app, get userId from session
-        const userId = "demo-user"
+        const userId = session.user.id
 
         const notification = await prisma.notification.create({
             data: {

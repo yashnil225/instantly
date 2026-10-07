@@ -92,9 +92,35 @@ const SAMPLE_NOTIFICATIONS: Notification[] = [
 ]
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
-    const [notifications, setNotifications] = useState<Notification[]>(SAMPLE_NOTIFICATIONS)
+    const [notifications, setNotifications] = useState<Notification[]>([])
+    const [unreadCount, setUnreadCount] = useState<number>(0)
 
-    const unreadCount = notifications.filter(n => !n.read).length
+    const fetchNotifications = async () => {
+        try {
+            const res = await fetch("/api/notifications")
+            if (res.ok) {
+                const data = await res.json()
+                if (data.notifications) {
+                    setNotifications(data.notifications.map((n: any) => ({
+                        id: n.id,
+                        type: n.type || "system",
+                        title: n.title,
+                        message: n.message,
+                        read: n.read,
+                        timestamp: new Date(n.createdAt),
+                        actionUrl: n.link
+                    })))
+                    setUnreadCount(data.unreadCount || 0)
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch notifications:", e)
+        }
+    }
+
+    useEffect(() => {
+        fetchNotifications()
+    }, [])
 
     const addNotification = (notification: Omit<Notification, "id" | "timestamp" | "read">) => {
         const newNotification: Notification = {
@@ -104,20 +130,34 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             read: false
         }
         setNotifications(prev => [newNotification, ...prev])
+        setUnreadCount(prev => prev + 1)
     }
 
-    const markAsRead = (id: string) => {
+    const markAsRead = async (id: string) => {
         setNotifications(prev =>
             prev.map(n => n.id === id ? { ...n, read: true } : n)
         )
+        setUnreadCount(prev => Math.max(0, prev - 1))
+        try {
+            await fetch(`/api/notifications/${id}/read`, { method: "POST" })
+        } catch (e) {
+            console.error("Failed to mark notification as read:", e)
+        }
     }
 
-    const markAllAsRead = () => {
+    const markAllAsRead = async () => {
         setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+        setUnreadCount(0)
+        try {
+            await fetch("/api/notifications/mark-all-read", { method: "POST" })
+        } catch (e) {
+            console.error("Failed to mark all notifications as read:", e)
+        }
     }
 
     const clearAll = () => {
         setNotifications([])
+        setUnreadCount(0)
     }
 
     return (

@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyEmail } from '@/lib/email-verifier'
+import { auth } from '@/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: Request) {
     try {
+        const session = await auth()
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const body = await request.json()
-        const { jobId, batchSize = 40 } = body
+        const { jobId, batchSize = 50 } = body
 
         if (!jobId) {
             return NextResponse.json({ error: 'jobId is required' }, { status: 400 })
@@ -21,6 +27,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Job not found or deleted' }, { status: 404 })
         }
 
+        if (job.userId && job.userId !== session.user.id) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
         if (job.status === 'completed' || job.status === 'canceled') {
             return NextResponse.json({
                 jobId,
@@ -32,12 +42,11 @@ export async function POST(request: Request) {
             })
         }
 
-        // Get count of already verified items in DB for this job
+        // Count verified items
         const verifiedCount = await prisma.verificationResultItem.count({
             where: { jobId }
         })
 
-        // Check if all leads have already been processed
         if (verifiedCount >= job.total) {
             const completedJob = await prisma.verificationJob.update({
                 where: { id: jobId },
@@ -54,16 +63,7 @@ export async function POST(request: Request) {
             })
         }
 
-        // Parse job headers & original data rows
-        let rawDataRows: Array<Record<string, string>> = []
-        try {
-            // Re-read or parse stored rows
-            if ((job as any).rawRowsJson) {
-                rawDataRows = JSON.parse((job as any).rawRowsJson)
-            }
-        } catch {}
-
-        // Identify email column from job headers
+        // Headers
         let headers: string[] = []
         try {
             headers = JSON.parse(job.headers)
@@ -74,10 +74,17 @@ export async function POST(request: Request) {
         let emailField = headers.find(h => /^(email|e-mail|email_address|email address|work email|contact email|mail)$/i.test(h.trim()))
         if (!emailField) emailField = headers.find(h => /email/i.test(h)) || headers[0]
 
-        // Fetch chunk of rows from raw data
-        const nextBatch = rawDataRows.slice(verifiedCount, verifiedCount + batchSize)
+        // Parse rows (handles both compact 2D array and legacy object array)
+        let rawDataRows: any[] = []
+        try {
+            if ((job as any).rawRowsJson) {
+                rawDataRows = JSON.parse((job as any).rawRowsJson)
+            }
+        } catch {}
 
-        if (nextBatch.length === 0) {
+        const nextBatchRaw = rawDataRows.slice(verifiedCount, verifiedCount + batchSize)
+
+        if (nextBatchRaw.length === 0) {
             await prisma.verificationJob.update({
                 where: { id: jobId },
                 data: { status: 'completed', progress: 100, completedAt: new Date() }
@@ -85,62 +92,19 @@ export async function POST(request: Request) {
             return NextResponse.json({ completed: true, progress: 100 })
         }
 
-        // 1. Extract and batch pre-lookup emails in database (0ms resolution)
-        const batchEmails = nextBatch
-            .map(row => (row[emailField!] || '').trim().toLowerCase())
-            .filter(Boolean)
-
-        const dbCacheMap = new Map<string, { status: string; reason: string; score: number }>()
-
-        if (batchEmails.length > 0) {
-            try {
-                const [existingResults, existingLeads] = await Promise.all([
-                    prisma.verificationResultItem.findMany({
-                        where: { email: { in: batchEmails } },
-                        select: { email: true, status: true, reason: true, score: true },
-                        orderBy: { id: 'desc' }
-                    }),
-                    prisma.lead.findMany({
-                        where: { email: { in: batchEmails } },
-                        select: { email: true, status: true }
-                    })
-                ])
-
-                for (const item of existingResults) {
-                    const em = item.email.toLowerCase()
-                    if (!dbCacheMap.has(em)) {
-                        dbCacheMap.set(em, {
-                            status: item.status,
-                            reason: item.reason || 'Verified via database cache',
-                            score: item.score || (item.status === 'valid' ? 98 : item.status === 'risky' ? 70 : 0)
-                        })
-                    }
-                }
-
-                for (const lead of existingLeads) {
-                    const em = lead.email.toLowerCase()
-                    if (!dbCacheMap.has(em)) {
-                        if (lead.status === 'replied' || lead.status === 'contacted' || lead.status === 'sequence_complete') {
-                            dbCacheMap.set(em, {
-                                status: 'valid',
-                                reason: 'Active deliverable lead (DB cache)',
-                                score: 99
-                            })
-                        } else if (lead.status === 'bounced') {
-                            dbCacheMap.set(em, {
-                                status: 'invalid',
-                                reason: 'Known bounced lead (DB cache)',
-                                score: 0
-                            })
-                        }
-                    }
-                }
-            } catch (err) {
-                console.warn('DB batch pre-lookup warning:', err)
+        // Convert batch items into standard key-value records
+        const nextBatch: Array<Record<string, string>> = nextBatchRaw.map((row: any) => {
+            if (Array.isArray(row)) {
+                const rec: Record<string, string> = {}
+                headers.forEach((h, idx) => {
+                    rec[h] = String(row[idx] ?? '')
+                })
+                return rec
             }
-        }
+            return (row && typeof row === 'object') ? row : { [emailField!]: String(row || '') }
+        })
 
-        // Process this chunk concurrently
+        // Process chunk concurrently with live checks
         let validInc = 0
         let riskyInc = 0
         let invalidInc = 0
@@ -150,9 +114,8 @@ export async function POST(request: Request) {
         const verifiedItems = await Promise.all(
             nextBatch.map(async (row) => {
                 const rawEmail = (row[emailField!] || '').trim()
-                const lowerEmail = rawEmail.toLowerCase()
-                let result
 
+                let result
                 if (!rawEmail) {
                     result = {
                         email: rawEmail,
@@ -166,30 +129,15 @@ export async function POST(request: Request) {
                         hasMx: false,
                         checkedAt: new Date().toISOString()
                     }
-                } else if (dbCacheMap.has(lowerEmail)) {
-                    // Instant Database Cache Hit (0ms)
-                    const cached = dbCacheMap.get(lowerEmail)!
-                    result = {
-                        email: rawEmail,
-                        status: cached.status as any,
-                        reason: cached.reason,
-                        score: cached.score,
-                        isSyntaxValid: true,
-                        isDisposable: cached.status === 'disposable',
-                        isRoleBased: false,
-                        isFreeProvider: false,
-                        hasMx: cached.status !== 'invalid',
-                        checkedAt: new Date().toISOString()
-                    }
                 } else {
                     try {
                         result = await verifyEmail(rawEmail)
                     } catch {
                         result = {
                             email: rawEmail,
-                            status: 'valid' as const,
-                            reason: 'Verified active domain',
-                            score: 90,
+                            status: 'risky' as const,
+                            reason: 'DNS timeout or network unreachable',
+                            score: 50,
                             isSyntaxValid: true,
                             isDisposable: false,
                             isRoleBased: false,

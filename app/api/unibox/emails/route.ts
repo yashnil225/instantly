@@ -104,18 +104,43 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Filter by workspace(s) through campaign
+        // Fetch accessible workspaces
+        const userWorkspaces = await prisma.workspace.findMany({
+            where: {
+                OR: [
+                    { userId: session.user.id },
+                    { members: { some: { userId: session.user.id } } }
+                ]
+            },
+            select: { id: true }
+        })
+        const accessibleWorkspaceIds = userWorkspaces.map(w => w.id)
+
+        let targetWorkspaceIds = accessibleWorkspaceIds
         if (workspaceIds && workspaceIds.length > 0) {
-            where.campaign = {
+            targetWorkspaceIds = workspaceIds.filter(id => accessibleWorkspaceIds.includes(id))
+            if (targetWorkspaceIds.length === 0) {
+                return NextResponse.json([])
+            }
+        }
+
+        // Filter by workspace(s) through campaign with strict isolation
+        where.campaign = (workspaceIds && workspaceIds.length > 0)
+            ? {
                 campaignWorkspaces: {
                     some: {
                         workspaceId: {
-                            in: workspaceIds
+                            in: targetWorkspaceIds
                         }
                     }
                 }
             }
-        }
+            : {
+                OR: [
+                    { userId: session.user.id },
+                    { campaignWorkspaces: { some: { workspaceId: { in: accessibleWorkspaceIds } } } }
+                ]
+            }
         // Parse search query for operators
         if (search) {
             const operators: any = {}
@@ -353,13 +378,48 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
     try {
         const session = await auth()
-        if (!session?.user?.email) {
+        if (!session?.user?.id) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-
         const body = await request.json()
         const { leadId, isRead, aiLabel, status, isStarred, isArchived, snoozedUntil } = body
+
+        if (!leadId) {
+            return NextResponse.json({ error: "leadId is required" }, { status: 400 })
+        }
+
+        const targetLead = await prisma.lead.findUnique({
+            where: { id: leadId },
+            include: {
+                campaign: {
+                    include: {
+                        campaignWorkspaces: {
+                            include: {
+                                workspace: {
+                                    include: {
+                                        members: { where: { userId: session.user.id } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        if (!targetLead) {
+            return NextResponse.json({ error: "Lead not found" }, { status: 404 })
+        }
+
+        const isOwner = targetLead.campaign.userId === session.user.id
+        const isWorkspaceMember = targetLead.campaign.campaignWorkspaces.some(
+            cw => cw.workspace.userId === session.user.id || cw.workspace.members.length > 0
+        )
+
+        if (!isOwner && !isWorkspaceMember) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        }
 
         const updated = await prisma.lead.update({
             where: { id: leadId },

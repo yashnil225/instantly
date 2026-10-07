@@ -7,10 +7,13 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
     try {
         const session = await auth()
-        const currentUserId = session?.user?.id || null
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const currentUserId = session.user.id
 
         const jobs = await prisma.verificationJob.findMany({
-            where: currentUserId ? { userId: currentUserId } : { userId: null },
+            where: { userId: currentUserId },
             orderBy: { createdAt: 'desc' },
             take: 30,
             select: {
@@ -40,14 +43,16 @@ export async function GET() {
 export async function DELETE() {
     try {
         const session = await auth()
-        const currentUserId = session?.user?.id || null
+        if (!session?.user?.id) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+        const currentUserId = session.user.id
 
         await prisma.verificationJob.deleteMany({
-            where: currentUserId ? { userId: currentUserId } : { userId: null }
+            where: { userId: currentUserId }
         })
         return NextResponse.json({ success: true, message: 'Your verification jobs and records deleted from database' })
     } catch (e: any) {
         return NextResponse.json({ error: e.message || 'Failed to clear history' }, { status: 500 })
     }
 }
-

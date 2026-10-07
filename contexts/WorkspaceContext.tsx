@@ -27,8 +27,16 @@ interface Workspace {
     }>
 }
 
+interface WorkspaceInvitation {
+    id: string
+    workspace: { name: string }
+    inviter: { name: string; email: string }
+    role: string
+}
+
 interface WorkspaceContextType {
     workspaces: Workspace[]
+    invitations: WorkspaceInvitation[]
     isLoading: boolean
     refreshWorkspaces: () => Promise<void>
     createWorkspace: (name: string, opportunityValue?: number) => Promise<Workspace | null>
@@ -43,6 +51,7 @@ const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefin
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+    const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<string | null>(null)
     const isInitializedRef = React.useRef(false)
@@ -86,9 +95,14 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
     const refreshWorkspaces = useCallback(async (): Promise<void> => {
         try {
-            const res = await fetch('/api/workspaces')
-            if (res.ok) {
-                const data = await res.json()
+            // Fetch workspaces and invitations concurrently
+            const [wsRes, invRes] = await Promise.all([
+                fetch('/api/workspaces'),
+                fetch('/api/invitations')
+            ]);
+
+            if (wsRes.ok) {
+                const data = await wsRes.json()
                 const newWorkspaces = Array.isArray(data) ? data : []
                 setWorkspaces(prev => {
                     // Deep/shallow compare to avoid creating a new array reference if data hasn't changed
@@ -107,8 +121,19 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                     return newWorkspaces
                 })
             }
+
+            if (invRes.ok) {
+                const data = await invRes.json()
+                const newInvitations = Array.isArray(data) ? data : []
+                setInvitations(prev => {
+                    if (prev.length === newInvitations.length && prev.every((inv, idx) => inv.id === newInvitations[idx]?.id)) {
+                        return prev;
+                    }
+                    return newInvitations;
+                });
+            }
         } catch (error) {
-            console.error("Failed to fetch workspaces:", error)
+            console.error("Failed to fetch workspaces/invitations:", error)
         } finally {
             setIsLoading(false)
         }
@@ -210,6 +235,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     return (
         <WorkspaceContext.Provider value={{
             workspaces,
+            invitations,
             isLoading,
             refreshWorkspaces,
             createWorkspace,

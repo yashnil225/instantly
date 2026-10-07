@@ -140,7 +140,7 @@ export async function GET(
             try {
                 const meta = JSON.parse(e.metadata || '{}')
                 if (e.type === 'sent') {
-                    step = meta.step
+                    step = meta.step ? parseInt(meta.step, 10) : 1;
                     variantId = meta.variantId
                 } else {
                     originalEventId = meta.originalEventId
@@ -168,7 +168,7 @@ export async function GET(
                 if (parentSent) {
                     try {
                         const meta = JSON.parse(parentSent.metadata || '{}')
-                        step = meta.step
+                        step = meta.step ? parseInt(meta.step, 10) : 1;
                         variantId = meta.variantId
                     } catch {}
                 }

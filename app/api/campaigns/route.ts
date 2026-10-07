@@ -40,6 +40,9 @@ export async function GET(request: Request) {
         let targetWorkspaceIds = accessibleWorkspaceIds
         if (workspaceIds.length > 0) {
             targetWorkspaceIds = workspaceIds.filter(id => accessibleWorkspaceIds.includes(id))
+            if (targetWorkspaceIds.length === 0) {
+                return NextResponse.json([])
+            }
         }
 
         const campaigns = await prisma.campaign.findMany({
@@ -52,7 +55,7 @@ export async function GET(request: Request) {
                             }
                         }
                     },
-                    // Include directly owned campaigns if no specific workspace is filtered
+                    // Include directly owned campaigns if viewing all workspaces
                     ...(workspaceIds.length === 0 ? [{ userId: session.user.id }] : [])
                 ],
                 ...(tagIds.length > 0 ? {
@@ -232,9 +235,26 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Name is required' }, { status: 400 })
         }
 
-        if (workspaceIds && workspaceIds.length > 0) {
+        let targetWsIds = (workspaceIds && workspaceIds.length > 0) ? workspaceIds : []
+        if (targetWsIds.length === 0) {
+            const defaultWs = await prisma.workspace.findFirst({
+                where: {
+                    OR: [
+                        { userId: session.user.id, isDefault: true },
+                        { userId: session.user.id },
+                        { members: { some: { userId: session.user.id } } }
+                    ]
+                },
+                orderBy: { isDefault: 'desc' }
+            })
+            if (defaultWs) {
+                targetWsIds = [defaultWs.id]
+            }
+        }
+
+        if (targetWsIds.length > 0) {
             // Check if user is at least admin or owner of all target workspaces
-            for (const wsId of workspaceIds) {
+            for (const wsId of targetWsIds) {
                 const ws = await prisma.workspace.findUnique({
                     where: { id: wsId },
                     include: { members: { where: { userId: session.user.id } } }
@@ -259,10 +279,10 @@ export async function POST(request: Request) {
                 status: 'draft',
                 trackLinks: true,
                 trackOpens: true,
-                // Assign to workspace(s) if provided
-                ...(workspaceIds && workspaceIds.length > 0 && {
+                // Assign to workspace(s)
+                ...(targetWsIds.length > 0 && {
                     campaignWorkspaces: {
-                        create: workspaceIds.map((workspaceId: string) => ({
+                        create: targetWsIds.map((workspaceId: string) => ({
                             workspaceId
                         }))
                     }

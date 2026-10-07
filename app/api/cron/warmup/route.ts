@@ -58,14 +58,16 @@ async function runWarmupTasks() {
             }
         })()
 
-        const ceilingPromise = new Promise<void>((resolve) =>
-            setTimeout(() => {
+        let timeoutId: NodeJS.Timeout
+        const ceilingPromise = new Promise<void>((resolve) => {
+            timeoutId = setTimeout(() => {
                 console.warn(`[Warmup] Hard 22s ceiling reached in phase ${phase}, exiting safely`)
                 resolve()
             }, 22000)
-        )
+        })
 
         await Promise.race([phasePromise, ceilingPromise])
+        clearTimeout(timeoutId!)
     } catch (error: any) {
         console.error(`[Warmup] Phase ${phase} failed:`, error?.message || error)
     }

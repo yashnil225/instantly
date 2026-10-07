@@ -18,14 +18,17 @@ export async function GET(request: Request) {
     // Respond IMMEDIATELY so cron-job.org (30s timeout) doesn't kill the connection.
     // waitUntil keeps the Vercel function alive for up to maxDuration in the background.
     const batchWithCeiling = async () => {
+        let timeoutId: NodeJS.Timeout
         const batchPromise = processBatch().catch(err => console.error('[cron/send] processBatch failed:', err))
-        const ceilingPromise = new Promise<void>((resolve) =>
-            setTimeout(() => {
+        const ceilingPromise = new Promise<void>((resolve) => {
+            timeoutId = setTimeout(() => {
                 console.warn('[cron/send] Hard 22s ceiling reached, yielding batch safely')
                 resolve()
             }, 22000)
-        )
+        })
+
         await Promise.race([batchPromise, ceilingPromise])
+        clearTimeout(timeoutId!)
     }
 
     waitUntil(batchWithCeiling())

@@ -83,12 +83,18 @@ export async function POST(request: Request) {
         }
 
         // 3. Send Reply
+        if (!account.smtpHost || !account.smtpPort) {
+            return NextResponse.json({ 
+                error: 'Email account SMTP credentials not configured. Please reconnect or configure SMTP settings for this account.' 
+            }, { status: 400 })
+        }
+
         const nodemailer = (await import('nodemailer')).default
         const transporter = nodemailer.createTransport({
-            host: account.smtpHost!,
-            port: account.smtpPort!,
+            host: account.smtpHost,
+            port: account.smtpPort,
             secure: account.smtpPort === 465,
-            auth: { user: account.smtpUser!, pass: account.smtpPass! }
+            auth: { user: account.smtpUser || '', pass: account.smtpPass || '' }
         })
 
         // Fetch attachments if any

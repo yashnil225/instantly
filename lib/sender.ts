@@ -814,14 +814,26 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         }
                     }).catch((e: any) => console.error('Failed to update account limit status', e))
                 } else {
-                    // Log error to the account to surface in UI
-                    await prisma.emailAccount.update({
-                        where: { id: account.id },
-                        data: {
-                            status: 'error',
-                            errorDetail: `Sending failed: ${errorMessage}`
-                        }
-                    }).catch((e: any) => console.error('Failed to update account error status', e))
+                    const isTransientNetworkError = 
+                        error.code === 'ETIMEDOUT' ||
+                        error.code === 'ECONNRESET' ||
+                        error.code === 'ESOCKETTIMEDOUT' ||
+                        error.code === 'ECONNREFUSED' ||
+                        errorMessage.toLowerCase().includes('timeout') ||
+                        errorMessage.toLowerCase().includes('connect')
+
+                    if (isTransientNetworkError) {
+                        console.warn(`[Sender] ⚠️ Transient network/connection timeout sending via ${account.email} (${errorMessage}). Account kept active for next cycle.`)
+                    } else {
+                        // Permanent/Authentication error - log error to the account to surface in UI
+                        await prisma.emailAccount.update({
+                            where: { id: account.id },
+                            data: {
+                                status: 'error',
+                                errorDetail: `Sending failed: ${errorMessage}`
+                            }
+                        }).catch((e: any) => console.error('Failed to update account error status', e))
+                    }
                 }
             }
         }

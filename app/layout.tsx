@@ -7,6 +7,7 @@ import { Providers } from "@/components/providers";
 import { AppLayout } from "@/components/app/layout/AppLayout";
 import { Toaster } from "@/components/ui/toaster";
 import { WorkspaceProvider } from "@/contexts/WorkspaceContext";
+import { NotificationProvider } from "@/components/app/notifications";
 
 const averta = localFont({
   src: [
@@ -51,11 +52,13 @@ export default function RootLayout({
             enableSystem={true}
             disableTransitionOnChange
           >
-            <WorkspaceProvider>
-              <AppLayout>
-                {children}
-              </AppLayout>
-            </WorkspaceProvider>
+            <NotificationProvider>
+              <WorkspaceProvider>
+                <AppLayout>
+                  {children}
+                </AppLayout>
+              </WorkspaceProvider>
+            </NotificationProvider>
             <Toaster />
           </ThemeProvider>
         </Providers>

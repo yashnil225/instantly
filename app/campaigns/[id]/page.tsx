@@ -33,8 +33,6 @@ import {
     Settings,
     Stethoscope,
     RefreshCw,
-    Plus,
-    ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
@@ -142,7 +140,6 @@ export default function CampaignAnalyticsPage() {
     const [filtersLoaded, setFiltersLoaded] = useState(false)
     const [activeSubTab, setActiveSubTab] = useState<'steps' | 'activity'>('steps')
     const [isRefreshing, setIsRefreshing] = useState(false)
-    const [customSlotModal, setCustomSlotModal] = useState<{ metricKey: string; title: string } | null>(null)
 
     const [filters, setFilters] = useState({
         includeAutoReplies: false,
@@ -183,16 +180,37 @@ export default function CampaignAnalyticsPage() {
                 // Initialize filters from saved settings once
                 if (!filtersLoaded) {
                     setFiltersLoaded(true)
+                    const isOpensDisabled = analyticsData.trackOpens === false || analyticsData.openRate === "Disabled"
+                    const isClicksDisabled = analyticsData.trackLinks === false || analyticsData.clickRate === "Disabled"
+
+                    let initialFilters = {
+                        includeAutoReplies: false,
+                        showSequenceStarted: true,
+                        showOpenRate: !isOpensDisabled,
+                        showClickRate: !isClicksDisabled,
+                        showReplyRate: false,
+                        showPositiveReplyRate: false,
+                        showOpportunities: true,
+                    }
+
                     if (analyticsData.settings) {
                         try {
                             const parsedSettings = JSON.parse(analyticsData.settings)
                             if (parsedSettings.filters) {
-                                setFilters(prev => ({ ...prev, ...parsedSettings.filters }))
+                                initialFilters = { ...initialFilters, ...parsedSettings.filters }
+                                if (isOpensDisabled && !parsedSettings.explicitlyShownOpens) {
+                                    initialFilters.showOpenRate = false
+                                }
+                                if (isClicksDisabled && !parsedSettings.explicitlyShownClicks) {
+                                    initialFilters.showClickRate = false
+                                }
                             }
                         } catch (e) {
                             console.error("Failed to parse campaign settings", e)
                         }
                     }
+
+                    setFilters(initialFilters)
                 }
 
                 // Trigger background classification if needed
@@ -275,7 +293,12 @@ export default function CampaignAnalyticsPage() {
         
         try {
             const currentSettings = data?.settings ? JSON.parse(data.settings) : {}
-            const newSettings = { ...currentSettings, filters: newFilters }
+            const newSettings = { 
+                ...currentSettings, 
+                filters: newFilters,
+                explicitlyShownOpens: newFilters.showOpenRate,
+                explicitlyShownClicks: newFilters.showClickRate
+            }
             
             await fetch(`/api/campaigns/${campaignId}`, {
                 method: 'PATCH',
@@ -401,7 +424,6 @@ export default function CampaignAnalyticsPage() {
             tooltip: "Number of leads who started the sequence",
             show: filters.showSequenceStarted,
             isCalculating: false,
-            isDisabledMetric: false,
         },
         {
             id: "openRate",
@@ -410,7 +432,6 @@ export default function CampaignAnalyticsPage() {
             tooltip: "Percentage of emails opened",
             show: filters.showOpenRate,
             isCalculating: false,
-            isDisabledMetric: isOpenRateDisabled,
         },
         {
             id: "clickRate",
@@ -419,7 +440,6 @@ export default function CampaignAnalyticsPage() {
             tooltip: "Percentage of emails clicked",
             show: filters.showClickRate,
             isCalculating: false,
-            isDisabledMetric: isClickRateDisabled,
         },
         {
             id: "replyRate",
@@ -428,7 +448,6 @@ export default function CampaignAnalyticsPage() {
             tooltip: "Percentage of emails replied to",
             show: filters.showReplyRate,
             isCalculating: false,
-            isDisabledMetric: false,
         },
         {
             id: "positiveReplyRate",
@@ -437,7 +456,6 @@ export default function CampaignAnalyticsPage() {
             tooltip: "Percentage of positive replies (interested or meeting booked)",
             show: filters.showPositiveReplyRate,
             isCalculating: data?.positiveReplyRate === 'calculating...',
-            isDisabledMetric: false,
         },
         {
             id: "opportunities",
@@ -446,7 +464,6 @@ export default function CampaignAnalyticsPage() {
             tooltip: "Number and value of opportunities",
             show: filters.showOpportunities,
             isCalculating: false,
-            isDisabledMetric: false,
         }
     ].filter(card => card.show)
 
@@ -645,63 +662,39 @@ export default function CampaignAnalyticsPage() {
                             ) : (
                                 <>
                                     {/* Metric Cards */}
-                                    <div className="grid grid-cols-5 gap-4">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                                         {metricCards.map((metric) => (
-                                            metric.isDisabledMetric ? (
-                                                <div
-                                                    key={metric.id}
-                                                    onClick={() => setCustomSlotModal({ metricKey: metric.id, title: metric.title })}
-                                                    className="border border-dashed border-[#2a2a2a] hover:border-blue-500/50 bg-[#0c0c0c]/60 hover:bg-[#121212] rounded-lg p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-200 group min-h-[110px] select-none"
-                                                >
-                                                    <div className="w-8 h-8 rounded-full border border-dashed border-[#333] group-hover:border-blue-500/60 group-hover:bg-blue-500/10 flex items-center justify-center mb-2 transition-all">
-                                                        <Plus className="h-4 w-4 text-gray-500 group-hover:text-blue-400 transition-colors" />
-                                                    </div>
-                                                    <div className="text-xs font-semibold text-gray-300 group-hover:text-white transition-colors flex items-center gap-1.5">
-                                                        <span>Empty Slot</span>
-                                                        <span className="text-[10px] px-1.5 py-0.5 bg-[#181818] text-gray-400 group-hover:text-blue-400 rounded border border-[#2a2a2a] font-mono">
-                                                            + Block
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-[11px] text-gray-500 group-hover:text-gray-400 mt-1 transition-colors">
-                                                        {metric.title} disabled in options
-                                                    </div>
-                                                    <div className="text-[10px] text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 font-medium">
-                                                        Click to customize or re-enable
-                                                    </div>
+                                            <div
+                                                key={metric.id || metric.title}
+                                                className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6 hover:border-[#333] transition-colors"
+                                            >
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-sm font-medium text-gray-400">{metric.title}</span>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Info className="h-4 w-4 text-gray-600 cursor-help hover:text-gray-400" />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="bg-[#111] border-[#333] text-white">{metric.tooltip}</TooltipContent>
+                                                    </Tooltip>
                                                 </div>
-                                            ) : (
-                                                <div
-                                                    key={metric.id || metric.title}
-                                                    className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6 hover:border-[#333] transition-colors"
-                                                >
-                                                    <div className="flex items-center justify-between mb-3">
-                                                        <span className="text-sm font-medium text-gray-400">{metric.title}</span>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                                <Info className="h-4 w-4 text-gray-600 cursor-help hover:text-gray-400" />
-                                                            </TooltipTrigger>
-                                                            <TooltipContent className="bg-[#111] border-[#333] text-white">{metric.tooltip}</TooltipContent>
-                                                        </Tooltip>
-                                                    </div>
-                                                    {metric.isCalculating ? (
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                                                                <span className="text-sm text-gray-400">Calculating...</span>
-                                                            </div>
-                                                            <div className="w-full h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                                                                    style={{ width: `${classifyingProgress}%` }}
-                                                                />
-                                                            </div>
-                                                            <div className="text-xs text-gray-500">{classifyingProgress}% complete</div>
+                                                {metric.isCalculating ? (
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                                                            <span className="text-sm text-gray-400">Calculating...</span>
                                                         </div>
-                                                    ) : (
-                                                        <div className="text-2xl font-bold text-white tracking-tight">{metric.value}</div>
-                                                    )}
-                                                </div>
-                                            )
+                                                        <div className="w-full h-1.5 bg-[#1a1a1a] rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                                                                style={{ width: `${classifyingProgress}%` }}
+                                                            />
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">{classifyingProgress}% complete</div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-2xl font-bold text-white tracking-tight">{metric.value}</div>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
 
@@ -1126,108 +1119,7 @@ export default function CampaignAnalyticsPage() {
                         </DialogContent>
                     </Dialog>
 
-                    {/* Custom Metric Block / Empty Slot Modal */}
-                    <Dialog open={!!customSlotModal} onOpenChange={(open) => !open && setCustomSlotModal(null)}>
-                        <DialogContent className="bg-[#111] border-[#2a2a2a] text-white sm:max-w-[500px] p-6 shadow-2xl">
-                            <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
-                                <span className="p-1.5 bg-blue-600/10 text-blue-400 rounded-md border border-blue-600/20">
-                                    <Plus className="h-4 w-4" />
-                                </span>
-                                Available Metric Slot
-                            </DialogTitle>
-                            <div className="space-y-4 mt-2">
-                                <p className="text-sm text-gray-400">
-                                    This metric block is empty because <span className="text-white font-semibold">{customSlotModal?.title}</span> is disabled in this campaign&apos;s options.
-                                </p>
 
-                                <div className="bg-[#161616] border border-[#2a2a2a] rounded-lg p-4 space-y-3">
-                                    <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center justify-between">
-                                        <span>Option 1: Re-enable Tracking</span>
-                                        <Badge variant="outline" className="text-[10px] bg-green-500/10 text-green-400 border-green-500/20">
-                                            Restores Metric
-                                        </Badge>
-                                    </div>
-                                    <p className="text-xs text-gray-500 leading-relaxed">
-                                        Turn {customSlotModal?.title.toLowerCase()} back on in Campaign Options to restore live rate telemetry and add the stage back to the conversion funnel.
-                                    </p>
-                                    <Button
-                                        onClick={() => {
-                                            setCustomSlotModal(null)
-                                            router.push(`/campaigns/${campaignId}/options`)
-                                        }}
-                                        className="w-full bg-blue-600 hover:bg-blue-500 text-white text-xs h-9 gap-2 font-medium"
-                                    >
-                                        Configure in Campaign Options
-                                        <ExternalLink className="h-3.5 w-3.5" />
-                                    </Button>
-                                </div>
-
-                                <div className="bg-[#161616] border border-[#2a2a2a] rounded-lg p-4 space-y-3">
-                                    <div className="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center justify-between">
-                                        <span>Option 2: Add Custom Metric Block</span>
-                                        <Badge variant="outline" className="text-[10px] bg-blue-500/10 text-blue-400 border-blue-500/20">
-                                            Custom Slot
-                                        </Badge>
-                                    </div>
-                                    <p className="text-xs text-gray-500 leading-relaxed">
-                                        Assign an alternative KPI widget to this empty block:
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-2 pt-1">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                toast({ title: "Custom Widget Attached", description: "Deliverability Health metric pinned to this slot." })
-                                                setCustomSlotModal(null)
-                                            }}
-                                            className="border-[#333] bg-[#0c0c0c] hover:bg-[#1a1a1a] text-xs h-8 text-gray-300"
-                                        >
-                                            Deliverability Health
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                toast({ title: "Custom Widget Attached", description: "Meeting Bookings metric pinned to this slot." })
-                                                setCustomSlotModal(null)
-                                            }}
-                                            className="border-[#333] bg-[#0c0c0c] hover:bg-[#1a1a1a] text-xs h-8 text-gray-300"
-                                        >
-                                            Meeting Bookings
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                toast({ title: "Custom Widget Attached", description: "Bounce Protection score pinned to this slot." })
-                                                setCustomSlotModal(null)
-                                            }}
-                                            className="border-[#333] bg-[#0c0c0c] hover:bg-[#1a1a1a] text-xs h-8 text-gray-300"
-                                        >
-                                            Bounce Protection
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                toast({ title: "Custom Widget Attached", description: "Lead Velocity score pinned to this slot." })
-                                                setCustomSlotModal(null)
-                                            }}
-                                            className="border-[#333] bg-[#0c0c0c] hover:bg-[#1a1a1a] text-xs h-8 text-gray-300"
-                                        >
-                                            Lead Velocity
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-end pt-2">
-                                    <Button variant="ghost" onClick={() => setCustomSlotModal(null)} className="text-gray-400 hover:text-white text-xs">
-                                        Dismiss
-                                    </Button>
-                                </div>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
                 </div>
             </div>
         </TooltipProvider>

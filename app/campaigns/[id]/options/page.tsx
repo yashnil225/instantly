@@ -387,7 +387,7 @@ export default function CampaignOptionsPage() {
                             )}
                         </div>
                         <p className="text-gray-500 text-xs">
-                            Track email opens using an invisible 1x1 tracking pixel. If disabled, the Open Rate card becomes a blank customizable slot in Analytics and the Opened stage is removed from the conversion funnel.
+                            Track email opens using an invisible 1x1 tracking pixel. If disabled, Open Rate is unticked from the Analytics metrics row and the Opened stage is removed from the conversion funnel.
                         </p>
                     </div>
                     <div className="w-2/3 flex items-center justify-end">
@@ -422,8 +422,8 @@ export default function CampaignOptionsPage() {
                         <div className="flex items-center gap-2 mb-1">
                             <Label className="text-white font-bold text-sm">Click Tracking (Click Rate)</Label>
                             {!linkTracking ? (
-                                <span className="text-[10px] bg-blue-900/40 text-blue-400 border border-blue-900/50 px-1.5 py-0.5 rounded font-medium">
-                                    Blank Slot in Analytics
+                                <span className="text-[10px] bg-amber-900/30 text-amber-400 border border-amber-800/40 px-1.5 py-0.5 rounded font-medium">
+                                    Disabled
                                 </span>
                             ) : (
                                 <span className="text-[10px] bg-green-900/30 text-green-400 border border-green-800/40 px-1.5 py-0.5 rounded font-medium">
@@ -432,7 +432,7 @@ export default function CampaignOptionsPage() {
                             )}
                         </div>
                         <p className="text-gray-500 text-xs">
-                            Track link clicks in outgoing emails. If disabled, link redirect wrappers are omitted for improved inbox placement, the Click Rate card is replaced with a blank customizable block slot, and the Clicked stage is removed from the conversion funnel.
+                            Track link clicks in outgoing emails. If disabled, link redirect wrappers are omitted for improved inbox placement, Click Rate is unticked from the Analytics metrics row, and the Clicked stage is removed from the conversion funnel.
                         </p>
                     </div>
                     <div className="w-2/3 flex items-center justify-end">

@@ -13,7 +13,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json()
-        const { jobId, batchSize = 50 } = body
+        const { jobId, batchSize = 50, batch, rows, emailField: customEmailField } = body
 
         if (!jobId) {
             return NextResponse.json({ error: 'jobId is required' }, { status: 400 })
@@ -71,38 +71,54 @@ export async function POST(request: Request) {
             headers = ['email']
         }
 
-        let emailField = headers.find(h => /^(email|e-mail|email_address|email address|work email|contact email|mail)$/i.test(h.trim()))
-        if (!emailField) emailField = headers.find(h => /email/i.test(h)) || headers[0]
+        let emailField = customEmailField || headers.find(h => /^(email|e-mail|email_address|email address|work email|contact email|mail)$/i.test(h.trim()))
+        if (!emailField) emailField = headers.find(h => /email/i.test(h)) || headers[0] || 'email'
 
-        // Parse rows (handles both compact 2D array and legacy object array)
-        let rawDataRows: any[] = []
-        try {
-            if ((job as any).rawRowsJson) {
-                rawDataRows = JSON.parse((job as any).rawRowsJson)
-            }
-        } catch {}
+        let nextBatch: Array<Record<string, string>> = []
+        const incoming = Array.isArray(batch) ? batch : Array.isArray(rows) ? rows : null
 
-        const nextBatchRaw = rawDataRows.slice(verifiedCount, verifiedCount + batchSize)
-
-        if (nextBatchRaw.length === 0) {
-            await prisma.verificationJob.update({
-                where: { id: jobId },
-                data: { status: 'completed', progress: 100, completedAt: new Date() }
+        if (incoming && incoming.length > 0) {
+            nextBatch = incoming.map((row: any) => {
+                if (Array.isArray(row)) {
+                    const rec: Record<string, string> = {}
+                    headers.forEach((h, idx) => {
+                        rec[h] = String(row[idx] ?? '')
+                    })
+                    return rec
+                }
+                return (row && typeof row === 'object') ? row : { [emailField!]: String(row || '') }
             })
-            return NextResponse.json({ completed: true, progress: 100 })
-        }
+        } else {
+            // Parse rows from DB (handles both compact 2D array and legacy object array)
+            let rawDataRows: any[] = []
+            try {
+                if ((job as any).rawRowsJson) {
+                    rawDataRows = JSON.parse((job as any).rawRowsJson)
+                }
+            } catch {}
 
-        // Convert batch items into standard key-value records
-        const nextBatch: Array<Record<string, string>> = nextBatchRaw.map((row: any) => {
-            if (Array.isArray(row)) {
-                const rec: Record<string, string> = {}
-                headers.forEach((h, idx) => {
-                    rec[h] = String(row[idx] ?? '')
+            const nextBatchRaw = rawDataRows.slice(verifiedCount, verifiedCount + batchSize)
+
+            if (nextBatchRaw.length === 0) {
+                await prisma.verificationJob.update({
+                    where: { id: jobId },
+                    data: { status: 'completed', progress: 100, completedAt: new Date() }
                 })
-                return rec
+                return NextResponse.json({ completed: true, progress: 100 })
             }
-            return (row && typeof row === 'object') ? row : { [emailField!]: String(row || '') }
-        })
+
+            // Convert batch items into standard key-value records
+            nextBatch = nextBatchRaw.map((row: any) => {
+                if (Array.isArray(row)) {
+                    const rec: Record<string, string> = {}
+                    headers.forEach((h, idx) => {
+                        rec[h] = String(row[idx] ?? '')
+                    })
+                    return rec
+                }
+                return (row && typeof row === 'object') ? row : { [emailField!]: String(row || '') }
+            })
+        }
 
         // Process chunk concurrently with live checks
         let validInc = 0

@@ -72,6 +72,8 @@ function parseSmartCsv(content: string): { headers: string[]; rows: Array<Record
     return { headers: rawHeaders, rows: validRows, emailField: bestEmailField }
 }
 
+import * as XLSX from 'xlsx'
+
 export async function POST(request: Request) {
     try {
         const session = await auth()
@@ -80,19 +82,77 @@ export async function POST(request: Request) {
         }
         const currentUserId = session.user.id
 
-        const formData = await request.formData()
-        const file = formData.get('file') as File | null
+        const contentType = request.headers.get('content-type') || ''
+        let fileName = 'leads.csv'
+        let headers: string[] = []
+        let rows: Array<Record<string, string>> = []
+        let emailField = ''
+        let totalCount = 0
 
-        if (!file) {
-            return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+        if (contentType.includes('application/json')) {
+            const body = await request.json()
+            fileName = body.fileName || 'leads.csv'
+            headers = body.headers || ['email']
+            emailField = body.emailField || headers[0] || 'email'
+            totalCount = Number(body.total) || 0
+            if (Array.isArray(body.rows)) {
+                rows = body.rows
+                if (!totalCount) totalCount = rows.length
+            }
+        } else {
+            const formData = await request.formData()
+            const file = formData.get('file') as File | null
+
+            if (!file) {
+                return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+            }
+
+            fileName = file.name
+            const isExcel = /\.(xlsx|xls)$/i.test(fileName)
+
+            if (isExcel) {
+                const arrayBuf = await file.arrayBuffer()
+                const wb = XLSX.read(Buffer.from(arrayBuf), { type: 'buffer' })
+                const sheet = wb.Sheets[wb.SheetNames[0]]
+                const sheetRows = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: '' })
+                if (sheetRows.length > 0) {
+                    headers = (sheetRows[0] || []).map((h: any) => String(h || '').trim()).filter(Boolean)
+                    const dataRows = sheetRows.slice(1).map(row => {
+                        const obj: Record<string, string> = {}
+                        headers.forEach((h, i) => {
+                            obj[h] = String(row[i] ?? '').trim()
+                        })
+                        return obj
+                    })
+                    // Detect email field
+                    for (const h of headers) {
+                        const hLower = h.toLowerCase()
+                        if (/^(email|e-mail|email_address|email address|work email|contact email|mail)$/i.test(hLower)) {
+                            emailField = h
+                            break
+                        }
+                    }
+                    if (!emailField) {
+                        emailField = headers.find(h => /email/i.test(h)) || headers[0] || 'email'
+                    }
+                    rows = dataRows.filter(r => (r[emailField] || '').trim().length > 0)
+                    totalCount = rows.length
+                }
+            } else {
+                const text = await file.text()
+                const parsed = parseSmartCsv(text)
+                headers = parsed.headers
+                rows = parsed.rows
+                emailField = parsed.emailField
+                totalCount = rows.length
+            }
         }
 
-        const text = await file.text()
-        const { headers, rows, emailField } = parseSmartCsv(text)
-
-        if (rows.length === 0) {
-            return NextResponse.json({ error: 'CSV file contains no valid email leads' }, { status: 400 })
+        if (totalCount === 0 && rows.length === 0) {
+            return NextResponse.json({ error: 'Uploaded file contains no valid email leads' }, { status: 400 })
         }
+
+        const effectiveTotal = totalCount || rows.length
 
         // --- 1. Enforce 30-Job Capacity Limit per User (FIFO) ---
         const userFilter = { userId: currentUserId }
@@ -114,15 +174,26 @@ export async function POST(request: Request) {
             }
         }
 
-        // --- 2. Compact rows into a 2D array to cut JSON size by ~80% for large files (e.g. 8k leads) ---
-        const compactRows = rows.map(r => headers.map(h => r[h] || ''))
+        // --- 2. Compact rows for storage without exceeding Turso/HTTP limit (cap at ~250KB) ---
+        let rawRowsJsonToStore: string | null = null
+        if (rows.length > 0) {
+            const compactRows = rows.map(r => headers.map(h => (r[h] || '').slice(0, 100)))
+            const jsonStr = JSON.stringify(compactRows)
+            if (jsonStr.length < 300000) {
+                rawRowsJsonToStore = jsonStr
+            } else {
+                // If the entire dataset is large, store first 500 rows as fallback cache
+                const sliceCompact = compactRows.slice(0, 500)
+                rawRowsJsonToStore = JSON.stringify(sliceCompact)
+            }
+        }
 
         // --- 3. Create Job in Database ---
         const newJob = await prisma.verificationJob.create({
             data: {
                 userId: currentUserId,
-                fileName: file.name,
-                total: rows.length,
+                fileName,
+                total: effectiveTotal,
                 processed: 0,
                 validCount: 0,
                 riskyCount: 0,
@@ -130,17 +201,18 @@ export async function POST(request: Request) {
                 disposableCount: 0,
                 progress: 0,
                 status: 'processing',
-                currentLog: `Identified ${rows.length} leads in column "${emailField}". Starting verification...`,
+                currentLog: `Identified ${effectiveTotal} leads in column "${emailField}". Starting verification...`,
                 headers: JSON.stringify(headers),
-                rawRowsJson: JSON.stringify(compactRows)
+                rawRowsJson: rawRowsJsonToStore
             }
         })
 
         return NextResponse.json({
             jobId: newJob.id,
-            total: rows.length,
-            fileName: file.name,
-            emailField
+            total: effectiveTotal,
+            fileName,
+            emailField,
+            headers
         })
     } catch (error: any) {
         console.error('Error in bulk verification:', error)

@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
     // Dev mode works perfectly; skip strict type checking for production build
     ignoreBuildErrors: true,
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb',
+    },
+  },
   async headers() {
     return [
       {

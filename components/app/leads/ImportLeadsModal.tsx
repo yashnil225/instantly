@@ -345,8 +345,17 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                         }),
                     })
 
-                    const data = await res.json()
+                    let data: any = null
+                    const contentType = res.headers.get("content-type") || ""
+                    if (contentType.includes("application/json")) {
+                        try { data = await res.json() } catch {}
+                    }
+
                     if (!res.ok) {
+                        if (!data) {
+                            const text = await res.text().catch(() => "")
+                            throw new Error(res.status === 413 ? "Batch payload too large (413 Request Entity Too Large)" : (text.slice(0, 120) || `Server error (${res.status})`))
+                        }
                         throw new Error(data.error || "Upload failed")
                     }
 

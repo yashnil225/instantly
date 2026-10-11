@@ -33,6 +33,34 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/components/ui/use-toast"
 import { CampaignImportModal } from "@/components/app/verifier/CampaignImportModal"
+import Papa from "papaparse"
+
+async function parseResponseSafely(res: Response): Promise<{ data: any; error: string | null }> {
+    const contentType = res.headers.get("content-type") || ""
+    if (contentType.includes("application/json")) {
+        try {
+            const json = await res.json()
+            if (!res.ok) {
+                return { data: null, error: json.error || `Request failed (${res.status})` }
+            }
+            return { data: json, error: null }
+        } catch {
+            return { data: null, error: `Invalid JSON response from server (${res.status})` }
+        }
+    }
+
+    const text = await res.text().catch(() => "")
+    if (!res.ok) {
+        if (res.status === 413 || text.includes("Request Entity Too Large") || text.includes("Payload Too Large")) {
+            return {
+                data: null,
+                error: "The file payload is too large for a single upload (413 Request Entity Too Large). We will stream it in chunks instead."
+            }
+        }
+        return { data: null, error: text.slice(0, 160) || `Server returned error (${res.status})` }
+    }
+    return { data: text, error: null }
+}
 
 interface VerificationResult {
     email: string
@@ -118,6 +146,9 @@ export default function EmailVerifierPage() {
         fetchHistoryFromDb()
     }, [])
 
+    // In-memory rows cache for active uploads to stream in chunks without DB/proxy payload limits
+    const jobRowsMapRef = useRef<Map<string, { rows: Array<Record<string, string>>; emailField: string; processedIndex: number }>>(new Map())
+
     // Active job chunk driver
     const drivingJobsRef = useRef<Set<string>>(new Set())
 
@@ -129,16 +160,31 @@ export default function EmailVerifierPage() {
         try {
             while (true) {
                 try {
+                    const inMemory = jobRowsMapRef.current.get(jobId)
+                    const payload: any = { jobId, batchSize: 50 }
+
+                    if (inMemory) {
+                        const chunk = inMemory.rows.slice(inMemory.processedIndex, inMemory.processedIndex + 50)
+                        if (chunk.length === 0) {
+                            jobRowsMapRef.current.delete(jobId)
+                            break
+                        }
+                        payload.batch = chunk
+                        payload.emailField = inMemory.emailField
+                    }
+
                     const res = await fetch("/api/verify/process-chunk", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ jobId, batchSize: 50 })
+                        body: JSON.stringify(payload)
                     })
 
-                    if (!res.ok) {
+                    const { data, error } = await parseResponseSafely(res)
+
+                    if (error || !data) {
                         consecutiveErrors++
                         if (consecutiveErrors >= 8) {
-                            console.error(`Verification chunk aborted after ${consecutiveErrors} consecutive errors`)
+                            console.error(`Verification chunk aborted after ${consecutiveErrors} consecutive errors:`, error)
                             break
                         }
                         const backoff = Math.min(1000 * Math.pow(1.4, consecutiveErrors), 6000)
@@ -147,17 +193,20 @@ export default function EmailVerifierPage() {
                     }
 
                     consecutiveErrors = 0
-                    const data = await res.json()
+                    if (inMemory) {
+                        inMemory.processedIndex += (payload.batch?.length || 50)
+                    }
 
                     setActiveJobs(prev => prev.map(j => (j.id === jobId ? { ...j, ...data } : j)))
                     setHistory(prev => prev.map(j => (j.id === jobId ? { ...j, ...data } : j)))
 
                     if (data.completed || data.status === 'completed' || data.status === 'canceled') {
+                        jobRowsMapRef.current.delete(jobId)
                         break
                     }
 
-                    // Small 30ms yield
-                    await new Promise(r => setTimeout(r, 30))
+                    // Small 25ms yield
+                    await new Promise(r => setTimeout(r, 25))
                 } catch (e) {
                     consecutiveErrors++
                     if (consecutiveErrors >= 8) {
@@ -200,8 +249,8 @@ export default function EmailVerifierPage() {
                 body: JSON.stringify({ email: target })
             })
 
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || "Verification failed")
+            const { data, error } = await parseResponseSafely(res)
+            if (error || !data) throw new Error(error || "Verification failed")
 
             setSingleResult(data)
         } catch (err: any) {
@@ -215,25 +264,133 @@ export default function EmailVerifierPage() {
         }
     }
 
-    // --- Bulk CSV Upload ---
+    // --- Bulk CSV / Excel Upload & Verification ---
     const handleFileUpload = async (file: File) => {
-        if (!file.name.endsWith(".csv")) {
-            toast({ title: "Invalid file", description: "Please upload a valid .csv file", variant: "destructive" })
+        const isSupported = /\.(csv|xlsx|xls)$/i.test(file.name)
+        if (!isSupported) {
+            toast({
+                title: "Invalid file format",
+                description: "Please upload a valid .csv or Excel (.xlsx / .xls) file",
+                variant: "destructive"
+            })
             return
         }
 
         setIsUploading(true)
-        const formData = new FormData()
-        formData.append("file", file)
 
         try {
-            const res = await fetch("/api/verify/bulk", {
-                method: "POST",
-                body: formData
+            let headers: string[] = []
+            let rawRows: Array<Record<string, string>> = []
+
+            if (/\.(xlsx|xls)$/i.test(file.name)) {
+                // Client-side Excel parsing using SheetJS
+                const XLSX = await import("xlsx")
+                const buffer = await file.arrayBuffer()
+                const wb = XLSX.read(buffer, { type: "array" })
+                const sheetName = wb.SheetNames[0]
+                const sheet = wb.Sheets[sheetName]
+                const sheetData = XLSX.utils.sheet_to_json<any[]>(sheet, { header: 1, defval: "" })
+
+                if (sheetData.length > 0) {
+                    headers = (sheetData[0] || []).map((h: any) => String(h || "").trim()).filter(Boolean)
+                    rawRows = sheetData.slice(1).map(row => {
+                        const obj: Record<string, string> = {}
+                        headers.forEach((h, i) => {
+                            obj[h] = String(row[i] ?? "").trim()
+                        })
+                        return obj
+                    })
+                }
+            } else {
+                // Client-side CSV parsing
+                const text = await file.text()
+                const parsed = Papa.parse<Record<string, string>>(text, {
+                    header: true,
+                    skipEmptyLines: "greedy",
+                    transformHeader: (h) => (h || "").trim()
+                })
+                headers = (parsed.meta.fields || []).filter(Boolean)
+                rawRows = parsed.data || []
+            }
+
+            if (headers.length === 0 || rawRows.length === 0) {
+                toast({
+                    title: "Empty File",
+                    description: "The uploaded file does not contain any readable columns or rows.",
+                    variant: "destructive"
+                })
+                setIsUploading(false)
+                return
+            }
+
+            // Smart Email Column Detection
+            const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+            let bestEmailField = ""
+            let bestScore = -1
+
+            for (const h of headers) {
+                const hLower = h.toLowerCase()
+                let score = 0
+                if (/^(email|e-mail|email_address|email address|work email|contact email|mail)$/i.test(hLower)) score += 100
+                else if (hLower.includes("email") || hLower.includes("mail")) score += 50
+
+                const sample = rawRows.slice(0, 50)
+                let validCount = 0
+                for (const r of sample) {
+                    if (EMAIL_REGEX.test((r[h] || "").trim())) validCount++
+                }
+                score += validCount * 10
+                if (score > bestScore && validCount > 0) {
+                    bestScore = score
+                    bestEmailField = h
+                }
+            }
+
+            if (!bestEmailField) {
+                bestEmailField = headers.find(h => /email/i.test(h)) || headers[0]
+            }
+
+            // Filter out empty rows or duplicate headers
+            const validRows = rawRows.filter(r => {
+                const val = (r[bestEmailField] || "").trim()
+                if (!val) return false
+                if (val.toLowerCase() === bestEmailField.toLowerCase() || val.toLowerCase() === "email") return false
+                return true
             })
 
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || "Upload failed")
+            if (validRows.length === 0) {
+                toast({
+                    title: "No Valid Leads",
+                    description: `No valid email rows were found under column "${bestEmailField}".`,
+                    variant: "destructive"
+                })
+                setIsUploading(false)
+                return
+            }
+
+            // Initialize Job via lightweight JSON payload (prevents 413 "Request Entity Too Large" errors completely)
+            const res = await fetch("/api/verify/bulk", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    fileName: file.name,
+                    total: validRows.length,
+                    headers,
+                    emailField: bestEmailField
+                })
+            })
+
+            const { data, error } = await parseResponseSafely(res)
+            if (error || !data) {
+                throw new Error(error || "Could not initialize verification job")
+            }
+
+            // Store rows in memory for live chunk-streaming to avoid Turso SQL size limits
+            jobRowsMapRef.current.set(data.jobId, {
+                rows: validRows,
+                emailField: bestEmailField,
+                processedIndex: 0
+            })
 
             const newJob: StoredJob = {
                 id: data.jobId,
@@ -246,7 +403,7 @@ export default function EmailVerifierPage() {
                 disposableCount: 0,
                 progress: 0,
                 status: "processing",
-                currentLog: "Starting verification in database...",
+                currentLog: `Identified ${data.total} leads in column "${bestEmailField}". Starting verification...`,
                 createdAt: new Date().toISOString()
             }
 
@@ -257,12 +414,13 @@ export default function EmailVerifierPage() {
 
             toast({
                 title: "Verification Started",
-                description: `Saved to DB: Verifying ${data.total} leads from ${data.fileName}`
+                description: `Successfully loaded ${validRows.length} leads from ${file.name}. Verifying in database...`
             })
         } catch (err: any) {
+            console.error("Bulk upload error:", err)
             toast({
                 title: "Upload Failed",
-                description: err.message || "Could not start verification",
+                description: err.message || "Could not process file for verification",
                 variant: "destructive"
             })
         } finally {
@@ -387,7 +545,7 @@ export default function EmailVerifierPage() {
                 <TabsList className="grid grid-cols-3 max-w-md bg-muted/60 p-1">
                     <TabsTrigger value="bulk" className="gap-2">
                         <UploadCloud className="h-4 w-4" />
-                        Bulk CSV
+                        Bulk CSV / Excel
                     </TabsTrigger>
                     <TabsTrigger value="single" className="gap-2">
                         <Search className="h-4 w-4" />
@@ -400,7 +558,7 @@ export default function EmailVerifierPage() {
                 </TabsList>
 
                 {/* ========================================================================= */}
-                {/* TAB 1: BULK CSV VERIFIER                                                  */}
+                {/* TAB 1: BULK CSV / EXCEL VERIFIER                                          */}
                 {/* ========================================================================= */}
                 <TabsContent value="bulk" className="space-y-6">
                     {/* Drag & Drop Upload Zone */}
@@ -420,7 +578,7 @@ export default function EmailVerifierPage() {
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept=".csv"
+                            accept=".csv, .xlsx, .xls, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                             className="hidden"
                             onChange={e => {
                                 if (e.target.files?.[0]) handleFileUpload(e.target.files[0])
@@ -432,9 +590,9 @@ export default function EmailVerifierPage() {
                         </div>
 
                         <div>
-                            <h3 className="text-lg font-semibold">Drop your CSV here or click to browse</h3>
+                            <h3 className="text-lg font-semibold">Drop your CSV or Excel (.xlsx) file here or click to browse</h3>
                             <p className="text-sm text-muted-foreground mt-1">
-                                Saves all results into database • Auto-purges 31st oldest job • Multi-file concurrent support
+                                Supports .csv, .xlsx, and .xls files • Direct DB persistence • 2k+ leads chunk-verified smoothly
                             </p>
                         </div>
 

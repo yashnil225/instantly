@@ -955,6 +955,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         }
                     } else if (isTransientNetworkError) {
                         console.warn(`[Sender] ⚠️ Transient network/connection timeout sending via ${account.email} (${errorMessage}). Account kept active for next cycle.`)
+                    } else if (errorMessage.toLowerCase().includes('prisma') || errorMessage.toLowerCase().includes('server_error') || errorMessage.toLowerCase().includes('sqlite') || errorMessage.toLowerCase().includes('database')) {
+                        console.warn(`[Sender] ⚠️ Database sync issue during send cycle for ${account.email} (${errorMessage}). Account is healthy; keeping active.`)
                     } else {
                         // Permanent/Authentication error on sender inbox - log error to account
                         await prisma.emailAccount.update({

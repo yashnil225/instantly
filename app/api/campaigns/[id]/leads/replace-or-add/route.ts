@@ -176,13 +176,50 @@ export async function POST(
             })
         }
 
-        // 4. Check LeadStatusMemory Cache to restore historical status for previously contacted leads
-        const memoryMap = await getLeadMemoryMap(campaignId, finalLeadsToInsert.map(l => l.email))
+        // 4. Suppress any known bounced emails across workspace history - NEVER allow a bounced email into a campaign!
+        const [bouncedMemories, bouncedLeads] = await Promise.all([
+            prisma.leadStatusMemory.findMany({
+                where: {
+                    email: { in: finalLeadsToInsert.map(l => l.email) },
+                    status: 'bounced'
+                },
+                select: { email: true }
+            }),
+            prisma.lead.findMany({
+                where: {
+                    email: { in: finalLeadsToInsert.map(l => l.email) },
+                    status: 'bounced'
+                },
+                select: { email: true }
+            })
+        ])
+
+        const bouncedEmailSet = new Set([
+            ...bouncedMemories.map(m => m.email.toLowerCase()),
+            ...bouncedLeads.map(l => l.email.toLowerCase())
+        ])
+
+        const safeLeadsToInsert = finalLeadsToInsert.filter(l => !bouncedEmailSet.has(l.email))
+        const bouncedSkipped = finalLeadsToInsert.length - safeLeadsToInsert.length
+
+        if (safeLeadsToInsert.length === 0) {
+            return NextResponse.json({
+                success: true,
+                importedCount: 0,
+                duplicatesSkipped,
+                bouncedSkipped,
+                replacedCount,
+                message: `All remaining leads were previously bounced addresses and have been safely blocked.`
+            })
+        }
+
+        // 5. Check LeadStatusMemory Cache to restore historical status for previously contacted leads
+        const memoryMap = await getLeadMemoryMap(campaignId, safeLeadsToInsert.map(l => l.email))
         let memoryRestoredCount = 0
 
-        const leadsWithStatus = finalLeadsToInsert.map(lead => {
+        const leadsWithStatus = safeLeadsToInsert.map(lead => {
             const memory = memoryMap.get(lead.email)
-            if (memory && memory.status && memory.status !== 'new' && memory.status !== 'lead') {
+            if (memory && memory.status && memory.status !== 'new' && memory.status !== 'lead' && memory.status !== 'bounced') {
                 memoryRestoredCount++
                 return {
                     ...lead,
@@ -197,7 +234,7 @@ export async function POST(
             }
         })
 
-        // 5. Bulk insert in batches with createMany (Zero RAM accumulation)
+        // 6. Bulk insert in batches with createMany (Zero RAM accumulation)
         const BATCH_SIZE = 500
         let totalInserted = 0
 
@@ -220,6 +257,7 @@ export async function POST(
 
         const messageParts = [`Successfully ${action === 'replace' ? 'replaced & ' : ''}added ${totalInserted} valid leads into "${campaign.name}".`]
         if (duplicatesSkipped > 0) messageParts.push(`${duplicatesSkipped} duplicates skipped.`)
+        if (bouncedSkipped > 0) messageParts.push(`${bouncedSkipped} bounced emails blocked.`)
         if (replacedCount > 0) messageParts.push(`${replacedCount} unverified leads replaced.`)
         if (memoryRestoredCount > 0) messageParts.push(`${memoryRestoredCount} previously-contacted lead statuses restored.`)
 
@@ -227,6 +265,7 @@ export async function POST(
             success: true,
             importedCount: totalInserted,
             duplicatesSkipped,
+            bouncedSkipped,
             replacedCount,
             memoryRestoredCount,
             campaignName: campaign.name,

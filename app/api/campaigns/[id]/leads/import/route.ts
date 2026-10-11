@@ -124,7 +124,7 @@ export async function POST(
             const dbCacheMap = new Map<string, { status: string; isValid: boolean }>()
 
             try {
-                const [cachedResults, cachedLeads] = await Promise.all([
+                const [cachedResults, cachedLeads, cachedBounces] = await Promise.all([
                     prisma.verificationResultItem.findMany({
                         where: { email: { in: candidateEmails } },
                         select: { email: true, status: true }
@@ -132,6 +132,10 @@ export async function POST(
                     prisma.lead.findMany({
                         where: { email: { in: candidateEmails } },
                         select: { email: true, status: true }
+                    }),
+                    prisma.leadStatusMemory.findMany({
+                        where: { email: { in: candidateEmails }, status: 'bounced' },
+                        select: { email: true }
                     })
                 ])
 
@@ -144,13 +148,19 @@ export async function POST(
 
                 for (const lead of cachedLeads) {
                     const em = lead.email.toLowerCase()
-                    if (!dbCacheMap.has(em)) {
+                    if (lead.status === 'bounced') {
+                        // Bounce ALWAYS overrides any stale valid verification cache!
+                        dbCacheMap.set(em, { status: 'invalid', isValid: false })
+                    } else if (!dbCacheMap.has(em)) {
                         if (lead.status === 'replied' || lead.status === 'contacted' || lead.status === 'sequence_complete') {
                             dbCacheMap.set(em, { status: 'valid', isValid: true })
-                        } else if (lead.status === 'bounced') {
-                            dbCacheMap.set(em, { status: 'invalid', isValid: false })
                         }
                     }
+                }
+
+                for (const b of cachedBounces) {
+                    // Persistent bounce memory ALWAYS overrides any stale valid verification cache!
+                    dbCacheMap.set(b.email.toLowerCase(), { status: 'invalid', isValid: false })
                 }
             } catch (err) {
                 console.warn('Import DB verification cache pre-fetch warning:', err)
@@ -180,7 +190,7 @@ export async function POST(
                             })
                             return { lead, isValid: res.status === 'valid' }
                         } catch {
-                            return { lead, isValid: true }
+                            return { lead, isValid: false }
                         }
                     })
                 )
@@ -272,14 +282,50 @@ export async function POST(
             })
         }
 
+        // --- Suppress known bounced emails across workspace history ---
+        const [bouncedMemories, bouncedLeads] = await Promise.all([
+            prisma.leadStatusMemory.findMany({
+                where: {
+                    email: { in: finalNewLeads.map(l => l.email) },
+                    status: 'bounced'
+                },
+                select: { email: true }
+            }),
+            prisma.lead.findMany({
+                where: {
+                    email: { in: finalNewLeads.map(l => l.email) },
+                    status: 'bounced'
+                },
+                select: { email: true }
+            })
+        ])
+
+        const bouncedEmailSet = new Set([
+            ...bouncedMemories.map(m => m.email.toLowerCase()),
+            ...bouncedLeads.map(l => l.email.toLowerCase())
+        ])
+
+        const safeNewLeads = finalNewLeads.filter(l => !bouncedEmailSet.has(l.email))
+        const bouncedDropped = finalNewLeads.length - safeNewLeads.length
+
+        if (safeNewLeads.length === 0) {
+            return NextResponse.json({
+                success: true,
+                count: 0,
+                duplicatesSkipped: duplicateCount,
+                invalidSkipped: invalidSkipped + bouncedDropped,
+                message: `All remaining leads were previously bounced addresses and have been safely blocked.`
+            })
+        }
+
         // --- Persistent Lead Status Memory Cache Check ---
-        // Restore historical status if this lead was previously contacted/bounced/replied
-        const memoryMap = await getLeadMemoryMap(campaignId, finalNewLeads.map(l => l.email))
+        // Restore historical status if this lead was previously contacted/replied (never restore bounced)
+        const memoryMap = await getLeadMemoryMap(campaignId, safeNewLeads.map(l => l.email))
         let memoryRestoredCount = 0
 
-        const leadsWithStatus = finalNewLeads.map(lead => {
+        const leadsWithStatus = safeNewLeads.map(lead => {
             const memory = memoryMap.get(lead.email)
-            if (memory && memory.status && memory.status !== 'new' && memory.status !== 'lead') {
+            if (memory && memory.status && memory.status !== 'new' && memory.status !== 'lead' && memory.status !== 'bounced') {
                 memoryRestoredCount++
                 return {
                     email: lead.email,
@@ -318,7 +364,7 @@ export async function POST(
 
         const messageParts = [`Imported ${totalInserted} valid leads.`]
         if (duplicateCount > 0) messageParts.push(`${duplicateCount} duplicates skipped.`)
-        if (invalidSkipped > 0) messageParts.push(`${invalidSkipped} invalid emails dropped.`)
+        if (invalidSkipped > 0 || bouncedDropped > 0) messageParts.push(`${invalidSkipped + bouncedDropped} invalid/bounced emails dropped.`)
         if (memoryRestoredCount > 0) messageParts.push(`${memoryRestoredCount} previously-contacted statuses restored.`)
 
         return NextResponse.json({

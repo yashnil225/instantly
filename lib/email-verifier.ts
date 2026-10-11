@@ -272,6 +272,22 @@ async function checkWorkspaceBounceMemory(email: string): Promise<{ isBounced: b
     try {
         const { prisma } = await import('./prisma')
         const lowerEmail = email.toLowerCase()
+
+        // 1. Persistent LeadStatusMemory Check (survives campaign deletion)
+        const bouncedMemory = await prisma.leadStatusMemory.findFirst({
+            where: {
+                email: lowerEmail,
+                status: 'bounced'
+            }
+        })
+        if (bouncedMemory) {
+            return {
+                isBounced: true,
+                reason: `Known Bounced Address (100% Dead - Failed delivery in campaign history)`
+            }
+        }
+
+        // 2. Active Lead records and bounce events
         const bouncedLead = await prisma.lead.findFirst({
             where: {
                 email: lowerEmail,

@@ -722,15 +722,26 @@ Happy sending!`,
             if (res.ok) {
                 const data = await res.json()
 
-                // Build the full thread from all sent + reply + forward events (already ordered asc from API)
+                // Build the full thread from sent + reply events (already ordered asc from API)
+                // Forwards to other people are not shown in this lead's thread
                 const messages: any[] = []
                 const seenSteps = new Set()
                 const seenEventIds = new Set()
                 const seenMessageIds = new Set()
 
                 ;(data.events || [])
-                    .filter((e: any) => e.type === 'sent' || e.type === 'reply' || e.type === 'forward_logged')
+                    .filter((e: any) => e.type === 'sent' || e.type === 'reply')
                     .forEach((e: any) => {
+                        let meta: any = {}
+                        try {
+                            meta = JSON.parse(e.metadata || '{}')
+                        } catch { /* ignore */ }
+
+                        // Exclude forwarded emails from the thread
+                        if (meta.isForward || e.type === 'forward_logged' || e.type === 'forward') {
+                            return
+                        }
+
                         if (seenEventIds.has(e.id)) return
                         seenEventIds.add(e.id)
 
@@ -738,43 +749,30 @@ Happy sending!`,
                         let body = e.details || ''
                         let step = null
                         let isReply = false
-                        let isForward = false
-                        let forwardedTo = ''
                         let messageId = e.messageId || ''
-                        try {
-                            const meta = JSON.parse(e.metadata || '{}')
-                            if (!body) body = meta.bodyText || meta.snippet || ''
-                            if (e.type === 'sent') step = meta.step
-                            if (meta.isReply || meta.isUserReply) isReply = true
-                            if (meta.isForward || e.type === 'forward_logged') isForward = true
-                            if (meta.forwardedTo) forwardedTo = meta.forwardedTo
-                            if (!messageId && meta.messageId) messageId = meta.messageId
-                        } catch { /* ignore */ }
+                        if (!body) body = meta.bodyText || meta.snippet || ''
+                        if (e.type === 'sent') step = meta.step
+                        if (meta.isReply || meta.isUserReply) isReply = true
+                        if (!messageId && meta.messageId) messageId = meta.messageId
 
                         // Deduplicate exact same messageId if present
                         if (messageId && seenMessageIds.has(messageId)) return
                         if (messageId) seenMessageIds.add(messageId)
 
-                        // Deduplicate automated campaign steps only (e.g. duplicate retry runs of sequence step 1)
-                        // Explicit user replies and forwards must never be dropped!
-                        if (e.type === 'sent' && step != null && !isReply && !isForward) {
+                        // Deduplicate automated campaign steps only
+                        if (e.type === 'sent' && step != null && !isReply) {
                             if (seenSteps.has(step)) return
                             seenSteps.add(step)
                         }
 
-                        const isMe = e.type === 'sent' || e.type === 'forward_logged'
-                        let recipientDisplay = isMe
+                        const isMe = e.type === 'sent'
+                        const recipientDisplay = isMe
                             ? (data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : email.from)
                             : (e.emailAccount?.email || email.sentFrom || 'Me')
-
-                        if (isForward && forwardedTo) {
-                            recipientDisplay = `${forwardedTo} (Forwarded)`
-                        }
 
                         messages.push({
                             id: e.id,
                             isMe,
-                            isForward,
                             isReply,
                             type: e.type,
                             from: isMe
@@ -2120,13 +2118,8 @@ Happy sending!`,
                                                                 {msg.isMe ? "ME" : (msg.from?.[0]?.toUpperCase() || selectedEmail.fromName?.[0]?.toUpperCase() || "?")}
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <div className="text-sm font-semibold text-foreground truncate flex items-center gap-2">
-                                                                    <span>{msg.isMe ? "You" : (msg.from || selectedEmail.fromName)}</span>
-                                                                    {msg.isForward && (
-                                                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                                                            Forwarded
-                                                                        </span>
-                                                                    )}
+                                                                <div className="text-sm font-semibold text-foreground truncate">
+                                                                    {msg.isMe ? "You" : (msg.from || selectedEmail.fromName)}
                                                                 </div>
                                                                 <div className="text-xs text-muted-foreground truncate">
                                                                     to {msg.to || "Me"}

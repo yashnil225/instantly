@@ -232,13 +232,29 @@ export async function syncReplies(account: EmailAccount) {
                     replyHeaders = replyHeaders.map(h => h.replace(/[<>]/g, ''))
 
                     if (replyHeaders.length > 0) {
+                        const allHeaders = [...replyHeaders, ...replyHeaders.map(h => `<${h}>`)]
                         matchedSentEvent = await prisma.sendingEvent.findFirst({
                             where: {
-                                messageId: { in: replyHeaders },
+                                messageId: { in: allHeaders },
                                 emailAccountId: account.id
                             },
                             include: { lead: true, campaign: true }
                         })
+                    }
+
+                    // Fallback matching forward event if recipient of a forwarded email replies
+                    if (!matchedSentEvent && from) {
+                        const forwardEvent = await prisma.sendingEvent.findFirst({
+                            where: {
+                                type: 'forward',
+                                metadata: { contains: from.toLowerCase() }
+                            },
+                            orderBy: { createdAt: 'desc' },
+                            include: { lead: true, campaign: true }
+                        })
+                        if (forwardEvent) {
+                            matchedSentEvent = forwardEvent
+                        }
                     }
 
                     // 2. Fallback matching strictly by emailAccountId and Lead Email

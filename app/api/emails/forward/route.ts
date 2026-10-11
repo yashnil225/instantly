@@ -250,90 +250,32 @@ export async function POST(request: Request) {
             attachments
         })
 
-        // 6. Resolve Recipient Lead (Create or Find Lead for the forwarded recipient)
-        // This ensures the forwarded thread does NOT attach to the original sender's thread (Alice),
-        // and when the forwarded recipient (Bob) replies, their reply appears in the Unibox under their own lead!
-        const recipientEmail = extractCleanEmail(to)
+        // 6. Record forward SendingEvent
+        // Note: Do not mark forwarded recipient as a campaign lead.
+        // The forward event keeps the messageId and headers so if the recipient replies in the future,
+        // it maps to the thread and appears in the inbox!
         const targetCampaignId = lead.campaignId || campaignId || ''
+        const cleanMessageId = (info.messageId || '').replace(/[<>]/g, '').trim()
 
-        let recipientLead = await prisma.lead.findUnique({
-            where: {
-                email_campaignId: {
-                    email: recipientEmail,
-                    campaignId: targetCampaignId
-                }
-            }
-        })
-
-        if (!recipientLead) {
-            recipientLead = await prisma.lead.findFirst({
-                where: { email: recipientEmail }
-            })
-        }
-
-        if (!recipientLead) {
-            recipientLead = await prisma.lead.create({
-                data: {
-                    email: recipientEmail,
-                    firstName: recipientEmail.split('@')[0],
-                    campaignId: targetCampaignId,
-                    status: 'contacted'
-                }
-            })
-        }
-
-        // 7. Record SendingEvent under the original lead (so it shows in the active conversation thread!)
         await prisma.sendingEvent.create({
             data: {
-                type: 'sent',
+                type: 'forward',
                 leadId: lead.id,
-                campaignId: lead.campaignId || targetCampaignId,
+                campaignId: targetCampaignId,
                 emailAccountId: sendingAccount.id,
-                messageId: info.messageId,
+                messageId: cleanMessageId || info.messageId,
                 metadata: JSON.stringify({
                     accountId: sendingAccount.id,
                     subject: finalSubject,
                     isForward: true,
                     forwardedTo: to,
-                    recipientLeadId: recipientLead.id,
                     originalEmailId: emailId,
-                    messageId: info.messageId,
+                    messageId: cleanMessageId || info.messageId,
                     bodySnippet: emailBody.substring(0, 100)
                 }),
                 details: formattedHtml
             }
         })
-
-        // 8. Also record SendingEvent under the recipient lead (if different) so their future replies map to their own lead
-        if (recipientLead && recipientLead.id !== lead.id) {
-            await prisma.sendingEvent.create({
-                data: {
-                    type: 'sent',
-                    leadId: recipientLead.id,
-                    campaignId: recipientLead.campaignId || targetCampaignId,
-                    emailAccountId: sendingAccount.id,
-                    messageId: info.messageId,
-                    metadata: JSON.stringify({
-                        accountId: sendingAccount.id,
-                        subject: finalSubject,
-                        isForward: true,
-                        forwardedTo: to,
-                        forwardedFromLeadId: lead.id,
-                        forwardedFromEmail: lead.email,
-                        originalEmailId: emailId,
-                        messageId: info.messageId,
-                        bodySnippet: emailBody.substring(0, 100)
-                    }),
-                    details: formattedHtml
-                }
-            }).catch(() => {})
-        }
-
-        // Touch lead.updatedAt so it floats to top of inbox
-        await prisma.lead.update({
-            where: { id: lead.id },
-            data: { updatedAt: new Date() }
-        }).catch(() => {})
 
         // Increment sentToday
         await prisma.emailAccount.update({

@@ -336,42 +336,46 @@ export async function GET(request: NextRequest) {
             const seenSteps = new Set<any>()
 
             for (const event of lead.events) {
-                if (event.type !== 'sent' && event.type !== 'reply' && event.type !== 'forward_logged') continue
-                if (seenEventIds.has(event.id)) continue
-                seenEventIds.add(event.id)
+                if (event.type !== 'sent' && event.type !== 'reply') continue
 
-                let body = event.details || ''
                 let meta: any = {}
                 if (event.metadata) {
                     try {
                         meta = JSON.parse(event.metadata)
-                        if (!body) body = meta.bodyText || meta.snippet || ''
                     } catch {}
                 }
 
+                // Exclude forwarded emails from the lead's thread
+                if (meta.isForward) {
+                    continue
+                }
+
+                if (seenEventIds.has(event.id)) continue
+                seenEventIds.add(event.id)
+
+                let body = event.details || ''
+                if (!body && event.metadata) {
+                    body = meta.bodyText || meta.snippet || ''
+                }
+
                 const isReply = meta.isReply || meta.isUserReply || false
-                const isForward = meta.isForward || event.type === 'forward_logged' || false
-                const forwardedTo = meta.forwardedTo || ''
                 const messageId = event.messageId || meta.messageId
 
                 if (messageId && seenMessageIds.has(messageId)) continue
                 if (messageId) seenMessageIds.add(messageId)
 
-                // Deduplicate automated campaign steps only, never user replies/forwards
-                if (event.type === 'sent' && meta.step != null && !isReply && !isForward) {
+                // Deduplicate automated campaign steps only, never user replies
+                if (event.type === 'sent' && meta.step != null && !isReply) {
                     if (seenSteps.has(meta.step)) continue
                     seenSteps.add(meta.step)
                 }
 
-                const isSentByMe = event.type === 'sent' || event.type === 'forward_logged'
+                const isSentByMe = event.type === 'sent'
                 const eventSenderName = event.emailAccount
                     ? `${event.emailAccount.firstName || ''} ${event.emailAccount.lastName || ''}`.trim() || event.emailAccount.email
                     : senderAccountName
 
-                let recipientName = isSentByMe ? leadName : (event.emailAccount?.email || accountEmail || 'You')
-                if (isForward && forwardedTo) {
-                    recipientName = `${forwardedTo} (Forwarded)`
-                }
+                const recipientName = isSentByMe ? leadName : (event.emailAccount?.email || accountEmail || 'You')
 
                 messages.push({
                     id: event.id,
@@ -382,7 +386,6 @@ export async function GET(request: NextRequest) {
                     from: isSentByMe ? eventSenderName : leadName,
                     to: recipientName,
                     isMe: isSentByMe,
-                    isForward,
                     isReply
                 })
             }

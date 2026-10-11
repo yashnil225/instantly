@@ -329,46 +329,61 @@ export async function GET(request: NextRequest) {
             // Check if any event has attachments
             const hasAttachment = lead.events.some(e => e.hasAttachment)
 
-            // Map threaded messages in chronological order, deduplicating any duplicate sent records
+            // Map threaded messages in chronological order
             const messages: any[] = []
-            const seenMessageKeys = new Set<string>()
+            const seenEventIds = new Set<string>()
+            const seenMessageIds = new Set<string>()
+            const seenSteps = new Set<any>()
 
             for (const event of lead.events) {
-                if (event.type !== 'sent' && event.type !== 'reply') continue
+                if (event.type !== 'sent' && event.type !== 'reply' && event.type !== 'forward_logged') continue
+                if (seenEventIds.has(event.id)) continue
+                seenEventIds.add(event.id)
 
                 let body = event.details || ''
-                if (!body && event.metadata) {
+                let meta: any = {}
+                if (event.metadata) {
                     try {
-                        const meta = JSON.parse(event.metadata)
-                        body = meta.bodyText || meta.snippet || ''
+                        meta = JSON.parse(event.metadata)
+                        if (!body) body = meta.bodyText || meta.snippet || ''
                     } catch {}
                 }
 
-                // Deduplicate identical content for same event type
-                const normalizedText = body
-                    .replace(/<[^>]*>/g, '')
-                    .replace(/&[a-z0-9#]+;/gi, '')
-                    .replace(/\s+/g, ' ')
-                    .trim()
+                const isReply = meta.isReply || meta.isUserReply || false
+                const isForward = meta.isForward || event.type === 'forward_logged' || false
+                const forwardedTo = meta.forwardedTo || ''
+                const messageId = event.messageId || meta.messageId
 
-                const dedupeKey = `${event.type}_${normalizedText}`
-                if (normalizedText && seenMessageKeys.has(dedupeKey)) continue
-                if (normalizedText) seenMessageKeys.add(dedupeKey)
+                if (messageId && seenMessageIds.has(messageId)) continue
+                if (messageId) seenMessageIds.add(messageId)
 
-                const isSentByMe = event.type === 'sent'
+                // Deduplicate automated campaign steps only, never user replies/forwards
+                if (event.type === 'sent' && meta.step != null && !isReply && !isForward) {
+                    if (seenSteps.has(meta.step)) continue
+                    seenSteps.add(meta.step)
+                }
+
+                const isSentByMe = event.type === 'sent' || event.type === 'forward_logged'
                 const eventSenderName = event.emailAccount
                     ? `${event.emailAccount.firstName || ''} ${event.emailAccount.lastName || ''}`.trim() || event.emailAccount.email
                     : senderAccountName
 
+                let recipientName = isSentByMe ? leadName : (event.emailAccount?.email || accountEmail || 'You')
+                if (isForward && forwardedTo) {
+                    recipientName = `${forwardedTo} (Forwarded)`
+                }
+
                 messages.push({
                     id: event.id,
                     type: event.type as 'sent' | 'reply',
-                    subject: event.metadata ? (JSON.parse(event.metadata || '{}').subject || 'Email') : 'Email',
+                    subject: meta.subject || 'Email',
                     body,
                     timestamp: event.createdAt,
                     from: isSentByMe ? eventSenderName : leadName,
-                    to: isSentByMe ? leadName : (event.emailAccount?.email || accountEmail || 'You'),
-                    isMe: isSentByMe
+                    to: recipientName,
+                    isMe: isSentByMe,
+                    isForward,
+                    isReply
                 })
             }
 

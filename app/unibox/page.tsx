@@ -104,13 +104,15 @@ interface Email {
     to?: string
     messages?: {
         id: string
-        type: 'sent' | 'reply'
+        type: 'sent' | 'reply' | 'forward_logged'
         subject: string
         body: string
         timestamp: Date
         from?: string | null
         to?: string | null
         isMe: boolean
+        isForward?: boolean
+        isReply?: boolean
     }[]
     tags?: { id: string; name: string; color: string }[]
 }
@@ -720,54 +722,65 @@ Happy sending!`,
             if (res.ok) {
                 const data = await res.json()
 
-                // Build the full thread from all sent + reply events (already ordered asc from API)
+                // Build the full thread from all sent + reply + forward events (already ordered asc from API)
                 const messages: any[] = []
                 const seenSteps = new Set()
-                const seenBodies = new Set()
-                const seenIds = new Set()
+                const seenEventIds = new Set()
+                const seenMessageIds = new Set()
 
                 ;(data.events || [])
-                    .filter((e: any) => e.type === 'sent' || e.type === 'reply')
+                    .filter((e: any) => e.type === 'sent' || e.type === 'reply' || e.type === 'forward_logged')
                     .forEach((e: any) => {
-                        if (seenIds.has(e.id)) return
-                        seenIds.add(e.id)
+                        if (seenEventIds.has(e.id)) return
+                        seenEventIds.add(e.id)
 
                         // Extract body: prefer details, then metadata bodyText/snippet
                         let body = e.details || ''
                         let step = null
+                        let isReply = false
+                        let isForward = false
+                        let forwardedTo = ''
+                        let messageId = e.messageId || ''
                         try {
                             const meta = JSON.parse(e.metadata || '{}')
                             if (!body) body = meta.bodyText || meta.snippet || ''
                             if (e.type === 'sent') step = meta.step
+                            if (meta.isReply || meta.isUserReply) isReply = true
+                            if (meta.isForward || e.type === 'forward_logged') isForward = true
+                            if (meta.forwardedTo) forwardedTo = meta.forwardedTo
+                            if (!messageId && meta.messageId) messageId = meta.messageId
                         } catch { /* ignore */ }
 
-                        // Aggressive deduplication by body content to fix UI duplicates
-                        const bodyContent = body.trim()
-                        if (bodyContent) {
-                            // Strip HTML tags and entities for comparison to avoid whitespace/formatting differences
-                            const strippedBody = bodyContent.replace(/<[^>]*>/g, '').replace(/&[a-z0-9#]+;/gi, '').replace(/\s+/g, ' ').trim()
-                            const dedupeKey = `${e.type}_${strippedBody}`
-                            if (seenBodies.has(dedupeKey)) return
-                            seenBodies.add(dedupeKey)
-                        }
+                        // Deduplicate exact same messageId if present
+                        if (messageId && seenMessageIds.has(messageId)) return
+                        if (messageId) seenMessageIds.add(messageId)
 
-                        // Deduplicate sent events by step
-                        if (e.type === 'sent' && step) {
-                            if (seenSteps.has(step)) return // Skip duplicate sent event for the same step
+                        // Deduplicate automated campaign steps only (e.g. duplicate retry runs of sequence step 1)
+                        // Explicit user replies and forwards must never be dropped!
+                        if (e.type === 'sent' && step != null && !isReply && !isForward) {
+                            if (seenSteps.has(step)) return
                             seenSteps.add(step)
                         }
 
-                        const isMe = e.type === 'sent'
+                        const isMe = e.type === 'sent' || e.type === 'forward_logged'
+                        let recipientDisplay = isMe
+                            ? (data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : email.from)
+                            : (e.emailAccount?.email || email.sentFrom || 'Me')
+
+                        if (isForward && forwardedTo) {
+                            recipientDisplay = `${forwardedTo} (Forwarded)`
+                        }
+
                         messages.push({
                             id: e.id,
                             isMe,
+                            isForward,
+                            isReply,
                             type: e.type,
                             from: isMe
                                 ? (e.emailAccount?.email || email.sentFrom || 'You')
                                 : (data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : email.from),
-                            to: isMe
-                                ? (data.firstName ? `${data.firstName} ${data.lastName || ''}`.trim() : email.from)
-                                : (e.emailAccount?.email || email.sentFrom || 'Me'),
+                            to: recipientDisplay,
                             body,
                             timestamp: e.createdAt
                         })
@@ -820,7 +833,20 @@ Happy sending!`,
             return
         }
 
-        pendingReplyRef.current = { emailId: selectedEmail.id, body: replyBody, mode: replyMode, forwardTo, forwardSubject }
+        const emailToSend = selectedEmail
+        const targetLeadId = emailToSend.leadId || emailToSend.id
+        const targetCampaignId = emailToSend.campaign?.id
+
+        pendingReplyRef.current = {
+            emailId: emailToSend.id,
+            leadId: targetLeadId,
+            campaignId: targetCampaignId,
+            targetEmail: emailToSend,
+            body: replyBody,
+            mode: replyMode,
+            forwardTo,
+            forwardSubject
+        }
         setIsUndoVisible(true)
         setReplyMode(null)
 
@@ -864,8 +890,8 @@ Happy sending!`,
         try {
             let res
             if (params.mode === 'forward') {
-                const leadId = selectedEmail?.leadId || selectedEmail?.id
-                const campaignId = selectedEmail?.campaign?.id
+                const leadId = params.leadId || selectedEmail?.leadId || selectedEmail?.id
+                const campaignId = params.campaignId || selectedEmail?.campaign?.id
 
                 res = await fetch('/api/emails/forward', {
                     method: 'POST',
@@ -881,9 +907,9 @@ Happy sending!`,
                     })
                 })
             } else {
-                // Determine leadId and campaignId from selectedEmail
-                const leadId = selectedEmail?.leadId || selectedEmail?.id
-                const campaignId = selectedEmail?.campaign?.id
+                // Determine leadId and campaignId from params/selectedEmail
+                const leadId = params.leadId || selectedEmail?.leadId || selectedEmail?.id
+                const campaignId = params.campaignId || selectedEmail?.campaign?.id
 
                 res = await fetch('/api/unibox/reply', {
                     method: 'POST',
@@ -910,9 +936,14 @@ Happy sending!`,
                 setForwardSubject("")
                 setAttachments([])
                 setUploadedAttachmentIds([])
-                if (selectedEmail) {
-                    loadEmailBody(selectedEmail)
+
+                // Refresh the active conversation thread immediately
+                const emailToReload = params.targetEmail || selectedEmail
+                if (emailToReload) {
+                    await loadEmailBody(emailToReload)
                 }
+                // Also reload emails list so sidebar shows updated preview and timestamp
+                await loadEmails()
             } else {
                 let errorMsg = "Failed to send email. Please try again."
                 try {
@@ -2089,8 +2120,13 @@ Happy sending!`,
                                                                 {msg.isMe ? "ME" : (msg.from?.[0]?.toUpperCase() || selectedEmail.fromName?.[0]?.toUpperCase() || "?")}
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <div className="text-sm font-semibold text-foreground truncate">
-                                                                    {msg.isMe ? "You" : (msg.from || selectedEmail.fromName)}
+                                                                <div className="text-sm font-semibold text-foreground truncate flex items-center gap-2">
+                                                                    <span>{msg.isMe ? "You" : (msg.from || selectedEmail.fromName)}</span>
+                                                                    {msg.isForward && (
+                                                                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                                                            Forwarded
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                                 <div className="text-xs text-muted-foreground truncate">
                                                                     to {msg.to || "Me"}

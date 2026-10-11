@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     try {
         const { threadId, leadId, campaignId, replyBody, attachmentIds } = await request.json()
 
-        if (!leadId || !campaignId || !replyBody) {
+        if (!leadId || !replyBody) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
@@ -20,12 +20,14 @@ export async function POST(request: Request) {
         const lead = await prisma.lead.findUnique({ where: { id: leadId } })
         if (!lead) return NextResponse.json({ error: 'Lead not found' }, { status: 404 })
 
+        const targetCampaignId = campaignId || lead.campaignId || ''
+
         // 2. Determine Sender Account
         // Try to find the account used in the last 'sent' event for this lead/campaign
         const lastSentEvent = await prisma.sendingEvent.findFirst({
             where: {
                 leadId: leadId,
-                campaignId: campaignId,
+                ...(targetCampaignId ? { campaignId: targetCampaignId } : {}),
                 type: 'sent'
             },
             orderBy: { createdAt: 'desc' }
@@ -42,17 +44,24 @@ export async function POST(request: Request) {
             } catch (e) { }
         }
 
-        // Fallback: If no previous event or account not found, use a random active account attached to campaign
-        if (!account) {
+        // Fallback: If no previous event or account not found, use an active account attached to campaign
+        if (!account && targetCampaignId) {
             const campaignAccount = await prisma.campaignEmailAccount.findFirst({
-                where: { campaignId: campaignId, emailAccount: { status: 'active' } },
+                where: { campaignId: targetCampaignId, emailAccount: { status: 'active' } },
                 include: { emailAccount: true }
             })
             account = campaignAccount?.emailAccount
         }
 
+        // Fallback 2: Any active account owned by user
+        if (!account && session.user.id) {
+            account = await prisma.emailAccount.findFirst({
+                where: { userId: session.user.id, status: 'active' }
+            })
+        }
+
         if (!account) {
-            return NextResponse.json({ error: 'No active email account found for this campaign' }, { status: 400 })
+            return NextResponse.json({ error: 'No active email account found to send this reply' }, { status: 400 })
         }
 
         // 2b. Determine Subject for Threading
@@ -134,11 +143,11 @@ export async function POST(request: Request) {
         })
 
         // 4. Log Event
-        await prisma.sendingEvent.create({
+        const newEvent = await prisma.sendingEvent.create({
             data: {
                 type: 'sent', // It is a sent message
                 leadId: lead.id,
-                campaignId: campaignId,
+                campaignId: targetCampaignId,
                 emailAccountId: account.id,
                 messageId: info.messageId,
                 metadata: JSON.stringify({
@@ -152,13 +161,19 @@ export async function POST(request: Request) {
             }
         })
 
+        // Also touch lead.updatedAt so the thread is bumped to top of inbox
+        await prisma.lead.update({
+            where: { id: lead.id },
+            data: { updatedAt: new Date(), status: 'contacted' }
+        }).catch(() => {})
+
         // Update stats
         await prisma.emailAccount.update({
             where: { id: account.id },
             data: { sentToday: { increment: 1 } }
-        })
+        }).catch(() => {})
 
-        return NextResponse.json({ success: true })
+        return NextResponse.json({ success: true, eventId: newEvent.id, messageId: info.messageId })
 
     } catch (error) {
         console.error('Reply send error:', error)

@@ -282,12 +282,12 @@ export async function POST(request: Request) {
             })
         }
 
-        // 7. Record SendingEvent under the recipient lead
+        // 7. Record SendingEvent under the original lead (so it shows in the active conversation thread!)
         await prisma.sendingEvent.create({
             data: {
                 type: 'sent',
-                leadId: recipientLead.id,
-                campaignId: recipientLead.campaignId || targetCampaignId,
+                leadId: lead.id,
+                campaignId: lead.campaignId || targetCampaignId,
                 emailAccountId: sendingAccount.id,
                 messageId: info.messageId,
                 metadata: JSON.stringify({
@@ -295,8 +295,7 @@ export async function POST(request: Request) {
                     subject: finalSubject,
                     isForward: true,
                     forwardedTo: to,
-                    forwardedFromLeadId: lead.id,
-                    forwardedFromEmail: lead.email,
+                    recipientLeadId: recipientLead.id,
                     originalEmailId: emailId,
                     messageId: info.messageId,
                     bodySnippet: emailBody.substring(0, 100)
@@ -305,23 +304,35 @@ export async function POST(request: Request) {
             }
         })
 
-        // 8. Log an audit event on the original lead so history is kept,
-        // using type 'forward_logged' so it does NOT appear as a message bubble in the original lead's thread
-        await prisma.sendingEvent.create({
-            data: {
-                type: 'forward_logged',
-                leadId: lead.id,
-                campaignId: lead.campaignId || targetCampaignId,
-                emailAccountId: sendingAccount.id,
-                messageId: info.messageId,
-                metadata: JSON.stringify({
-                    forwardedTo: to,
-                    recipientLeadId: recipientLead.id,
-                    subject: finalSubject,
-                    originalEmailId: emailId
-                }),
-                details: `Email forwarded to ${to}`
-            }
+        // 8. Also record SendingEvent under the recipient lead (if different) so their future replies map to their own lead
+        if (recipientLead && recipientLead.id !== lead.id) {
+            await prisma.sendingEvent.create({
+                data: {
+                    type: 'sent',
+                    leadId: recipientLead.id,
+                    campaignId: recipientLead.campaignId || targetCampaignId,
+                    emailAccountId: sendingAccount.id,
+                    messageId: info.messageId,
+                    metadata: JSON.stringify({
+                        accountId: sendingAccount.id,
+                        subject: finalSubject,
+                        isForward: true,
+                        forwardedTo: to,
+                        forwardedFromLeadId: lead.id,
+                        forwardedFromEmail: lead.email,
+                        originalEmailId: emailId,
+                        messageId: info.messageId,
+                        bodySnippet: emailBody.substring(0, 100)
+                    }),
+                    details: formattedHtml
+                }
+            }).catch(() => {})
+        }
+
+        // Touch lead.updatedAt so it floats to top of inbox
+        await prisma.lead.update({
+            where: { id: lead.id },
+            data: { updatedAt: new Date() }
         }).catch(() => {})
 
         // Increment sentToday

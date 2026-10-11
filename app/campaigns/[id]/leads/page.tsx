@@ -31,6 +31,7 @@ import {
     AtSign,
     X,
     RefreshCw,
+    Download,
 } from "lucide-react"
 import { ImportLeadsModal } from "@/components/app/leads/ImportLeadsModal"
 import { cn } from "@/lib/utils"
@@ -221,6 +222,58 @@ export default function LeadsPage() {
         setViewDetailsOpen(true)
     }
 
+    const handleExportLeads = () => {
+        const dataToExport = selectedLeads.length > 0
+            ? leads.filter(l => selectedLeads.includes(l.id))
+            : leads
+
+        if (dataToExport.length === 0) {
+            toast({
+                title: "No Leads to Export",
+                description: "There are no leads in this campaign to export.",
+                variant: "destructive"
+            })
+            return
+        }
+
+        const headers = ["Email", "First Name", "Last Name", "Company", "Location", "Status", "Provider", "Security Gateway", "Added Date"]
+
+        const escapeCsv = (val: string | undefined | null) => {
+            if (val === null || val === undefined) return '""'
+            const str = String(val).replace(/"/g, '""')
+            return `"${str}"`
+        }
+
+        const rows = dataToExport.map(l => [
+            escapeCsv(l.email),
+            escapeCsv(l.firstName),
+            escapeCsv(l.lastName),
+            escapeCsv(l.company),
+            escapeCsv(l.location),
+            escapeCsv(l.status),
+            escapeCsv(l.emailProvider || getEmailProvider(l.email).name),
+            escapeCsv(l.emailSecurityGateway || 'Direct'),
+            escapeCsv(l.createdAt ? new Date(l.createdAt).toLocaleDateString() : '')
+        ].join(","))
+
+        const csvString = [headers.join(","), ...rows].join("\r\n")
+        const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement("a")
+        link.href = url
+        const timestamp = new Date().toISOString().split("T")[0]
+        link.download = `campaign_leads_${timestamp}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+
+        toast({
+            title: "Export Complete",
+            description: `Successfully exported ${dataToExport.length} lead${dataToExport.length === 1 ? '' : 's'} to CSV.`
+        })
+    }
+
     // Filter leads
     const filteredLeads = leads.filter(lead => {
         if (searchQuery) {
@@ -399,23 +452,14 @@ export default function LeadsPage() {
                             </Button>
                         </div>
                     )}
-                    <Button variant="outline" className="border-[#222] bg-[#111] text-gray-400 hover:text-white h-9" onClick={() => {
-                        const dataToExport = selectedLeads.length > 0
-                            ? leads.filter(l => selectedLeads.includes(l.id))
-                            : leads;
-                        const csvContent = "data:text/csv;charset=utf-8,"
-                            + ["Email,First Name,Last Name,Company,Status"].join(",") + "\n"
-                            + dataToExport.map(l => `${l.email},${l.firstName || ''},${l.lastName || ''},${l.company || ''},${l.status}`).join("\n");
-                        const encodedUri = encodeURI(csvContent);
-                        const link = document.createElement("a");
-                        link.setAttribute("href", encodedUri);
-                        link.setAttribute("download", `campaign_leads_${new Date().toISOString().split('T')[0]}.csv`);
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }}>
-                        <Filter className="h-4 w-4 mr-2 rotate-180" />
-                        Export
+                    <Button
+                        variant="outline"
+                        className="border-[#222] bg-[#111] text-gray-400 hover:text-white h-9 gap-2 transition-colors hover:border-[#333]"
+                        onClick={handleExportLeads}
+                        title={selectedLeads.length > 0 ? `Export ${selectedLeads.length} selected leads to CSV` : "Export all leads to CSV"}
+                    >
+                        <Download className="h-4 w-4 text-gray-400" />
+                        <span>{selectedLeads.length > 0 ? `Export (${selectedLeads.length})` : "Export"}</span>
                     </Button>
                     <div className="relative">
                         <Button

@@ -185,7 +185,29 @@ def check_email(email):
         if pat.search(primary_mx):
             return "risky", f"catch_all_gateway_{name.replace(' ', '_')}"
 
-    return "valid", "active_mailbox_exchange"
+    # Real-time Microsoft 365 Check
+    if 'outlook.com' in primary_mx:
+        try:
+            req = urllib.request.Request(
+                'https://login.microsoftonline.com/common/GetCredentialType',
+                data=json.dumps({'username': email}).encode('utf-8'),
+                headers={'Content-Type': 'application/json'}
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                res_data = json.loads(resp.read().decode('utf-8'))
+                if res_data.get('IfExistsResult') == 1:
+                    return "invalid", "m365_user_not_found"
+                elif res_data.get('IfExistsResult') == 0:
+                    return "valid", "m365_mailbox_verified"
+        except Exception:
+            pass
+
+    # Free Webmail Consumer Domains (No corporate catch-all)
+    if domain in FREE_PROVIDERS:
+        return "valid", "active_mailbox_exchange"
+
+    # Custom Corporate Domains (Google Workspace, private MX)
+    return "risky", "unconfirmed_corporate_mailbox"
 
 @app.route('/')
 @app.route('/index.html')

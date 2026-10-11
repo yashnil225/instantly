@@ -194,22 +194,45 @@ interface FunnelData {
     percentage: number
 }
 
-export function ConversionFunnel({ data }: { data?: FunnelData[] }) {
-    // Zero state funnel
+const STAGE_COLORS: Record<string, string> = {
+    Sent: "bg-blue-500",
+    Delivered: "bg-cyan-500",
+    Opened: "bg-emerald-500",
+    Clicked: "bg-amber-500",
+    Replied: "bg-orange-500",
+    Converted: "bg-purple-500"
+}
+
+export function ConversionFunnel({
+    data,
+    trackOpens = true,
+    trackLinks = true
+}: {
+    data?: FunnelData[]
+    trackOpens?: boolean
+    trackLinks?: boolean
+}) {
+    // Zero state funnel matching enabled stages
     const emptyData: FunnelData[] = [
         { stage: "Sent", value: 0, percentage: 0 },
         { stage: "Delivered", value: 0, percentage: 0 },
-        { stage: "Opened", value: 0, percentage: 0 },
-        { stage: "Clicked", value: 0, percentage: 0 },
-        { stage: "Replied", value: 0, percentage: 0 },
-        { stage: "Converted", value: 0, percentage: 0 }
+        ...(trackOpens ? [{ stage: "Opened", value: 0, percentage: 0 }] : []),
+        ...(trackLinks ? [{ stage: "Clicked", value: 0, percentage: 0 }] : []),
+        { stage: "Replied", value: 0, percentage: 0 }
     ]
 
     const funnelData = (data && data.length > 0) ? data : emptyData
 
     return (
         <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Conversion Funnel</h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Conversion Funnel</h3>
+                {!trackLinks && (
+                    <span className="text-[11px] text-gray-500 bg-secondary/80 px-2 py-0.5 rounded border border-border">
+                        Click tracking disabled
+                    </span>
+                )}
+            </div>
 
             <div className="space-y-2">
                 {funnelData.map((stage, index) => {
@@ -230,12 +253,7 @@ export function ConversionFunnel({ data }: { data?: FunnelData[] }) {
                                 <div
                                     className={cn(
                                         "h-full rounded-lg transition-all duration-500 flex items-center justify-end pr-3",
-                                        index === 0 && "bg-blue-500",
-                                        index === 1 && "bg-blue-500/90",
-                                        index === 2 && "bg-green-500",
-                                        index === 3 && "bg-yellow-500",
-                                        index === 4 && "bg-orange-500",
-                                        index === 5 && "bg-purple-500"
+                                        STAGE_COLORS[stage.stage] || "bg-blue-500"
                                     )}
                                     style={{ width: `${widthPercent}%` }}
                                 >

@@ -380,13 +380,32 @@ export async function GET(
         const delivered = Math.max(0, totalSent - totalBounces)
         const deliveredPercentage = totalSent > 0 ? Math.round((delivered / totalSent) * 100) : 0
 
-        const funnelData = [
+        const funnelData: { stage: string; value: number; percentage: number }[] = [
             { stage: "Sent", value: totalSent, percentage: 100 },
-            { stage: "Delivered", value: delivered, percentage: deliveredPercentage },
-            { stage: "Opened", value: openCount, percentage: totalSent > 0 ? Math.min(Math.round((openCount / totalSent) * 100), 100) : 0 },
-            { stage: "Clicked", value: clickCount, percentage: totalSent > 0 ? Math.min(Math.round((clickCount / totalSent) * 100), 100) : 0 },
-            { stage: "Replied", value: replyCount, percentage: totalSent > 0 ? Math.min(Math.round((replyCount / totalSent) * 100), 100) : 0 }
+            { stage: "Delivered", value: delivered, percentage: deliveredPercentage }
         ]
+
+        if (campaign.trackOpens !== false) {
+            funnelData.push({
+                stage: "Opened",
+                value: openCount,
+                percentage: totalSent > 0 ? Math.min(Math.round((openCount / totalSent) * 100), 100) : 0
+            })
+        }
+
+        if (campaign.trackLinks !== false) {
+            funnelData.push({
+                stage: "Clicked",
+                value: clickCount,
+                percentage: totalSent > 0 ? Math.min(Math.round((clickCount / totalSent) * 100), 100) : 0
+            })
+        }
+
+        funnelData.push({
+            stage: "Replied",
+            value: replyCount,
+            percentage: totalSent > 0 ? Math.min(Math.round((replyCount / totalSent) * 100), 100) : 0
+        })
 
         // Recent campaign activity: fetch latest 50 events in descending order with lead details
         const recentEvents = await prisma.sendingEvent.findMany({

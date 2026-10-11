@@ -235,9 +235,100 @@ async function hasDomainARecord(domain: string): Promise<boolean> {
 }
 
 /**
+ * Real-time Microsoft 365 Account Check (GetCredentialType API)
+ * Directly verifies whether an account exists in Microsoft's Azure AD / M365 directory.
+ * IfExistsResult:
+ *   0 = Exists and active
+ *   1 = Does NOT exist (100% dead recipient / guaranteed bounce)
+ *   5 = Federated / External identity provider
+ */
+async function checkMicrosoftAccount(email: string): Promise<{ exists: boolean; definitive: boolean; reason?: string }> {
+    try {
+        const res = await axios.post('https://login.microsoftonline.com/common/GetCredentialType', {
+            username: email
+        }, {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 3500
+        })
+        const code = res.data?.IfExistsResult
+        if (code === 1) {
+            return { exists: false, definitive: true, reason: 'Mailbox does not exist on Microsoft 365 (Confirmed 100% dead recipient)' }
+        }
+        if (code === 0) {
+            return { exists: true, definitive: true, reason: 'Active mailbox identity verified on Microsoft 365' }
+        }
+        return { exists: false, definitive: false }
+    } catch {
+        return { exists: false, definitive: false }
+    }
+}
+
+/**
+ * Workspace Database Bounce Memory Check
+ * Cross-references prior campaign delivery events and lead records in the workspace.
+ * If this address previously bounced in the workspace, it is guaranteed 100% dead.
+ */
+async function checkWorkspaceBounceMemory(email: string): Promise<{ isBounced: boolean; reason?: string } | null> {
+    try {
+        const { prisma } = await import('./prisma')
+        const lowerEmail = email.toLowerCase()
+        const bouncedLead = await prisma.lead.findFirst({
+            where: {
+                email: lowerEmail,
+                status: 'bounced'
+            },
+            include: {
+                events: {
+                    where: { type: 'bounce' },
+                    select: { details: true, metadata: true }
+                }
+            }
+        })
+        if (bouncedLead) {
+            let errorText = '550 Recipient does not exist'
+            const rawEvent = bouncedLead.events[0]?.details || bouncedLead.events[0]?.metadata
+            if (rawEvent) {
+                try {
+                    const parsed = JSON.parse(rawEvent)
+                    if (parsed.reason) errorText = parsed.reason
+                    else if (parsed.subject) errorText = parsed.subject
+                } catch {
+                    errorText = rawEvent.substring(0, 80)
+                }
+            }
+            return {
+                isBounced: true,
+                reason: `Known Bounced Address (100% Dead - Failed delivery in campaign: ${errorText})`
+            }
+        }
+        return { isBounced: false }
+    } catch {
+        return null
+    }
+}
+
+/**
+ * Check if lead had verified past engagement (replied/lead) in workspace
+ */
+async function checkWorkspaceVerifiedMemory(email: string): Promise<boolean> {
+    try {
+        const { prisma } = await import('./prisma')
+        const activeLead = await prisma.lead.findFirst({
+            where: {
+                email: email.toLowerCase(),
+                status: { in: ['replied', 'lead'] }
+            }
+        })
+        return !!activeLead
+    } catch {
+        return false
+    }
+}
+
+/**
  * World-Class Multi-Layer Email Verification Engine
- * Detects Syntax, Typos, Disposable Burners, Role Aliases, Expired/Parked Domains,
- * and Catch-All Gateway Shields (Proofpoint, Cisco IronPort, Mimecast) to prevent bounces.
+ * Detects Syntax, Typos, Disposable Burners, Workspace Bounces, Role Aliases, Expired/Parked Domains,
+ * M365 Real-Time Account Existence, Catch-All Gateway Shields, and Custom Domain Risks to prevent bounces.
  */
 export async function verifyEmail(emailInput: string): Promise<VerificationResult> {
     const email = (emailInput || '').trim()
@@ -336,6 +427,26 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
         }
     }
 
+    // --- Layer 3.5: Workspace Bounce Memory Check ---
+    // If this address previously bounced in any campaign in this workspace, it is 100% confirmed dead.
+    const bounceMemory = await checkWorkspaceBounceMemory(email)
+    if (bounceMemory?.isBounced) {
+        return {
+            email,
+            status: 'invalid',
+            reason: bounceMemory.reason || 'Known Bounced Address (100% Dead in workspace)',
+            score: 0,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: false,
+            isFreeProvider: false,
+            hasMx: true,
+            isCatchAll: false,
+            suggestedFix,
+            checkedAt: now
+        }
+    }
+
     const isRoleBased = ROLE_PREFIXES.has(local)
     const isFreeProvider = FREE_PROVIDERS.has(domain)
 
@@ -360,22 +471,18 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
     const mxRecords = await getDomainMx(domain)
 
     if (mxRecords.length === 0) {
-        // Fallback: Check if domain has an A record that can receive mail (RFC 5321)
-        const hasA = await hasDomainARecord(domain)
-        if (!hasA) {
-            return {
-                email,
-                status: 'invalid',
-                reason: 'Domain has no active MX records or A records to receive email (Dead domain)',
-                score: 0,
-                isSyntaxValid: true,
-                isDisposable: false,
-                isRoleBased: false,
-                isFreeProvider,
-                hasMx: false,
-                suggestedFix,
-                checkedAt: now
-            }
+        return {
+            email,
+            status: 'invalid',
+            reason: 'Domain has no MX records configured (Cannot receive email - 100% bounce)',
+            score: 0,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: false,
+            isFreeProvider,
+            hasMx: false,
+            suggestedFix,
+            checkedAt: now
         }
     }
 
@@ -417,9 +524,9 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
         }
     }
 
-    // --- Layer 6: Catch-All / Accept-All Gateway Shield Detection (The #1 Source of Cold Email Bounces) ---
+    // --- Layer 6: Catch-All / Accept-All Gateway Shield Detection ---
     // Major enterprise security gateways (Proofpoint, Cisco IronPort, Mimecast, Barracuda) accept ALL emails
-    // at the perimeter gateway to prevent directory harvesting, and bounce asynchronously if the recipient does not exist.
+    // at the perimeter gateway to prevent directory harvesting, and bounce asynchronously if recipient does not exist.
     const matchedShield = GATEWAY_SHIELDS.find(s => s.pattern.test(primaryMx))
     if (matchedShield) {
         return {
@@ -439,43 +546,123 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
         }
     }
 
-    // Provider Identification
+    // --- Layer 7: Provider-Specific Verification & Corporate Catch-All Protection ---
     let providerName = 'Custom Mail Server'
-    let deliverabilityScore = 96
+    let isGoogleWorkspace = false
+    let isMicrosoft365 = false
 
     if (primaryMx.includes('google.com') || primaryMx.includes('googlemail.com') || domain === 'gmail.com') {
         providerName = 'Google Workspace'
-        deliverabilityScore = 98
-    } else if (primaryMx.includes('outlook.com') || primaryMx.includes('protection.outlook.com') || domain === 'hotmail.com' || domain === 'outlook.com') {
+        isGoogleWorkspace = true
+    } else if (primaryMx.includes('outlook.com') || primaryMx.includes('protection.outlook.com') || domain === 'hotmail.com' || domain === 'outlook.com' || domain === 'live.com' || domain === 'msn.com') {
         providerName = 'Microsoft 365'
-        deliverabilityScore = 98
+        isMicrosoft365 = true
     } else if (primaryMx.includes('yahoodns.net') || domain.includes('yahoo')) {
         providerName = 'Yahoo Mail'
-        deliverabilityScore = 92
     } else if (primaryMx.includes('zoho.com') || primaryMx.includes('zoho.in')) {
         providerName = 'Zoho Mail'
-        deliverabilityScore = 96
     } else if (primaryMx.includes('apple.com') || primaryMx.includes('icloud.com')) {
         providerName = 'Apple iCloud'
-        deliverabilityScore = 94
     } else if (primaryMx.includes('protonmail.ch') || primaryMx.includes('proton.me')) {
         providerName = 'ProtonMail'
-        deliverabilityScore = 95
     }
 
-    // --- Layer 7: Confirmed Safe Deliverable Mailbox ---
+    // 7A: Real-Time Microsoft 365 Account Existence Verification (GetCredentialType)
+    if (isMicrosoft365) {
+        const m365Result = await checkMicrosoftAccount(email)
+        if (m365Result.definitive) {
+            if (!m365Result.exists) {
+                return {
+                    email,
+                    status: 'invalid',
+                    reason: m365Result.reason || 'Mailbox does not exist on Microsoft 365 (Confirmed 100% dead recipient)',
+                    score: 0,
+                    isSyntaxValid: true,
+                    isDisposable: false,
+                    isRoleBased: false,
+                    isFreeProvider,
+                    hasMx: true,
+                    mxHost: primaryMx,
+                    isCatchAll: false,
+                    suggestedFix,
+                    checkedAt: now
+                }
+            } else {
+                return {
+                    email,
+                    status: 'valid',
+                    reason: 'Active mailbox verified on Microsoft 365',
+                    score: 98,
+                    isSyntaxValid: true,
+                    isDisposable: false,
+                    isRoleBased: false,
+                    isFreeProvider,
+                    hasMx: true,
+                    mxHost: primaryMx,
+                    isCatchAll: false,
+                    suggestedFix,
+                    checkedAt: now
+                }
+            }
+        }
+    }
+
+    // 7B: Free Webmail Consumer Accounts (No catch-all capability on public free webmail)
+    if (isFreeProvider) {
+        return {
+            email,
+            status: 'valid',
+            reason: `Active mailbox exchange verified on ${providerName}`,
+            score: 94,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: false,
+            isFreeProvider: true,
+            hasMx: true,
+            mxHost: primaryMx,
+            isCatchAll: false,
+            suggestedFix,
+            checkedAt: now
+        }
+    }
+
+    // 7C: Confirmed Active Engagement in Workspace History
+    const hasPastEngagement = await checkWorkspaceVerifiedMemory(email)
+    if (hasPastEngagement) {
+        return {
+            email,
+            status: 'valid',
+            reason: `Verified active mailbox (Confirmed past delivery & engagement in workspace)`,
+            score: 98,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: false,
+            isFreeProvider: false,
+            hasMx: true,
+            mxHost: primaryMx,
+            isCatchAll: false,
+            suggestedFix,
+            checkedAt: now
+        }
+    }
+
+    // 7D: Custom Corporate Domains (Google Workspace, Zoho, Private MX on Custom Domains)
+    // On enterprise custom domains, mail servers accept connections for the domain, but individual
+    // mailboxes cannot be confirmed without live delivery. Departed employees or invalid aliases
+    // bounce asynchronously (550 Recipient does not exist).
+    // Professional verifiers (NeverBounce, ZeroBounce) classify these as RISKY / UNCONFIRMED MAILBOX.
     return {
         email,
-        status: 'valid',
-        reason: `Active mailbox exchange verified on ${providerName}`,
-        score: isFreeProvider ? 92 : deliverabilityScore,
+        status: 'risky',
+        reason: `Custom domain on ${providerName}: Mail exchange active, but individual mailbox cannot be confirmed without live delivery (High bounce risk for departed employees)`,
+        score: 60,
         isSyntaxValid: true,
         isDisposable: false,
         isRoleBased: false,
-        isFreeProvider,
+        isFreeProvider: false,
         hasMx: true,
         mxHost: primaryMx,
-        isCatchAll: false,
+        isCatchAll: true,
         suggestedFix,
         checkedAt: now
     }

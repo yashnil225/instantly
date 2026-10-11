@@ -44,8 +44,8 @@ export default function CampaignOptionsPage() {
     // Form state
     const [selectedAccounts, setSelectedAccounts] = useState<string[]>([])
     const [stopOnReply, setStopOnReply] = useState(true)
-    const [linkTracking, setLinkTracking] = useState(false)
-    const [openTracking, setOpenTracking] = useState(false)
+    const [linkTracking, setLinkTracking] = useState(true)
+    const [openTracking, setOpenTracking] = useState(true)
     const [deliveryOpt, setDeliveryOpt] = useState(true) // "Free recommended" implied default
     const [sendAsTextOnly, setSendAsTextOnly] = useState(false)
     const [sendFirstAsText, setSendFirstAsText] = useState(false)
@@ -78,8 +78,8 @@ export default function CampaignOptionsPage() {
                     const data = await campaignRes.json()
                     setStatus(data.status || "draft")
                     setStopOnReply(data.stopOnReply ?? true)
-                    setLinkTracking(data.trackLinks ?? false)
-                    setOpenTracking(data.trackOpens ?? false)
+                    setLinkTracking(data.trackLinks ?? true)
+                    setOpenTracking(data.trackOpens ?? true)
                     setDailyLimit(data.dailyLimit?.toString() || "60")
                     if (data.campaignAccounts) {
                         setSelectedAccounts(data.campaignAccounts.map((ca: any) => ca.emailAccountId))
@@ -378,21 +378,22 @@ export default function CampaignOptionsPage() {
                 {/* Open Tracking */}
                 <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-8">
                     <div className="w-1/3">
-                        <Label className="text-white font-bold text-sm block mb-1">Open & Link Tracking</Label>
-                        <p className="text-gray-500 text-xs">Track email opens and link clicks</p>
-                    </div>
-                    <div className="w-2/3 flex items-center justify-end gap-6">
-                        <div className="flex items-center gap-2">
-                            <Checkbox
-                                id="link-tracking"
-                                checked={linkTracking}
-                                onCheckedChange={(c) => setLinkTracking(c as boolean)}
-                                className="border-[#333] data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 rounded-[4px]"
-                            />
-                            <label htmlFor="link-tracking" className="text-sm text-gray-300 font-medium">Link tracking</label>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Label className="text-white font-bold text-sm">Open Tracking</Label>
+                            {!openTracking && (
+                                <span className="text-[10px] bg-amber-900/30 text-amber-400 border border-amber-800/40 px-1.5 py-0.5 rounded font-medium">
+                                    Disabled
+                                </span>
+                            )}
                         </div>
+                        <p className="text-gray-500 text-xs">
+                            Track email opens using an invisible 1x1 tracking pixel. If disabled, the Open Rate card becomes a blank customizable slot in Analytics and the Opened stage is removed from the conversion funnel.
+                        </p>
+                    </div>
+                    <div className="w-2/3 flex items-center justify-end">
                         <div className="bg-[#111] p-1 rounded-lg border border-[#2a2a2a] flex">
                             <button
+                                type="button"
                                 onClick={() => setOpenTracking(false)}
                                 className={cn(
                                     "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
@@ -402,10 +403,56 @@ export default function CampaignOptionsPage() {
                                 Disable
                             </button>
                             <button
+                                type="button"
                                 onClick={() => setOpenTracking(true)}
                                 className={cn(
                                     "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
                                     openTracking ? "bg-[#22c55e] text-white shadow-sm" : "text-gray-500 hover:text-gray-300"
+                                )}
+                            >
+                                Enable
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Click / Link Tracking */}
+                <div className="flex items-center justify-between border-b border-[#1a1a1a] pb-8">
+                    <div className="w-1/3">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Label className="text-white font-bold text-sm">Click Tracking (Click Rate)</Label>
+                            {!linkTracking ? (
+                                <span className="text-[10px] bg-blue-900/40 text-blue-400 border border-blue-900/50 px-1.5 py-0.5 rounded font-medium">
+                                    Blank Slot in Analytics
+                                </span>
+                            ) : (
+                                <span className="text-[10px] bg-green-900/30 text-green-400 border border-green-800/40 px-1.5 py-0.5 rounded font-medium">
+                                    Active
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-gray-500 text-xs">
+                            Track link clicks in outgoing emails. If disabled, link redirect wrappers are omitted for improved inbox placement, the Click Rate card is replaced with a blank customizable block slot, and the Clicked stage is removed from the conversion funnel.
+                        </p>
+                    </div>
+                    <div className="w-2/3 flex items-center justify-end">
+                        <div className="bg-[#111] p-1 rounded-lg border border-[#2a2a2a] flex">
+                            <button
+                                type="button"
+                                onClick={() => setLinkTracking(false)}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
+                                    !linkTracking ? "bg-[#2a2a2a] text-white shadow-sm" : "text-gray-500 hover:text-gray-300"
+                                )}
+                            >
+                                Disable
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setLinkTracking(true)}
+                                className={cn(
+                                    "px-4 py-1.5 rounded-md text-xs font-medium transition-all",
+                                    linkTracking ? "bg-[#22c55e] text-white shadow-sm" : "text-gray-500 hover:text-gray-300"
                                 )}
                             >
                                 Enable
@@ -692,6 +739,22 @@ export default function CampaignOptionsPage() {
                                     <Switch
                                         checked={stopOnAutoReply}
                                         onCheckedChange={setStopOnAutoReply}
+                                    />
+                                </div>
+
+                                <div className="h-[1px] bg-[#222] w-full" />
+
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-white font-bold text-sm mb-1">Send to Risky / Catch-All Leads</Label>
+                                            <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-400 border-amber-500/30 py-0">High Bounce Risk</Badge>
+                                        </div>
+                                        <p className="text-gray-500 text-xs">When disabled (recommended), the Anti-Bounce Shield blocks unconfirmed corporate mailboxes to guarantee ~0% bounce rate.</p>
+                                    </div>
+                                    <Switch
+                                        checked={enableRiskyEmails}
+                                        onCheckedChange={setEnableRiskyEmails}
                                     />
                                 </div>
                             </div>

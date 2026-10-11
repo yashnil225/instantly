@@ -697,17 +697,17 @@ export default function EmailVerifierPage() {
                                             <span className="font-semibold text-base">{singleResult.email}</span>
                                             {singleResult.status === 'valid' && (
                                                 <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30">
-                                                    100% Safe (Valid)
+                                                    Verified Safe (Valid)
                                                 </Badge>
                                             )}
                                             {singleResult.status === 'risky' && (
                                                 <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/30">
-                                                    Risky / Catch-All
+                                                    Risky / Unconfirmed Mailbox
                                                 </Badge>
                                             )}
                                             {singleResult.status === 'invalid' && (
                                                 <Badge className="bg-rose-500/10 text-rose-500 border-rose-500/30">
-                                                    Invalid (Dead)
+                                                    Invalid (100% Dead)
                                                 </Badge>
                                             )}
                                             {singleResult.status === 'disposable' && (
@@ -720,10 +720,38 @@ export default function EmailVerifierPage() {
                                     </div>
 
                                     <div className="text-right">
-                                        <div className="text-2xl font-black text-primary">{singleResult.score}%</div>
+                                        <div className={`text-2xl font-black ${
+                                            singleResult.status === 'valid' ? 'text-emerald-500' :
+                                            singleResult.status === 'risky' ? 'text-amber-500' :
+                                            'text-rose-500'
+                                        }`}>{singleResult.score}%</div>
                                         <div className="text-[10px] uppercase font-semibold text-muted-foreground">Deliverability Score</div>
                                     </div>
                                 </div>
+
+                                {singleResult.status === 'risky' && (
+                                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 flex items-start gap-2">
+                                        <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="font-semibold">Unconfirmed Corporate Mailbox Warning</p>
+                                            <p className="text-[11px] text-amber-400/90 mt-0.5">
+                                                The mail server is active, but corporate mail exchangers do not permit positive recipient confirmation without live transmission. Sending cold outreach to this address may result in a bounce if the employee has departed or the alias was guessed.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {singleResult.status === 'invalid' && (
+                                    <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 flex items-start gap-2">
+                                        <ShieldX className="h-4 w-4 shrink-0 mt-0.5 text-rose-500" />
+                                        <div>
+                                            <p className="font-semibold text-rose-500">Unroutable / Dead Mailbox</p>
+                                            <p className="text-[11px] text-rose-400/90 mt-0.5">
+                                                {singleResult.reason}. Do NOT send to this address — sending will trigger a hard delivery bounce (550) and damage your sender domain reputation.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {singleResult.suggestedFix && (
                                     <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 flex items-center justify-between">
@@ -757,7 +785,7 @@ export default function EmailVerifierPage() {
                                     </div>
                                     <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/30">
                                         {!singleResult.isCatchAll ? <Check className="h-4 w-4 text-emerald-500" /> : <AlertTriangle className="h-4 w-4 text-amber-500" />}
-                                        <span>Catch-All Server: {singleResult.isCatchAll ? "Yes" : "No"}</span>
+                                        <span>Catch-All / Unconfirmed: {singleResult.isCatchAll ? "Yes (Risky)" : "No"}</span>
                                     </div>
                                 </div>
                             </div>

@@ -123,29 +123,42 @@ export default function GlobalLeadsPage() {
     }
 
     const handleExport = () => {
+        if (leads.length === 0) {
+            toast({
+                title: "No Leads to Export",
+                description: "There are no leads in your workspace to export.",
+                variant: "destructive"
+            })
+            return
+        }
+
         const headers = ['Email', 'First Name', 'Last Name', 'Company', 'Status', 'Campaign']
+        const escapeCsv = (val: string | undefined | null) => {
+            if (val === null || val === undefined) return '""'
+            const str = String(val).replace(/"/g, '""')
+            return `"${str}"`
+        }
+
         const rows = leads.map(lead => [
-            lead.email,
-            lead.firstName || '',
-            lead.lastName || '',
-            lead.company || '',
-            lead.status,
-            lead.campaign?.name || ''
-        ])
+            escapeCsv(lead.email),
+            escapeCsv(lead.firstName),
+            escapeCsv(lead.lastName),
+            escapeCsv(lead.company),
+            escapeCsv(lead.status),
+            escapeCsv(lead.campaign?.name)
+        ].join(','))
 
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-        ].join('\n')
-
-        const blob = new Blob([csvContent], { type: 'text/csv' })
+        const csvContent = [headers.join(','), ...rows].join('\r\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
         a.download = `all-leads-export-${new Date().toISOString().split('T')[0]}.csv`
+        document.body.appendChild(a)
         a.click()
+        document.body.removeChild(a)
         URL.revokeObjectURL(url)
-        toast({ title: "Export Started", description: `Exporting ${leads.length} leads...` })
+        toast({ title: "Export Complete", description: `Successfully exported ${leads.length} leads to CSV.` })
     }
 
     // Workspace management handlers

@@ -296,6 +296,9 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
         // --- 5. Find Due Leads with FILTERS ---
         const excludedStatuses = ['unsubscribed', 'bounced', 'sequence_complete', 'invalid']
+        if (!settings.enableRiskyEmails) {
+            excludedStatuses.push('risky')
+        }
         if (campaign.stopOnReply !== false) {
             excludedStatuses.push('replied')
         }
@@ -423,6 +426,15 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     await prisma.lead.update({
                         where: { id: lead.id },
                         data: { status: 'invalid' }
+                    })
+                    continue
+                }
+
+                if (preFlightCheck.status === 'risky' && !settings.enableRiskyEmails) {
+                    console.warn(`[Sender] 🛡️ Anti-Bounce Shield: Intercepted unconfirmed/risky lead ${lead.email} (${preFlightCheck.reason}). Marked as risky to prevent bounce.`)
+                    await prisma.lead.update({
+                        where: { id: lead.id },
+                        data: { status: 'risky' }
                     })
                     continue
                 }
@@ -881,10 +893,70 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                         errorMessage.toLowerCase().includes('timeout') ||
                         errorMessage.toLowerCase().includes('connect')
 
-                    if (isTransientNetworkError) {
+                    const isRecipientBounceError = 
+                        errorMessage.includes('550') ||
+                        errorMessage.includes('551') ||
+                        errorMessage.includes('552') ||
+                        errorMessage.includes('553') ||
+                        errorMessage.includes('554') ||
+                        errorMessage.toLowerCase().includes('recipient address rejected') ||
+                        errorMessage.toLowerCase().includes('user unknown') ||
+                        errorMessage.toLowerCase().includes('does not exist') ||
+                        errorMessage.toLowerCase().includes('mailbox unavailable') ||
+                        errorMessage.toLowerCase().includes('invalid recipient') ||
+                        errorMessage.toLowerCase().includes('user not found')
+
+                    if (isRecipientBounceError) {
+                        console.warn(`[Sender] 💥 Recipient Bounce Detected for ${lead.email} via SMTP: ${errorMessage}. Marking lead as bounced.`)
+                        await prisma.lead.update({
+                            where: { id: lead.id },
+                            data: { status: 'bounced' }
+                        }).catch(() => {})
+
+                        await prisma.sendingEvent.create({
+                            data: {
+                                campaignId: campaign.id,
+                                leadId: lead.id,
+                                emailAccountId: account.id,
+                                type: 'bounce',
+                                details: errorMessage,
+                                metadata: JSON.stringify({ reason: errorMessage, source: 'SMTP Synchronous Rejection' })
+                            }
+                        }).catch(() => {})
+
+                        await prisma.campaign.update({
+                            where: { id: campaign.id },
+                            data: { bounceCount: { increment: 1 } }
+                        }).catch(() => {})
+
+                        const todayUTC = new Date(new Date().toISOString().split('T')[0] + 'T00:00:00Z')
+                        await prisma.campaignStat.upsert({
+                            where: { campaignId_date: { campaignId: campaign.id, date: todayUTC } },
+                            create: { campaignId: campaign.id, date: todayUTC, bounced: 1 },
+                            update: { bounced: { increment: 1 } }
+                        }).catch(() => {})
+
+                        // --- 🛡️ ANTI-BOUNCE CIRCUIT BREAKER ---
+                        // If a campaign receives >= 3 bounces and bounce rate exceeds 3%, auto-pause immediately to protect inboxes!
+                        const currentCampaign = await prisma.campaign.findUnique({
+                            where: { id: campaign.id },
+                            select: { sentCount: true, bounceCount: true }
+                        })
+                        if (currentCampaign && currentCampaign.bounceCount >= 3) {
+                            const bouncePct = (currentCampaign.bounceCount / Math.max(1, currentCampaign.sentCount)) * 100
+                            if (bouncePct >= 3 || currentCampaign.bounceCount >= 5) {
+                                console.warn(`[Sender] 🚨 CIRCUIT BREAKER TRIPPED: Campaign ${campaign.id} automatically PAUSED to protect inboxes. (Bounce rate: ${bouncePct.toFixed(1)}%, total bounces: ${currentCampaign.bounceCount})`)
+                                await prisma.campaign.update({
+                                    where: { id: campaign.id },
+                                    data: { status: 'paused' }
+                                }).catch(() => {})
+                                break // Stop this campaign's sending loop immediately
+                            }
+                        }
+                    } else if (isTransientNetworkError) {
                         console.warn(`[Sender] ⚠️ Transient network/connection timeout sending via ${account.email} (${errorMessage}). Account kept active for next cycle.`)
                     } else {
-                        // Permanent/Authentication error - log error to the account to surface in UI
+                        // Permanent/Authentication error on sender inbox - log error to account
                         await prisma.emailAccount.update({
                             where: { id: account.id },
                             data: {

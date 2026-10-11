@@ -164,16 +164,18 @@ export async function syncAccountInbox(
 
                         const fetch = imap.fetch(results, { bodies: '', markSeen: false })
                         let processedCount = 0
+                        let messageQueue: Promise<void> = Promise.resolve()
 
                         fetch.on('message', (msg) => {
                             msg.on('body', (stream) => {
-                                simpleParser(stream as unknown as Source, async (err, parsed) => {
-                                    processedCount++
-                                    if (err || (guard && guard.isTimedOut())) {
-                                        if (guard?.isTimedOut()) console.warn(`[INBOX] Timeout reached while parsing, aborting. (${guard.elapsedSec()}s)`)
-                                        if (processedCount === results.length || (guard && guard.isTimedOut())) safeResolve()
-                                        return
-                                    }
+                                simpleParser(stream as unknown as Source, (err, parsed) => {
+                                    messageQueue = messageQueue.then(async () => {
+                                        processedCount++
+                                        if (err || (guard && guard.isTimedOut())) {
+                                            if (guard?.isTimedOut()) console.warn(`[INBOX] Timeout reached while parsing, aborting. (${guard.elapsedSec()}s)`)
+                                            if (processedCount === results.length || (guard && guard.isTimedOut())) safeResolve()
+                                            return
+                                        }
 
                                     try {
                                         const from = parsed.from?.value[0]?.address?.toLowerCase()
@@ -402,6 +404,7 @@ export async function syncAccountInbox(
                                 })
                             })
                         })
+                    })
 
                         fetch.once('error', (err) => safeReject(err))
                         fetch.once('end', () => {
@@ -506,18 +509,20 @@ async function syncSentFolder(account: EmailAccount, guard?: { isTimedOut: () =>
 
                             const fetch = imap.fetch(results, { bodies: '', markSeen: false })
                             let processedCount = 0
+                            let sentQueue: Promise<void> = Promise.resolve()
 
                             fetch.on('message', (msg) => {
                                 msg.on('body', (stream) => {
-                                    simpleParser(stream as unknown as Source, async (parseErr, parsed) => {
-                                        processedCount++
-                                        if (guard && guard.isTimedOut()) {
-                                            console.warn(`[SENT] Timeout reached while parsing, aborting. (${guard.elapsedSec()}s)`)
-                                            safeEnd()
-                                            return
-                                        }
-                                        if (!parseErr) {
-                                            try {
+                                    simpleParser(stream as unknown as Source, (parseErr, parsed) => {
+                                        sentQueue = sentQueue.then(async () => {
+                                            processedCount++
+                                            if (guard && guard.isTimedOut()) {
+                                                console.warn(`[SENT] Timeout reached while parsing, aborting. (${guard.elapsedSec()}s)`)
+                                                safeEnd()
+                                                return
+                                            }
+                                            if (!parseErr) {
+                                                try {
                                                 // Get all 'to' emails from the sent message
                                                 // parsed.to is a single AddressObject; its .value is the array of addresses
                                                 const toValue = Array.isArray(parsed.to) ? parsed.to : (parsed.to ? [parsed.to] : [])
@@ -580,6 +585,7 @@ async function syncSentFolder(account: EmailAccount, guard?: { isTimedOut: () =>
                                     })
                                 })
                             })
+                        })
 
                             fetch.once('error', (err) => safeEnd(err))
                             fetch.once('end', () => {

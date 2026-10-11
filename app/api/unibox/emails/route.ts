@@ -38,6 +38,13 @@ export async function GET(request: NextRequest) {
         if (aiLabel) where.aiLabel = aiLabel
         if (filter === "unread") where.isRead = false
         if (filter === "starred") where.isStarred = true
+        if (filter === "sent") {
+            where.events = {
+                some: {
+                    type: "sent"
+                }
+            }
+        }
 
         if (tags.length > 0) {
             where.tags = {
@@ -246,9 +253,18 @@ export async function GET(request: NextRequest) {
                 )
             }
 
-            // Apply search conditions
+            // Apply search conditions without clobbering snooze or existing OR filters
             if (searchConditions.length > 0) {
-                where.OR = searchConditions
+                if (where.OR) {
+                    where.AND = [
+                        ...(where.AND || []),
+                        { OR: where.OR },
+                        { OR: searchConditions }
+                    ]
+                    delete where.OR
+                } else {
+                    where.OR = searchConditions
+                }
             }
         }
 

@@ -5,7 +5,9 @@ import { calculateWarmupLimit } from './warmup'
 import nodemailer from 'nodemailer'
 import { AutomationFilter } from './replies'
 import { replaceVariables } from './variables'
-import { recordLeadMemory } from './lead-memory'
+import { recordLeadMemory, getLeadMemoryMap } from './lead-memory'
+import { formatEmailBody } from './email'
+import { verifyEmail } from './email-verifier'
 
 /** Returns known SMTP defaults for major providers to prevent localhost fallback */
 function getSmtpDefaults(provider: string): { host: string; port: number } | null {
@@ -25,6 +27,10 @@ function injectTracking(html: string, eventId: string, baseUrl: string, trackLin
     if (trackLinks) {
         const linkRegex = /href=["'](http[^"']+)["']/g
         newHtml = newHtml.replace(linkRegex, (match, url) => {
+            // Exclude unsubscribe endpoints and links to prevent false positive click stats
+            if (url.includes('/api/unsubscribe') || url.toLowerCase().includes('unsubscribe')) {
+                return match
+            }
             const encodedUrl = encodeURIComponent(url)
             const trackingUrl = `${baseUrl}/api/track/click?eid=${eventId}&url=${encodedUrl}`
             return `href="${trackingUrl}"`
@@ -47,6 +53,22 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
     const { filter } = options
     console.log("Starting batch processing...")
+
+    // Startup cleanup: Purge orphaned pending events older than 10 minutes from crashed/interrupted runs
+    try {
+        const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000)
+        const deletedStale = await prisma.sendingEvent.deleteMany({
+            where: {
+                type: 'pending',
+                createdAt: { lt: tenMinutesAgo }
+            }
+        })
+        if (deletedStale.count > 0) {
+            console.log(`[Sender] Purged ${deletedStale.count} stale pending sending event(s) from previous interrupted runs`)
+        }
+    } catch (e) {
+        // Non-blocking cleanup
+    }
 
     // Base URL for tracking (use NEXT_PUBLIC_APP_URL or VERCEL_URL first for cloud deployments)
     const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
@@ -273,8 +295,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
         }
 
         // --- 5. Find Due Leads with FILTERS ---
-        const excludedStatuses = ['unsubscribed', 'bounced', 'sequence_complete']
-        if (campaign.stopOnReply) {
+        const excludedStatuses = ['unsubscribed', 'bounced', 'sequence_complete', 'invalid']
+        if (campaign.stopOnReply !== false) {
             excludedStatuses.push('replied')
         }
 
@@ -311,7 +333,28 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     take: 1
                 }
             },
-            take: 10
+            orderBy: [
+                { nextSendAt: 'asc' },
+                { id: 'asc' }
+            ],
+            take: 50
+        })
+
+        // Check lead memory for persistent statuses across deletions/re-uploads
+        const memoryMap = await getLeadMemoryMap(campaign.id, candidateLeads.map((l: any) => l.email))
+        candidateLeads = candidateLeads.filter((l: any) => {
+            const mem = memoryMap.get(l.email.toLowerCase())
+            if (mem) {
+                if (['unsubscribed', 'bounced', 'sequence_complete'].includes(mem.status)) {
+                    prisma.lead.update({ where: { id: l.id }, data: { status: mem.status } }).catch(() => {})
+                    return false
+                }
+                if (mem.status === 'replied' && campaign.stopOnReply !== false) {
+                    prisma.lead.update({ where: { id: l.id }, data: { status: 'replied' } }).catch(() => {})
+                    return false
+                }
+            }
+            return true
         })
 
         // Sort by priority if needed
@@ -361,14 +404,30 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 }
             }
 
-            // Skip invalid emails to prevent EENVELOPE errors
+            // --- Automated Pre-Flight Anti-Bounce Shield ---
+            // Intercept empty or malformed email syntax
             if (!lead.email || !lead.email.includes('@')) {
-                console.warn(`[Sender] Skipping lead ${lead.id} with invalid email: ${lead.email}`)
+                console.warn(`[Sender] 🛡️ Skipping lead ${lead.id} with invalid email syntax: ${lead.email}`)
                 await prisma.lead.update({
                     where: { id: lead.id },
-                    data: { status: 'bounced' }
+                    data: { status: 'invalid' }
                 })
                 continue
+            }
+
+            // Real-time deliverability check before SMTP transmission
+            try {
+                const preFlightCheck = await verifyEmail(lead.email)
+                if (preFlightCheck.status === 'invalid' || preFlightCheck.status === 'disposable') {
+                    console.warn(`[Sender] 🛡️ Anti-Bounce Shield: Blocked unroutable lead ${lead.email} (${preFlightCheck.reason}). Marked as invalid to prevent bounce.`)
+                    await prisma.lead.update({
+                        where: { id: lead.id },
+                        data: { status: 'invalid' }
+                    })
+                    continue
+                }
+            } catch (verifierErr: any) {
+                console.warn(`[Sender] Pre-flight verifier check skipped due to error: ${verifierErr.message}`)
             }
 
             // --- Stop on Company Reply Check ---
@@ -398,8 +457,9 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
 
             if (sentForThisCampaign >= availableAccounts.length * 5) break
 
-            // If lead already replied, bounced, or unsubscribed, never email again
-            if (lead.status === 'replied' || lead.status === 'bounced' || lead.status === 'unsubscribed') {
+            // If lead already bounced, unsubscribed, or replied (when stopOnReply is active), do not email
+            const shouldStopOnReply = campaign.stopOnReply !== false
+            if ((shouldStopOnReply && lead.status === 'replied') || lead.status === 'bounced' || lead.status === 'unsubscribed') {
                 continue
             }
 
@@ -504,6 +564,8 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     data: { lastAccountIndex: (accountIndex + 1) % availableAccounts.length }
                 })
             }
+
+            let sentEvent: any = null
 
             try {
                 // Ensure Unsubscribe Token exists on Lead
@@ -628,7 +690,7 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                 body = replaceVariables(body, lead, account)
 
                 // Create Sending Event
-                const sentEvent = await prisma.sendingEvent.create({
+                sentEvent = await prisma.sendingEvent.create({
                     data: {
                         type: 'pending',
                         campaignId: campaign.id,
@@ -638,32 +700,22 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
                     }
                 })
 
-                // Construct Email Body (Text vs HTML)
-                let finalHtml: string | undefined = `${body}`
+                // Construct Email Body (Text vs HTML) with robust spacing preservation
+                const { html: formattedHtml, text: formattedText } = formatEmailBody(body)
 
-                if (finalHtml) {
-                    const isRichHtml = /<(p|div|table|ul|ol|h[1-6])\b/i.test(finalHtml)
-
-                    if (!isRichHtml) {
-                        finalHtml = finalHtml.replace(/\n/g, '<br />')
-                    }
-
-                    finalHtml = finalHtml.replace(/<p\b[^>]*>/gi, '<p style="margin: 0; padding: 0; padding-bottom: 12px; line-height: 24px; mso-line-height-rule: exactly; mso-margin-bottom-alt: 12px;">')
-                    finalHtml = finalHtml.replace(/<div\b[^>]*>/gi, '<div style="line-height: 24px; mso-line-height-rule: exactly;">')
-                    finalHtml = `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 24px; mso-line-height-rule: exactly; color: #000000; font-size: 15px;">${finalHtml}</div>`
-                }
-
-                let finalText: string | undefined = undefined
+                let finalHtml: string | undefined = formattedHtml
+                let finalText: string | undefined = formattedText
 
                 // Check Text-Only Settings
                 const isTextOnly = settings.sendAsTextOnly || (settings.sendFirstAsText && nextStepNumber === 1)
 
                 if (isTextOnly) {
-                    finalText = body.replace(/<[^>]*>/g, '')
-                    
                     if (campaign.trackLinks) {
                         const urlRegex = /(https?:\/\/[^\s"'<]+)/g
-                        finalText = finalText.replace(urlRegex, (url) => {
+                        finalText = (finalText || '').replace(urlRegex, (url) => {
+                            if (url.includes('/api/unsubscribe') || url.toLowerCase().includes('unsubscribe')) {
+                                return url
+                            }
                             const trackingUrl = `${BASE_URL}/api/track/click?eid=${sentEvent.id}&url=${encodeURIComponent(url)}`
                             return trackingUrl
                         })
@@ -788,6 +840,13 @@ export async function processBatch(options: { filter?: AutomationFilter } = {}) 
             } catch (error: any) {
                 console.error(`Failed to send to ${lead.email}`, error)
                 errors++
+
+                // CRITICAL: Clean up pending event so the lead is not permanently locked in pending state on future runs
+                if (sentEvent?.id) {
+                    await prisma.sendingEvent.delete({
+                        where: { id: sentEvent.id }
+                    }).catch(() => {})
+                }
 
                 const errorMessage = error.message || 'Unknown SMTP error'
                 // Handle Google's specifically shifting "Daily user sending quota" and "Daily user sending limit" outputs

@@ -174,23 +174,39 @@ export async function GET(request: Request) {
         const requestedTimezone = searchParams.get('timezone')
         const targetTimezone = (requestedTimezone && moment.tz.zone(requestedTimezone)) 
             ? requestedTimezone 
-            : 'America/New_York'
+            : (workspace as any)?.timezone || 'UTC'
 
-        // Calculate heatmap data in target timezone
+        // Calculate heatmap data in a single O(N) matrix pass
+        const heatmapMatrix: Record<string, { value: number; opens: number; clicks: number; replies: number }> = {}
+        for (let day = 0; day < 7; day++) {
+            for (let hour = 0; hour < 24; hour++) {
+                heatmapMatrix[`${day}_${hour}`] = { value: 0, opens: 0, clicks: 0, replies: 0 }
+            }
+        }
+
+        for (const e of events) {
+            const m = moment(e.createdAt).tz(targetTimezone)
+            const key = `${m.day()}_${m.hour()}`
+            const cell = heatmapMatrix[key]
+            if (cell) {
+                if (e.type === 'sent') cell.value++
+                else if (e.type === 'open') cell.opens++
+                else if (e.type === 'click') cell.clicks++
+                else if (e.type === 'reply') cell.replies++
+            }
+        }
+
         const heatmapData = []
         for (let day = 0; day < 7; day++) {
             for (let hour = 0; hour < 24; hour++) {
-                const hourEvents = events.filter((e: any) => {
-                    const m = moment(e.createdAt).tz(targetTimezone)
-                    return m.day() === day && m.hour() === hour
-                })
+                const cell = heatmapMatrix[`${day}_${hour}`]
                 heatmapData.push({
                     day,
                     hour,
-                    value: hourEvents.filter((e: any) => e.type === 'sent').length,
-                    opens: hourEvents.filter((e: any) => e.type === 'open').length,
-                    clicks: hourEvents.filter((e: any) => e.type === 'click').length,
-                    replies: hourEvents.filter((e: any) => e.type === 'reply').length
+                    value: cell.value,
+                    opens: cell.opens,
+                    clicks: cell.clicks,
+                    replies: cell.replies
                 })
             }
         }
@@ -396,10 +412,10 @@ export async function GET(request: Request) {
             totalSent: sentEmailsCount,
             totalContacted: uniqueLeadsContactedCount,
             totalDelivered: deliveredCount,
-            // All rates now use sent (standardizing across tool)
-            opensRate: sentEmailsCount > 0 ? Math.min(Math.round((totalOpenedCount / sentEmailsCount) * 100), 100) : 0,
-            clickRate: sentEmailsCount > 0 ? Math.min(Math.round((totalClickedCount / sentEmailsCount) * 100), 100) : 0,
-            replyRate: sentEmailsCount > 0 ? Math.min(Math.round((totalReplied / sentEmailsCount) * 100), 100) : 0,
+            // Rates standardized with Campaign Analytics (using unique leads contacted as denominator)
+            opensRate: (uniqueLeadsContactedCount > 0 ? Math.min(Math.round((totalOpenedCount / uniqueLeadsContactedCount) * 100), 100) : 0),
+            clickRate: (uniqueLeadsContactedCount > 0 ? Math.min(Math.round((totalClickedCount / uniqueLeadsContactedCount) * 100), 100) : 0),
+            replyRate: (uniqueLeadsContactedCount > 0 ? Math.min(Math.round((totalReplied / uniqueLeadsContactedCount) * 100), 100) : 0),
             positiveReplyRate,
             opportunities: {
                 count: opportunitiesCount,

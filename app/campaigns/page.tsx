@@ -950,11 +950,11 @@ function CampaignsPage() {
                                         })()}
                                     </div>
 
-                                    <div className="text-muted-foreground text-sm font-medium">{campaign.sentCount || "-"}</div>
-                                    <div className="text-muted-foreground text-sm font-medium">{campaign.openRate || "-"}</div>
-                                    <div className="text-muted-foreground text-sm font-medium">{campaign.clickRate || "-"}</div>
-                                    <div className="text-muted-foreground text-sm font-medium">{campaign.replyRate || "-"}</div>
-                                    <div className="text-muted-foreground text-sm font-medium">{campaign.opportunities || "-"}</div>
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.sentCount ?? 0}</div>
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.openRate || "0%"}</div>
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.clickRate || "0%"}</div>
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.replyRate || "0%"}</div>
+                                    <div className="text-muted-foreground text-sm font-medium">{campaign.opportunities ?? 0}</div>
 
                                     <div className="flex justify-end items-center gap-1" onClick={(e) => e.stopPropagation()}>
                                         <Button
@@ -1036,24 +1036,50 @@ function CampaignsPage() {
                                             </div>
                                             <div className="grid grid-cols-5 gap-4">
                                                 {[
-                                                    { label: "Sent", value: campaign.sentCount || 0, color: "bg-blue-500", raw: true },
-                                                    { label: "Opened", value: campaign.openRate === 'Disabled' ? 0 : parseInt(campaign.openRate) || 0, color: "bg-yellow-500" },
-                                                    { label: "Clicked", value: campaign.clickRate === 'Disabled' ? 0 : parseInt(campaign.clickRate) || 0, color: "bg-green-500" },
-                                                    { label: "Replied", value: parseInt(campaign.replyRate) || 0, color: "bg-emerald-500" },
-                                                    { label: "Opportunities", value: campaign.opportunities || 0, color: "bg-purple-500", raw: true }
-                                                ].map((stat, idx) => {
-                                                    const rawValue = stat.raw ? stat.value : Math.round(((campaign.sentCount || 0) * (stat.value as number)) / 100);
-                                                    return (
-                                                        <div key={idx} className="bg-card border border-border p-4 rounded-lg flex flex-col justify-between">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <div className={`w-2 h-2 rounded-full ${stat.color}`} />
-                                                                <span className="text-xs text-muted-foreground font-semibold uppercase">{stat.label}</span>
-                                                            </div>
-                                                            <div className="text-2xl font-bold tracking-tight">{rawValue}</div>
-                                                            {!stat.raw && <div className="text-xs text-muted-foreground mt-1">{stat.value}% rate</div>}
+                                                    { 
+                                                        label: "Sent", 
+                                                        count: campaign.sentCount || 0, 
+                                                        rate: null, 
+                                                        color: "bg-blue-500" 
+                                                    },
+                                                    { 
+                                                        label: "Opened", 
+                                                        count: campaign.openCount !== undefined ? campaign.openCount : (campaign.openRate === 'Disabled' ? 0 : parseInt(campaign.openRate) || 0), 
+                                                        rate: campaign.openRate === 'Disabled' ? null : campaign.openRate, 
+                                                        color: "bg-yellow-500" 
+                                                    },
+                                                    { 
+                                                        label: "Clicked", 
+                                                        count: campaign.clickCount !== undefined ? campaign.clickCount : (campaign.clickRate === 'Disabled' ? 0 : parseInt(campaign.clickRate) || 0), 
+                                                        rate: campaign.clickRate === 'Disabled' ? null : campaign.clickRate, 
+                                                        color: "bg-green-500" 
+                                                    },
+                                                    { 
+                                                        label: "Replied", 
+                                                        count: campaign.replyCount !== undefined ? campaign.replyCount : 0, 
+                                                        rate: campaign.replyRate || '0%', 
+                                                        color: "bg-emerald-500" 
+                                                    },
+                                                    { 
+                                                        label: "Opportunities", 
+                                                        count: campaign.opportunities || 0, 
+                                                        rate: null, 
+                                                        color: "bg-purple-500" 
+                                                    }
+                                                ].map((stat, idx) => (
+                                                    <div key={idx} className="bg-card border border-border p-4 rounded-lg flex flex-col justify-between">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className={`w-2 h-2 rounded-full ${stat.color}`} />
+                                                            <span className="text-xs text-muted-foreground font-semibold uppercase">{stat.label}</span>
                                                         </div>
-                                                    )
-                                                })}
+                                                        <div className="text-2xl font-bold tracking-tight">{stat.count}</div>
+                                                        {stat.rate && (
+                                                            <div className="text-xs text-muted-foreground mt-1">
+                                                                {stat.rate.endsWith('%') ? `${stat.rate} rate` : `${stat.rate}% rate`}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
                                     )}

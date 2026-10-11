@@ -101,6 +101,7 @@ interface Email {
     senderAccountName?: string
     recipient?: string
     recipientEmail?: string
+    to?: string
     messages?: {
         id: string
         type: 'sent' | 'reply'
@@ -112,6 +113,54 @@ interface Email {
         isMe: boolean
     }[]
     tags?: { id: string; name: string; color: string }[]
+}
+
+function htmlToPlainText(html: string): string {
+    if (!html) return ''
+
+    // If it doesn't contain HTML tags, return trimmed text
+    if (!/<[a-z][\s\S]*>/i.test(html)) {
+        return html.trim()
+    }
+
+    // Strip style, script, head elements
+    let text = html
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '')
+
+    // Convert block breaks to newlines
+    text = text
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<\/tr>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<li[^>]*>/gi, '• ')
+        .replace(/<hr\s*\/?>/gi, '\n---\n')
+
+    // Strip all remaining tags
+    text = text.replace(/<[^>]+>/g, '')
+
+    // Decode HTML entities
+    text = text
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'")
+        .replace(/&apos;/gi, "'")
+        .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+
+    // Normalize spacing and consecutive blank lines
+    text = text
+        .split('\n')
+        .map(line => line.trimEnd())
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+
+    return text.trim()
 }
 
 // Wrapper component with Suspense for useSearchParams
@@ -583,15 +632,8 @@ Happy sending!`,
                     if (selectedEmail) {
                         setReplyMode('forward')
                         setForwardSubject(`Fwd: ${selectedEmail.subject}`)
-                        setReplyBody(`
----------- Forwarded message ----------
-From: ${selectedEmail.fromName} <${selectedEmail.from}>
-Date: ${new Date(selectedEmail.timestamp).toLocaleString()}
-Subject: ${selectedEmail.subject}
-To: ${selectedEmail.recipient || "User"} <${selectedEmail.recipientEmail || "user@example.com"}>
-
-${selectedEmail.body || selectedEmail.preview}
-                                `.trim())
+                        const plainBody = htmlToPlainText(selectedEmail.body || selectedEmail.preview || "")
+                        setReplyBody(`\n\n---------- Forwarded message ---------\nFrom: ${selectedEmail.fromName || selectedEmail.from} <${selectedEmail.from}>\nDate: ${new Date(selectedEmail.timestamp).toLocaleString()}\nSubject: ${selectedEmail.subject}\nTo: ${selectedEmail.recipient || "Me"} <${selectedEmail.recipientEmail || ""}>\n\n${plainBody}`)
                     }
                     break
                 case 'e': // Archive
@@ -2127,7 +2169,14 @@ ${selectedEmail.body || selectedEmail.preview}
                                                     ].map(suggest => (
                                                         <button
                                                             key={suggest.label}
-                                                            onClick={() => setReplyBody(suggest.text + (replyBody.includes('--') ? replyBody.substring(replyBody.indexOf('<br><br>--')) : ''))}
+                                                            onClick={() => {
+                                                                if (replyBody.includes('---------- Forwarded message')) {
+                                                                    const quoteIdx = replyBody.indexOf('---------- Forwarded message')
+                                                                    setReplyBody(suggest.text + '\n\n' + replyBody.substring(quoteIdx))
+                                                                } else {
+                                                                    setReplyBody(suggest.text)
+                                                                }
+                                                            }}
                                                             className="px-2 py-1 rounded-full bg-[#333] hover:bg-[#444] text-[11px] text-[#a1a1aa] transition-colors whitespace-nowrap"
                                                         >
                                                             {suggest.label}
@@ -2243,15 +2292,8 @@ ${selectedEmail.body || selectedEmail.preview}
                                                 onClick={() => {
                                                     setReplyMode('forward')
                                                     setForwardSubject(`Fwd: ${selectedEmail.subject}`)
-                                                    setReplyBody(`
----------- Forwarded message ----------
-From: ${selectedEmail.fromName} <${selectedEmail.from}>
-Date: ${new Date(selectedEmail.timestamp).toLocaleString()}
-Subject: ${selectedEmail.subject}
-To: ${selectedEmail.recipient || "User"} <${selectedEmail.recipientEmail || "user@example.com"}>
-
-${selectedEmail.body || selectedEmail.preview}
-                                                `.trim())
+                                                    const plainBody = htmlToPlainText(selectedEmail.body || selectedEmail.preview || "")
+                                                    setReplyBody(`\n\n---------- Forwarded message ---------\nFrom: ${selectedEmail.fromName || selectedEmail.from} <${selectedEmail.from}>\nDate: ${new Date(selectedEmail.timestamp).toLocaleString()}\nSubject: ${selectedEmail.subject}\nTo: ${selectedEmail.recipient || "Me"} <${selectedEmail.recipientEmail || ""}>\n\n${plainBody}`)
                                                 }}
                                             >
                                                 <Forward className="h-4 w-4 mr-2" /> Forward

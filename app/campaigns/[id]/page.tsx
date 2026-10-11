@@ -32,6 +32,7 @@ import {
     Share2,
     Settings,
     Stethoscope,
+    RefreshCw,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
@@ -93,6 +94,7 @@ interface CampaignAnalytics {
             opened: number
             replied: number
             clicked: number
+            isDeleted?: boolean
         }[]
     }[]
     leads?: { id: string; status: string; aiLabel?: string | null }[]
@@ -107,6 +109,14 @@ interface CampaignAnalytics {
     sendAsTextOnly?: boolean
     _needsClassification?: boolean
     _unclassifiedCount?: number
+    recentActivity?: {
+        id: string
+        type: string
+        createdAt: string
+        leadEmail: string
+        leadName: string
+        metadata: string | null
+    }[]
 }
 
 export default function CampaignAnalyticsPage() {
@@ -129,6 +139,7 @@ export default function CampaignAnalyticsPage() {
     const [classifyingProgress, setClassifyingProgress] = useState(0)
     const [filtersLoaded, setFiltersLoaded] = useState(false)
     const [activeSubTab, setActiveSubTab] = useState<'steps' | 'activity'>('steps')
+    const [isRefreshing, setIsRefreshing] = useState(false)
 
     const [filters, setFilters] = useState({
         includeAutoReplies: false,
@@ -150,8 +161,12 @@ export default function CampaignAnalyticsPage() {
         { label: "Custom", value: "custom" },
     ]
 
-    const fetchCampaignAnalytics = React.useCallback(async () => {
-        setLoading(true)
+    const fetchCampaignAnalytics = React.useCallback(async (silent = false) => {
+        if (!silent) {
+            setLoading(true)
+        } else {
+            setIsRefreshing(true)
+        }
         try {
             const params = new URLSearchParams({
                 range: dateRange,
@@ -185,9 +200,13 @@ export default function CampaignAnalyticsPage() {
         } catch (err) {
             console.error("Failed to fetch campaign analytics:", err)
         } finally {
-            setLoading(false)
+            if (!silent) {
+                setLoading(false)
+            } else {
+                setIsRefreshing(false)
+            }
         }
-    }, [campaignId, dateRange, filters.includeAutoReplies, isClassifying])
+    }, [campaignId, dateRange, filters.includeAutoReplies, isClassifying, filtersLoaded])
 
     // Background classification with polling
     const classifyRepliesInBackground = async (totalUnclassified: number) => {
@@ -235,12 +254,16 @@ export default function CampaignAnalyticsPage() {
 
     useEffect(() => {
         fetchCampaignAnalytics()
+        const interval = setInterval(() => {
+            fetchCampaignAnalytics(true)
+        }, 10000)
+        return () => clearInterval(interval)
     }, [fetchCampaignAnalytics])
 
     // Re-fetch when includeAutoReplies changes
     useEffect(() => {
         if (filtersLoaded) {
-            fetchCampaignAnalytics()
+            fetchCampaignAnalytics(true)
         }
     }, [filters.includeAutoReplies, filtersLoaded])
 
@@ -334,10 +357,15 @@ export default function CampaignAnalyticsPage() {
             if (!data?.leads || data.leads.length === 0) issues.push("No leads added to campaign")
             if (data?.openRate === "Disabled") warnings.push("Email open tracking is disabled")
 
-            if (issues.length === 0 && warnings.length === 0 && suggestions.length === 0) {
-                toast({ title: "✅ Campaign Health: Excellent", description: "No issues detected." })
+            const allFindings = [...issues.map(i => `❌ ${i}`), ...warnings.map(w => `⚠️ ${w}`)]
+
+            if (allFindings.length === 0) {
+                toast({ title: "✅ Campaign Health: Excellent", description: "All sequences, leads, and tracking are properly configured." })
             } else {
-                toast({ title: "Campaign Diagnostics", description: "Check console for details" })
+                toast({
+                    title: `Campaign Health Alert`,
+                    description: allFindings.join(" • ")
+                })
             }
         } catch (err) {
             console.error("Diagnostics error:", err)
@@ -690,31 +718,46 @@ export default function CampaignAnalyticsPage() {
 
                                     {/* Step Analytics & Activity Table */}
                                     <div className="bg-[#111] border border-[#2a2a2a] rounded-lg p-6">
-                                        <div className="flex items-center gap-8 border-b border-[#2a2a2a] mb-6">
-                                            <button 
-                                                onClick={() => setActiveSubTab('steps')}
-                                                className={cn(
-                                                    "pb-3 text-sm font-medium relative transition-colors",
-                                                    activeSubTab === 'steps' ? "text-blue-500" : "text-gray-400 hover:text-white"
-                                                )}
+                                        <div className="flex items-center justify-between border-b border-[#2a2a2a] mb-6">
+                                            <div className="flex items-center gap-8">
+                                                <button 
+                                                    onClick={() => setActiveSubTab('steps')}
+                                                    className={cn(
+                                                        "pb-3 text-sm font-medium relative transition-colors",
+                                                        activeSubTab === 'steps' ? "text-blue-500" : "text-gray-400 hover:text-white"
+                                                    )}
+                                                >
+                                                    Step Analytics
+                                                    {activeSubTab === 'steps' && (
+                                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                                                    )}
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setActiveSubTab('activity')
+                                                        fetchCampaignAnalytics(true)
+                                                    }}
+                                                    className={cn(
+                                                        "pb-3 text-sm font-medium relative transition-colors",
+                                                        activeSubTab === 'activity' ? "text-blue-500" : "text-gray-400 hover:text-white"
+                                                    )}
+                                                >
+                                                    Activity
+                                                    {activeSubTab === 'activity' && (
+                                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => fetchCampaignAnalytics(true)}
+                                                className="text-gray-400 hover:text-white pb-3 h-auto p-0 flex items-center gap-1.5 text-xs transition-colors"
+                                                title="Refresh analytics and activity"
                                             >
-                                                Step Analytics
-                                                {activeSubTab === 'steps' && (
-                                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
-                                                )}
-                                            </button>
-                                            <button 
-                                                onClick={() => setActiveSubTab('activity')}
-                                                className={cn(
-                                                    "pb-3 text-sm font-medium relative transition-colors",
-                                                    activeSubTab === 'activity' ? "text-blue-500" : "text-gray-400 hover:text-white"
-                                                )}
-                                            >
-                                                Activity
-                                                {activeSubTab === 'activity' && (
-                                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
-                                                )}
-                                            </button>
+                                                <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin text-blue-400")} />
+                                                <span className={cn(isRefreshing && "text-blue-400")}>Refresh</span>
+                                            </Button>
                                         </div>
 
                                         {activeSubTab === 'steps' ? (
@@ -768,20 +811,22 @@ export default function CampaignAnalyticsPage() {
                                                                             <td className="py-3 text-xs text-gray-500">{variant.clicked}</td>
                                                                             <td className="py-3 pr-4 text-xs text-gray-500">
                                                                                 <div className="flex items-center justify-end">
-                                                                                    <button
-                                                                                        onClick={() => toggleVariant(variant.id, variant.enabled)}
-                                                                                        className={cn(
-                                                                                            "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none",
-                                                                                            variant.enabled ? "bg-blue-600" : "bg-[#2a2a2a]"
-                                                                                        )}
-                                                                                    >
-                                                                                        <span
+                                                                                    {!variant.isDeleted && (
+                                                                                        <button
+                                                                                            onClick={() => toggleVariant(variant.id, variant.enabled)}
                                                                                             className={cn(
-                                                                                                "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
-                                                                                                variant.enabled ? "translate-x-5" : "translate-x-1"
+                                                                                                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none",
+                                                                                                variant.enabled ? "bg-blue-600" : "bg-[#2a2a2a]"
                                                                                             )}
-                                                                                        />
-                                                                                    </button>
+                                                                                        >
+                                                                                            <span
+                                                                                                className={cn(
+                                                                                                    "inline-block h-3 w-3 transform rounded-full bg-white transition-transform",
+                                                                                                    variant.enabled ? "translate-x-5" : "translate-x-1"
+                                                                                                )}
+                                                                                            />
+                                                                                        </button>
+                                                                                    )}
                                                                                 </div>
                                                                             </td>
                                                                         </tr>

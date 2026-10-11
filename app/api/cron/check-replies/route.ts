@@ -28,11 +28,11 @@ async function runReplyCheck() {
     console.log('[check-replies] Starting background IMAP sync...')
 
     try {
-        // Sync 1 account per run for fast execution within Vercel timeout budget
+        // Sync up to 3 accounts per run within Vercel timeout budget (ordered by oldest synced)
         const accounts = await prisma.emailAccount.findMany({
             where: { status: 'active' },
             orderBy: { lastSyncedAt: 'asc' },
-            take: 1
+            take: 3
         })
 
         if (accounts.length === 0) {
@@ -59,9 +59,9 @@ async function runReplyCheck() {
                 const syncPromise = syncAccountInbox(account, guard)
                 const ceilingPromise = new Promise<{ replies: number; bounces: number; sentSynced: number }>((resolve) =>
                     setTimeout(() => {
-                        console.warn(`[check-replies] Hard 18s ceiling reached for ${account.email}, yielding safely`)
+                        console.warn(`[check-replies] Account 8s ceiling reached for ${account.email}, yielding safely`)
                         resolve({ replies: 0, bounces: 0, sentSynced: 0 })
-                    }, 18000)
+                    }, 8000)
                 )
 
                 const result = await Promise.race([syncPromise, ceilingPromise])

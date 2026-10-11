@@ -47,7 +47,7 @@ export async function GET(
         })
 
         // Dynamically deduplicate SENT events to hide historical duplicates caused by previous race condition
-        const seenSent = new Set()
+        const seenSent = new Map<string, number>()
         allEvents = allEvents.filter((e: any) => {
             if (e.type === 'sent') {
                 let step = '1'
@@ -56,25 +56,62 @@ export async function GET(
                     step = String(meta.step || '1')
                 } catch {}
                 const key = `${e.leadId}_step${step}`
-                if (seenSent.has(key)) return false
-                seenSent.add(key)
+                
+                const prevTime = seenSent.get(key)
+                const currTime = new Date(e.createdAt).getTime()
+                
+                // Only deduplicate if it happened within 1 hour (race condition)
+                if (prevTime && (currTime - prevTime < 60 * 60 * 1000)) {
+                    return false
+                }
+                seenSent.set(key, currTime)
             }
             return true
         })
 
+        // Determine date filter boundaries
+        let startDate: Date | null = null
+        let endDate: Date | null = null
+
+        if (range && range !== 'all_time') {
+            if (range.startsWith('custom_')) {
+                const parts = range.split('_')
+                if (parts.length >= 3) {
+                    startDate = new Date(parts[1] + 'T00:00:00Z')
+                    endDate = new Date(parts[2] + 'T23:59:59Z')
+                }
+            } else {
+                const days = range === 'last_7_days' ? 7 :
+                    range === 'last_4_weeks' ? 28 :
+                    range === 'last_3_months' ? 90 :
+                    range === 'last_6_months' ? 180 :
+                    range === 'last_12_months' ? 365 : 30
+                
+                const now = new Date()
+                startDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - days + 1, 0, 0, 0))
+            }
+        }
+
+        // Filter events by selected date range if range !== 'all_time'
+        const scopedEvents = startDate ? allEvents.filter(e => {
+            const t = new Date(e.createdAt).getTime()
+            return t >= startDate!.getTime() && (!endDate || t <= endDate.getTime())
+        }) : allEvents
+
         // Total Sent = every email dispatch counts (all steps)
-        const totalSent = allEvents.filter((e: any) => e.type === 'sent').length
+        const totalSent = scopedEvents.filter((e: any) => e.type === 'sent').length
         // Sequences Started = unique leads contacted (only counts once per lead)
-        const sequencesStarted = new Set(allEvents.filter((e: any) => e.type === 'sent').map((e: any) => e.leadId)).size
-        const openCount = new Set(allEvents.filter((e: any) => e.type === 'open').map((e: any) => e.leadId)).size
-        const clickCount = new Set(allEvents.filter((e: any) => e.type === 'click').map((e: any) => e.leadId)).size
-        const bounceCount = new Set(allEvents.filter((e: any) => e.type === 'bounce').map((e: any) => e.leadId)).size
+        const sequencesStarted = new Set(scopedEvents.filter((e: any) => e.type === 'sent').map((e: any) => e.leadId)).size
+        const openCount = new Set(scopedEvents.filter((e: any) => e.type === 'open').map((e: any) => e.leadId)).size
+        const clickCount = new Set(scopedEvents.filter((e: any) => e.type === 'click').map((e: any) => e.leadId)).size
+        const bounceCount = new Set(scopedEvents.filter((e: any) => e.type === 'bounce').map((e: any) => e.leadId)).size
 
         // Fetch reply events with lead data for auto-reply filtering and classification
         const replyEvents = await prisma.sendingEvent.findMany({
             where: {
                 campaignId: campaignId,
-                type: 'reply'
+                type: 'reply',
+                ...(startDate ? { createdAt: { gte: startDate, ...(endDate ? { lte: endDate } : {}) } } : {})
             },
             include: { lead: true }
         })
@@ -132,7 +169,7 @@ export async function GET(
 
 
         // Pre-process events to attribute opens/clicks/replies to the correct step and variant
-        const enrichedEvents = allEvents.map((e: any) => {
+        const enrichedEvents = scopedEvents.map((e: any) => {
             let step = null;
             let variantId = null;
             let originalEventId = null;
@@ -206,6 +243,57 @@ export async function GET(
                 }
             })
 
+            // Aggregate events from deleted variants
+            const existingVariantIds = new Set((seq.variants || []).map((v: any) => v.id))
+            const deletedVariantEvents = stepEvents.filter((e: any) => e.enrichedVariantId && !existingVariantIds.has(e.enrichedVariantId))
+            if (deletedVariantEvents.length > 0) {
+                // Group by variant ID
+                const deletedVariantIds = Array.from(new Set(deletedVariantEvents.map((e: any) => e.enrichedVariantId)))
+                
+                deletedVariantIds.forEach(id => {
+                    const variantEvents = deletedVariantEvents.filter((e: any) => e.enrichedVariantId === id)
+                    const sent = variantEvents.filter((e: any) => e.type === 'sent').length
+                    const opened = new Set(variantEvents.filter((e: any) => e.type === 'open').map((e: any) => e.leadId)).size
+                    const replied = new Set(variantEvents.filter((e: any) => e.type === 'reply').map((e: any) => e.leadId)).size
+                    const clicked = new Set(variantEvents.filter((e: any) => e.type === 'click').map((e: any) => e.leadId)).size
+                    
+                    variantsStats.push({
+                        id: String(id),
+                        label: 'Deleted',
+                        subject: '(Deleted Variant)',
+                        enabled: false,
+                        sent,
+                        opened,
+                        replied,
+                        clicked,
+                        isDeleted: true
+                    })
+                })
+            }
+            
+            // Also include events with no variant assigned (legacy)
+            const noVariantEvents = stepEvents.filter((e: any) => !e.enrichedVariantId)
+            if (noVariantEvents.length > 0) {
+                const sent = noVariantEvents.filter((e: any) => e.type === 'sent').length
+                const opened = new Set(noVariantEvents.filter((e: any) => e.type === 'open').map((e: any) => e.leadId)).size
+                const replied = new Set(noVariantEvents.filter((e: any) => e.type === 'reply').map((e: any) => e.leadId)).size
+                const clicked = new Set(noVariantEvents.filter((e: any) => e.type === 'click').map((e: any) => e.leadId)).size
+                
+                if (sent > 0 || opened > 0 || replied > 0 || clicked > 0) {
+                    variantsStats.push({
+                        id: 'legacy-no-variant',
+                        label: 'Old',
+                        subject: '(Legacy)',
+                        enabled: false,
+                        sent,
+                        opened,
+                        replied,
+                        clicked,
+                        isDeleted: true
+                    })
+                }
+            }
+
             const sent = stepEvents.filter((e: any) => e.type === 'sent').length
             const opened = new Set(stepEvents.filter((e: any) => e.type === 'open').map((e: any) => e.leadId)).size
             const replied = new Set(stepEvents.filter((e: any) => e.type === 'reply').map((e: any) => e.leadId)).size
@@ -251,21 +339,37 @@ export async function GET(
             targetTimezone = requestedTimezone
         }
 
-        // Calculate heatmap data for this specific campaign in its schedule timezone
+        // Calculate heatmap data in a single O(N) matrix pass
+        const heatmapMatrix: Record<string, { value: number; opens: number; clicks: number; replies: number }> = {}
+        for (let day = 0; day < 7; day++) {
+            for (let hour = 0; hour < 24; hour++) {
+                heatmapMatrix[`${day}_${hour}`] = { value: 0, opens: 0, clicks: 0, replies: 0 }
+            }
+        }
+
+        for (const e of scopedEvents) {
+            const m = moment(e.createdAt).tz(targetTimezone)
+            const key = `${m.day()}_${m.hour()}`
+            const cell = heatmapMatrix[key]
+            if (cell) {
+                if (e.type === 'sent') cell.value++
+                else if (e.type === 'open') cell.opens++
+                else if (e.type === 'click') cell.clicks++
+                else if (e.type === 'reply') cell.replies++
+            }
+        }
+
         const heatmapData = []
         for (let day = 0; day < 7; day++) {
             for (let hour = 0; hour < 24; hour++) {
-                const hourEvents = allEvents.filter((e: any) => {
-                    const m = moment(e.createdAt).tz(targetTimezone)
-                    return m.day() === day && m.hour() === hour
-                })
+                const cell = heatmapMatrix[`${day}_${hour}`]
                 heatmapData.push({
                     day,
                     hour,
-                    value: hourEvents.filter((e: any) => e.type === 'sent').length,
-                    opens: hourEvents.filter((e: any) => e.type === 'open').length,
-                    clicks: hourEvents.filter((e: any) => e.type === 'click').length,
-                    replies: hourEvents.filter((e: any) => e.type === 'reply').length
+                    value: cell.value,
+                    opens: cell.opens,
+                    clicks: cell.clicks,
+                    replies: cell.replies
                 })
             }
         }
@@ -284,8 +388,24 @@ export async function GET(
             { stage: "Replied", value: replyCount, percentage: totalSent > 0 ? Math.min(Math.round((replyCount / totalSent) * 100), 100) : 0 }
         ]
 
-        // Recent campaign activity
-        const recentActivity = allEvents.slice(0, 50).map((e: any) => ({
+        // Recent campaign activity: fetch latest 50 events in descending order with lead details
+        const recentEvents = await prisma.sendingEvent.findMany({
+            where: { campaignId: campaignId },
+            orderBy: { createdAt: 'desc' },
+            take: 50,
+            include: {
+                lead: {
+                    select: {
+                        id: true,
+                        email: true,
+                        firstName: true,
+                        lastName: true
+                    }
+                }
+            }
+        })
+
+        const recentActivity = recentEvents.map((e: any) => ({
             id: e.id,
             type: e.type,
             createdAt: e.createdAt,
@@ -346,14 +466,27 @@ export async function GET(
 
 function generateChartData(range: string, events: any[]) {
     const data = []
-    const days = range === 'last_7_days' ? 7 :
-        range === 'last_4_weeks' ? 28 :
-            range === 'last_3_months' ? 90 :
-                range === 'last_6_months' ? 180 :
-                    range === 'last_12_months' ? 365 : 30
+    let days = 30
+    let endDateRef = new Date()
+
+    if (range.startsWith('custom_')) {
+        const parts = range.split('_')
+        if (parts.length >= 3) {
+            const start = new Date(parts[1])
+            const end = new Date(parts[2])
+            days = Math.max(1, Math.min(365, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1))
+            endDateRef = end
+        }
+    } else {
+        days = range === 'last_7_days' ? 7 :
+            range === 'last_4_weeks' ? 28 :
+                range === 'last_3_months' ? 90 :
+                    range === 'last_6_months' ? 180 :
+                        range === 'last_12_months' ? 365 : 30
+    }
 
     for (let i = days - 1; i >= 0; i--) {
-        const date = new Date()
+        const date = new Date(endDateRef)
         date.setDate(date.getDate() - i)
         const dateStr = date.toISOString().split('T')[0]
 

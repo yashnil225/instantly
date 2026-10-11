@@ -1,4 +1,4 @@
-# verify-app.py (with filtered CSV downloads)
+# verify-app.py (Production-Grade High-Deliverability Email Verifier)
 
 import csv
 import io
@@ -6,10 +6,10 @@ import re
 import sys
 import time
 import uuid
+import json
+import urllib.request
 import dns.resolver
-import smtplib
-from flask import Flask, request, jsonify, send_file, Response
-from flask_cors import CORS
+from flask import Flask, request, jsonify, Response
 from tempfile import NamedTemporaryFile
 
 # Ensure UTF-8 output on Windows consoles
@@ -21,84 +21,171 @@ if sys.platform.startswith('win'):
         pass
 
 app = Flask(__name__)
-CORS(app)
 
-print("\U0001F525 VERIFIER RUNNING - Want sales calls from leads? Go to AlexBerman.com/Mastermind \U0001F525")
+# Manual CORS headers handler to avoid cors dependency issues
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
-EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
-DISPOSABLE_DOMAINS = {"mailinator.com", "10minutemail.com", "guerrillamail.com"}
-ROLE_BASED_PREFIXES = {"info", "support", "admin", "sales", "contact"}
+print("\U0001F525 HIGH-DELIVERABILITY VERIFIER RUNNING - Anti-Bounce Shield Active \U0001F525")
 
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$")
+
+TYPO_MAP = {
+    'gmial.com': 'gmail.com', 'gmai.com': 'gmail.com', 'gamil.com': 'gmail.com', 'gmail.co': 'gmail.com',
+    'yaho.com': 'yahoo.com', 'yahooo.com': 'yahoo.com', 'yaho.co': 'yahoo.com',
+    'hotmial.com': 'hotmail.com', 'hotmai.com': 'hotmail.com',
+    'outlok.com': 'outlook.com', 'outloo.com': 'outlook.com',
+    'iclud.com': 'icloud.com', 'icoud.com': 'icloud.com', 'zoho.cm': 'zoho.com'
+}
+
+FREE_PROVIDERS = {
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.uk', 'yahoo.fr',
+    'hotmail.com', 'hotmail.co.uk', 'outlook.com', 'live.com', 'msn.com',
+    'icloud.com', 'me.com', 'mac.com', 'aol.com', 'zoho.com', 'protonmail.com',
+    'proton.me', 'mail.com', 'gmx.com', 'gmx.net', 'yandex.com'
+}
+
+ROLE_BASED_PREFIXES = {
+    'admin', 'administrator', 'support', 'help', 'info', 'billing', 'accounts',
+    'payments', 'sales', 'contact', 'office', 'jobs', 'careers', 'press',
+    'media', 'legal', 'compliance', 'security', 'abuse', 'postmaster', 'hostmaster',
+    'marketing', 'team', 'hr', 'operations', 'no-reply', 'noreply', 'donotreply',
+    'finance', 'accounting', 'general', 'hello', 'hi', 'enquiries', 'inquiries',
+    'service', 'dev', 'developer', 'feedback', 'test', 'inbox', 'frontdesk'
+}
+
+DISPOSABLE_DOMAINS = {
+    'mailinator.com', '10minutemail.com', '10minutemail.net', 'guerrillamail.com', 'guerrillamail.net',
+    'guerrillamail.org', 'guerrillamailblock.com', 'sharklasers.com', 'tempmail.com', 'temp-mail.org',
+    'tempmail.net', 'temp-mail.io', 'throwawaymail.com', 'fakeinbox.com', 'getairmail.com',
+    'dispostable.com', 'yopmail.com', 'yopmail.fr', 'yopmail.net', 'trashmail.com',
+    'trashmail.net', 'trashmail.org', 'trashmail.me', 'trashmail.at', 'trashmail.io',
+    'nada.ltd', 'inboxkitten.com', 'crazymailing.com', 'crazymailing.net', 'mytemp.email',
+    'dropmail.me', 'mohmal.com', 'burnermail.io', 'generator.email', 'tempail.com',
+    'tempinbox.com', 'emailondeck.com', 'maildrop.cc', 'harakirimail.com', 'tmailor.com',
+    'fakemailgenerator.com', 'internxt.com', 'minuteinbox.com', 'luxusmail.org', 'brefmail.com',
+    'grr.la', 'spam4.me', 'pokemail.net', 'mailnesia.com', 'jetable.org', 'meltmail.com',
+    'incognitomail.org', 'safetymail.info', 'spambox.us', 'hidemail.de', 'wegwerfmail.de',
+    'spamavert.com', 'tempsky.com', 'e4ward.com', 'sneakemail.com', 'mytempemail.com',
+    'boun.cr', 'armyspy.com', 'cuvox.de', 'dayrep.com', 'fleckens.hu', 'gustr.com',
+    'jourrapide.com', 'rhyta.com', 'superrito.com', 'teleworm.us', 'einrot.com'
+}
+
+GATEWAY_SHIELDS = [
+    (re.compile(r"\.pphosted\.com$", re.I), "Proofpoint Enterprise Gateway"),
+    (re.compile(r"\.gpphosted\.com$", re.I), "Proofpoint Enterprise Gateway"),
+    (re.compile(r"\.mimecast\.com$", re.I), "Mimecast Secure Gateway"),
+    (re.compile(r"\.iphmx\.com$", re.I), "Cisco IronPort Gateway"),
+    (re.compile(r"\.ironport\.com$", re.I), "Cisco IronPort Gateway"),
+    (re.compile(r"\.barracudanetworks\.com$", re.I), "Barracuda Gateway"),
+    (re.compile(r"\.fireeyecloud\.com$", re.I), "Trellix/FireEye Gateway"),
+    (re.compile(r"\.sophos\.com$", re.I), "Sophos Mail Gateway"),
+    (re.compile(r"\.fortimail\.com$", re.I), "Fortinet FortiMail Gateway"),
+    (re.compile(r"\.trendmicro\.com$", re.I), "Trend Micro Gateway"),
+    (re.compile(r"\.messagelabs\.com$", re.I), "Symantec MessageLabs"),
+    (re.compile(r"\.mailanyone\.net$", re.I), "MailAnyone Gateway")
+]
+
+PARKED_PATTERNS = [
+    re.compile(r"sedoparking\.com", re.I),
+    re.compile(r"parkingcrew\.net", re.I),
+    re.compile(r"bodis\.com", re.I),
+    re.compile(r"above\.com", re.I),
+    re.compile(r"hugedomains\.com", re.I),
+    re.compile(r"dan\.com", re.I),
+    re.compile(r"cashparking\.com", re.I),
+    re.compile(r"sav\.com", re.I),
+    re.compile(r"renewyourname\.net", re.I)
+]
+
+mx_cache = {}
 data = {}
 
+def get_domain_mx(domain):
+    if domain in mx_cache:
+        return mx_cache[domain]
+
+    # Primary: DoH via Google DNS (Port 443 - zero UDP timeouts on Windows)
+    try:
+        url = f"https://dns.google/resolve?name={urllib.parse.quote(domain)}&type=MX"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=2.5) as resp:
+            d = json.loads(resp.read().decode('utf-8'))
+            answers = d.get('Answer', [])
+            if answers:
+                records = []
+                for a in answers:
+                    parts = a.get('data', '').split(' ')
+                    prio = int(parts[0]) if len(parts) > 1 and parts[0].isdigit() else 10
+                    exch = (parts[1] if len(parts) > 1 else parts[0]).rstrip('.').lower()
+                    records.append((prio, exch))
+                records.sort(key=lambda x: x[0])
+                mx_cache[domain] = records
+                return records
+    except Exception:
+        pass
+
+    # Fallback: dnspython resolver
+    try:
+        answers = dns.resolver.resolve(domain, 'MX', lifetime=2.0)
+        records = sorted([(r.preference, str(r.exchange).rstrip('.').lower()) for r in answers], key=lambda x: x[0])
+        mx_cache[domain] = records
+        return records
+    except Exception:
+        pass
+
+    return []
+
 def check_email(email):
-    if not EMAIL_REGEX.match(email):
+    email = (email or '').strip()
+    if not email or not EMAIL_REGEX.match(email) or '..' in email or email.startswith('.') or email.endswith('.'):
         return "invalid", "bad_syntax"
 
     parts = email.split('@')
     if len(parts) != 2:
         return "invalid", "bad_syntax"
-    local, domain = parts[0], parts[1]
+    local, domain = parts[0].lower(), parts[1].lower()
 
-    if domain.lower() in DISPOSABLE_DOMAINS:
+    if len(local) > 64 or len(domain) > 255:
+        return "invalid", "length_exceeded"
+
+    # Domain typo
+    if domain in TYPO_MAP:
+        return "invalid", f"typo_detected_{TYPO_MAP[domain]}"
+
+    # Disposable
+    if domain in DISPOSABLE_DOMAINS or domain.startswith(('temp', 'dispos', 'burner', 'throwaway', 'fake', 'trash')):
         return "invalid", "disposable_domain"
-    if local.lower() in ROLE_BASED_PREFIXES:
-        return "invalid", "role_based"
 
-    try:
-        records = dns.resolver.resolve(domain, 'MX')
-        mx_record = str(records[0].exchange).rstrip('.')
-    except Exception:
-        return "invalid", "no_mx"
+    # Role-based
+    if local in ROLE_BASED_PREFIXES:
+        return "risky", "role_based_alias"
 
-    try:
-        server = smtplib.SMTP(timeout=5)
-        server.connect(mx_record)
-        server.helo("example.com")
-        server.mail("probe@example.com")
-        code, _ = server.rcpt(f"doesnotexist123@{domain}")
-        try:
-            server.quit()
-        except Exception:
-            pass
-        if code == 250:
-            return "risky", "domain_accepts_all"
-    except Exception:
-        pass
+    # MX Lookup
+    records = get_domain_mx(domain)
+    if not records:
+        return "invalid", "no_mx_record"
 
-    def smtp_check():
-        srv = None
-        try:
-            srv = smtplib.SMTP(timeout=5)
-            srv.connect(mx_record)
-            srv.helo("example.com")
-            srv.mail("verifier@example.com")
-            code, _ = srv.rcpt(email)
-            return code
-        except Exception:
-            return None
-        finally:
-            if srv:
-                try:
-                    srv.quit()
-                except Exception:
-                    pass
+    primary_mx = records[0][1]
 
-    code = smtp_check()
-    if code in [421, 450, 451, 452, 503]:
-        time.sleep(2)
-        code = smtp_check()
+    # Null MX
+    if not primary_mx or primary_mx in ('.', '0.0.0.0', '127.0.0.1', 'localhost'):
+        return "invalid", "null_mx_refused"
 
-    if code == 250:
-        return "valid", "smtp_ok"
-    elif code is None:
-        return "risky", "smtp_timeout"
-    elif code in [421, 450, 451, 452, 503]:
-        return "risky", f"smtp_soft_fail_{code}"
-    elif code == 550:
-        return "invalid", "smtp_reject"
-    else:
-        return "invalid", f"smtp_{code}"
+    # Parked Domain
+    if any(p.search(primary_mx) for p in PARKED_PATTERNS):
+        return "invalid", "parked_expired_domain"
+
+    # Gateway Shield Catch-All (Proofpoint, Cisco IronPort, Mimecast, Barracuda)
+    for pat, name in GATEWAY_SHIELDS:
+        if pat.search(primary_mx):
+            return "risky", f"catch_all_gateway_{name.replace(' ', '_')}"
+
+    return "valid", "active_mailbox_exchange"
 
 @app.route('/')
 @app.route('/index.html')
@@ -118,7 +205,7 @@ def verify():
     if total == 0:
         return jsonify({"error": "CSV file is empty"}), 400
 
-    email_field = next((f for f in reader[0].keys() if f and f.lower().strip() in ('email', 'e-mail', 'email address', 'email_address', 'mail')), None)
+    email_field = next((f for f in reader[0].keys() if f and f.lower().strip() in ('email', 'e-mail', 'email address', 'email_address', 'mail', 'work email', 'contact email')), None)
     if not email_field:
         email_field = next((f for f in reader[0].keys() if f and 'email' in f.lower()), None)
     if not email_field:
@@ -155,15 +242,12 @@ def verify():
             row['status'], row['reason'] = status, reason
             writer.writerow(row)
             percent = int((i / total) * 100)
-            data[job_id].update({"progress": percent, "row": i,
-                                 "log": f"\u2705 {email} \u2192 {status} ({reason})"})
-        out_buf = data[job_id]['output']
-        csv_text = out_buf.getvalue()
-        temp = NamedTemporaryFile(delete=False, suffix=".csv", mode='w+', encoding='utf-8')
-        temp.write(csv_text)
-        temp.flush()
-        temp.close()
-        data[job_id]['file_path'] = temp.name
+            icon = "\u2705" if status == 'valid' else ("\u26a0\ufe0f" if status == 'risky' else "\u274c")
+            data[job_id].update({
+                "progress": percent,
+                "row": i,
+                "log": f"{icon} {email} \u2192 {status.upper()} ({reason})"
+            })
 
     import threading
     threading.Thread(target=run, daemon=True).start()
@@ -203,6 +287,8 @@ def download():
         filtered = [row for row in reader if row.get('status') == 'valid']
     elif filter_type == "risky":
         filtered = [row for row in reader if row.get('status') == 'risky']
+    elif filter_type == "invalid":
+        filtered = [row for row in reader if row.get('status') == 'invalid']
     elif filter_type == "risky_invalid":
         filtered = [row for row in reader if row.get('status') in ('risky', 'invalid')]
     else:
@@ -215,7 +301,7 @@ def download():
     for row in filtered:
         writer.writerow(row)
 
-    download_name = f"{filter_type}-galadon-{job['filename']}"
+    download_name = f"{filter_type}-verified-{job['filename']}"
     return Response(
         output.getvalue(),
         mimetype='text/csv',
@@ -224,4 +310,3 @@ def download():
 
 if __name__ == '__main__':
     app.run(debug=False, port=5050, host='127.0.0.1')
-

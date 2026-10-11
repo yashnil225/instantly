@@ -32,11 +32,12 @@ async function runWarmupTasks() {
     // 20s guard = 40s buffer before Hobby 60s hard kill
     const guard = createTimeoutGuard(20_000)
 
-    // Rotate through phases: 1 → 2 → 3 → 1 → ...
-    lastPhase = (lastPhase % 3) + 1
-    const phase = lastPhase
+    // Deterministic phase rotation across serverless cold starts:
+    // Rotates every 5 minutes based on epoch time (Phase 1 → 2 → 3 → 1)
+    const timeSlot = Math.floor(Date.now() / (1000 * 60 * 5))
+    const phase = (timeSlot % 3) + 1
 
-    console.log(`[Warmup] Running phase ${phase}/3 (20s budget)...`)
+    console.log(`[Warmup] Running phase ${phase}/3 (20s budget, timeSlot ${timeSlot})...`)
 
     try {
         const phasePromise = (async () => {

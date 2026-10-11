@@ -185,9 +185,9 @@ export function CampaignImportModal({
                         <div className="font-semibold text-sm truncate max-w-[280px]">{jobFileName}</div>
                     </div>
                     <div className="text-right">
-                        <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 font-bold gap-1 px-2.5 py-1">
+                        <Badge className={`${includeRisky ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'} font-bold gap-1 px-2.5 py-1`}>
                             <ShieldCheck className="h-3.5 w-3.5" />
-                            {totalToImport} Verified {includeRisky ? 'Leads' : 'Valid Only'}
+                            {totalToImport} {includeRisky ? 'Leads (Includes Risky)' : 'Safe Valid (0% Bounce Risk)'}
                         </Badge>
                     </div>
                 </div>
@@ -325,15 +325,29 @@ export function CampaignImportModal({
                     </div>
 
                     {riskyCount > 0 && (
-                        <div className="flex items-center space-x-2 pt-2 border-t border-border/40">
-                            <Checkbox
-                                id="include-risky"
-                                checked={includeRisky}
-                                onCheckedChange={(checked) => setIncludeRisky(!!checked)}
-                            />
-                            <Label htmlFor="include-risky" className="text-xs cursor-pointer text-muted-foreground">
-                                Also include {riskyCount} Risky / Catch-All leads (Optional)
-                            </Label>
+                        <div className="space-y-2 pt-2 border-t border-border/40">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="include-risky"
+                                    checked={includeRisky}
+                                    onCheckedChange={(checked) => setIncludeRisky(!!checked)}
+                                />
+                                <Label htmlFor="include-risky" className="text-xs cursor-pointer font-medium text-foreground">
+                                    Also include {riskyCount} Risky / Catch-All leads (Not Recommended)
+                                </Label>
+                            </div>
+                            {includeRisky ? (
+                                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-500 flex items-start gap-2">
+                                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                                    <span>
+                                        <strong>⚠️ High Bounce Risk Warning:</strong> Risky leads include Catch-All and perimeter-shielded enterprise mailboxes (Proofpoint/Mimecast/IronPort). Sending cold email to them can produce a 20–30% bounce rate. Keep unchecked to maintain &lt;2% bounce rate.
+                                    </span>
+                                </div>
+                            ) : (
+                                <p className="text-[11px] text-emerald-500 pl-6 flex items-center gap-1 font-medium">
+                                    <ShieldCheck className="h-3.5 w-3.5" /> Anti-Bounce Shield active: Only confirmed safe mailboxes will be imported.
+                                </p>
+                            )}
                         </div>
                     )}
                 </div>

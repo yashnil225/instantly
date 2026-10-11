@@ -254,6 +254,34 @@ export async function syncReplies(account: EmailAccount) {
                         })
                     }
 
+                    // 3. Fallback matching any sent event for this lead across accounts
+                    if (!matchedSentEvent && from) {
+                        matchedSentEvent = await prisma.sendingEvent.findFirst({
+                            where: {
+                                type: 'sent',
+                                lead: { email: from }
+                            },
+                            orderBy: { createdAt: 'desc' },
+                            include: { lead: true, campaign: true }
+                        })
+                    }
+
+                    // 4. Fallback matching lead directly by email
+                    if (!matchedSentEvent && from) {
+                        const directLead = await prisma.lead.findFirst({
+                            where: { email: from },
+                            include: { campaign: true }
+                        })
+                        if (directLead) {
+                            matchedSentEvent = {
+                                lead: directLead,
+                                leadId: directLead.id,
+                                campaignId: directLead.campaignId,
+                                campaign: directLead.campaign
+                            } as any
+                        }
+                    }
+
                     if (matchedSentEvent && matchedSentEvent.lead) {
                         const sentEvent = matchedSentEvent
                         console.log(`Reply detected from ${from} for lead ${sentEvent.lead.email}`)

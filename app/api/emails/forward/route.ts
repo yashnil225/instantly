@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 
+function extractCleanEmail(input: string): string {
+    const match = input.match(/<([^>]+)>/)
+    if (match) return match[1].trim().toLowerCase()
+    return input.trim().toLowerCase()
+}
+
 export async function POST(request: Request) {
     const session = await auth()
     if (!session?.user?.id) {
@@ -20,7 +26,7 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Email body is required' }, { status: 400 })
         }
 
-        // 1. Resolve Context (Lead and Original Event)
+        // 1. Resolve Context (Original Lead and Original Event)
         let lead: any = null
         let originalEvent: any = null
 
@@ -218,10 +224,16 @@ export async function POST(request: Request) {
             socketTimeout: 15000
         })
 
+        // Clean HTML escape for plain text formatting
+        const escapeHtml = (str: string) =>
+            str.replace(/&/g, '&amp;')
+               .replace(/</g, '&lt;')
+               .replace(/>/g, '&gt;')
+
         const isHtml = emailBody.includes('<br') || emailBody.includes('<p') || emailBody.includes('<div')
         const formattedHtml = isHtml
-            ? `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 24px; font-size: 15px; color: #000;">${emailBody}</div>`
-            : `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 24px; font-size: 15px; color: #000; white-space: pre-wrap;">${emailBody.replace(/\n/g, '<br />')}</div>`
+            ? `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; font-size: 14px; color: #222;">${emailBody}</div>`
+            : `<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; font-size: 14px; color: #222; white-space: pre-wrap;">${escapeHtml(emailBody).replace(/\n/g, '<br />')}</div>`
 
         const fromName = sendingAccount.firstName
             ? `${sendingAccount.firstName} ${sendingAccount.lastName || ''}`.trim()
@@ -233,16 +245,49 @@ export async function POST(request: Request) {
             from: `"${fromName}" <${sendingAccount.email}>`,
             to: to,
             subject: finalSubject,
-            html: formattedHtml,
+            text: emailBody, // Provide plain text representation
+            html: formattedHtml, // Provide styled HTML representation
             attachments
         })
 
-        // 6. Record SendingEvent (marked as 'sent' so it shows up in lead thread)
+        // 6. Resolve Recipient Lead (Create or Find Lead for the forwarded recipient)
+        // This ensures the forwarded thread does NOT attach to the original sender's thread (Alice),
+        // and when the forwarded recipient (Bob) replies, their reply appears in the Unibox under their own lead!
+        const recipientEmail = extractCleanEmail(to)
+        const targetCampaignId = lead.campaignId || campaignId || ''
+
+        let recipientLead = await prisma.lead.findUnique({
+            where: {
+                email_campaignId: {
+                    email: recipientEmail,
+                    campaignId: targetCampaignId
+                }
+            }
+        })
+
+        if (!recipientLead) {
+            recipientLead = await prisma.lead.findFirst({
+                where: { email: recipientEmail }
+            })
+        }
+
+        if (!recipientLead) {
+            recipientLead = await prisma.lead.create({
+                data: {
+                    email: recipientEmail,
+                    firstName: recipientEmail.split('@')[0],
+                    campaignId: targetCampaignId,
+                    status: 'contacted'
+                }
+            })
+        }
+
+        // 7. Record SendingEvent under the recipient lead
         await prisma.sendingEvent.create({
             data: {
                 type: 'sent',
-                leadId: lead.id,
-                campaignId: lead.campaignId || campaignId || '',
+                leadId: recipientLead.id,
+                campaignId: recipientLead.campaignId || targetCampaignId,
                 emailAccountId: sendingAccount.id,
                 messageId: info.messageId,
                 metadata: JSON.stringify({
@@ -250,13 +295,34 @@ export async function POST(request: Request) {
                     subject: finalSubject,
                     isForward: true,
                     forwardedTo: to,
+                    forwardedFromLeadId: lead.id,
+                    forwardedFromEmail: lead.email,
                     originalEmailId: emailId,
                     messageId: info.messageId,
                     bodySnippet: emailBody.substring(0, 100)
                 }),
-                details: emailBody
+                details: formattedHtml
             }
         })
+
+        // 8. Log an audit event on the original lead so history is kept,
+        // using type 'forward_logged' so it does NOT appear as a message bubble in the original lead's thread
+        await prisma.sendingEvent.create({
+            data: {
+                type: 'forward_logged',
+                leadId: lead.id,
+                campaignId: lead.campaignId || targetCampaignId,
+                emailAccountId: sendingAccount.id,
+                messageId: info.messageId,
+                metadata: JSON.stringify({
+                    forwardedTo: to,
+                    recipientLeadId: recipientLead.id,
+                    subject: finalSubject,
+                    originalEmailId: emailId
+                }),
+                details: `Email forwarded to ${to}`
+            }
+        }).catch(() => {})
 
         // Increment sentToday
         await prisma.emailAccount.update({

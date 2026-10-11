@@ -1,0 +1,2545 @@
+{
+  "API Routes (app/api)": [
+    {
+      "path": "app/api/accounts/bulk-delete/route.ts",
+      "lineCount": 55,
+      "findings": []
+    },
+    {
+      "path": "app/api/accounts/bulk-reconnect/route.ts",
+      "lineCount": 95,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/accounts/route.ts",
+      "lineCount": 271,
+      "findings": [
+        "Contains residual console.log debugging output",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "app/api/accounts/[id]/route.ts",
+      "lineCount": 300,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/accounts/[id]/test/route.ts",
+      "lineCount": 87,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/api/accounts/[id]/test-send/route.ts",
+      "lineCount": 88,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/accounts/[id]/workspaces/route.ts",
+      "lineCount": 96,
+      "findings": [
+        "Queries by workspaceId without verifying caller workspace membership (potential IDOR)"
+      ]
+    },
+    {
+      "path": "app/api/admin/migrate-remove-oauth/route.ts",
+      "lineCount": 245,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/api/agency/route.ts",
+      "lineCount": 155,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/ai/generate/route.ts",
+      "lineCount": 55,
+      "findings": [
+        "Uses loose any typing",
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/analytics/route.ts",
+      "lineCount": 472,
+      "findings": [
+        "Uses loose any typing",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/api/analytics/seed/route.ts",
+      "lineCount": 162,
+      "findings": []
+    },
+    {
+      "path": "app/api/analytics/warmup/route.ts",
+      "lineCount": 19,
+      "findings": []
+    },
+    {
+      "path": "app/api/attachments/[id]/route.ts",
+      "lineCount": 33,
+      "findings": [
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/auth/2fa/disable/route.ts",
+      "lineCount": 47,
+      "findings": []
+    },
+    {
+      "path": "app/api/auth/2fa/setup/route.ts",
+      "lineCount": 64,
+      "findings": []
+    },
+    {
+      "path": "app/api/auth/2fa/verify/route.ts",
+      "lineCount": 43,
+      "findings": []
+    },
+    {
+      "path": "app/api/auth/check-account/route.ts",
+      "lineCount": 32,
+      "findings": []
+    },
+    {
+      "path": "app/api/auth/check-status/route.ts",
+      "lineCount": 17,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/auth/google/callback/route.ts",
+      "lineCount": 98,
+      "findings": []
+    },
+    {
+      "path": "app/api/auth/google/connect/route.ts",
+      "lineCount": 41,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/auth/google/signin/route.ts",
+      "lineCount": 18,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/auth/signup/route.ts",
+      "lineCount": 111,
+      "findings": []
+    },
+    {
+      "path": "app/api/auth/[...nextauth]/route.ts",
+      "lineCount": 4,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/route.ts",
+      "lineCount": 308,
+      "findings": [
+        "Uses loose any typing",
+        "Potential 0 rendering glitch via arr.length && <Component />",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/accounts/route.ts",
+      "lineCount": 56,
+      "findings": []
+    },
+    {
+      "path": "app/api/campaigns/[id]/analytics/route.ts",
+      "lineCount": 404,
+      "findings": [
+        "Uses loose any typing",
+        "Potential 0 rendering glitch via arr.length && <Component />",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/classify-replies/route.ts",
+      "lineCount": 115,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/duplicate/route.ts",
+      "lineCount": 113,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Queries by workspaceId without verifying caller workspace membership (potential IDOR)"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/launch/route.ts",
+      "lineCount": 114,
+      "findings": []
+    },
+    {
+      "path": "app/api/campaigns/[id]/leads/bulk/route.ts",
+      "lineCount": 65,
+      "findings": [
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/leads/export/route.ts",
+      "lineCount": 66,
+      "findings": [
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/leads/import/route.ts",
+      "lineCount": 338,
+      "findings": [
+        "Uses loose any typing",
+        "Queries by workspaceId without verifying caller workspace membership (potential IDOR)"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/leads/replace-or-add/route.ts",
+      "lineCount": 241,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/leads/route.ts",
+      "lineCount": 97,
+      "findings": []
+    },
+    {
+      "path": "app/api/campaigns/[id]/leads/upload/route.ts",
+      "lineCount": 107,
+      "findings": [
+        "Uses loose any typing",
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/leads/[leadId]/route.ts",
+      "lineCount": 25,
+      "findings": [
+        "Uses loose any typing",
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/options/route.ts",
+      "lineCount": 164,
+      "findings": []
+    },
+    {
+      "path": "app/api/campaigns/[id]/route.ts",
+      "lineCount": 192,
+      "findings": [
+        "Uses loose any typing",
+        "Queries by workspaceId without verifying caller workspace membership (potential IDOR)"
+      ]
+    },
+    {
+      "path": "app/api/campaigns/[id]/sequence/route.ts",
+      "lineCount": 98,
+      "findings": []
+    },
+    {
+      "path": "app/api/campaigns/[id]/variants/[variantId]/toggle/route.ts",
+      "lineCount": 36,
+      "findings": []
+    },
+    {
+      "path": "app/api/cleanup/dedupe-opens/route.ts",
+      "lineCount": 108,
+      "findings": []
+    },
+    {
+      "path": "app/api/cron/check-replies/route.ts",
+      "lineCount": 81,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/api/cron/daily-reset/route.ts",
+      "lineCount": 33,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/api/cron/reminders/route.ts",
+      "lineCount": 24,
+      "findings": []
+    },
+    {
+      "path": "app/api/cron/send/route.ts",
+      "lineCount": 38,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/cron/warmup/route.ts",
+      "lineCount": 75,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/api/emails/forward/route.ts",
+      "lineCount": 342,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/emails/reply/route.ts",
+      "lineCount": 159,
+      "findings": []
+    },
+    {
+      "path": "app/api/emails/[emailId]/route.ts",
+      "lineCount": 35,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/invitations/route.ts",
+      "lineCount": 31,
+      "findings": []
+    },
+    {
+      "path": "app/api/invitations/[id]/accept/route.ts",
+      "lineCount": 64,
+      "findings": []
+    },
+    {
+      "path": "app/api/invitations/[id]/reject/route.ts",
+      "lineCount": 38,
+      "findings": []
+    },
+    {
+      "path": "app/api/labels/route.ts",
+      "lineCount": 45,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/labels/[id]/route.ts",
+      "lineCount": 48,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/leads/import/route.ts",
+      "lineCount": 119,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/leads/import/sheets/route.ts",
+      "lineCount": 92,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/api/leads/route.ts",
+      "lineCount": 137,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/leads/similar/route.ts",
+      "lineCount": 87,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/leads/[leadId]/analyze/route.ts",
+      "lineCount": 70,
+      "findings": []
+    },
+    {
+      "path": "app/api/leads/[leadId]/route.ts",
+      "lineCount": 156,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/logs/route.ts",
+      "lineCount": 60,
+      "findings": [
+        "Uses loose any typing",
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/mcp/route.ts",
+      "lineCount": 1435,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/notifications/mark-all-read/route.ts",
+      "lineCount": 28,
+      "findings": []
+    },
+    {
+      "path": "app/api/notifications/route.ts",
+      "lineCount": 92,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/notifications/[id]/read/route.ts",
+      "lineCount": 27,
+      "findings": []
+    },
+    {
+      "path": "app/api/reminders/route.ts",
+      "lineCount": 59,
+      "findings": []
+    },
+    {
+      "path": "app/api/salesflows/route.ts",
+      "lineCount": 65,
+      "findings": []
+    },
+    {
+      "path": "app/api/stats/leads-count/route.ts",
+      "lineCount": 20,
+      "findings": []
+    },
+    {
+      "path": "app/api/sync/replies/route.ts",
+      "lineCount": 26,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/tags/assign/route.ts",
+      "lineCount": 92,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/tags/route.ts",
+      "lineCount": 66,
+      "findings": []
+    },
+    {
+      "path": "app/api/tags/[id]/route.ts",
+      "lineCount": 80,
+      "findings": []
+    },
+    {
+      "path": "app/api/templates/route.ts",
+      "lineCount": 60,
+      "findings": []
+    },
+    {
+      "path": "app/api/test-error/route.ts",
+      "lineCount": 23,
+      "findings": [
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/test-setup/route.ts",
+      "lineCount": 38,
+      "findings": [
+        "Uses loose any typing",
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/track/click/route.ts",
+      "lineCount": 56,
+      "findings": [
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/track/open/route.ts",
+      "lineCount": 123,
+      "findings": [
+        "Missing explicit user session or API key authentication check",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/api/track/[type]/route.ts",
+      "lineCount": 86,
+      "findings": [
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/unibox/actions/route.ts",
+      "lineCount": 148,
+      "findings": []
+    },
+    {
+      "path": "app/api/unibox/emails/route.ts",
+      "lineCount": 466,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/unibox/emails/[id]/route.ts",
+      "lineCount": 80,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/api/unibox/labels/route.ts",
+      "lineCount": 34,
+      "findings": []
+    },
+    {
+      "path": "app/api/unibox/reply/route.ts",
+      "lineCount": 168,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/unibox/route.ts",
+      "lineCount": 145,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/unibox/search/route.ts",
+      "lineCount": 101,
+      "findings": []
+    },
+    {
+      "path": "app/api/unsubscribe/route.ts",
+      "lineCount": 34,
+      "findings": []
+    },
+    {
+      "path": "app/api/upload/attachment/route.ts",
+      "lineCount": 50,
+      "findings": [
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/user/billing/route.ts",
+      "lineCount": 98,
+      "findings": []
+    },
+    {
+      "path": "app/api/user/keys/route.ts",
+      "lineCount": 92,
+      "findings": []
+    },
+    {
+      "path": "app/api/user/preferences/route.ts",
+      "lineCount": 91,
+      "findings": [
+        "Missing top-level try/catch error handling block"
+      ]
+    },
+    {
+      "path": "app/api/user/profile/route.ts",
+      "lineCount": 34,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/user/webhooks/activity/route.ts",
+      "lineCount": 62,
+      "findings": []
+    },
+    {
+      "path": "app/api/user/webhooks/route.ts",
+      "lineCount": 62,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/accounts/route.ts",
+      "lineCount": 34,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/agent/trigger/route.ts",
+      "lineCount": 54,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/api/v2/ai/analyze-onboarding/route.ts",
+      "lineCount": 62,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/ai/clone-best/route.ts",
+      "lineCount": 118,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/ai/generate/route.ts",
+      "lineCount": 50,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/ai/generate-campaigns/route.ts",
+      "lineCount": 55,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/ai/icebreakers/route.ts",
+      "lineCount": 85,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/ai/proposal/route.ts",
+      "lineCount": 59,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/ai/report/route.ts",
+      "lineCount": 27,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/ai/schedule/route.ts",
+      "lineCount": 92,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/analytics/clicks/route.ts",
+      "lineCount": 58,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/bounces/route.ts",
+      "lineCount": 82,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/campaigns/route.ts",
+      "lineCount": 83,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/campaigns/[id]/ab-test/route.ts",
+      "lineCount": 72,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/campaigns/[id]/clone/route.ts",
+      "lineCount": 67,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/campaigns/[id]/followups/route.ts",
+      "lineCount": 63,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/campaigns/[id]/launch/route.ts",
+      "lineCount": 51,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/campaigns/[id]/pause/route.ts",
+      "lineCount": 51,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/campaigns/[id]/rotation/route.ts",
+      "lineCount": 119,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/campaigns/[id]/route.ts",
+      "lineCount": 121,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/export/route.ts",
+      "lineCount": 75,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/leads/bulk-status/route.ts",
+      "lineCount": 51,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/leads/enrich/route.ts",
+      "lineCount": 107,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/leads/import-csv/route.ts",
+      "lineCount": 84,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/leads/route.ts",
+      "lineCount": 90,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/leads/scores/route.ts",
+      "lineCount": 46,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/leads/[id]/route.ts",
+      "lineCount": 40,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/leads/[id]/variables/route.ts",
+      "lineCount": 94,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/tags/route.ts",
+      "lineCount": 48,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/tags/[id]/route.ts",
+      "lineCount": 63,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/templates/route.ts",
+      "lineCount": 63,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/templates/[id]/route.ts",
+      "lineCount": 97,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/unibox/route.ts",
+      "lineCount": 50,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/unibox/rules/route.ts",
+      "lineCount": 72,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/usage/route.ts",
+      "lineCount": 54,
+      "findings": []
+    },
+    {
+      "path": "app/api/v2/webhooks/route.ts",
+      "lineCount": 53,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/v2/workspaces/route.ts",
+      "lineCount": 109,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/verify/bulk/route.ts",
+      "lineCount": 297,
+      "findings": [
+        "Uses loose any typing",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/api/verify/history/route.ts",
+      "lineCount": 59,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/verify/job/[jobId]/route.ts",
+      "lineCount": 162,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/verify/process-chunk/route.ts",
+      "lineCount": 203,
+      "findings": [
+        "Uses loose any typing",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/api/verify/single/route.ts",
+      "lineCount": 22,
+      "findings": [
+        "Uses loose any typing",
+        "Missing explicit user session or API key authentication check"
+      ]
+    },
+    {
+      "path": "app/api/workspaces/route.ts",
+      "lineCount": 78,
+      "findings": []
+    },
+    {
+      "path": "app/api/workspaces/[id]/members/route.ts",
+      "lineCount": 302,
+      "findings": []
+    },
+    {
+      "path": "app/api/workspaces/[id]/route.ts",
+      "lineCount": 152,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/api/workspaces/[id]/stats/route.ts",
+      "lineCount": 68,
+      "findings": []
+    }
+  ],
+  "App Pages & Layouts (app/)": [
+    {
+      "path": "app/(marketing)/analytics-page/page.tsx",
+      "lineCount": 36,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/api-access/page.tsx",
+      "lineCount": 36,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/automation/page.tsx",
+      "lineCount": 36,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/blog/page.tsx",
+      "lineCount": 90,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/careers/page.tsx",
+      "lineCount": 115,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/changelog/page.tsx",
+      "lineCount": 92,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/contact/page.tsx",
+      "lineCount": 262,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "app/(marketing)/documentation/page.tsx",
+      "lineCount": 24,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/email-tracking/page.tsx",
+      "lineCount": 69,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/features/page.tsx",
+      "lineCount": 227,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/help-center/page.tsx",
+      "lineCount": 27,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/integrations/page.tsx",
+      "lineCount": 55,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/layout.tsx",
+      "lineCount": 17,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/page.tsx",
+      "lineCount": 324,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/pricing/page.tsx",
+      "lineCount": 283,
+      "findings": []
+    },
+    {
+      "path": "app/(marketing)/status/page.tsx",
+      "lineCount": 76,
+      "findings": []
+    },
+    {
+      "path": "app/accounts/connect/page.tsx",
+      "lineCount": 301,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/accounts/page.tsx",
+      "lineCount": 1408,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "app/analytics/page.tsx",
+      "lineCount": 902,
+      "findings": [
+        "Contains unfulfilled TODO / FIXME markers",
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/auth/close-popup/page.tsx",
+      "lineCount": 15,
+      "findings": []
+    },
+    {
+      "path": "app/campaigns/loading.tsx",
+      "lineCount": 24,
+      "findings": []
+    },
+    {
+      "path": "app/campaigns/page.tsx",
+      "lineCount": 1378,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential 0 rendering glitch via arr.length && <Component />",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/campaigns/[id]/launch/page.tsx",
+      "lineCount": 223,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)"
+      ]
+    },
+    {
+      "path": "app/campaigns/[id]/layout.tsx",
+      "lineCount": 242,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/campaigns/[id]/leads/import/page.tsx",
+      "lineCount": 226,
+      "findings": []
+    },
+    {
+      "path": "app/campaigns/[id]/leads/page.tsx",
+      "lineCount": 656,
+      "findings": [
+        "Potential 0 rendering glitch via arr.length && <Component />",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/campaigns/[id]/options/page.tsx",
+      "lineCount": 768,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential 0 rendering glitch via arr.length && <Component />",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/campaigns/[id]/page.tsx",
+      "lineCount": 1069,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential 0 rendering glitch via arr.length && <Component />",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "app/campaigns/[id]/schedule/page.tsx",
+      "lineCount": 531,
+      "findings": []
+    },
+    {
+      "path": "app/campaigns/[id]/sequences/page.tsx",
+      "lineCount": 932,
+      "findings": [
+        "Uses loose any typing",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "app/campaigns/[id]/subsequences/page.tsx",
+      "lineCount": 116,
+      "findings": []
+    },
+    {
+      "path": "app/crm/page.tsx",
+      "lineCount": 2961,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "app/error.tsx",
+      "lineCount": 178,
+      "findings": []
+    },
+    {
+      "path": "app/help/page.tsx",
+      "lineCount": 16,
+      "findings": []
+    },
+    {
+      "path": "app/invite/page.tsx",
+      "lineCount": 16,
+      "findings": []
+    },
+    {
+      "path": "app/language/page.tsx",
+      "lineCount": 16,
+      "findings": []
+    },
+    {
+      "path": "app/layout.tsx",
+      "lineCount": 69,
+      "findings": []
+    },
+    {
+      "path": "app/leads/page.tsx",
+      "lineCount": 331,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)"
+      ]
+    },
+    {
+      "path": "app/leads/upload/page.tsx",
+      "lineCount": 203,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/login/layout.tsx",
+      "lineCount": 15,
+      "findings": []
+    },
+    {
+      "path": "app/login/page.tsx",
+      "lineCount": 390,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/not-found.tsx",
+      "lineCount": 16,
+      "findings": []
+    },
+    {
+      "path": "app/notifications/page.tsx",
+      "lineCount": 186,
+      "findings": []
+    },
+    {
+      "path": "app/privacy/page.tsx",
+      "lineCount": 88,
+      "findings": []
+    },
+    {
+      "path": "app/settings/agency/page.tsx",
+      "lineCount": 250,
+      "findings": [
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "app/settings/billing/page.tsx",
+      "lineCount": 268,
+      "findings": []
+    },
+    {
+      "path": "app/settings/blocklist/page.tsx",
+      "lineCount": 16,
+      "findings": []
+    },
+    {
+      "path": "app/settings/deliverability/page.tsx",
+      "lineCount": 186,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/settings/groups/page.tsx",
+      "lineCount": 34,
+      "findings": []
+    },
+    {
+      "path": "app/settings/integrations/page.tsx",
+      "lineCount": 96,
+      "findings": []
+    },
+    {
+      "path": "app/settings/labels/page.tsx",
+      "lineCount": 234,
+      "findings": []
+    },
+    {
+      "path": "app/settings/layout.tsx",
+      "lineCount": 34,
+      "findings": []
+    },
+    {
+      "path": "app/settings/logs/page.tsx",
+      "lineCount": 172,
+      "findings": []
+    },
+    {
+      "path": "app/settings/page.tsx",
+      "lineCount": 41,
+      "findings": []
+    },
+    {
+      "path": "app/settings/preferences/page.tsx",
+      "lineCount": 284,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/settings/profile/page.tsx",
+      "lineCount": 8,
+      "findings": []
+    },
+    {
+      "path": "app/settings/security/page.tsx",
+      "lineCount": 450,
+      "findings": []
+    },
+    {
+      "path": "app/settings/tags/page.tsx",
+      "lineCount": 222,
+      "findings": []
+    },
+    {
+      "path": "app/settings/workspace/page.tsx",
+      "lineCount": 7,
+      "findings": []
+    },
+    {
+      "path": "app/settings/workspaces/page.tsx",
+      "lineCount": 452,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/signup/layout.tsx",
+      "lineCount": 15,
+      "findings": []
+    },
+    {
+      "path": "app/signup/page.tsx",
+      "lineCount": 453,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "app/terms/page.tsx",
+      "lineCount": 84,
+      "findings": []
+    },
+    {
+      "path": "app/unibox/page.tsx",
+      "lineCount": 2490,
+      "findings": [
+        "Uses loose any typing",
+        "Uses dangerouslySetInnerHTML without explicit sanitizeHtml sanitization",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "app/unsubscribe/page.tsx",
+      "lineCount": 96,
+      "findings": []
+    },
+    {
+      "path": "app/verifier/page.tsx",
+      "lineCount": 909,
+      "findings": [
+        "Uses loose any typing",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "app/warmup/page.tsx",
+      "lineCount": 447,
+      "findings": [
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    }
+  ],
+  "Core Backend Services & Engine (lib/)": [
+    {
+      "path": "lib/ab-testing.ts",
+      "lineCount": 126,
+      "findings": []
+    },
+    {
+      "path": "lib/ai-email-generator.ts",
+      "lineCount": 121,
+      "findings": []
+    },
+    {
+      "path": "lib/ai-reply.ts",
+      "lineCount": 51,
+      "findings": []
+    },
+    {
+      "path": "lib/ai-service.ts",
+      "lineCount": 190,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/ai-subject-generator.ts",
+      "lineCount": 241,
+      "findings": []
+    },
+    {
+      "path": "lib/api-auth.ts",
+      "lineCount": 80,
+      "findings": []
+    },
+    {
+      "path": "lib/api-campaign-creator.ts",
+      "lineCount": 96,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/audit-logs.ts",
+      "lineCount": 267,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/blacklist-checker.ts",
+      "lineCount": 81,
+      "findings": [
+        "Contains unfulfilled TODO / FIXME markers"
+      ]
+    },
+    {
+      "path": "lib/bounce-detector.ts",
+      "lineCount": 114,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "lib/cron-scheduler.ts",
+      "lineCount": 47,
+      "findings": [
+        "Contains residual console.log debugging output",
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks"
+      ]
+    },
+    {
+      "path": "lib/daily-reset.ts",
+      "lineCount": 137,
+      "findings": [
+        "Contains residual console.log debugging output",
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks"
+      ]
+    },
+    {
+      "path": "lib/email-templates.ts",
+      "lineCount": 350,
+      "findings": []
+    },
+    {
+      "path": "lib/email-validation.ts",
+      "lineCount": 170,
+      "findings": []
+    },
+    {
+      "path": "lib/email-validator.ts",
+      "lineCount": 70,
+      "findings": []
+    },
+    {
+      "path": "lib/email-verifier.ts",
+      "lineCount": 338,
+      "findings": [
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks",
+        "Uses in-memory cache variable that desyncs across serverless cold starts or multi-instance clusters"
+      ]
+    },
+    {
+      "path": "lib/email.ts",
+      "lineCount": 124,
+      "findings": []
+    },
+    {
+      "path": "lib/imap-monitor.ts",
+      "lineCount": 605,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks"
+      ]
+    },
+    {
+      "path": "lib/imap-sync.ts",
+      "lineCount": 418,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks"
+      ]
+    },
+    {
+      "path": "lib/lead-memory.ts",
+      "lineCount": 96,
+      "findings": [
+        "Uses loose any typing",
+        "Uses in-memory cache variable that desyncs across serverless cold starts or multi-instance clusters"
+      ]
+    },
+    {
+      "path": "lib/leads.ts",
+      "lineCount": 76,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/limit-calculator.ts",
+      "lineCount": 125,
+      "findings": []
+    },
+    {
+      "path": "lib/mail-service.ts",
+      "lineCount": 45,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/memory-db.ts",
+      "lineCount": 111,
+      "findings": []
+    },
+    {
+      "path": "lib/notifications.ts",
+      "lineCount": 254,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/pdf-export.ts",
+      "lineCount": 201,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/permissions.ts",
+      "lineCount": 265,
+      "findings": []
+    },
+    {
+      "path": "lib/prisma.ts",
+      "lineCount": 27,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/queue.ts",
+      "lineCount": 60,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "lib/rate-limiting.ts",
+      "lineCount": 274,
+      "findings": []
+    },
+    {
+      "path": "lib/reminder-service.ts",
+      "lineCount": 113,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "lib/replies.ts",
+      "lineCount": 241,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks"
+      ]
+    },
+    {
+      "path": "lib/reply-worker.ts",
+      "lineCount": 79,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "lib/reporting-service.ts",
+      "lineCount": 60,
+      "findings": []
+    },
+    {
+      "path": "lib/scheduled-sending.ts",
+      "lineCount": 321,
+      "findings": [
+        "Contains unfulfilled TODO / FIXME markers",
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/scheduler.ts",
+      "lineCount": 101,
+      "findings": []
+    },
+    {
+      "path": "lib/send-time-optimizer.ts",
+      "lineCount": 125,
+      "findings": []
+    },
+    {
+      "path": "lib/sender.ts",
+      "lineCount": 861,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks"
+      ]
+    },
+    {
+      "path": "lib/spam-checker.ts",
+      "lineCount": 483,
+      "findings": []
+    },
+    {
+      "path": "lib/start-workers.ts",
+      "lineCount": 42,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "lib/timeout-guard.ts",
+      "lineCount": 17,
+      "findings": []
+    },
+    {
+      "path": "lib/tracking-domain.ts",
+      "lineCount": 87,
+      "findings": [
+        "Contains unfulfilled TODO / FIXME markers"
+      ]
+    },
+    {
+      "path": "lib/two-factor-auth.ts",
+      "lineCount": 294,
+      "findings": []
+    },
+    {
+      "path": "lib/utils.ts",
+      "lineCount": 11,
+      "findings": []
+    },
+    {
+      "path": "lib/variables.ts",
+      "lineCount": 70,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/warmup-analytics.ts",
+      "lineCount": 446,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "lib/warmup-detection.ts",
+      "lineCount": 430,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks"
+      ]
+    },
+    {
+      "path": "lib/warmup-pool.ts",
+      "lineCount": 338,
+      "findings": [
+        "Contains residual console.log debugging output",
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks"
+      ]
+    },
+    {
+      "path": "lib/warmup-reply.ts",
+      "lineCount": 188,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Contains in-memory timer intervals susceptible to serverless freezes / memory leaks"
+      ]
+    },
+    {
+      "path": "lib/warmup-worker.ts",
+      "lineCount": 96,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "lib/warmup.ts",
+      "lineCount": 296,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "lib/webhooks.ts",
+      "lineCount": 76,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "lib/worker.ts",
+      "lineCount": 288,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "lib/workspace-storage.ts",
+      "lineCount": 164,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    }
+  ],
+  "Components & UI (components/)": [
+    {
+      "path": "components/app/accounts/AccountDetailPanel.tsx",
+      "lineCount": 1184,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "components/app/accounts/AccountDetailsDrawer.tsx",
+      "lineCount": 172,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "components/app/accounts/ConnectAccountModal.tsx",
+      "lineCount": 374,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "components/app/analytics-charts.tsx",
+      "lineCount": 257,
+      "findings": [
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "components/app/AuthPersist.tsx",
+      "lineCount": 17,
+      "findings": []
+    },
+    {
+      "path": "components/app/BetterIcon.tsx",
+      "lineCount": 15,
+      "findings": []
+    },
+    {
+      "path": "components/app/ButtonGradient.tsx",
+      "lineCount": 20,
+      "findings": []
+    },
+    {
+      "path": "components/app/ButtonLead.tsx",
+      "lineCount": 81,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "components/app/ButtonPopover.tsx",
+      "lineCount": 126,
+      "findings": []
+    },
+    {
+      "path": "components/app/ButtonSignin.tsx",
+      "lineCount": 44,
+      "findings": []
+    },
+    {
+      "path": "components/app/campaigns/EmailPreviewModal.tsx",
+      "lineCount": 325,
+      "findings": [
+        "Uses loose any typing",
+        "Uses dangerouslySetInnerHTML without explicit sanitizeHtml sanitization",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)"
+      ]
+    },
+    {
+      "path": "components/app/campaigns/ResumeCampaignModal.tsx",
+      "lineCount": 373,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)"
+      ]
+    },
+    {
+      "path": "components/app/campaigns/SpamInspectorPanel.tsx",
+      "lineCount": 316,
+      "findings": []
+    },
+    {
+      "path": "components/app/campaigns/TemplatesModal.tsx",
+      "lineCount": 207,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "components/app/CreateWorkspaceModal.tsx",
+      "lineCount": 167,
+      "findings": []
+    },
+    {
+      "path": "components/app/deliverability-dashboard.tsx",
+      "lineCount": 258,
+      "findings": []
+    },
+    {
+      "path": "components/app/email-client-preview.tsx",
+      "lineCount": 259,
+      "findings": [
+        "Uses dangerouslySetInnerHTML without explicit sanitizeHtml sanitization"
+      ]
+    },
+    {
+      "path": "components/app/export/ExportButton.tsx",
+      "lineCount": 74,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "components/app/Input.tsx",
+      "lineCount": 20,
+      "findings": []
+    },
+    {
+      "path": "components/app/layout/AppLayout.tsx",
+      "lineCount": 74,
+      "findings": []
+    },
+    {
+      "path": "components/app/layout/Sidebar.tsx",
+      "lineCount": 497,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "components/app/Layout.tsx",
+      "lineCount": 20,
+      "findings": []
+    },
+    {
+      "path": "components/app/leads/ImportLeadsModal.tsx",
+      "lineCount": 881,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential division by zero (NaN% or Infinity) in metric calculation"
+      ]
+    },
+    {
+      "path": "components/app/mobile-nav.tsx",
+      "lineCount": 192,
+      "findings": [
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/app/Modal.tsx",
+      "lineCount": 83,
+      "findings": []
+    },
+    {
+      "path": "components/app/notification-bell.tsx",
+      "lineCount": 226,
+      "findings": [
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/app/notification-manager.tsx",
+      "lineCount": 101,
+      "findings": []
+    },
+    {
+      "path": "components/app/notifications.tsx",
+      "lineCount": 314,
+      "findings": [
+        "Uses loose any typing",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/app/settings/ApiKeysSection.tsx",
+      "lineCount": 328,
+      "findings": []
+    },
+    {
+      "path": "components/app/settings/McpSection.tsx",
+      "lineCount": 255,
+      "findings": [
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/app/settings/ProfileSection.tsx",
+      "lineCount": 182,
+      "findings": []
+    },
+    {
+      "path": "components/app/settings/SettingsOnePageView.tsx",
+      "lineCount": 126,
+      "findings": []
+    },
+    {
+      "path": "components/app/settings/SettingsSidebar.tsx",
+      "lineCount": 156,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)"
+      ]
+    },
+    {
+      "path": "components/app/settings/SettingsSidebarController.tsx",
+      "lineCount": 21,
+      "findings": []
+    },
+    {
+      "path": "components/app/settings/SettingsTopNav.tsx",
+      "lineCount": 93,
+      "findings": []
+    },
+    {
+      "path": "components/app/settings/WebhooksSection.tsx",
+      "lineCount": 345,
+      "findings": []
+    },
+    {
+      "path": "components/app/settings/WorkspaceMembersSection.tsx",
+      "lineCount": 353,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/app/settings/WorkspacesListSection.tsx",
+      "lineCount": 610,
+      "findings": [
+        "Uses loose any typing",
+        "Missing reactive dependencies in useEffect (may not update on entity switch)",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/app/Sidebar.tsx",
+      "lineCount": 55,
+      "findings": []
+    },
+    {
+      "path": "components/app/templates-library.tsx",
+      "lineCount": 334,
+      "findings": []
+    },
+    {
+      "path": "components/app/verifier/CampaignImportModal.tsx",
+      "lineCount": 369,
+      "findings": [
+        "Uses loose any typing",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/app/workspace/DeleteConfirmationDialog.tsx",
+      "lineCount": 160,
+      "findings": []
+    },
+    {
+      "path": "components/app/workspace/WorkspaceDropdown.tsx",
+      "lineCount": 235,
+      "findings": [
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/app/workspace/WorkspaceManagerModal.tsx",
+      "lineCount": 198,
+      "findings": []
+    },
+    {
+      "path": "components/app/workspace/WorkspaceSelector.tsx",
+      "lineCount": 178,
+      "findings": [
+        "Missing reactive dependencies in useEffect (may not update on entity switch)"
+      ]
+    },
+    {
+      "path": "components/common/FilterBar.tsx",
+      "lineCount": 162,
+      "findings": [
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/common/TagManager.tsx",
+      "lineCount": 417,
+      "findings": []
+    },
+    {
+      "path": "components/providers.tsx",
+      "lineCount": 12,
+      "findings": []
+    },
+    {
+      "path": "components/theme-provider.tsx",
+      "lineCount": 12,
+      "findings": []
+    },
+    {
+      "path": "components/theme-toggle.tsx",
+      "lineCount": 104,
+      "findings": []
+    },
+    {
+      "path": "components/ui/accordion.tsx",
+      "lineCount": 59,
+      "findings": []
+    },
+    {
+      "path": "components/ui/alert-dialog.tsx",
+      "lineCount": 142,
+      "findings": []
+    },
+    {
+      "path": "components/ui/badge.tsx",
+      "lineCount": 36,
+      "findings": []
+    },
+    {
+      "path": "components/ui/button.tsx",
+      "lineCount": 73,
+      "findings": []
+    },
+    {
+      "path": "components/ui/calendar.tsx",
+      "lineCount": 75,
+      "findings": []
+    },
+    {
+      "path": "components/ui/cally-calendar.tsx",
+      "lineCount": 182,
+      "findings": [
+        "Uses dangerouslySetInnerHTML without explicit sanitizeHtml sanitization"
+      ]
+    },
+    {
+      "path": "components/ui/card.tsx",
+      "lineCount": 81,
+      "findings": []
+    },
+    {
+      "path": "components/ui/checkbox.tsx",
+      "lineCount": 34,
+      "findings": []
+    },
+    {
+      "path": "components/ui/confirm-dialog.tsx",
+      "lineCount": 61,
+      "findings": []
+    },
+    {
+      "path": "components/ui/dialog.tsx",
+      "lineCount": 122,
+      "findings": []
+    },
+    {
+      "path": "components/ui/dropdown-menu.tsx",
+      "lineCount": 235,
+      "findings": []
+    },
+    {
+      "path": "components/ui/empty-state.tsx",
+      "lineCount": 29,
+      "findings": []
+    },
+    {
+      "path": "components/ui/info-dialog.tsx",
+      "lineCount": 45,
+      "findings": []
+    },
+    {
+      "path": "components/ui/input.tsx",
+      "lineCount": 25,
+      "findings": []
+    },
+    {
+      "path": "components/ui/keyboard-shortcuts-help.tsx",
+      "lineCount": 90,
+      "findings": []
+    },
+    {
+      "path": "components/ui/label.tsx",
+      "lineCount": 14,
+      "findings": []
+    },
+    {
+      "path": "components/ui/logo.tsx",
+      "lineCount": 48,
+      "findings": []
+    },
+    {
+      "path": "components/ui/pagination.tsx",
+      "lineCount": 93,
+      "findings": []
+    },
+    {
+      "path": "components/ui/popover.tsx",
+      "lineCount": 31,
+      "findings": []
+    },
+    {
+      "path": "components/ui/progress.tsx",
+      "lineCount": 35,
+      "findings": []
+    },
+    {
+      "path": "components/ui/rich-editor.tsx",
+      "lineCount": 193,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "components/ui/scroll-area.tsx",
+      "lineCount": 48,
+      "findings": []
+    },
+    {
+      "path": "components/ui/select.tsx",
+      "lineCount": 160,
+      "findings": []
+    },
+    {
+      "path": "components/ui/separator.tsx",
+      "lineCount": 31,
+      "findings": []
+    },
+    {
+      "path": "components/ui/sheet.tsx",
+      "lineCount": 140,
+      "findings": []
+    },
+    {
+      "path": "components/ui/switch.tsx",
+      "lineCount": 29,
+      "findings": []
+    },
+    {
+      "path": "components/ui/table.tsx",
+      "lineCount": 119,
+      "findings": []
+    },
+    {
+      "path": "components/ui/tabs.tsx",
+      "lineCount": 55,
+      "findings": []
+    },
+    {
+      "path": "components/ui/textarea.tsx",
+      "lineCount": 24,
+      "findings": []
+    },
+    {
+      "path": "components/ui/theme-dropdown.tsx",
+      "lineCount": 98,
+      "findings": []
+    },
+    {
+      "path": "components/ui/theme-switcher.tsx",
+      "lineCount": 56,
+      "findings": []
+    },
+    {
+      "path": "components/ui/theme-toggle.tsx",
+      "lineCount": 89,
+      "findings": []
+    },
+    {
+      "path": "components/ui/toast.tsx",
+      "lineCount": 130,
+      "findings": []
+    },
+    {
+      "path": "components/ui/toaster.tsx",
+      "lineCount": 54,
+      "findings": []
+    },
+    {
+      "path": "components/ui/tooltip.tsx",
+      "lineCount": 34,
+      "findings": []
+    },
+    {
+      "path": "components/ui/touch-ripple.tsx",
+      "lineCount": 63,
+      "findings": []
+    },
+    {
+      "path": "components/ui/use-toast.ts",
+      "lineCount": 196,
+      "findings": []
+    },
+    {
+      "path": "components/website/AnimatedCounter.tsx",
+      "lineCount": 57,
+      "findings": []
+    },
+    {
+      "path": "components/website/CTA.tsx",
+      "lineCount": 30,
+      "findings": []
+    },
+    {
+      "path": "components/website/CTASection.tsx",
+      "lineCount": 68,
+      "findings": []
+    },
+    {
+      "path": "components/website/FAQ.tsx",
+      "lineCount": 103,
+      "findings": []
+    },
+    {
+      "path": "components/website/FeatureCard.tsx",
+      "lineCount": 42,
+      "findings": [
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/website/FeatureComparisonTable.tsx",
+      "lineCount": 126,
+      "findings": []
+    },
+    {
+      "path": "components/website/FeaturesAccordion.tsx",
+      "lineCount": 216,
+      "findings": []
+    },
+    {
+      "path": "components/website/FeatureSection.tsx",
+      "lineCount": 72,
+      "findings": [
+        "Uses loose any typing",
+        "Potential 0 rendering glitch via arr.length && <Component />"
+      ]
+    },
+    {
+      "path": "components/website/FeaturesListicle.tsx",
+      "lineCount": 512,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "components/website/Header.tsx",
+      "lineCount": 185,
+      "findings": []
+    },
+    {
+      "path": "components/website/Hero.tsx",
+      "lineCount": 34,
+      "findings": []
+    },
+    {
+      "path": "components/website/MarketingFooter.tsx",
+      "lineCount": 143,
+      "findings": []
+    },
+    {
+      "path": "components/website/MarketingHeader.tsx",
+      "lineCount": 139,
+      "findings": []
+    },
+    {
+      "path": "components/website/StatsCard.tsx",
+      "lineCount": 26,
+      "findings": []
+    },
+    {
+      "path": "components/website/TestimonialRating.tsx",
+      "lineCount": 72,
+      "findings": []
+    },
+    {
+      "path": "components/website/Testimonials3.tsx",
+      "lineCount": 114,
+      "findings": []
+    },
+    {
+      "path": "components/website/TestimonialsAvatars.tsx",
+      "lineCount": 78,
+      "findings": []
+    },
+    {
+      "path": "components/website/TestimonialSlider.tsx",
+      "lineCount": 100,
+      "findings": []
+    }
+  ],
+  "Hooks & Contexts (hooks/ & contexts/)": [
+    {
+      "path": "contexts/WorkspaceContext.tsx",
+      "lineCount": 260,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "hooks/use-cached-api.ts",
+      "lineCount": 170,
+      "findings": []
+    },
+    {
+      "path": "hooks/use-keyboard-shortcuts.ts",
+      "lineCount": 55,
+      "findings": []
+    },
+    {
+      "path": "hooks/useUtils.ts",
+      "lineCount": 45,
+      "findings": []
+    },
+    {
+      "path": "hooks/useWorkspaceSync.ts",
+      "lineCount": 63,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    }
+  ],
+  "MCP Server (mcp-server/src/)": [
+    {
+      "path": "mcp-server/src/db.ts",
+      "lineCount": 33,
+      "findings": []
+    },
+    {
+      "path": "mcp-server/src/http.ts",
+      "lineCount": 84,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "mcp-server/src/index.ts",
+      "lineCount": 18,
+      "findings": []
+    },
+    {
+      "path": "mcp-server/src/prompts/index.ts",
+      "lineCount": 89,
+      "findings": []
+    },
+    {
+      "path": "mcp-server/src/resources/index.ts",
+      "lineCount": 102,
+      "findings": []
+    },
+    {
+      "path": "mcp-server/src/server.ts",
+      "lineCount": 828,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "mcp-server/src/tools/accounts.ts",
+      "lineCount": 227,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "mcp-server/src/tools/analytics.ts",
+      "lineCount": 135,
+      "findings": []
+    },
+    {
+      "path": "mcp-server/src/tools/campaigns.ts",
+      "lineCount": 273,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "mcp-server/src/tools/leads.ts",
+      "lineCount": 300,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "mcp-server/src/tools/sequences.ts",
+      "lineCount": 134,
+      "findings": []
+    },
+    {
+      "path": "mcp-server/src/tools/templates.ts",
+      "lineCount": 93,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "mcp-server/src/tools/unibox.ts",
+      "lineCount": 126,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    }
+  ],
+  "Database, Types & Configs": [
+    {
+      "path": "auth.config.ts",
+      "lineCount": 69,
+      "findings": [
+        "Uses loose any typing"
+      ]
+    },
+    {
+      "path": "auth.ts",
+      "lineCount": 151,
+      "findings": [
+        "Uses loose any typing",
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "check-stats.ts",
+      "lineCount": 57,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "cleanup.js",
+      "lineCount": 78,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "config.ts",
+      "lineCount": 27,
+      "findings": []
+    },
+    {
+      "path": "eslint.config.mjs",
+      "lineCount": 19,
+      "findings": []
+    },
+    {
+      "path": "instrumentation.ts",
+      "lineCount": 10,
+      "findings": []
+    },
+    {
+      "path": "libs/api.ts",
+      "lineCount": 49,
+      "findings": []
+    },
+    {
+      "path": "libs/date/format-birth-date.ts",
+      "lineCount": 17,
+      "findings": []
+    },
+    {
+      "path": "libs/date/index.ts",
+      "lineCount": 3,
+      "findings": []
+    },
+    {
+      "path": "libs/date/validate-date.ts",
+      "lineCount": 6,
+      "findings": []
+    },
+    {
+      "path": "libs/enums/assessment-type-enum.ts",
+      "lineCount": 6,
+      "findings": []
+    },
+    {
+      "path": "libs/enums/gender-enum.ts",
+      "lineCount": 6,
+      "findings": []
+    },
+    {
+      "path": "libs/enums/index.ts",
+      "lineCount": 3,
+      "findings": []
+    },
+    {
+      "path": "libs/gpt.ts",
+      "lineCount": 65,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "libs/schema.ts",
+      "lineCount": 146,
+      "findings": []
+    },
+    {
+      "path": "libs/seo.tsx",
+      "lineCount": 114,
+      "findings": []
+    },
+    {
+      "path": "next.config.js",
+      "lineCount": 27,
+      "findings": []
+    },
+    {
+      "path": "next.config.ts",
+      "lineCount": 44,
+      "findings": []
+    },
+    {
+      "path": "postcss.config.mjs",
+      "lineCount": 9,
+      "findings": []
+    },
+    {
+      "path": "prisma/schema.prisma",
+      "lineCount": 829,
+      "findings": []
+    },
+    {
+      "path": "prisma/seed.js",
+      "lineCount": 32,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "prisma/seed.ts",
+      "lineCount": 183,
+      "findings": [
+        "Contains residual console.log debugging output"
+      ]
+    },
+    {
+      "path": "proxy.ts",
+      "lineCount": 33,
+      "findings": []
+    },
+    {
+      "path": "tailwind.config.ts",
+      "lineCount": 91,
+      "findings": []
+    },
+    {
+      "path": "types/config.ts",
+      "lineCount": 40,
+      "findings": []
+    },
+    {
+      "path": "types/index.ts",
+      "lineCount": 2,
+      "findings": []
+    }
+  ]
+}

@@ -14,11 +14,25 @@ export async function POST(
     }
 
     try {
-        // Verify campaign belongs to user
+        // Verify campaign belongs to user or accessible workspace
         const campaign = await prisma.campaign.findFirst({
             where: { 
                 id: campaignId,
-                userId: session.user.id
+                OR: [
+                    { userId: session.user.id },
+                    {
+                        campaignWorkspaces: {
+                            some: {
+                                workspace: {
+                                    OR: [
+                                        { userId: session.user.id },
+                                        { members: { some: { userId: session.user.id } } }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ]
             }
         })
 

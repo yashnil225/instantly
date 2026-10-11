@@ -303,6 +303,8 @@ model Lead {
   updatedAt DateTime @updatedAt
 
   @@unique([email, campaignId], name: "email_campaignId")
+  @@index([campaignId, status, nextSendAt])
+  @@index([campaignId, nextSendAt])
 }
 
 
@@ -376,6 +378,11 @@ model SendingEvent {
   details       String?  // Text content for similarity ranking
   hasAttachment Boolean  @default(false) // Track if email has attachments
   createdAt     DateTime @default(now())
+
+  @@index([campaignId, createdAt])
+  @@index([campaignId, type])
+  @@index([leadId, campaignId])
+  @@index([emailAccountId, createdAt])
 }
 
 model CampaignStat {

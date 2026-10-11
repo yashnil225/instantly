@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq'
 import { prisma } from './prisma'
-import { sendEmail } from './email'
+import { sendEmail, formatEmailBody } from './email'
 import { canSendNow, getNextSendTime } from './scheduler'
 import { selectVariant } from './ab-testing'
 import { replaceVariables } from './variables'
@@ -172,6 +172,10 @@ export const startWorker = () => {
                     lead.unsubscribeToken = token
                 }
 
+                // Format body to preserve linebreaks and paragraph spacing
+                const { html: formattedHtml, text: formattedText } = formatEmailBody(finalBody)
+                finalBody = formattedHtml
+
                 // Inject Open Tracking Pixel
                 if (campaign.trackOpens) {
                     const pixelUrl = `${baseUrl}/api/track/open?lid=${lead.id}&cid=${campaign.id}`
@@ -211,6 +215,7 @@ export const startWorker = () => {
                     to: lead.email,
                     subject: finalSubject,
                     html: finalBody,
+                    text: formattedText,
                     fromName: `${selectedAccount.firstName || ''} ${selectedAccount.lastName || ''}`.trim() || selectedAccount.email,
                     fromEmail: selectedAccount.email,
                 })

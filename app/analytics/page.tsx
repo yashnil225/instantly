@@ -430,10 +430,10 @@ export default function AnalyticsPage() {
                             <Button
                                 variant="outline"
                                 className="border-border bg-card text-foreground hover:text-foreground hover:bg-secondary gap-2 h-9"
-                                onClick={() => toast({ title: "Exporting...", description: "Your CSV download will start shortly." })}
+                                onClick={handleExportCSV}
                             >
                                 <Download className="h-4 w-4" />
-                                Export
+                                Export CSV
                             </Button>
                             <Button
                                 variant="outline"

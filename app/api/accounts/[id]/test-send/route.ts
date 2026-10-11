@@ -58,12 +58,15 @@ export async function POST(
 
         const fromName = `${account.firstName || ''} ${account.lastName || ''}`.trim() || account.email
 
+        const { formatEmailBody } = await import('@/lib/email')
+        const { html: formattedHtml, text: formattedText } = formatEmailBody(body || '')
+
         await transporter.sendMail({
             from: `"${fromName}" <${account.email}>`,
             to,
             subject: subject || 'Instantly.ai Test Email',
-            text: body || `This is a test email from Instantly.ai sent via ${account.email}.`,
-            html: body ? body.replace(/\n/g, '<br>') : `
+            text: formattedText || `This is a test email from Instantly.ai sent via ${account.email}.`,
+            html: body ? formattedHtml : `
                 <div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
                     <h2 style="color: #3b82f6;">Instantly.ai Test</h2>
                     <p>Your email account <strong>${account.email}</strong> is successfully connected and able to send emails!</p>

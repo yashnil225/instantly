@@ -281,6 +281,32 @@ export async function syncAccountInbox(
                                                 })
                                             }
 
+                                            // 3. Fallback matching any sent event for this lead across accounts
+                                            if (!matchedSentEvent && from) {
+                                                matchedSentEvent = await prisma.sendingEvent.findFirst({
+                                                    where: {
+                                                        type: 'sent',
+                                                        lead: { email: from }
+                                                    },
+                                                    orderBy: { createdAt: 'desc' },
+                                                    include: { lead: true }
+                                                })
+                                            }
+
+                                            // 4. Fallback matching lead directly by email
+                                            if (!matchedSentEvent && from) {
+                                                const directLead = await prisma.lead.findFirst({
+                                                    where: { email: from }
+                                                })
+                                                if (directLead) {
+                                                    matchedSentEvent = {
+                                                        lead: directLead,
+                                                        leadId: directLead.id,
+                                                        campaignId: directLead.campaignId
+                                                    } as any
+                                                }
+                                            }
+
                                             if (matchedSentEvent && matchedSentEvent.lead) {
                                                 const lead = matchedSentEvent.lead
 

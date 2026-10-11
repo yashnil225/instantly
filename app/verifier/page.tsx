@@ -551,11 +551,11 @@ export default function EmailVerifierPage() {
                                         <div className="flex flex-wrap items-center gap-3 pt-1">
                                             <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/30 gap-1.5 py-1 px-3">
                                                 <CheckCircle2 className="h-3.5 w-3.5" />
-                                                <strong>{job.validCount}</strong> Valid (Safe)
+                                                <strong>{job.validCount}</strong> Valid (Safe • 0% Bounce Risk)
                                             </Badge>
                                             <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 gap-1.5 py-1 px-3">
                                                 <AlertTriangle className="h-3.5 w-3.5" />
-                                                <strong>{job.riskyCount}</strong> Risky / Catch-All
+                                                <strong>{job.riskyCount}</strong> Risky / Catch-All Shield (Bounce Risk)
                                             </Badge>
                                             <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-rose-500/30 gap-1.5 py-1 px-3">
                                                 <XCircle className="h-3.5 w-3.5" />

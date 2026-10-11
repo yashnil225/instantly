@@ -153,12 +153,12 @@ export async function GET(request: Request) {
             GROUP BY "campaignId"
         `
 
-        // Fetch completed lead counts (leads who finished ALL sequence steps)
+        // Fetch completed lead counts (leads who finished ALL sequence steps or reached terminal outcome)
         const completedLeadCounts = await prisma.$queryRaw<{ campaignId: string, count: number | bigint }[]>`
             SELECT "campaignId", COUNT(id) as count
             FROM "Lead"
             WHERE "campaignId" IN (${(Prisma as any).join(campaignIds)})
-            AND "status" = 'sequence_complete'
+            AND "status" IN ('sequence_complete', 'replied', 'bounced', 'unsubscribed')
             GROUP BY "campaignId"
         `
 
@@ -207,6 +207,9 @@ export async function GET(request: Request) {
                 sequencesStarted,                                    // Unique leads contacted
                 completedLeads,                                      // Leads who finished all steps
                 sentToday,
+                openCount: uniqueOpenCount,
+                clickCount: uniqueClickCount,
+                replyCount: uniqueReplyCount,
                 openRate: !campaign.trackOpens ? 'Disabled' : `${sequencesStarted > 0 ? Math.min(Math.round((uniqueOpenCount / sequencesStarted) * 100), 100) : 0}%`,
                 clickRate: !campaign.trackLinks ? 'Disabled' : `${sequencesStarted > 0 ? Math.min(Math.round((uniqueClickCount / sequencesStarted) * 100), 100) : 0}%`,
                 replyRate: `${sequencesStarted > 0 ? Math.min(Math.round((uniqueReplyCount / sequencesStarted) * 100), 100) : 0}%`,

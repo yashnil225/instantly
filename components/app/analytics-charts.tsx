@@ -213,7 +213,11 @@ export function ConversionFunnel({ data }: { data?: FunnelData[] }) {
 
             <div className="space-y-2">
                 {funnelData.map((stage, index) => {
-                    const widthPercent = (stage.value / funnelData[0].value) * 100
+                    const baseValue = funnelData[0]?.value || 0
+                    const widthPercent = baseValue > 0 ? Math.min(100, Math.max(0, Math.round((stage.value / baseValue) * 100))) : 0
+                    const nextVal = funnelData[index + 1]?.value || 0
+                    const stepConversion = stage.value > 0 ? Math.min(100, Math.max(0, Math.round((nextVal / stage.value) * 100))) : 0
+
                     return (
                         <div key={stage.stage} className="space-y-1">
                             <div className="flex items-center justify-between text-sm">
@@ -244,7 +248,7 @@ export function ConversionFunnel({ data }: { data?: FunnelData[] }) {
                             </div>
                             {index < funnelData.length - 1 && (
                                 <div className="text-[10px] text-muted-foreground text-center">
-                                    ↓ {Math.round((funnelData[index + 1].value / stage.value) * 100)}% conversion
+                                    ↓ {stepConversion}% conversion
                                 </div>
                             )}
                         </div>

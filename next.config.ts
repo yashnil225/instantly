@@ -1,3 +1,4 @@
+import "./lib/suppress-warnings";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

@@ -1,3 +1,5 @@
+import './lib/suppress-warnings'
+
 export async function register() {
     // skip during build
     if (process.env.NEXT_PHASE === 'phase-production-build') return

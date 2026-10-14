@@ -78,20 +78,33 @@ export async function POST(
         const seenEmails = new Set<string>()
 
         for (const record of leadsToProcess) {
-            let email = (record.email || '').trim()
-            let firstName = record.firstName || ''
-            let lastName = record.lastName || ''
-            let company = record.company || record.companyName || ''
+            if (!record) continue
+            let email = typeof record.email === 'string' 
+                ? record.email.trim() 
+                : (record.email != null ? String(record.email).trim() : '')
+            let firstName = typeof record.firstName === 'string' 
+                ? record.firstName.trim() 
+                : (record.firstName != null ? String(record.firstName).trim() : '')
+            let lastName = typeof record.lastName === 'string' 
+                ? record.lastName.trim() 
+                : (record.lastName != null ? String(record.lastName).trim() : '')
+            let company = typeof record.company === 'string' 
+                ? record.company.trim() 
+                : (record.company != null 
+                    ? String(record.company).trim() 
+                    : (typeof record.companyName === 'string' 
+                        ? record.companyName.trim() 
+                        : (record.companyName != null ? String(record.companyName).trim() : '')))
             let customFields = record.customFields
 
-            if (!email) {
+            if (!email || !email.includes('@')) {
                 const normalized = normalizeLead(record)
                 if (normalized) {
-                    email = (normalized.email || '').trim()
-                    firstName = normalized.firstName || ''
-                    lastName = normalized.lastName || ''
-                    company = normalized.company || ''
-                    customFields = normalized.customFields
+                    email = typeof normalized.email === 'string' ? normalized.email.trim() : String(normalized.email || '').trim()
+                    firstName = typeof normalized.firstName === 'string' ? normalized.firstName.trim() : String(normalized.firstName || firstName).trim()
+                    lastName = typeof normalized.lastName === 'string' ? normalized.lastName.trim() : String(normalized.lastName || lastName).trim()
+                    company = typeof normalized.company === 'string' ? normalized.company.trim() : String(normalized.company || company).trim()
+                    customFields = normalized.customFields || customFields
                 }
             }
 

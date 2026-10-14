@@ -21,7 +21,7 @@ export async function recordLeadMemory(params: {
     metadata?: any
 }) {
     const { campaignId, email, status, stepReached = 1, workspaceId, metadata } = params
-    const normalizedEmail = email.toLowerCase().trim()
+    const normalizedEmail = (typeof email === 'string' ? email : (email != null ? String(email) : '')).toLowerCase().trim()
 
     // We only persist contacted/reached states (not new/uncontacted)
     const PERSISTENT_STATUSES = ['contacted', 'replied', 'bounced', 'unsubscribed', 'sequence_complete', 'lead']
@@ -63,7 +63,11 @@ export async function recordLeadMemory(params: {
  * Returns a map of normalized emails to their historical persistent status for a campaign.
  */
 export async function getLeadMemoryMap(campaignId: string, emails: string[]): Promise<Map<string, { status: string; stepReached: number }>> {
-    const normalizedEmails = Array.from(new Set(emails.map(e => e.toLowerCase().trim())))
+    const normalizedEmails = Array.from(new Set(
+        (emails || [])
+            .map(e => (typeof e === 'string' ? e : (e != null ? String(e) : '')).toLowerCase().trim())
+            .filter(e => e && e.includes('@'))
+    ))
     if (normalizedEmails.length === 0) return new Map()
 
     const map = new Map<string, { status: string; stepReached: number }>()

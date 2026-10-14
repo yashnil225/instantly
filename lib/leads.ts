@@ -23,7 +23,7 @@ export function normalizeLead(record: any): NormalizedLead | null {
 
         if (key) {
             const val = record[key]
-            return typeof val === 'string' ? val.trim() : String(val).trim()
+            return typeof val === 'string' ? val.trim() : (val != null ? String(val).trim() : '')
         }
         return ''
     }
@@ -31,9 +31,9 @@ export function normalizeLead(record: any): NormalizedLead | null {
     // 1. Find Email (Required)
     const email = findValue(['email', 'e-mail', 'mail', 'email address', 'e-mail address']) ||
         // Fallback: Check values for @ symbol if no key match
-        Object.values(record).find(v => typeof v === 'string' && v.includes('@')) as string
+        ((Object.values(record).find(v => typeof v === 'string' && v.includes('@')) as string) || '')
 
-    if (!email || !email.includes('@')) {
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
         return null
     }
 

@@ -65,7 +65,8 @@ export async function POST(
                 }
 
                 // Standard field extraction
-                const email = (item.email || rowObj.email || '').trim().toLowerCase()
+                const rawEmailVal = item.email || rowObj.email || ''
+                const email = (typeof rawEmailVal === 'string' ? rawEmailVal : (rawEmailVal != null ? String(rawEmailVal) : '')).trim().toLowerCase()
                 if (!email || !email.includes('@')) continue
 
                 let firstName = rowObj.firstName || rowObj.first_name || rowObj['First Name'] || rowObj['first name'] || ''
@@ -92,11 +93,11 @@ export async function POST(
             }
         } else if (Array.isArray(customLeads)) {
             leadsToProcess = customLeads.map((l: any) => ({
-                email: (l.email || '').trim().toLowerCase(),
-                firstName: l.firstName || '',
-                lastName: l.lastName || '',
-                company: l.company || l.companyName || '',
-                customFields: l.customFields
+                email: (typeof l?.email === 'string' ? l.email : (l?.email != null ? String(l.email) : '')).trim().toLowerCase(),
+                firstName: typeof l?.firstName === 'string' ? l.firstName : (l?.firstName != null ? String(l.firstName) : ''),
+                lastName: typeof l?.lastName === 'string' ? l.lastName : (l?.lastName != null ? String(l.lastName) : ''),
+                company: typeof l?.company === 'string' ? l.company : (l?.company != null ? String(l.company) : (typeof l?.companyName === 'string' ? l.companyName : (l?.companyName != null ? String(l.companyName) : ''))),
+                customFields: l?.customFields
             })).filter(l => l.email && l.email.includes('@'))
         }
 

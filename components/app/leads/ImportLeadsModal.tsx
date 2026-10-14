@@ -296,7 +296,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                 // Map all leads first
                 const mappedLeads = rawData.map((row: any) => {
                     const lead: any = { email: '', firstName: '', lastName: '', company: '', customFields: {} }
-                    Object.keys(row).forEach((header) => {
+                    Object.keys(row || {}).forEach((header) => {
                         const targetField = columnMapping[header]
                         const value = row[header]
 
@@ -304,7 +304,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                         else if (targetField === 'firstName') lead.firstName = value
                         else if (targetField === 'lastName') lead.lastName = value
                         else if (targetField === 'company') lead.company = value
-                        else if (targetField !== 'skip' && value) {
+                        else if (targetField !== 'skip' && value !== undefined && value !== null) {
                             lead.customFields[targetField] = value
                             if (header !== targetField) {
                                 lead.customFields[header] = value
@@ -312,18 +312,38 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                         }
                     })
 
+                    const cleanEmail = typeof lead.email === 'string'
+                        ? lead.email.trim()
+                        : (lead.email != null ? String(lead.email).trim() : '')
+
+                    const cleanFirstName = typeof lead.firstName === 'string'
+                        ? lead.firstName.trim()
+                        : (lead.firstName != null ? String(lead.firstName).trim() : '')
+
+                    const cleanLastName = typeof lead.lastName === 'string'
+                        ? lead.lastName.trim()
+                        : (lead.lastName != null ? String(lead.lastName).trim() : '')
+
+                    const cleanCompany = typeof lead.company === 'string'
+                        ? lead.company.trim()
+                        : (lead.company != null ? String(lead.company).trim() : '')
+
                     const customFieldsStr = Object.keys(lead.customFields).length > 0
                         ? JSON.stringify(lead.customFields)
                         : null
 
                     return {
-                        email: lead.email,
-                        firstName: lead.firstName,
-                        lastName: lead.lastName,
-                        company: lead.company,
+                        email: cleanEmail,
+                        firstName: cleanFirstName,
+                        lastName: cleanLastName,
+                        company: cleanCompany,
                         customFields: customFieldsStr
                     }
-                }).filter((l: any) => l.email)
+                }).filter((l: any) => l.email && typeof l.email === 'string' && l.email.includes('@'))
+
+                if (mappedLeads.length === 0) {
+                    throw new Error("No valid email addresses found in the file or mapping. Please ensure the Email column is properly mapped.")
+                }
 
                 const BATCH_SIZE = 200
                 const totalLeads = mappedLeads.length

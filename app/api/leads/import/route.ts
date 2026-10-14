@@ -57,11 +57,13 @@ export async function POST(request: Request) {
         // Actually, createMany with skipDuplicates is best if supported by DB.
         // Let's iterate for safety and updates.
 
-        const candidateEmails = leads.map((l: any) => (l.email || '').trim().toLowerCase()).filter(Boolean)
+        const candidateEmails = leads
+            .map((l: any) => (typeof l?.email === 'string' ? l.email : (l?.email != null ? String(l.email) : '')).trim().toLowerCase())
+            .filter((e: string) => e && e.includes('@'))
         const memoryMap = await getLeadMemoryMap(campaignId, candidateEmails)
 
         const operations = leads.map((lead: any) => {
-            const rawEmail = (lead.email || '').trim().toLowerCase()
+            const rawEmail = (typeof lead?.email === 'string' ? lead.email : (lead?.email != null ? String(lead.email) : '')).trim().toLowerCase()
             // Validate email
             if (!rawEmail || !rawEmail.includes('@')) {
                 errorCount++

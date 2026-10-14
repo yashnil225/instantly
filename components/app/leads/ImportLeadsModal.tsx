@@ -467,7 +467,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                     const res = await fetch(`/api/campaigns/${params.id}/leads/import`, {
                         method: "POST",
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ type: 'manual', emails: batch }),
+                        body: JSON.stringify({ type: 'manual', emails: batch, verifyBeforeImport: true, duplicateCheck }),
                     })
 
                     const data = await res.json()
@@ -485,7 +485,7 @@ export function ImportLeadsModal({ open, onOpenChange, onImportSuccess }: Import
                 const res = await fetch(`/api/campaigns/${params.id}/leads/import`, {
                     method: "POST",
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'manual', emails }),
+                    body: JSON.stringify({ type: 'manual', emails, verifyBeforeImport: true, duplicateCheck }),
                 })
 
                 const data = await res.json()

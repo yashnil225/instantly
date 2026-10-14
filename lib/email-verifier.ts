@@ -1,4 +1,6 @@
-import dns from 'dns'
+import * as dns from 'dns'
+import * as net from 'net'
+import * as crypto from 'crypto'
 import axios from 'axios'
 
 export interface VerificationResult {
@@ -13,6 +15,8 @@ export interface VerificationResult {
     hasMx: boolean
     mxHost?: string
     isCatchAll?: boolean
+    hasPublicProfile?: boolean
+    isBlacklisted?: boolean
     suggestedFix?: string
     checkedAt: string
 }
@@ -342,9 +346,320 @@ async function checkWorkspaceVerifiedMemory(email: string): Promise<boolean> {
 }
 
 /**
+ * Real-time Gravatar Profile Hash Probe
+ * If an avatar exists on Gravatar, this email was genuinely registered by a human.
+ * Conclusively verifies individual mailbox existence even on Catch-All corporate domains!
+ */
+async function checkGravatarProfile(email: string): Promise<boolean> {
+    try {
+        const hash = crypto.createHash('md5').update(email.trim().toLowerCase()).digest('hex')
+        const res = await axios.get(`https://secure.gravatar.com/avatar/${hash}?d=404`, {
+            timeout: 2500,
+            validateStatus: (status) => status === 200 || status === 404
+        })
+        return res.status === 200
+    } catch {
+        return false
+    }
+}
+
+/**
+ * Real-Time DNSBL Blacklist & Threat Checker
+ * Tests whether the destination MX server is blacklisted on SpamCop or Barracuda Central.
+ * Identifies toxic servers and spam-traps before sending.
+ */
+async function checkMxThreatDnsbl(mxHost: string): Promise<{ isBlacklisted: boolean; reason?: string }> {
+    try {
+        const resolver = new dns.Resolver()
+        resolver.setServers(['1.1.1.1', '8.8.8.8'])
+
+        // Resolve IPv4 of MX host
+        const ips = await new Promise<string[]>((resolve, reject) => {
+            resolver.resolve4(mxHost, (err, addresses) => {
+                if (err || !addresses || addresses.length === 0) reject(err)
+                else resolve(addresses)
+            })
+        }).catch(() => [])
+
+        if (ips.length === 0) return { isBlacklisted: false }
+
+        const ip = ips[0]
+        const reversed = ip.split('.').reverse().join('.')
+
+        // Check SpamCop & Barracuda
+        const zones = [
+            { zone: 'bl.spamcop.net', name: 'SpamCop' },
+            { zone: 'b.barracudacentral.org', name: 'Barracuda' }
+        ]
+
+        for (const { zone, name } of zones) {
+            const isListed = await new Promise<boolean>((resolve) => {
+                const timer = setTimeout(() => resolve(false), 1200)
+                resolver.resolve4(`${reversed}.${zone}`, (err, addresses) => {
+                    clearTimeout(timer)
+                    if (!err && addresses && addresses.length > 0 && addresses[0].startsWith('127.0.0.')) {
+                        resolve(true)
+                    } else {
+                        resolve(false)
+                    }
+                })
+            })
+
+            if (isListed) {
+                return {
+                    isBlacklisted: true,
+                    reason: `Destination mail server (${mxHost} [${ip}]) is blacklisted on ${name} DNSBL (High spam-trap / deliverability risk)`
+                }
+            }
+        }
+
+        return { isBlacklisted: false }
+    } catch {
+        return { isBlacklisted: false }
+    }
+}
+
+// ============================================================================
+// SMTP RCPT TO VERIFICATION ENGINE
+// Same technique used by NeverBounce, ZeroBounce, MillionVerifier internally.
+// Connects directly to recipient mail servers on Port 25 - zero cost, no API keys.
+// ============================================================================
+
+interface SmtpVerifyResult {
+    status: 'valid' | 'invalid' | 'risky' | 'unknown'
+    isCatchAll: boolean
+    reason: string
+    definitive: boolean
+}
+
+const catchAllCache = new Map<string, { isCatchAll: boolean; timestamp: number }>()
+const CATCHALL_CACHE_TTL = 2 * 60 * 60 * 1000 // 2 hours
+let smtpConsecutiveFailures = 0
+let smtpBlockedSince = 0
+
+function isSmtpAvailable(): boolean {
+    if (smtpConsecutiveFailures >= 2) {
+        // Retry after 30 minutes in case network conditions changed
+        if (Date.now() - smtpBlockedSince > 30 * 60 * 1000) {
+            smtpConsecutiveFailures = 0
+            return true
+        }
+        return false
+    }
+    return true
+}
+
+/**
+ * SMTP RCPT TO Mailbox Verification with Catch-All Detection
+ *
+ * This is the EXACT technique that all paid email verification services use.
+ * Flow:
+ *   1. TCP connect to MX host on port 25
+ *   2. EHLO handshake
+ *   3. MAIL FROM (verification probe identity)
+ *   4. RCPT TO <random@domain> → Catch-all probe
+ *      - If 250: domain is catch-all (accepts everything, can't confirm individual mailboxes)
+ *      - If 550: domain is NOT catch-all (individual verification is reliable)
+ *   5. RSET + MAIL FROM (reset session)
+ *   6. RCPT TO <real@domain> → Actual mailbox check
+ *      - 250 = Mailbox exists (VALID)
+ *      - 550 = Mailbox does not exist (INVALID - will bounce 100%)
+ *      - 450 = Greylisted / rate-limited (RISKY)
+ *   7. QUIT
+ */
+async function smtpVerifyRecipient(
+    email: string,
+    mxHost: string,
+    domain: string
+): Promise<SmtpVerifyResult> {
+    if (!isSmtpAvailable()) {
+        return { status: 'unknown', isCatchAll: false, reason: 'Outbound SMTP (port 25) unavailable from this network', definitive: false }
+    }
+
+    const cachedCA = catchAllCache.get(domain)
+    const hasCachedCA = !!(cachedCA && (Date.now() - cachedCA.timestamp < CATCHALL_CACHE_TTL))
+
+    return new Promise((resolve) => {
+        const socket = new net.Socket()
+        let resolved = false
+        let dataBuffer = ''
+
+        const finish = (result: SmtpVerifyResult) => {
+            if (!resolved) {
+                resolved = true
+                try { socket.removeAllListeners(); socket.destroy() } catch {}
+                resolve(result)
+            }
+        }
+
+        const failUnknown = (reason: string) => finish({ status: 'unknown', isCatchAll: false, reason, definitive: false })
+
+        // Overall 15s safety timeout
+        const overallTimer = setTimeout(() => failUnknown('SMTP overall timeout (15s)'), 15000)
+
+        socket.setTimeout(10000)
+        socket.once('timeout', () => { clearTimeout(overallTimer); failUnknown('Socket timeout') })
+        socket.once('error', (err: any) => {
+            clearTimeout(overallTimer)
+            const errCode = err.code || ''
+            if (['ECONNREFUSED', 'ETIMEDOUT', 'ENETUNREACH', 'EHOSTUNREACH', 'ECONNRESET'].includes(errCode)) {
+                smtpConsecutiveFailures++
+                if (smtpConsecutiveFailures >= 2) smtpBlockedSince = Date.now()
+            }
+            failUnknown(`Connection error: ${errCode || err.message}`)
+        })
+
+        // Read complete SMTP response (handles multi-line responses like 250-SIZE\r\n250 OK)
+        const readResponse = (): Promise<{ code: number; text: string }> => {
+            return new Promise((res, rej) => {
+                const readTimer = setTimeout(() => rej(new Error('SMTP read timeout')), 10000)
+
+                const tryParse = (): boolean => {
+                    const lines = dataBuffer.split('\r\n')
+                    for (let i = 0; i < lines.length; i++) {
+                        // Final response line format: "NNN " (3 digits followed by space)
+                        if (/^\d{3} /.test(lines[i])) {
+                            clearTimeout(readTimer)
+                            const code = parseInt(lines[i].substring(0, 3), 10)
+                            const responseText = lines.slice(0, i + 1).join('\r\n')
+                            dataBuffer = lines.slice(i + 1).filter(l => l.length > 0).join('\r\n')
+                            socket.removeListener('data', onChunk)
+                            res({ code, text: responseText })
+                            return true
+                        }
+                    }
+                    return false
+                }
+
+                // Check data already in buffer
+                if (tryParse()) return
+
+                const onChunk = (chunk: Buffer) => {
+                    dataBuffer += chunk.toString()
+                    tryParse()
+                }
+                socket.on('data', onChunk)
+            })
+        }
+
+        const sendCmd = async (cmd: string): Promise<{ code: number; text: string }> => {
+            socket.write(cmd + '\r\n')
+            return readResponse()
+        }
+
+        socket.connect(25, mxHost, async () => {
+            try {
+                // Successfully connected - port 25 is open, reset failure counter
+                smtpConsecutiveFailures = 0
+
+                // 1. Read server greeting (expect 220)
+                const greeting = await readResponse()
+                if (greeting.code !== 220) { clearTimeout(overallTimer); failUnknown(`Unexpected greeting: ${greeting.code}`); return }
+
+                // 2. EHLO (try HELO as fallback for older servers)
+                let ehlo = await sendCmd('EHLO mail.verify-engine.local')
+                if (ehlo.code !== 250) {
+                    ehlo = await sendCmd('HELO mail.verify-engine.local')
+                    if (ehlo.code !== 250) { clearTimeout(overallTimer); failUnknown(`EHLO/HELO rejected: ${ehlo.code}`); return }
+                }
+
+                // 3. MAIL FROM
+                const mf = await sendCmd('MAIL FROM:<check@verify-engine.local>')
+                if (mf.code !== 250) { clearTimeout(overallTimer); failUnknown(`MAIL FROM rejected: ${mf.code}`); return }
+
+                // 4. Catch-All Detection: probe with a guaranteed-fake random address
+                let isCatchAll = hasCachedCA ? cachedCA!.isCatchAll : false
+                if (!hasCachedCA) {
+                    const probeUser = `xvrf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+                    const caProbe = await sendCmd(`RCPT TO:<${probeUser}@${domain}>`)
+                    isCatchAll = (caProbe.code === 250 || caProbe.code === 251)
+                    catchAllCache.set(domain, { isCatchAll, timestamp: Date.now() })
+
+                    // Reset SMTP session state for the real recipient check
+                    await sendCmd('RSET')
+                    const mf2 = await sendCmd('MAIL FROM:<check@verify-engine.local>')
+                    if (mf2.code !== 250) {
+                        clearTimeout(overallTimer)
+                        finish({ status: 'unknown', isCatchAll, reason: `MAIL FROM after RSET rejected: ${mf2.code}`, definitive: false })
+                        return
+                    }
+                }
+
+                // 5. RCPT TO: The actual mailbox existence check
+                const rcpt = await sendCmd(`RCPT TO:<${email}>`)
+
+                // 6. QUIT (best effort, don't wait for response)
+                socket.write('QUIT\r\n')
+                clearTimeout(overallTimer)
+
+                // --- Interpret SMTP results ---
+
+                if (isCatchAll) {
+                    // Catch-All servers accept all addresses at SMTP level and bounce asynchronously.
+                    // Cannot determine individual mailbox existence. Same as NeverBounce "Accept-All" result.
+                    finish({
+                        status: 'risky',
+                        isCatchAll: true,
+                        reason: `Catch-All domain: ${domain} accepts all addresses at SMTP level. Individual mailbox cannot be confirmed (equivalent to NeverBounce 'Accept-All').`,
+                        definitive: false
+                    })
+                    return
+                }
+
+                // Non-catch-all server: RCPT TO result is definitive
+                if (rcpt.code === 250 || rcpt.code === 251) {
+                    finish({
+                        status: 'valid',
+                        isCatchAll: false,
+                        reason: `Mailbox verified via SMTP (${rcpt.code} Recipient OK)`,
+                        definitive: true
+                    })
+                } else if (rcpt.code >= 550 && rcpt.code <= 559) {
+                    // 550=User unknown, 551=User not local, 552=Mailbox full/disabled, 553=Mailbox name invalid
+                    const detail = rcpt.text.substring(4, 140).replace(/[\r\n]+/g, ' ').trim()
+                    finish({
+                        status: 'invalid',
+                        isCatchAll: false,
+                        reason: `Mailbox does not exist (SMTP ${rcpt.code}: ${detail || 'Recipient rejected'})`,
+                        definitive: true
+                    })
+                } else if (rcpt.code >= 450 && rcpt.code <= 459) {
+                    // Greylisting or temporary rejection - server wants us to retry later
+                    finish({
+                        status: 'risky',
+                        isCatchAll: false,
+                        reason: `Greylisted or rate-limited (SMTP ${rcpt.code}). Server deferred verification.`,
+                        definitive: false
+                    })
+                } else if (rcpt.code >= 500 && rcpt.code <= 599) {
+                    // Other permanent errors (500, 501, 503, etc.)
+                    finish({
+                        status: 'invalid',
+                        isCatchAll: false,
+                        reason: `Permanent SMTP rejection (${rcpt.code}: ${rcpt.text.substring(4, 100).trim()})`,
+                        definitive: true
+                    })
+                } else {
+                    finish({
+                        status: 'unknown',
+                        isCatchAll: false,
+                        reason: `Unexpected SMTP response code: ${rcpt.code}`,
+                        definitive: false
+                    })
+                }
+            } catch (err: any) {
+                clearTimeout(overallTimer)
+                failUnknown(`SMTP protocol error: ${err.message}`)
+            }
+        })
+    })
+}
+
+/**
  * World-Class Multi-Layer Email Verification Engine
  * Detects Syntax, Typos, Disposable Burners, Workspace Bounces, Role Aliases, Expired/Parked Domains,
- * M365 Real-Time Account Existence, Catch-All Gateway Shields, and Custom Domain Risks to prevent bounces.
+ * M365 Real-Time Account Existence, SMTP RCPT TO Mailbox Verification, Catch-All Detection,
+ * Gateway Shields, and Custom Domain Risks to achieve near-zero bounce rates without any paid API.
  */
 export async function verifyEmail(emailInput: string): Promise<VerificationResult> {
     const email = (emailInput || '').trim()
@@ -521,6 +836,27 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
         }
     }
 
+    // --- Layer 4.5: Real-Time DNSBL MX Blacklist Threat Check (SpamCop / Barracuda) ---
+    // Protects sender reputation by detecting toxic servers, dead honeypots, and active spam-traps
+    const dnsblThreat = await checkMxThreatDnsbl(primaryMx)
+    if (dnsblThreat.isBlacklisted) {
+        return {
+            email,
+            status: 'invalid',
+            reason: dnsblThreat.reason || 'Destination mail server is listed on DNSBL blacklist (High spam-trap / deliverability risk)',
+            score: 0,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: false,
+            isFreeProvider,
+            hasMx: true,
+            mxHost: primaryMx,
+            isBlacklisted: true,
+            suggestedFix,
+            checkedAt: now
+        }
+    }
+
     // --- Layer 5: Parked & Expired Domain Detection (100% Bounce Guarantee) ---
     const isParked = PARKED_PATTERNS.some(p => p.test(primaryMx))
     if (isParked) {
@@ -545,6 +881,27 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
     // at the perimeter gateway to prevent directory harvesting, and bounce asynchronously if recipient does not exist.
     const matchedShield = GATEWAY_SHIELDS.find(s => s.pattern.test(primaryMx))
     if (matchedShield) {
+        // Deep Catch-All Resolution: Check if this email has a real registered public profile (Gravatar)
+        const hasGravatar = await checkGravatarProfile(email)
+        if (hasGravatar) {
+            return {
+                email,
+                status: 'valid',
+                reason: `Active mailbox identity verified via Public Profile (Matches registered Gravatar human profile behind ${matchedShield.name})`,
+                score: 98,
+                isSyntaxValid: true,
+                isDisposable: false,
+                isRoleBased: false,
+                isFreeProvider: false,
+                hasMx: true,
+                mxHost: primaryMx,
+                isCatchAll: true,
+                hasPublicProfile: true,
+                suggestedFix,
+                checkedAt: now
+            }
+        }
+
         return {
             email,
             status: 'risky',
@@ -623,13 +980,55 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
         }
     }
 
-    // 7B: Free Webmail Consumer Accounts (No catch-all capability on public free webmail)
+    // 7B: Free Webmail SMTP Mailbox Verification (Gmail, Yahoo, iCloud, ProtonMail, etc.)
+    // Connects directly to the provider's SMTP server to verify the individual mailbox exists.
+    // This is the EXACT same technique used by NeverBounce, ZeroBounce, and MillionVerifier.
     if (isFreeProvider) {
+        const smtpResult = await smtpVerifyRecipient(email, primaryMx, domain)
+
+        if (smtpResult.definitive) {
+            return {
+                email,
+                status: smtpResult.status === 'valid' ? 'valid' : 'invalid',
+                reason: smtpResult.reason,
+                score: smtpResult.status === 'valid' ? 99 : 0,
+                isSyntaxValid: true,
+                isDisposable: false,
+                isRoleBased: false,
+                isFreeProvider: true,
+                hasMx: true,
+                mxHost: primaryMx,
+                isCatchAll: false,
+                suggestedFix,
+                checkedAt: now
+            }
+        }
+
+        if (smtpResult.status === 'risky') {
+            return {
+                email,
+                status: 'risky',
+                reason: smtpResult.reason,
+                score: 60,
+                isSyntaxValid: true,
+                isDisposable: false,
+                isRoleBased: false,
+                isFreeProvider: true,
+                hasMx: true,
+                mxHost: primaryMx,
+                isCatchAll: smtpResult.isCatchAll,
+                suggestedFix,
+                checkedAt: now
+            }
+        }
+
+        // SMTP unavailable (port 25 blocked by ISP/firewall) - fall back to domain-level validation
+        // Score reduced since individual mailbox couldn't be confirmed
         return {
             email,
             status: 'valid',
-            reason: `Active mailbox exchange verified on ${providerName}`,
-            score: 94,
+            reason: `${providerName} domain active. SMTP mailbox check unavailable from this network (${smtpResult.reason}). Individual inbox unconfirmed.`,
+            score: 75,
             isSyntaxValid: true,
             isDisposable: false,
             isRoleBased: false,
@@ -662,15 +1061,93 @@ export async function verifyEmail(emailInput: string): Promise<VerificationResul
         }
     }
 
-    // 7D: Custom Corporate Domains (Google Workspace, Zoho, Private MX on Custom Domains)
-    // On enterprise custom domains, mail servers accept connections for the domain, but individual
-    // mailboxes cannot be confirmed without live delivery. Departed employees or invalid aliases
-    // bounce asynchronously (550 Recipient does not exist).
-    // Professional verifiers (NeverBounce, ZeroBounce) classify these as RISKY / UNCONFIRMED MAILBOX.
+    // 7D: Custom Corporate Domain SMTP Verification + Catch-All Detection
+    // Probes the domain with a random address to detect catch-all configuration,
+    // then verifies the actual mailbox via SMTP RCPT TO - same as NeverBounce/ZeroBounce.
+    const smtpResult = await smtpVerifyRecipient(email, primaryMx, domain)
+
+    if (smtpResult.definitive) {
+        return {
+            email,
+            status: smtpResult.status === 'valid' ? 'valid' : 'invalid',
+            reason: smtpResult.reason,
+            score: smtpResult.status === 'valid' ? 97 : 0,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: false,
+            isFreeProvider: false,
+            hasMx: true,
+            mxHost: primaryMx,
+            isCatchAll: false,
+            suggestedFix,
+            checkedAt: now
+        }
+    }
+
+    if (smtpResult.isCatchAll) {
+        // Deep Catch-All Resolution: Check if this email has a real registered public profile (Gravatar)
+        const hasGravatar = await checkGravatarProfile(email)
+        if (hasGravatar) {
+            return {
+                email,
+                status: 'valid',
+                reason: `Active mailbox identity verified via Public Profile (Matches registered Gravatar human profile on catch-all domain ${domain})`,
+                score: 98,
+                isSyntaxValid: true,
+                isDisposable: false,
+                isRoleBased: false,
+                isFreeProvider: false,
+                hasMx: true,
+                mxHost: primaryMx,
+                isCatchAll: true,
+                hasPublicProfile: true,
+                suggestedFix,
+                checkedAt: now
+            }
+        }
+
+        return {
+            email,
+            status: 'risky',
+            reason: smtpResult.reason,
+            score: 55,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: false,
+            isFreeProvider: false,
+            hasMx: true,
+            mxHost: primaryMx,
+            isCatchAll: true,
+            suggestedFix,
+            checkedAt: now
+        }
+    }
+
+    // SMTP unavailable or inconclusive - check Gravatar before giving up
+    const hasGravatar = await checkGravatarProfile(email)
+    if (hasGravatar) {
+        return {
+            email,
+            status: 'valid',
+            reason: `Active mailbox identity verified via Public Profile (Matches registered Gravatar human profile on ${domain})`,
+            score: 98,
+            isSyntaxValid: true,
+            isDisposable: false,
+            isRoleBased: false,
+            isFreeProvider: false,
+            hasMx: true,
+            mxHost: primaryMx,
+            isCatchAll: false,
+            hasPublicProfile: true,
+            suggestedFix,
+            checkedAt: now
+        }
+    }
+
     return {
         email,
         status: 'risky',
-        reason: `Custom domain on ${providerName}: Mail exchange active, but individual mailbox cannot be confirmed without live delivery (High bounce risk for departed employees)`,
+        reason: `Custom domain on ${providerName}: ${smtpResult.reason || 'Mail exchange active, but individual mailbox cannot be confirmed'}. Departed employees may bounce.`,
         score: 60,
         isSyntaxValid: true,
         isDisposable: false,

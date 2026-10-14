@@ -152,7 +152,7 @@ export async function POST(
                         // Bounce ALWAYS overrides any stale valid verification cache!
                         dbCacheMap.set(em, { status: 'invalid', isValid: false })
                     } else if (!dbCacheMap.has(em)) {
-                        if (lead.status === 'replied' || lead.status === 'contacted' || lead.status === 'sequence_complete') {
+                        if (lead.status === 'replied' || lead.status === 'lead') {
                             dbCacheMap.set(em, { status: 'valid', isValid: true })
                         }
                     }
